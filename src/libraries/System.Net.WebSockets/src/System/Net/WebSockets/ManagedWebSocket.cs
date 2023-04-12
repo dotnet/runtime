@@ -1059,6 +1059,9 @@ namespace System.Net.WebSockets
                 case WebSocketCloseStatus.NormalClosure:
                 case WebSocketCloseStatus.PolicyViolation:
                 case WebSocketCloseStatus.ProtocolError:
+                case (WebSocketCloseStatus)1012: // ServiceRestart
+                case (WebSocketCloseStatus)1013: // TryAgainLater
+                case (WebSocketCloseStatus)1014: // BadGateway
                     return true;
 
                 default:
@@ -1396,11 +1399,7 @@ namespace System.Net.WebSockets
             // The connection closed before we were able to read everything we needed.
             // If it was due to us being disposed, fail with the correct exception.
             // Otherwise, it was due to the connection being closed and it wasn't expected.
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(WebSocket));
-            }
-
+            ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
             throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
         }
 
@@ -1539,7 +1538,7 @@ namespace System.Net.WebSockets
         private static void ThrowOperationInProgress(string? methodName) => throw new InvalidOperationException(SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, methodName));
 
         /// <summary>Creates an OperationCanceledException instance, using a default message and the specified inner exception and token.</summary>
-        private static Exception CreateOperationCanceledException(Exception innerException, CancellationToken cancellationToken = default(CancellationToken))
+        private static OperationCanceledException CreateOperationCanceledException(Exception innerException, CancellationToken cancellationToken = default(CancellationToken))
         {
             return new OperationCanceledException(
                 new OperationCanceledException().Message,

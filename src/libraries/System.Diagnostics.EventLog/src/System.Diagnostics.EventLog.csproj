@@ -1,15 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CA1847</NoWarn>
-    <!-- Suppressions to avoid ifdefs:
-            CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring'
-            CA1846: Prefer 'AsSpan' over 'Substring' when span-based overloads are available -->
-    <NoWarn>$(NoWarn);CA1845;CA1846</NoWarn>
     <Nullable>annotations</Nullable>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Provides the System.Diagnostics.EventLog class, which allows the applications to use the windows event log service.
+    <PackageDescription>Provides the System.Diagnostics.EventLog class, which allows the applications to use the Windows event log service.
 
 Commonly Used Types:
 System.Diagnostics.EventLog</PackageDescription>
@@ -112,6 +107,8 @@ System.Diagnostics.EventLog</PackageDescription>
              Link="Common\System\Diagnostics\NetFrameworkUtils.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT_FROM_WIN32.cs"
              Link="Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">

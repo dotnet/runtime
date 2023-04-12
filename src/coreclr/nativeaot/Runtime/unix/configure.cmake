@@ -50,21 +50,6 @@ int main(int argc, char **argv)
     return (int)_lwp_self();
 }" HAVE_LWP_SELF)
 
-set(CMAKE_REQUIRED_LIBRARIES ${PTHREAD_LIBRARY})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <sched.h>
-
-int main(void)
-{
-  if (sched_getcpu() >= 0)
-  {
-    exit(0);
-  }
-  exit(1);
-}" HAVE_SCHED_GETCPU)
-set(CMAKE_REQUIRED_LIBRARIES)
-
 check_cxx_source_runs("
 #include <stdlib.h>
 #include <time.h>

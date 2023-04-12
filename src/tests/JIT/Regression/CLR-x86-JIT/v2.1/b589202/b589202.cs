@@ -4,9 +4,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
-class Program
+using Xunit;
+public class Program
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test(null);
         Console.WriteLine("Test Success");

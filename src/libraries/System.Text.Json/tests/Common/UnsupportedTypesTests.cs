@@ -115,6 +115,8 @@ namespace System.Text.Json.Serialization.Tests
 
         public static IEnumerable<object[]> GetUnsupportedValues()
         {
+            yield return WrapArgs(new int[,] { { 1, 0 }, { 0, 1 } });
+            yield return WrapArgs(new bool[,,,] { { { { false } } } });
             yield return WrapArgs(typeof(int));
             yield return WrapArgs(typeof(ClassWithExtensionProperty).GetConstructor(Array.Empty<Type>()));
             yield return WrapArgs(typeof(ClassWithExtensionProperty).GetProperty(nameof(ClassWithExtensionProperty.MyInt)));

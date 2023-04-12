@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -72,12 +73,12 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256 _mm256_blend_ps (__m256 a, __m256 b, const int imm8)
         ///   VBLENDPS ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<float> Blend(Vector256<float> left, Vector256<float> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<float> Blend(Vector256<float> left, Vector256<float> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256d _mm256_blend_pd (__m256d a, __m256d b, const int imm8)
         ///   VBLENDPD ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<double> Blend(Vector256<double> left, Vector256<double> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<double> Blend(Vector256<double> left, Vector256<double> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256 _mm256_blendv_ps (__m256 a, __m256 b, __m256 mask)
@@ -133,22 +134,22 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_cmp_ps (__m128 a, __m128 b, const int imm8)
         ///   VCMPPS xmm, xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<float> Compare(Vector128<float> left, Vector128<float> right, FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> Compare(Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128d _mm_cmp_pd (__m128d a, __m128d b, const int imm8)
         ///   VCMPPD xmm, xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<double> Compare(Vector128<double> left, Vector128<double> right, FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> Compare(Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256 _mm256_cmp_ps (__m256 a, __m256 b, const int imm8)
         ///   VCMPPS ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<float> Compare(Vector256<float> left, Vector256<float> right, FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
+        public static Vector256<float> Compare(Vector256<float> left, Vector256<float> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256d _mm256_cmp_pd (__m256d a, __m256d b, const int imm8)
         ///   VCMPPD ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<double> Compare(Vector256<double> left, Vector256<double> right, FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
+        public static Vector256<double> Compare(Vector256<double> left, Vector256<double> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256 _mm256_cmpeq_ps (__m256 a,  __m256 b)
@@ -297,12 +298,12 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128d _mm_cmp_sd (__m128d a, __m128d b, const int imm8)
         ///   VCMPSS xmm, xmm, xmm/m32, imm8
         /// </summary>
-        public static Vector128<double> CompareScalar(Vector128<double> left, Vector128<double> right, FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> CompareScalar(Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128 _mm_cmp_ss (__m128 a, __m128 b, const int imm8)
         ///   VCMPSD xmm, xmm, xmm/m64, imm8
         /// </summary>
-        public static Vector128<float> CompareScalar(Vector128<float> left, Vector128<float> right, FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> CompareScalar(Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256 _mm256_cmpunord_ps (__m256 a,  __m256 b)
@@ -374,7 +375,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256 _mm256_dp_ps (__m256 a, __m256 b, const int imm8)
         ///   VDPPS ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<float> DotProduct(Vector256<float> left, Vector256<float> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<float> DotProduct(Vector256<float> left, Vector256<float> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256 _mm256_moveldup_ps (__m256 a)
@@ -397,61 +398,61 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTF128 xmm/m128, ymm, imm8
         /// </summary>
-        public static Vector128<byte> ExtractVector128(Vector256<byte> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> ExtractVector128(Vector256<byte> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTF128 xmm/m128, ymm, imm8
         /// </summary>
-        public static Vector128<sbyte> ExtractVector128(Vector256<sbyte> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> ExtractVector128(Vector256<sbyte> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTF128 xmm/m128, ymm, imm8
         /// </summary>
-        public static Vector128<short> ExtractVector128(Vector256<short> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> ExtractVector128(Vector256<short> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTF128 xmm/m128, ymm, imm8
         /// </summary>
-        public static Vector128<ushort> ExtractVector128(Vector256<ushort> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ExtractVector128(Vector256<ushort> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTF128 xmm/m128, ymm, imm8
         /// </summary>
-        public static Vector128<int> ExtractVector128(Vector256<int> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> ExtractVector128(Vector256<int> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTF128 xmm/m128, ymm, imm8
         /// </summary>
-        public static Vector128<uint> ExtractVector128(Vector256<uint> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> ExtractVector128(Vector256<uint> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTF128 xmm/m128, ymm, imm8
         /// </summary>
-        public static Vector128<long> ExtractVector128(Vector256<long> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long> ExtractVector128(Vector256<long> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTF128 xmm/m128, ymm, imm8
         /// </summary>
-        public static Vector128<ulong> ExtractVector128(Vector256<ulong> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong> ExtractVector128(Vector256<ulong> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm256_extractf128_ps (__m256 a, const int imm8)
         ///   VEXTRACTF128 xmm/m128, ymm, imm8
         /// </summary>
-        public static Vector128<float> ExtractVector128(Vector256<float> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> ExtractVector128(Vector256<float> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128d _mm256_extractf128_pd (__m256d a, const int imm8)
         ///   VEXTRACTF128 xmm/m128, ymm, imm8
         /// </summary>
-        public static Vector128<double> ExtractVector128(Vector256<double> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> ExtractVector128(Vector256<double> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256 _mm256_floor_ps (__m256 a)
@@ -490,61 +491,61 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
         /// </summary>
-        public static Vector256<byte> InsertVector128(Vector256<byte> value, Vector128<byte> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector256<byte> InsertVector128(Vector256<byte> value, Vector128<byte> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
         /// </summary>
-        public static Vector256<sbyte> InsertVector128(Vector256<sbyte> value, Vector128<sbyte> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector256<sbyte> InsertVector128(Vector256<sbyte> value, Vector128<sbyte> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
         /// </summary>
-        public static Vector256<short> InsertVector128(Vector256<short> value, Vector128<short> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector256<short> InsertVector128(Vector256<short> value, Vector128<short> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
         /// </summary>
-        public static Vector256<ushort> InsertVector128(Vector256<ushort> value, Vector128<ushort> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ushort> InsertVector128(Vector256<ushort> value, Vector128<ushort> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
         /// </summary>
-        public static Vector256<int> InsertVector128(Vector256<int> value, Vector128<int> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector256<int> InsertVector128(Vector256<int> value, Vector128<int> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
         /// </summary>
-        public static Vector256<uint> InsertVector128(Vector256<uint> value, Vector128<uint> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector256<uint> InsertVector128(Vector256<uint> value, Vector128<uint> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
         /// </summary>
-        public static Vector256<long> InsertVector128(Vector256<long> value, Vector128<long> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector256<long> InsertVector128(Vector256<long> value, Vector128<long> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
         /// </summary>
-        public static Vector256<ulong> InsertVector128(Vector256<ulong> value, Vector128<ulong> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ulong> InsertVector128(Vector256<ulong> value, Vector128<ulong> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256 _mm256_insertf128_ps (__m256 a, __m128 b, int imm8)
         ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
         /// </summary>
-        public static Vector256<float> InsertVector128(Vector256<float> value, Vector128<float> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector256<float> InsertVector128(Vector256<float> value, Vector128<float> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256d _mm256_insertf128_pd (__m256d a, __m128d b, int imm8)
         ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
         /// </summary>
-        public static Vector256<double> InsertVector128(Vector256<double> value, Vector128<double> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector256<double> InsertVector128(Vector256<double> value, Vector128<double> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_loadu_si256 (__m256i const * mem_addr)
@@ -792,82 +793,82 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_permute_ps (__m128 a, int imm8)
         ///   VPERMILPS xmm, xmm, imm8
         /// </summary>
-        public static Vector128<float> Permute(Vector128<float> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> Permute(Vector128<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128d _mm_permute_pd (__m128d a, int imm8)
         ///   VPERMILPD xmm, xmm, imm8
         /// </summary>
-        public static Vector128<double> Permute(Vector128<double> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> Permute(Vector128<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256 _mm256_permute_ps (__m256 a, int imm8)
         ///   VPERMILPS ymm, ymm, imm8
         /// </summary>
-        public static Vector256<float> Permute(Vector256<float> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<float> Permute(Vector256<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256d _mm256_permute_pd (__m256d a, int imm8)
         ///   VPERMILPD ymm, ymm, imm8
         /// </summary>
-        public static Vector256<double> Permute(Vector256<double> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<double> Permute(Vector256<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
         ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<byte> Permute2x128(Vector256<byte> left, Vector256<byte> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<byte> Permute2x128(Vector256<byte> left, Vector256<byte> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
         ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<sbyte> Permute2x128(Vector256<sbyte> left, Vector256<sbyte> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<sbyte> Permute2x128(Vector256<sbyte> left, Vector256<sbyte> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
         ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<short> Permute2x128(Vector256<short> left, Vector256<short> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<short> Permute2x128(Vector256<short> left, Vector256<short> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
         ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<ushort> Permute2x128(Vector256<ushort> left, Vector256<ushort> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ushort> Permute2x128(Vector256<ushort> left, Vector256<ushort> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
         ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<int> Permute2x128(Vector256<int> left, Vector256<int> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<int> Permute2x128(Vector256<int> left, Vector256<int> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
         ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<uint> Permute2x128(Vector256<uint> left, Vector256<uint> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<uint> Permute2x128(Vector256<uint> left, Vector256<uint> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
         ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<long> Permute2x128(Vector256<long> left, Vector256<long> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<long> Permute2x128(Vector256<long> left, Vector256<long> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
         ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<ulong> Permute2x128(Vector256<ulong> left, Vector256<ulong> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ulong> Permute2x128(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256 _mm256_permute2f128_ps (__m256 a, __m256 b, int imm8)
         ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<float> Permute2x128(Vector256<float> left, Vector256<float> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<float> Permute2x128(Vector256<float> left, Vector256<float> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256d _mm256_permute2f128_pd (__m256d a, __m256d b, int imm8)
         ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<double> Permute2x128(Vector256<double> left, Vector256<double> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<double> Permute2x128(Vector256<double> left, Vector256<double> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_permutevar_ps (__m128 a, __m128i b)
@@ -958,12 +959,12 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256 _mm256_shuffle_ps (__m256 a, __m256 b, const int imm8)
         ///   VSHUFPS ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<float> Shuffle(Vector256<float> value, Vector256<float> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<float> Shuffle(Vector256<float> value, Vector256<float> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256d _mm256_shuffle_pd (__m256d a, __m256d b, const int imm8)
         ///   VSHUFPD ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<double> Shuffle(Vector256<double> value, Vector256<double> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<double> Shuffle(Vector256<double> value, Vector256<double> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256 _mm256_sqrt_ps (__m256 a)

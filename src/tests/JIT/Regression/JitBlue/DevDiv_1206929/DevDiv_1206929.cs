@@ -1,9 +1,10 @@
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace ReadMemBytes
 {
-    class Program
+    public class Program
     {
         static int Pass = 100;
         static int Fail = -1;
@@ -26,7 +27,8 @@ namespace ReadMemBytes
 
             return count;
         }
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe int TestEntryPoint()
         {
             byte* buffer = stackalloc byte[4];
             buffer[0] = 0;

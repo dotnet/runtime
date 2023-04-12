@@ -52,18 +52,47 @@ enum CultureAwareStates
 };
 
 // This structure represents a dispatch member.
-struct DispatchMemberInfo
+class DispatchMemberInfo
 {
-    DispatchMemberInfo(DispatchInfo *pDispInfo, DISPID DispID, SString& strName);
+private: // static
+    static MethodTable*     s_pMemberTypes[NUM_MEMBER_TYPES];
+    static EnumMemberTypes  s_memberTypes[NUM_MEMBER_TYPES];
+    static int              s_iNumMemberTypesKnown;
+
+public:
+    DispatchMemberInfo(DispatchInfo* pDispInfo, DISPID DispID, SString& strName);
     ~DispatchMemberInfo();
 
     // Helper method to ensure the entry is initialized.
     void EnsureInitialized();
 
+    DISPID GetDISPID()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_DispID;
+    }
+
+    DispatchMemberInfo* GetNext()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pNext;
+    }
+
+    DispatchMemberInfo** GetNextPtr()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_pNext;
+    }
+
+    SString& GetName()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_strName;
+    }
+
     BOOL IsNeutered()
     {
         LIMITED_METHOD_CONTRACT;
-
         return (m_bNeutered) ? TRUE : FALSE;
     }
 
@@ -172,7 +201,7 @@ private:
     void SetUpMethodMarshalerInfo(MethodDesc *pMeth, BOOL bReturnValueOnly);
     void SetUpDispParamMarshalerForMarshalInfo(int iParam, MarshalInfo *pInfo);
     void SetUpDispParamAttributes(int iParam, MarshalInfo* Info);
-public:
+
     DISPID                  m_DispID;
     LOADERHANDLE            m_hndMemberInfo;
     DispParamMarshaler**    m_apParamMarshaler;
@@ -187,13 +216,7 @@ public:
     BOOL                    m_bNeutered;
     DispatchInfo*           m_pDispInfo;
     BOOL                    m_bLastParamOleVarArg;
-
-private:
-    static MethodTable*     s_pMemberTypes[NUM_MEMBER_TYPES];
-    static EnumMemberTypes  s_memberTypes[NUM_MEMBER_TYPES];
-    static int              s_iNumMemberTypesKnown;
 };
-
 
 struct InvokeObjects
 {
@@ -293,10 +316,10 @@ public:
     // Returns TRUE if the argument is "Missing"
     static BOOL             VariantIsMissing(VARIANT *pOle);
 
-    LoaderAllocator*        GetLoaderAllocator()
-    {
-        return m_pMT->GetLoaderAllocator();
-    }
+    // Functions for loader handle manipulation.
+    LOADERHANDLE AllocateHandle(OBJECTREF objRef);
+    void FreeHandle(LOADERHANDLE handle);
+    OBJECTREF GetHandleValue(LOADERHANDLE handle);
 
 protected:
     // Parameter marshaling helpers.
@@ -332,7 +355,7 @@ protected:
     DISPID                  GenerateDispID();
 
     // Helper method to create an instance of a DispatchMemberInfo.
-    virtual DispatchMemberInfo*  CreateDispatchMemberInfoInstance(DISPID DispID, SString& strMemberName, OBJECTREF MemberInfoObj);
+    DispatchMemberInfo*  CreateDispatchMemberInfoInstance(DISPID dispID, SString& strMemberName, OBJECTREF memberInfoObj);
 
     // Helper function to fill in an EXCEPINFO for an InvocationException.
     static void             GetExcepInfoForInvocationExcep(OBJECTREF objException, EXCEPINFO *pei);
@@ -371,9 +394,6 @@ public:
     // Helper method that invokes the member with the specified DISPID. These methods synch
     // with the managed view if they fail to find the method.
     HRESULT                 SynchInvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id, LCID lcid, WORD wFlags, DISPPARAMS *pdp, VARIANT *pVarRes, EXCEPINFO *pei, IServiceProvider *pspCaller, unsigned int *puArgErr);
-
-    // Helper method to create an instance of a DispatchMemberInfo.
-    virtual DispatchMemberInfo*  CreateDispatchMemberInfoInstance(DISPID DispID, SString& strMemberName, OBJECTREF MemberInfoObj);
 
     // These methods return the first and next non deleted members.
     DispatchMemberInfo*     GetFirstMember();

@@ -1,12 +1,18 @@
 # Threaded runtime #
 
-## Building ##
+## Building the runtime ##
 
-Build with `/p:WasmEnableThreads=true` to enable support for multi-threading.
+Build the runtime with `/p:MonoWasmBuildVariant=multithread` to enable support for multi-threading.
 
-Build with `/p:WasmEnablePerfTracing=true` to enable support for EventPipe diagnostics - this enabled threading, but only for "internal" utility threads.  User code is not allowed to start threads.
+Build with `/p:MonoWasmBuildVariant=perftrace` to enable support for EventPipe diagnostics - this enabled threading, but only for "internal" utility threads.  User code is not allowed to start threads.
 
 Do not combine these options, just turn on one or the other.
+
+## Building sample apps ##
+
+Sample apps use the "public" properties `WasmEnableThreads` and `WasmEnablePerfTracing` to enable
+the relevant functionality.  This also works with released versions of .NET 7 or later and the
+`wasmbrowser` template.
 
 ## Libraries feature defines ##
 

@@ -23,10 +23,11 @@ void Compiler::optInit()
     loopAlignCandidates = 0;
 
     /* Initialize the # of tracked loops to 0 */
-    optLoopCount      = 0;
-    optLoopTable      = nullptr;
-    optLoopTableValid = false;
-    optCurLoopEpoch   = 0;
+    optLoopCount              = 0;
+    optLoopTable              = nullptr;
+    optLoopTableValid         = false;
+    optLoopsRequirePreHeaders = false;
+    optCurLoopEpoch           = 0;
 
 #ifdef DEBUG
     loopsAligned = 0;
@@ -163,18 +164,18 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 #endif
 
     // Build list of back edges for block begBlk.
-    flowList* backedgeList = nullptr;
+    FlowEdge* backedgeList = nullptr;
 
     for (BasicBlock* const predBlock : begBlk->PredBlocks())
     {
         // Is this a back edge?
         if (predBlock->bbNum >= begBlk->bbNum)
         {
-            backedgeList = new (this, CMK_FlowList) flowList(predBlock, backedgeList);
+            backedgeList = new (this, CMK_FlowEdge) FlowEdge(predBlock, backedgeList);
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;
-            genFlowNodeSize += sizeof(flowList);
+            genFlowNodeSize += sizeof(FlowEdge);
 #endif // MEASURE_BLOCK_SIZE
         }
     }
@@ -217,9 +218,9 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
             bool reachable = false;
             bool dominates = false;
 
-            for (flowList* tmp = backedgeList; tmp != nullptr; tmp = tmp->flNext)
+            for (FlowEdge* tmp = backedgeList; tmp != nullptr; tmp = tmp->getNextPredEdge())
             {
-                BasicBlock* backedge = tmp->getBlock();
+                BasicBlock* backedge = tmp->getSourceBlock();
 
                 reachable |= fgReachable(curBlk, backedge);
                 dominates |= fgDominate(curBlk, backedge);
@@ -388,8 +389,6 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
     noway_assert(!opts.MinOpts());
 
-    bool removeLoop = false;
-
     // If an unreachable block is a loop entry or bottom then the loop is unreachable.
     // Special case: the block was the head of a loop - or pointing to a loop entry.
 
@@ -455,101 +454,37 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         // If `block` flows to the loop entry then the whole loop will become unreachable if it is the
         // only non-loop predecessor.
 
-        switch (block->bbJumpKind)
+        bool removeLoop = false;
+        if (!loop.lpContains(block))
         {
-            case BBJ_NONE:
-                if (block->bbNext == loop.lpEntry)
-                {
-                    removeLoop = true;
-                }
-                break;
-
-            case BBJ_COND:
-                if ((block->bbNext == loop.lpEntry) || (block->bbJumpDest == loop.lpEntry))
-                {
-                    removeLoop = true;
-                }
-                break;
-
-            case BBJ_ALWAYS:
-                if (block->bbJumpDest == loop.lpEntry)
-                {
-                    removeLoop = true;
-                }
-                break;
-
-            case BBJ_SWITCH:
-                for (BasicBlock* const bTarget : block->SwitchTargets())
-                {
-                    if (bTarget == loop.lpEntry)
-                    {
-                        removeLoop = true;
-                        break;
-                    }
-                }
-                break;
-
-            default:
-                break;
-        }
-
-        if (removeLoop)
-        {
-            // Check if the entry has other predecessors outside the loop.
-            // TODO: Replace this when predecessors are available.
-
-            for (BasicBlock* const auxBlock : Blocks())
+            for (BasicBlock* const succ : block->Succs())
             {
-                // Ignore blocks in the loop.
-                if (loop.lpContains(auxBlock))
+                if (loop.lpEntry == succ)
                 {
-                    continue;
-                }
-
-                switch (auxBlock->bbJumpKind)
-                {
-                    case BBJ_NONE:
-                        if (auxBlock->bbNext == loop.lpEntry)
-                        {
-                            removeLoop = false;
-                        }
-                        break;
-
-                    case BBJ_COND:
-                        if ((auxBlock->bbNext == loop.lpEntry) || (auxBlock->bbJumpDest == loop.lpEntry))
-                        {
-                            removeLoop = false;
-                        }
-                        break;
-
-                    case BBJ_ALWAYS:
-                        if (auxBlock->bbJumpDest == loop.lpEntry)
-                        {
-                            removeLoop = false;
-                        }
-                        break;
-
-                    case BBJ_SWITCH:
-                        for (BasicBlock* const bTarget : auxBlock->SwitchTargets())
-                        {
-                            if (bTarget == loop.lpEntry)
-                            {
-                                removeLoop = false;
-                                break;
-                            }
-                        }
-                        break;
-
-                    default:
-                        break;
+                    removeLoop = true;
+                    break;
                 }
             }
 
             if (removeLoop)
             {
-                reportBefore();
-                optMarkLoopRemoved(loopNum);
+                // If the entry has any non-loop block that is not the known 'block' predecessor of entry
+                // (found above), then don't remove the loop.
+                for (BasicBlock* const predBlock : loop.lpEntry->PredBlocks())
+                {
+                    if (!loop.lpContains(predBlock) && (predBlock != block))
+                    {
+                        removeLoop = false;
+                        break;
+                    }
+                }
             }
+        }
+
+        if (removeLoop)
+        {
+            reportBefore();
+            optMarkLoopRemoved(loopNum);
         }
         else if (loop.lpHead == block)
         {
@@ -807,15 +742,32 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
         return false;
     }
 
-    // We found an initializer in the `head` block. For this to be used, we need to make sure the
+    // We found an initializer in the `initBlock` block. For this to be used, we need to make sure the
     // "iterVar" initialization is never skipped. That is, every pred of ENTRY other than HEAD is in the loop.
+    // We allow one special case: the HEAD block is an empty predecessor to ENTRY, and the initBlock is the
+    // only predecessor to HEAD. This handles the case where we rebuild the loop table (after inserting
+    // pre-headers) and we still want to find the initializer before the pre-header block.
     for (BasicBlock* const predBlock : optLoopTable[loopInd].lpEntry->PredBlocks())
     {
-        if ((predBlock != initBlock) && !optLoopTable[loopInd].lpContains(predBlock))
+        if (!optLoopTable[loopInd].lpContains(predBlock))
         {
-            JITDUMP(FMT_LP ": initialization not guaranteed through `head` block; ignore constant initializer\n",
-                    loopInd);
-            return false;
+            bool initBlockOk = (predBlock == initBlock);
+            if (!initBlockOk)
+            {
+                if ((predBlock->bbJumpKind == BBJ_NONE) && (predBlock->bbNext == optLoopTable[loopInd].lpEntry) &&
+                    (predBlock->countOfInEdges() == 1) && (predBlock->firstStmt() == nullptr) &&
+                    (predBlock->bbPrev != nullptr) && predBlock->bbPrev->bbFallsThrough())
+                {
+                    initBlockOk = true;
+                }
+            }
+            if (!initBlockOk)
+            {
+                JITDUMP(FMT_LP ": initialization not guaranteed from " FMT_BB " through to entry block " FMT_BB
+                               " from pred " FMT_BB "; ignore constant initializer\n",
+                        loopInd, initBlock->bbNum, optLoopTable[loopInd].lpEntry->bbNum, predBlock->bbNum);
+                return false;
+            }
         }
     }
 
@@ -1131,12 +1083,13 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 //      Extract the "init", "test" and "incr" nodes of the loop.
 //
 // Arguments:
-//      head    - Loop head block
-//      bottom  - Loop bottom block
-//      top     - Loop top block
-//      ppInit  - The init stmt of the loop if found.
-//      ppTest  - The test stmt of the loop if found.
-//      ppIncr  - The incr stmt of the loop if found.
+//      pInitBlock - [IN/OUT] *pInitBlock is the loop head block on entry, and is set to the initBlock on exit,
+//                   if `**ppInit` is non-null.
+//      bottom     - Loop bottom block
+//      top        - Loop top block
+//      ppInit     - The init stmt of the loop if found.
+//      ppTest     - The test stmt of the loop if found.
+//      ppIncr     - The incr stmt of the loop if found.
 //
 //  Return Value:
 //      The results are put in "ppInit", "ppTest" and "ppIncr" if the method
@@ -1145,9 +1098,8 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 //      to nullptr. Return value will never be false if `init` is not found.
 //
 //  Operation:
-//      Check if the "test" stmt is last stmt in the loop "bottom". If found good,
-//      "test" stmt is found. Try to find the "incr" stmt. Check previous stmt of
-//      "test" to get the "incr" stmt. If it is not found it could be a loop of the
+//      Check if the "test" stmt is last stmt in the loop "bottom". Try to find the "incr" stmt.
+//      Check previous stmt of "test" to get the "incr" stmt. If it is not found it could be a loop of the
 //      below form.
 //
 //                     +-------<-----------------<-----------+
@@ -1164,8 +1116,9 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 //      the callers are expected to verify that "iterVar" is used in the test.
 //
 bool Compiler::optExtractInitTestIncr(
-    BasicBlock* head, BasicBlock* bottom, BasicBlock* top, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr)
+    BasicBlock** pInitBlock, BasicBlock* bottom, BasicBlock* top, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr)
 {
+    assert(pInitBlock != nullptr);
     assert(ppInit != nullptr);
     assert(ppTest != nullptr);
     assert(ppIncr != nullptr);
@@ -1217,7 +1170,22 @@ bool Compiler::optExtractInitTestIncr(
 
     // Find the last statement in the loop pre-header which we expect to be the initialization of
     // the loop iterator.
-    Statement* phdrStmt = head->firstStmt();
+    BasicBlock* initBlock = *pInitBlock;
+    Statement*  phdrStmt  = initBlock->firstStmt();
+    if (phdrStmt == nullptr)
+    {
+        // When we build the loop table, we canonicalize by introducing loop pre-headers for all loops.
+        // If we are rebuilding the loop table, we would already have the pre-header block introduced
+        // the first time, which might be empty if no hoisting has yet occurred. In this case, look a
+        // little harder for the possible loop initialization statement.
+        if ((initBlock->bbJumpKind == BBJ_NONE) && (initBlock->bbNext == top) && (initBlock->countOfInEdges() == 1) &&
+            (initBlock->bbPrev != nullptr) && initBlock->bbPrev->bbFallsThrough())
+        {
+            initBlock = initBlock->bbPrev;
+            phdrStmt  = initBlock->firstStmt();
+        }
+    }
+
     if (phdrStmt != nullptr)
     {
         Statement* initStmt = phdrStmt->GetPrevStmt();
@@ -1234,11 +1202,6 @@ bool Compiler::optExtractInitTestIncr(
                 // statements other than duplicated loop conditions.
                 doGetPrev = (initStmt->GetPrevStmt() != nullptr);
             }
-            else
-            {
-                // Must be a duplicated loop condition.
-                noway_assert(initStmt->GetRootNode()->gtOper == GT_JTRUE);
-            }
 #endif // DEBUG
             if (doGetPrev)
             {
@@ -1247,7 +1210,8 @@ bool Compiler::optExtractInitTestIncr(
             noway_assert(initStmt != nullptr);
         }
 
-        *ppInit = initStmt->GetRootNode();
+        *ppInit     = initStmt->GetRootNode();
+        *pInitBlock = initBlock;
     }
     else
     {
@@ -1371,24 +1335,25 @@ bool Compiler::optRecordLoop(
     //
     if (bottom->bbJumpKind == BBJ_COND)
     {
-        GenTree* init;
-        GenTree* test;
-        GenTree* incr;
-        if (!optExtractInitTestIncr(head, bottom, top, &init, &test, &incr))
+        GenTree*    init;
+        GenTree*    test;
+        GenTree*    incr;
+        BasicBlock* initBlock = head;
+        if (!optExtractInitTestIncr(&initBlock, bottom, top, &init, &test, &incr))
         {
             JITDUMP(FMT_LP ": couldn't find init/test/incr; not LPFLG_ITER loop\n", loopInd);
             goto DONE_LOOP;
         }
 
         unsigned iterVar = BAD_VAR_NUM;
-        if (!optComputeIterInfo(incr, head->bbNext, bottom, &iterVar))
+        if (!optComputeIterInfo(incr, top, bottom, &iterVar))
         {
             JITDUMP(FMT_LP ": increment expression not appropriate form, or not loop invariant; not LPFLG_ITER loop\n",
                     loopInd);
             goto DONE_LOOP;
         }
 
-        optPopulateInitInfo(loopInd, head, init, iterVar);
+        optPopulateInitInfo(loopInd, initBlock, init, iterVar);
 
         // Check that the iterator is used in the loop condition.
         if (!optCheckIterInLoopTest(loopInd, test, iterVar))
@@ -1734,10 +1699,12 @@ public:
             return false;
         }
 
-        if (bottom->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, BBJ_CALLFINALLY, BBJ_SWITCH))
+        if (bottom->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, BBJ_CALLFINALLY,
+                           BBJ_SWITCH))
         {
             JITDUMP("    bottom odd jump kind\n");
-            // BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, and BBJ_CALLFINALLY can never form a loop.
+            // BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, and BBJ_CALLFINALLY can never form a
+            // loop.
             // BBJ_SWITCH that has a backward jump appears only for labeled break.
             return false;
         }
@@ -2021,8 +1988,8 @@ private:
             // This must be a block we inserted to connect fall-through after moving blocks.
             // To determine if it's in the loop or not, use the number of its unique predecessor
             // block.
-            assert(block->bbPreds->getBlock() == block->bbPrev);
-            assert(block->bbPreds->flNext == nullptr);
+            assert(block->bbPreds->getSourceBlock() == block->bbPrev);
+            assert(block->bbPreds->getNextPredEdge() == nullptr);
             return block->bbPrev->bbNum;
         }
         return block->bbNum;
@@ -2057,7 +2024,7 @@ private:
                 continue;
             }
 
-            // This blocks is lexically between TOP and BOTTOM, but it does not
+            // This block is lexically between TOP and BOTTOM, but it does not
             // participate in the flow cycle.  Check for a run of consecutive
             // such blocks.
             //
@@ -2392,7 +2359,7 @@ private:
                 block->bbFlags |= BBF_KEEP_BBJ_ALWAYS;
             }
 
-            // If block is newNext's only predcessor, move the IR from block to newNext,
+            // If block is newNext's only predecessor, move the IR from block to newNext,
             // but keep the now-empty block around.
             //
             // We move the IR because loop recognition has a very limited search capability and
@@ -2471,6 +2438,21 @@ private:
                 if (!loopBlocks.IsMember(exitPoint->bbNum))
                 {
                     // Exit from a block other than BOTTOM
+                    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if !defined(FEATURE_EH_FUNCLETS)
+                    // On non-funclet platforms (x86), the catch exit is a BBJ_ALWAYS, but we don't want that to
+                    // be considered a loop exit block, as catch handlers don't have predecessor lists and don't
+                    // show up as might be expected in the dominator tree.
+                    if (block->bbJumpKind == BBJ_ALWAYS)
+                    {
+                        if (!BasicBlock::sameHndRegion(block, exitPoint))
+                        {
+                            break;
+                        }
+                    }
+#endif // !defined(FEATURE_EH_FUNCLETS)
+
                     lastExit = block;
                     exitCount++;
                 }
@@ -2480,6 +2462,7 @@ private:
                 break;
 
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
             case BBJ_EHFILTERRET:
                 // The "try" associated with this "finally" must be in the same loop, so the
                 // finally block will return control inside the loop.
@@ -2684,26 +2667,25 @@ NO_MORE_LOOPS:
     }
     if (mod)
     {
-        constexpr bool computePreds = true;
-        fgUpdateChangedFlowGraph(computePreds);
+        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
     }
 
-    if (false /* pre-header stress */)
+    // Create a loop pre-header for every loop.
+    bool modForPreHeader = false;
+    for (unsigned loopInd = 0; loopInd < optLoopCount; loopInd++)
     {
-        // Stress mode: aggressively create loop pre-header for every loop.
-        for (unsigned loopInd = 0; loopInd < optLoopCount; loopInd++)
+        if (fgCreateLoopPreHeader(loopInd))
         {
-            fgCreateLoopPreHeader(loopInd);
-        }
-
-        if (fgModified)
-        {
-            // The predecessors were maintained in fgCreateLoopPreHeader; don't rebuild them.
-            constexpr bool computePreds = false;
-            constexpr bool computeDoms  = true;
-            fgUpdateChangedFlowGraph(computePreds, computeDoms);
+            modForPreHeader = true;
         }
     }
+    if (modForPreHeader)
+    {
+        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
+    }
+
+    // Starting now, we require all loops to have pre-headers.
+    optLoopsRequirePreHeaders = true;
 
 #ifdef DEBUG
     if (verbose && (optLoopCount > 0))
@@ -2763,22 +2745,34 @@ void Compiler::optIdentifyLoopsForAlignment()
 // Updates the successors of `blk`: if `blk2` is a branch successor of `blk`, and there is a mapping
 // for `blk2->blk3` in `redirectMap`, change `blk` so that `blk3` is this branch successor.
 //
-// Note that fall-through successors are not modified, including predecessor lists.
-//
 // Arguments:
 //     blk          - block to redirect
 //     redirectMap  - block->block map specifying how the `blk` target will be redirected.
-//     updatePreds  - if `true`, update the predecessor lists to match.
+//     predOption   - specifies how to update the pred lists
 //
-void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, const bool updatePreds)
+// Notes:
+//     Fall-through successors are assumed correct and are not modified.
+//     Pred lists for successors of `blk` may be changed, depending on `predOption`.
+//
+void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, RedirectBlockOption predOption)
 {
+    const bool updatePreds = (predOption == RedirectBlockOption::UpdatePredLists);
+    const bool addPreds    = (predOption == RedirectBlockOption::AddToPredLists);
+
+    if (addPreds && blk->bbFallsThrough())
+    {
+        fgAddRefPred(blk->bbNext, blk);
+    }
+
     BasicBlock* newJumpDest = nullptr;
+
     switch (blk->bbJumpKind)
     {
         case BBJ_NONE:
         case BBJ_THROW:
         case BBJ_RETURN:
         case BBJ_EHFILTERRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFINALLYRET:
         case BBJ_EHCATCHRET:
             // These have no jump destination to update.
@@ -2794,9 +2788,16 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, c
                 if (updatePreds)
                 {
                     fgRemoveRefPred(blk->bbJumpDest, blk);
+                }
+                if (updatePreds || addPreds)
+                {
                     fgAddRefPred(newJumpDest, blk);
                 }
                 blk->bbJumpDest = newJumpDest;
+            }
+            else if (addPreds)
+            {
+                fgAddRefPred(blk->bbJumpDest, blk);
             }
             break;
 
@@ -2811,10 +2812,17 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, c
                     if (updatePreds)
                     {
                         fgRemoveRefPred(switchDest, blk);
+                    }
+                    if (updatePreds || addPreds)
+                    {
                         fgAddRefPred(newJumpDest, blk);
                     }
                     blk->bbJumpSwt->bbsDstTab[i] = newJumpDest;
                     redirected                   = true;
+                }
+                else if (addPreds)
+                {
+                    fgAddRefPred(switchDest, blk);
                 }
             }
             // If any redirections happened, invalidate the switch table map for the switch.
@@ -3057,6 +3065,10 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 
             BasicBlock* const newH = fgNewBBbefore(BBJ_NONE, t, /*extendRegion*/ true);
 
+            fgRemoveRefPred(t, h);
+            fgAddRefPred(t, newH);
+            fgAddRefPred(newH, h);
+
             // Anything that flows into sibling will flow here.
             // So we use sibling.H as our best guess for weight.
             //
@@ -3234,6 +3246,10 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     const bool        extendRegion = BasicBlock::sameTryRegion(t, b);
     BasicBlock* const newT         = fgNewBBbefore(BBJ_NONE, t, extendRegion);
 
+    fgRemoveRefPred(t, h);
+    fgAddRefPred(t, newT);
+    fgAddRefPred(newT, h);
+
     // Initially give newT the same weight as t; we will subtract from
     // this for each edge that does not move from t to newT.
     //
@@ -3283,7 +3299,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
                 JITDUMP("in optCanonicalizeLoop (current): redirect bottom->top backedge " FMT_BB " -> " FMT_BB
                         " to " FMT_BB " -> " FMT_BB "\n",
                         topPredBlock->bbNum, t->bbNum, topPredBlock->bbNum, newT->bbNum);
-                optRedirectBlock(b, blockMap);
+                optRedirectBlock(b, blockMap, RedirectBlockOption::UpdatePredLists);
             }
         }
         else if (option == LoopCanonicalizationOption::Outer)
@@ -3315,7 +3331,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
                         " -> " FMT_BB "\n",
                         topPredBlock == h ? "head" : "nonloop", topPredBlock == h ? "" : "back", topPredBlock->bbNum,
                         t->bbNum, topPredBlock->bbNum, newT->bbNum);
-                optRedirectBlock(topPredBlock, blockMap);
+                optRedirectBlock(topPredBlock, blockMap, RedirectBlockOption::UpdatePredLists);
             }
         }
         else
@@ -3674,11 +3690,11 @@ bool Compiler::optComputeLoopRep(int        constInit,
     // Initialize loopCount to zero.
     loopCount = 0;
 
-    // If dupCond is true then the loop head contains a test which skips
+    // If dupCond is true then the loop initialization block contains a test which skips
     // this loop, if the constInit does not pass the loop test.
     // Such a loop can execute zero times.
-    // If dupCond is false then we have a true do-while loop which we
-    // always execute the loop once before performing the loop test
+    // If dupCond is false then we have a true do-while loop where we
+    // always execute the loop once before performing the loop test.
     if (!dupCond)
     {
         loopCount += 1;
@@ -4035,16 +4051,10 @@ PhaseStatus Compiler::optUnrollLoops()
     }
 #endif
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In optUnrollLoops()\n");
-    }
-#endif
-
     /* Look for loop unrolling candidates */
 
     bool change                 = false;
+    bool anyIRchange            = false;
     bool anyNestedLoopsUnrolled = false;
     INDEBUG(int unrollCount = 0);    // count of loops unrolled
     INDEBUG(int unrollFailures = 0); // count of loops attempted to be unrolled, but failed
@@ -4273,20 +4283,27 @@ PhaseStatus Compiler::optUnrollLoops()
         }
         // clang-format on
 
+        // After this point, assume we've changed the IR. In particular, we call gtSetStmtInfo() which
+        // can modify the IR. We may still fail to unroll if the EH region conditions don't hold, if
+        // the size heuristics don't succeed, or if cloning any individual block fails.
+        anyIRchange = true;
+
         // Heuristic: Estimated cost in code size of the unrolled loop.
 
         {
-            ClrSafeInt<unsigned> loopCostSz; // Cost is size of one iteration
-            auto                 tryIndex = loop.lpTop->bbTryIndex;
+            ClrSafeInt<unsigned>    loopCostSz; // Cost is size of one iteration
+            const BasicBlock* const top = loop.lpTop;
 
             // Besides calculating the loop cost, also ensure that all loop blocks are within the same EH
             // region, and count the number of BBJ_RETURN blocks in the loop.
             loopRetCount = 0;
             for (BasicBlock* const block : loop.LoopBlocks())
             {
-                if (block->bbTryIndex != tryIndex)
+                if (!BasicBlock::sameEHRegion(block, top))
                 {
                     // Unrolling would require cloning EH regions
+                    // Note that only non-funclet model (x86) could actually have a loop including a handler
+                    // but not it's corresponding `try`, if its `try` was moved due to being marked "rare".
                     JITDUMP("Failed to unroll loop " FMT_LP ": EH constraint\n", lnum);
                     goto DONE_LOOP;
                 }
@@ -4358,6 +4375,7 @@ PhaseStatus Compiler::optUnrollLoops()
 
             BlockToBlockMap        blockMap(getAllocator(CMK_LoopOpt));
             BasicBlock*            insertAfter                    = bottom;
+            BasicBlock* const      tail                           = bottom->bbNext;
             BasicBlock::loopNumber newLoopNum                     = loop.lpParent;
             bool                   anyNestedLoopsUnrolledThisLoop = false;
             int                    lval;
@@ -4380,9 +4398,8 @@ PhaseStatus Compiler::optUnrollLoops()
                         // to clone a block in the loop, splice out and forget all the blocks we cloned so far:
                         // put the loop blocks back to how they were before we started cloning blocks,
                         // and abort unrolling the loop.
-                        BasicBlock* oldBottomNext = insertAfter->bbNext;
-                        bottom->bbNext            = oldBottomNext;
-                        oldBottomNext->bbPrev     = bottom;
+                        bottom->bbNext = tail;
+                        tail->bbPrev   = bottom;
                         loop.lpFlags |= LPFLG_DONT_UNROLL; // Mark it so we don't try to unroll it again.
                         INDEBUG(++unrollFailures);
                         JITDUMP("Failed to unroll loop " FMT_LP ": block cloning failed on " FMT_BB "\n", lnum,
@@ -4437,8 +4454,15 @@ PhaseStatus Compiler::optUnrollLoops()
                 {
                     BasicBlock* newBlock = blockMap[block];
                     optCopyBlkDest(block, newBlock);
-                    optRedirectBlock(newBlock, &blockMap);
+                    optRedirectBlock(newBlock, &blockMap, RedirectBlockOption::AddToPredLists);
                 }
+
+                // We fall into this unroll iteration from the bottom block (first iteration)
+                // or from the previous unroll clone of the bottom block (subsequent iterations).
+                // After doing this, all the newly cloned blocks now have proper flow and pred lists.
+                //
+                BasicBlock* const clonedTop = blockMap[loop.lpTop];
+                fgAddRefPred(clonedTop, clonedTop->bbPrev);
 
                 /* update the new value for the unrolled iterator */
 
@@ -4464,8 +4488,10 @@ PhaseStatus Compiler::optUnrollLoops()
             }
 
             // If we get here, we successfully cloned all the blocks in the unrolled loop.
+            // Note we may not have done any cloning at all, if the loop iteration count was zero.
 
-            // Gut the old loop body
+            // Gut the old loop body.
+            //
             for (BasicBlock* const block : loop.LoopBlocks())
             {
                 // Check if the old loop body had any nested loops that got cloned. Note that we need to do this
@@ -4476,11 +4502,41 @@ PhaseStatus Compiler::optUnrollLoops()
                     anyNestedLoopsUnrolledThisLoop = true;
                 }
 
-                block->bbStmtList = nullptr;
-                block->bbJumpKind = BBJ_NONE;
-                block->bbFlags &= ~BBF_LOOP_HEAD;
+                // Scrub all pred list references to block, except for bottom-> bottom->bbNext.
+                //
+                for (BasicBlock* succ : block->Succs(this))
+                {
+                    if ((block == bottom) && (succ == bottom->bbNext))
+                    {
+                        continue;
+                    }
+
+                    fgRemoveAllRefPreds(succ, block);
+                }
+
+                block->bbStmtList   = nullptr;
+                block->bbJumpKind   = BBJ_NONE;
                 block->bbJumpDest   = nullptr;
                 block->bbNatLoopNum = newLoopNum;
+
+                // Remove a few unnecessary flags (this list is not comprehensive).
+                block->bbFlags &= ~(BBF_LOOP_HEAD | BBF_BACKWARD_JUMP_SOURCE | BBF_BACKWARD_JUMP_TARGET |
+                                    BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF | BBF_HAS_NEWOBJ);
+
+                JITDUMP("Scrubbed old loop body block " FMT_BB "\n", block->bbNum);
+            }
+
+            // The old loop blocks will form an empty linear chain.
+            // Add back a suitable pred list links.
+            //
+            BasicBlock* oldLoopPred = head;
+            for (BasicBlock* const block : loop.LoopBlocks())
+            {
+                if (block != top)
+                {
+                    fgAddRefPred(block, oldLoopPred);
+                }
+                oldLoopPred = block;
             }
 
             if (anyNestedLoopsUnrolledThisLoop)
@@ -4488,19 +4544,49 @@ PhaseStatus Compiler::optUnrollLoops()
                 anyNestedLoopsUnrolled = true;
             }
 
-            // If the HEAD is a BBJ_COND drop the condition (and make HEAD a BBJ_NONE block).
-
-            if (head->bbJumpKind == BBJ_COND)
+            // Now fix up the exterior flow and pred list entries.
+            //
+            // Control will fall through from the initBlock to its successor, which is either
+            // the pre-header HEAD (if it exists), or the now empty TOP (if totalIter == 0),
+            // or the first cloned top.
+            //
+            // If the initBlock is a BBJ_COND drop the condition (and make initBlock a BBJ_NONE block).
+            //
+            if (initBlock->bbJumpKind == BBJ_COND)
             {
-                testStmt = head->lastStmt();
-                noway_assert(testStmt->GetRootNode()->gtOper == GT_JTRUE);
-                fgRemoveStmt(head, testStmt);
-                head->bbJumpKind = BBJ_NONE;
+                assert(dupCond);
+                Statement* initBlockBranchStmt = initBlock->lastStmt();
+                noway_assert(initBlockBranchStmt->GetRootNode()->OperIs(GT_JTRUE));
+                fgRemoveStmt(initBlock, initBlockBranchStmt);
+                fgRemoveRefPred(initBlock->bbJumpDest, initBlock);
+                initBlock->bbJumpKind = BBJ_NONE;
             }
             else
             {
                 /* the loop must execute */
-                noway_assert(head->bbJumpKind == BBJ_NONE);
+                assert(!dupCond);
+                assert(totalIter > 0);
+                noway_assert(initBlock->bbJumpKind == BBJ_NONE);
+            }
+
+            // The loop will be removed, so no need to fix up the pre-header.
+            if (loop.lpFlags & LPFLG_HAS_PREHEAD)
+            {
+                assert(head->bbFlags & BBF_LOOP_PREHEADER);
+
+                // For unrolled loops, all the unrolling preconditions require the pre-header block to fall
+                // through into TOP.
+                assert(head->bbJumpKind == BBJ_NONE);
+            }
+
+            // If we actually unrolled, tail is now reached
+            // by the last cloned bottom, and no longer
+            // reached by bottom.
+            //
+            if (totalIter > 0)
+            {
+                fgAddRefPred(tail, blockMap[bottom]);
+                fgRemoveRefPred(tail, bottom);
             }
 
 #ifdef DEBUG
@@ -4544,6 +4630,8 @@ PhaseStatus Compiler::optUnrollLoops()
 
     if (change)
     {
+        assert(anyIRchange);
+
 #ifdef DEBUG
         if (verbose)
         {
@@ -4562,12 +4650,16 @@ PhaseStatus Compiler::optUnrollLoops()
 
         // If we unrolled any nested loops, we rebuild the loop table (including recomputing the
         // return blocks list).
-
-        constexpr bool computePreds        = true;
-        constexpr bool computeDoms         = true;
-        const bool     computeReturnBlocks = anyNestedLoopsUnrolled;
-        const bool     computeLoops        = anyNestedLoopsUnrolled;
-        fgUpdateChangedFlowGraph(computePreds, computeDoms, computeReturnBlocks, computeLoops);
+        //
+        if (anyNestedLoopsUnrolled)
+        {
+            fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS | FlowGraphUpdates::COMPUTE_RETURNS |
+                                     FlowGraphUpdates::COMPUTE_LOOPS);
+        }
+        else
+        {
+            fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
+        }
 
         DBEXEC(verbose, fgDispBasicBlocks());
     }
@@ -4588,363 +4680,11 @@ PhaseStatus Compiler::optUnrollLoops()
     fgDebugCheckBBlist(true);
 #endif // DEBUG
 
-    return PhaseStatus::MODIFIED_EVERYTHING;
+    return anyIRchange ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
-
-//-----------------------------------------------------------------------------
-// optIfConvert
-//
-// Find blocks representing simple if statements represented by conditional jumps
-// over another block. Try to replace the jumps by use of SELECT nodes.
-//
-// Arguments:
-//   block -- block that may represent the conditional jump in an if statement.
-//
-// Returns:
-//   true if any IR changes possibly made.
-//
-// Notes:
-//
-// Example of simple if conversion:
-//
-// This is optimising a simple if statement. There is a single condition being
-// tested, and a single assignment inside the body. There must be no else
-// statement. For example:
-// if (x < 7) { a = 5; }
-//
-// This is represented in IR by two basic blocks. The first block (block) ends with
-// a JTRUE statement which conditionally jumps to the second block (asgBlock).
-// The second block just contains a single assign statement. Both blocks then jump
-// to the same destination (finalBlock).  Note that the first block may contain
-// additional statements prior to the JTRUE statement.
-//
-// For example:
-//
-// ------------ BB03 [009..00D) -> BB05 (cond), preds={BB02} succs={BB04,BB05}
-// STMT00004
-//   *  JTRUE     void   $VN.Void
-//   \--*  GE        int    $102
-//      +--*  LCL_VAR   int    V02
-//      \--*  CNS_INT   int    7 $46
-//
-// ------------ BB04 [00D..010), preds={BB03} succs={BB05}
-// STMT00005
-//   *  ASG       int    $VN.Void
-// +--*  LCL_VAR   int    V00 arg0
-// \--*  CNS_INT   int    5 $47
-//
-//
-// This is optimised by conditionally executing the store and removing the conditional
-// jumps. First the JTRUE is replaced with a NOP. The assignment is updated so that
-// the source of the store is a SELECT node with the condition set to the inverse of
-// the original JTRUE condition. If the condition passes the original assign happens,
-// otherwise the existing source value is used.
-//
-// In the example above, local var 0 is set to 5 if the LT returns true, otherwise
-// the existing value of local var 0 is used:
-//
-// ------------ BB03 [009..00D) -> BB05 (always), preds={BB02} succs={BB05}
-// STMT00004
-//   *  NOP       void
-//
-// STMT00005
-//   *  ASG       int    $VN.Void
-//   +--*  LCL_VAR   int    V00 arg0
-//   \--*  SELECT    int
-//      +--*  LT        int    $102
-//      |  +--*  LCL_VAR   int    V02
-//      |  \--*  CNS_INT   int    7 $46
-//      +--*  CNS_INT   int    5 $47
-//      \--*  LCL_VAR   int    V00
-//
-// ------------ BB04 [00D..010), preds={} succs={BB05}
-//
-bool Compiler::optIfConvert(BasicBlock* block)
-{
-#ifndef TARGET_ARM64
-    return false;
-#else
-
-    // Don't optimise the block if it is inside a loop
-    // When inside a loop, branches are quicker than selects.
-    // Detect via the block weight as that will be high when inside a loop.
-    if ((block->getBBWeight(this) > BB_UNITY_WEIGHT) && !compStressCompile(STRESS_IF_CONVERSION_INNER_LOOPS, 25))
-    {
-        return false;
-    }
-
-    // Does the block end by branching via a JTRUE after a compare?
-    if (block->bbJumpKind != BBJ_COND || block->NumSucc() != 2)
-    {
-        return false;
-    }
-
-    // Verify the test block ends with a condition that we can manipulate.
-    GenTree* last = block->lastStmt()->GetRootNode();
-    noway_assert(last->OperIs(GT_JTRUE));
-    GenTree* cond = last->gtGetOp1();
-    if (!cond->OperIsCompare())
-    {
-        return false;
-    }
-
-    // Block where the flows merge.
-    BasicBlock* finalBlock = block->bbNext;
-    // The node, statement and block of the assignment.
-    GenTree*    asgNode  = nullptr;
-    Statement*  asgStmt  = nullptr;
-    BasicBlock* asgBlock = nullptr;
-
-    // Check the block is followed by a block or chain of blocks that only contain NOPs and
-    // a single ASG statement. The destination of the final block must point to the same as the
-    // true path of the JTRUE block.
-    bool foundMiddle = false;
-    while (!foundMiddle)
-    {
-        BasicBlock* middleBlock = finalBlock;
-        noway_assert(middleBlock != nullptr);
-
-        // middleBlock should have a single successor.
-        finalBlock = middleBlock->GetUniqueSucc();
-        if (finalBlock == nullptr)
-        {
-            return false;
-        }
-
-        if (finalBlock == block->bbJumpDest)
-        {
-            // This is our final middle block.
-            foundMiddle = true;
-        }
-
-        // Check that we have linear flow and are still in the same EH region
-
-        if (middleBlock->GetUniquePred(this) == nullptr)
-        {
-            return false;
-        }
-
-        if (!BasicBlock::sameEHRegion(middleBlock, block))
-        {
-            return false;
-        }
-
-        // Can all the nodes within the middle block be made to conditionally execute?
-        for (Statement* const stmt : middleBlock->Statements())
-        {
-            GenTree* tree = stmt->GetRootNode();
-            switch (tree->gtOper)
-            {
-                case GT_ASG:
-                {
-                    GenTree* op1 = tree->gtGetOp1();
-                    GenTree* op2 = tree->gtGetOp2();
-
-                    // Only one per assignment per block can be conditionally executed.
-                    if (asgNode != nullptr || op2->OperIs(GT_SELECT))
-                    {
-                        return false;
-                    }
-
-                    // Ensure the destination of the assign is a local variable with integer type.
-                    if (!op1->OperIs(GT_LCL_VAR) || !varTypeIsIntegralOrI(op1))
-                    {
-                        return false;
-                    }
-
-                    // Ensure the nodes of the assign won't cause any additional side effects.
-                    if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0 ||
-                        (op2->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
-                    {
-                        return false;
-                    }
-
-                    // Ensure the source isn't a phi.
-                    if (op2->OperIs(GT_PHI))
-                    {
-                        return false;
-                    }
-
-                    asgNode  = tree;
-                    asgStmt  = stmt;
-                    asgBlock = middleBlock;
-                    break;
-                }
-
-                // These do not need conditional execution.
-                case GT_NOP:
-                    if (tree->gtGetOp1() != nullptr || (tree->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
-                    {
-                        return false;
-                    }
-                    break;
-
-                // Cannot optimise this block.
-                default:
-                    return false;
-            }
-        }
-    }
-    if (asgNode == nullptr)
-    {
-        // The blocks checked didn't contain any ASG nodes.
-        return false;
-    }
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        JITDUMP("\nConditionally executing " FMT_BB " inside " FMT_BB "\n", asgBlock->bbNum, block->bbNum);
-        fgDumpBlock(block);
-        for (BasicBlock* dumpBlock = block->bbNext; dumpBlock != finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
-        {
-            fgDumpBlock(dumpBlock);
-        }
-        JITDUMP("\n");
-    }
-#endif
-
-    // Using SELECT nodes means that full assignment is always evaluated.
-    // Put a limit on the original source and destination of the assignment.
-    if (!compStressCompile(STRESS_IF_CONVERSION_COST, 25))
-    {
-        int cost = asgNode->gtGetOp2()->GetCostEx() + (gtIsLikelyRegVar(asgNode->gtGetOp1()) ? 0 : 2);
-
-        // Cost to allow for "x = cond ? a + b : x".
-        if (cost > 7)
-        {
-            JITDUMP("Skipping if-conversion that will evaluate RHS unconditionally at cost %d", cost);
-            return false;
-        }
-    }
-
-    // Duplicate the destination of the assign.
-    // This will be used as the false result of the select node.
-    assert(asgNode->AsOp()->gtOp1->IsLocal());
-    GenTreeLclVarCommon* destination = asgNode->AsOp()->gtOp1->AsLclVarCommon();
-    GenTree*             falseInput  = gtCloneExpr(destination);
-    falseInput->gtFlags &= GTF_EMPTY;
-
-    // Create a new SSA entry for the false result.
-    if (destination->HasSsaName())
-    {
-        unsigned      lclNum            = destination->GetLclNum();
-        unsigned      destinationSsaNum = destination->GetSsaNum();
-        LclSsaVarDsc* destinationSsaDef = lvaGetDesc(lclNum)->GetPerSsaData(destinationSsaNum);
-
-        // Create a new SSA num.
-        unsigned newSsaNum = lvaGetDesc(lclNum)->lvPerSsaData.AllocSsaNum(getAllocator(CMK_SSA));
-        assert(newSsaNum != SsaConfig::RESERVED_SSA_NUM);
-        LclSsaVarDsc* newSsaDef = lvaGetDesc(lclNum)->GetPerSsaData(newSsaNum);
-
-        // Copy across the SSA data.
-        newSsaDef->SetBlock(destinationSsaDef->GetBlock());
-        newSsaDef->SetAssignment(destinationSsaDef->GetAssignment());
-        newSsaDef->m_vnPair = destinationSsaDef->m_vnPair;
-        falseInput->AsLclVarCommon()->SetSsaNum(newSsaNum);
-
-        if (newSsaDef->m_vnPair.BothDefined())
-        {
-            fgValueNumberSsaVarDef(falseInput->AsLclVarCommon());
-        }
-    }
-
-    // Invert the condition.
-    cond->gtOper = GenTree::ReverseRelop(cond->gtOper);
-
-    // Create a select node.
-    GenTreeConditional* select =
-        gtNewConditionalNode(GT_SELECT, cond, asgNode->gtGetOp2(), falseInput, asgNode->TypeGet());
-
-    // Use the select as the source of the assignment.
-    asgNode->AsOp()->gtOp2 = select;
-    asgNode->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
-    gtSetEvalOrder(asgNode);
-    fgSetStmtSeq(asgStmt);
-
-    // Remove the JTRUE statement.
-    last->ReplaceWith(gtNewNothingNode(), this);
-    gtSetEvalOrder(last);
-    fgSetStmtSeq(block->lastStmt());
-
-    // Before moving anything, fix up any SSAs in the asgBlock
-    for (Statement* const stmt : asgBlock->Statements())
-    {
-        for (GenTree* const node : stmt->TreeList())
-        {
-            if (node->IsLocal())
-            {
-                GenTreeLclVarCommon* lclVar = node->AsLclVarCommon();
-                unsigned             lclNum = lclVar->GetLclNum();
-                unsigned             ssaNum = lclVar->GetSsaNum();
-                if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
-                {
-                    LclSsaVarDsc* ssaDef = lvaGetDesc(lclNum)->GetPerSsaData(ssaNum);
-                    if (ssaDef->GetBlock() == asgBlock)
-                    {
-                        JITDUMP("SSA def %d for V%02u moved from " FMT_BB " to " FMT_BB ".\n", ssaNum, lclNum,
-                                ssaDef->GetBlock()->bbNum, block->bbNum);
-                        ssaDef->SetBlock(block);
-                    }
-                }
-            }
-        }
-    }
-
-    // Move the Asg to the end of the original block
-    Statement* stmtList1 = block->firstStmt();
-    Statement* stmtList2 = asgBlock->firstStmt();
-    Statement* stmtLast1 = block->lastStmt();
-    Statement* stmtLast2 = asgBlock->lastStmt();
-    stmtLast1->SetNextStmt(stmtList2);
-    stmtList2->SetPrevStmt(stmtLast1);
-    stmtList1->SetPrevStmt(stmtLast2);
-    asgBlock->bbStmtList = nullptr;
-
-    // Update the flow from the original block.
-    fgRemoveAllRefPreds(block->bbNext, block);
-    block->bbJumpKind = BBJ_ALWAYS;
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        JITDUMP("\nAfter if conversion\n");
-        fgDumpBlock(block);
-        for (BasicBlock* dumpBlock = block->bbNext; dumpBlock != finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
-        {
-            fgDumpBlock(dumpBlock);
-        }
-        JITDUMP("\n");
-    }
-#endif
-
-    return true;
-#endif
-}
-
-//-----------------------------------------------------------------------------
-// optIfConversion: If conversion
-//
-// Returns:
-//   suitable phase status
-//
-PhaseStatus Compiler::optIfConversion()
-{
-    bool madeChanges = false;
-
-    // Reverse iterate through the blocks.
-    BasicBlock* block = fgLastBB;
-    while (block != nullptr)
-    {
-        madeChanges |= optIfConvert(block);
-        block = block->bbPrev;
-    }
-
-    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
-}
 
 /*****************************************************************************
  *
@@ -4958,8 +4698,6 @@ bool Compiler::optReachWithoutCall(BasicBlock* topBB, BasicBlock* botBB)
     // as some helper calls are neither interruptible nor hijackable.
     // When we can determine this, then we can set BBF_GC_SAFE_POINT for
     // those helpers too.
-
-    noway_assert(topBB->bbNum <= botBB->bbNum);
 
     // We can always check topBB and botBB for any gc safe points and early out
 
@@ -4975,6 +4713,8 @@ bool Compiler::optReachWithoutCall(BasicBlock* topBB, BasicBlock* botBB)
         // return a conservative answer of true when we don't have the dominator sets
         return true;
     }
+
+    noway_assert(topBB->bbNum <= botBB->bbNum);
 
     BasicBlock* curBB = topBB;
     for (;;)
@@ -5435,7 +5175,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         // Redirect the predecessor to the new block.
         JITDUMP("Redirecting non-loop " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", predBlock->bbNum,
                 bTest->bbNum, predBlock->bbNum, bNewCond->bbNum);
-        optRedirectBlock(predBlock, &blockMap, /*updatePreds*/ true);
+        optRedirectBlock(predBlock, &blockMap, RedirectBlockOption::UpdatePredLists);
     }
 
     // If we have profile data for all blocks and we know that we are cloning the
@@ -5468,8 +5208,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         weight_t const testToNextWeight  = weightNext * testToNextLikelihood;
         weight_t const testToAfterWeight = weightNext * testToAfterLikelihood;
 
-        flowList* const edgeTestToNext  = fgGetPredForBlock(bTest->bbJumpDest, bTest);
-        flowList* const edgeTestToAfter = fgGetPredForBlock(bTest->bbNext, bTest);
+        FlowEdge* const edgeTestToNext  = fgGetPredForBlock(bTest->bbJumpDest, bTest);
+        FlowEdge* const edgeTestToAfter = fgGetPredForBlock(bTest->bbNext, bTest);
 
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (iterate loop)\n", bTest->bbNum,
                 bTest->bbJumpDest->bbNum, testToNextWeight);
@@ -5489,8 +5229,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         weight_t const blockToNextWeight  = weightBlock * blockToNextLikelihood;
         weight_t const blockToAfterWeight = weightBlock * blockToAfterLikelihood;
 
-        flowList* const edgeBlockToNext  = fgGetPredForBlock(bNewCond->bbNext, bNewCond);
-        flowList* const edgeBlockToAfter = fgGetPredForBlock(bNewCond->bbJumpDest, bNewCond);
+        FlowEdge* const edgeBlockToNext  = fgGetPredForBlock(bNewCond->bbNext, bNewCond);
+        FlowEdge* const edgeBlockToAfter = fgGetPredForBlock(bNewCond->bbJumpDest, bNewCond);
 
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (enter loop)\n", bNewCond->bbNum,
                 bNewCond->bbNext->bbNum, blockToNextWeight);
@@ -5501,10 +5241,20 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, bNewCond->bbJumpDest);
 
 #ifdef DEBUG
-        // Verify profile for the two target blocks is consistent.
+        // If we're checkig profile data, see if profile for the two target blocks is consistent.
         //
-        fgDebugCheckIncomingProfileData(bNewCond->bbNext);
-        fgDebugCheckIncomingProfileData(bNewCond->bbJumpDest);
+        if ((activePhaseChecks & PhaseChecks::CHECK_PROFILE) == PhaseChecks::CHECK_PROFILE)
+        {
+            const ProfileChecks checks        = (ProfileChecks)JitConfig.JitProfileChecks();
+            const bool          nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->bbNext, checks);
+            const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->bbJumpDest, checks);
+
+            if (hasFlag(checks, ProfileChecks::RAISE_ASSERT))
+            {
+                assert(nextProfileOk);
+                assert(jumpProfileOk);
+            }
+        }
 #endif // DEBUG
     }
 
@@ -5542,26 +5292,29 @@ PhaseStatus Compiler::optInvertLoops()
     }
 #endif // OPT_CONFIG
 
+    bool madeChanges = fgRenumberBlocks();
+
     if (compCodeOpt() == SMALL_CODE)
     {
-        return PhaseStatus::MODIFIED_NOTHING;
+        // do not invert any loops
     }
-
-    bool madeChanges = false; // Assume no changes made
-    for (BasicBlock* const block : Blocks())
+    else
     {
-        // Make sure the appropriate fields are initialized
-        //
-        if (block->bbWeight == BB_ZERO_WEIGHT)
+        for (BasicBlock* const block : Blocks())
         {
-            // Zero weighted block can't have a LOOP_HEAD flag
-            noway_assert(block->isLoopHead() == false);
-            continue;
-        }
+            // Make sure the appropriate fields are initialized
+            //
+            if (block->bbWeight == BB_ZERO_WEIGHT)
+            {
+                // Zero weighted block can't have a LOOP_HEAD flag
+                noway_assert(block->isLoopHead() == false);
+                continue;
+            }
 
-        if (optInvertWhileLoop(block))
-        {
-            madeChanges = true;
+            if (optInvertWhileLoop(block))
+            {
+                madeChanges = true;
+            }
         }
     }
 
@@ -5657,7 +5410,6 @@ void Compiler::optMarkLoopHeads()
         printf("*************** In optMarkLoopHeads()\n");
     }
 
-    assert(!fgCheapPredsValid);
     assert(fgReachabilitySetsValid);
     fgDebugCheckBBNumIncreasing();
 
@@ -5717,8 +5469,9 @@ void Compiler::optResetLoopInfo()
     // TODO: the loop table is always allocated as the same (maximum) size, so this is wasteful.
     // We could zero it out (possibly only in DEBUG) to be paranoid, but there's no reason to
     // force it to be re-allocated.
-    optLoopTable      = nullptr;
-    optLoopTableValid = false;
+    optLoopTable              = nullptr;
+    optLoopTableValid         = false;
+    optLoopsRequirePreHeaders = false;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -6373,27 +6126,37 @@ bool Compiler::optIsVarAssignedWithDesc(Statement* stmt, isVarAssgDsc* dsc)
                 return WALK_CONTINUE;
             }
 
-            // Check for calls and determine what's written.
+            // Determine what's written and check for calls.
             //
-            GenTree* dest = nullptr;
             if (tree->OperIs(GT_CALL))
             {
                 m_dsc->ivaMaskCall = optCallInterf(tree->AsCall());
-
-                dest = m_compiler->gtCallGetDefinedRetBufLclAddr(tree->AsCall());
-                if (dest == nullptr)
-                {
-                    return WALK_CONTINUE;
-                }
-
-                dest = dest->AsOp()->gtOp1;
             }
             else
             {
-                dest = tree->AsOp()->gtOp1;
-            }
+                assert(tree->OperIs(GT_ASG));
 
-            genTreeOps const destOper = dest->OperGet();
+                genTreeOps destOper = tree->gtGetOp1()->OperGet();
+                if (destOper == GT_LCL_FLD)
+                {
+                    // We can't track every field of every var. Moreover, indirections
+                    // may access different parts of the var as different (but
+                    // overlapping) fields. So just treat them as indirect accesses
+                    //
+                    // unsigned    lclNum = dest->AsLclFld()->GetLclNum();
+                    // noway_assert(lvaTable[lclNum].lvAddrTaken);
+                    //
+                    varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
+                    m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
+                }
+                else if (destOper == GT_IND)
+                {
+                    // Set the proper indirection bits
+                    //
+                    varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
+                    m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
+                }
+            }
 
             // Determine if the tree modifies a particular local
             //
@@ -6419,26 +6182,6 @@ bool Compiler::optIsVarAssignedWithDesc(Statement* stmt, isVarAssgDsc* dsc)
                 {
                     return WALK_ABORT;
                 }
-            }
-
-            if (destOper == GT_LCL_FLD)
-            {
-                // We can't track every field of every var. Moreover, indirections
-                // may access different parts of the var as different (but
-                // overlapping) fields. So just treat them as indirect accesses
-                //
-                // unsigned    lclNum = dest->AsLclFld()->GetLclNum();
-                // noway_assert(lvaTable[lclNum].lvAddrTaken);
-                //
-                varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
-                m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
-            }
-            else if (destOper == GT_IND)
-            {
-                // Set the proper indirection bits
-                //
-                varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
-                m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
             }
 
             return WALK_CONTINUE;
@@ -6816,7 +6559,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     }
 #endif
 
-    if (fgStmtListThreaded)
+    if (fgNodeThreading == NodeThreading::AllTrees)
     {
         gtSetStmtInfo(hoistStmt);
         fgSetStmtSeq(hoistStmt);
@@ -6881,7 +6624,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
 }
 
 //------------------------------------------------------------------------
-// optHoistLoopNest: run loop hoisting for indicated loop and all contained loops
+// optHoistLoopCode: run loop hoisting phase
 //
 // Returns:
 //    suitable phase status
@@ -6941,6 +6684,8 @@ PhaseStatus Compiler::optHoistLoopCode()
     }
 #endif
 
+    optComputeInterestingVarSets();
+
     // Consider all the loop nests, in inner-to-outer order
     //
     bool             modified = false;
@@ -6965,11 +6710,10 @@ PhaseStatus Compiler::optHoistLoopCode()
     if (m_nodeTestData == nullptr)
     {
         NodeToTestDataMap* testData = GetNodeTestData();
-        for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
+        for (GenTree* const node : NodeToTestDataMap::KeyIteration(testData))
         {
             TestLabelAndNum tlAndN;
-            GenTree*        node = ki.Get();
-            bool            b    = testData->Lookup(node, &tlAndN);
+            bool            b = testData->Lookup(node, &tlAndN);
             assert(b);
             if (tlAndN.m_tl != TL_LoopHoist)
             {
@@ -7013,9 +6757,6 @@ bool Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
     m_loopsConsidered++;
 #endif // LOOP_HOIST_STATS
 
-    BasicBlockList*  firstPreHeader     = nullptr;
-    BasicBlockList** preHeaderAppendPtr = &firstPreHeader;
-
     bool modified = false;
 
     if (optLoopTable[lnum].lpChild != BasicBlock::NOT_IN_LOOP)
@@ -7024,30 +6765,10 @@ bool Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
              child          = optLoopTable[child].lpSibling)
         {
             modified |= optHoistLoopNest(child, hoistCtxt);
-
-            if (optLoopTable[child].lpFlags & LPFLG_HAS_PREHEAD)
-            {
-                // If a pre-header is found, add it to the tracking list. Most likely, the recursive call
-                // to hoist from the `child` loop nest found something to hoist and created a pre-header
-                // where the hoisted code was placed.
-
-                BasicBlock* preHeaderBlock = optLoopTable[child].lpHead;
-                JITDUMP(" PREHEADER: " FMT_BB "\n", preHeaderBlock->bbNum);
-
-                // Here, we are arranging the blocks in reverse lexical order, so when they are removed from the
-                // head of this list and pushed on the stack of hoisting blocks to process, they are in
-                // forward lexical order when popped. Note that for child loops `i` and `j`, in order `i`
-                // followed by `j` in the `lpSibling` list, that `j` is actually first in lexical order
-                // and that makes these blocks arranged in reverse lexical order in this list.
-                // That is, the sibling list is in reverse lexical order.
-                // Note: the sibling list order should not matter to any algorithm; this order is not guaranteed.
-                *preHeaderAppendPtr = new (this, CMK_LoopHoist) BasicBlockList(preHeaderBlock, nullptr);
-                preHeaderAppendPtr  = &((*preHeaderAppendPtr)->next);
-            }
         }
     }
 
-    modified |= optHoistThisLoop(lnum, hoistCtxt, firstPreHeader);
+    modified |= optHoistThisLoop(lnum, hoistCtxt);
 
     return modified;
 }
@@ -7058,12 +6779,11 @@ bool Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
 // Arguments:
 //    lnum - loop to process
 //    hoistCtxt - context for the hoisting
-//    existingPreHeaders - list of preheaders created for child loops
 //
 // Returns:
 //    true if any hoisting was done
 //
-bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, BasicBlockList* existingPreHeaders)
+bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
 {
     LoopDsc* pLoopDsc = &optLoopTable[lnum];
 
@@ -7090,15 +6810,13 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
 
     VARSET_TP loopVars(VarSetOps::Intersection(this, pLoopDsc->lpVarInOut, pLoopDsc->lpVarUseDef));
 
-    pLoopDsc->lpVarInOutCount       = VarSetOps::Count(this, pLoopDsc->lpVarInOut);
-    pLoopDsc->lpLoopVarCount        = VarSetOps::Count(this, loopVars);
-    pLoopDsc->lpHoistedExprCount    = 0;
-    pLoopDsc->lpHoistAddedPreheader = false;
+    pLoopDsc->lpVarInOutCount    = VarSetOps::Count(this, pLoopDsc->lpVarInOut);
+    pLoopDsc->lpLoopVarCount     = VarSetOps::Count(this, loopVars);
+    pLoopDsc->lpHoistedExprCount = 0;
 
 #ifndef TARGET_64BIT
-    unsigned longVarsCount = VarSetOps::Count(this, lvaLongVars);
 
-    if (longVarsCount > 0)
+    if (!VarSetOps::IsEmpty(this, lvaLongVars))
     {
         // Since 64-bit variables take up two registers on 32-bit targets, we increase
         //  the Counts such that each TYP_LONG variable counts twice.
@@ -7133,9 +6851,7 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
     }
 #endif
 
-    unsigned floatVarsCount = VarSetOps::Count(this, lvaFloatVars);
-
-    if (floatVarsCount > 0)
+    if (!VarSetOps::IsEmpty(this, lvaFloatVars))
     {
         VARSET_TP loopFPVars(VarSetOps::Intersection(this, loopVars, lvaFloatVars));
         VARSET_TP inOutFPVars(VarSetOps::Intersection(this, pLoopDsc->lpVarInOut, lvaFloatVars));
@@ -7160,7 +6876,7 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
         }
 #endif
     }
-    else // (floatVarsCount == 0)
+    else // lvaFloatVars is empty
     {
         pLoopDsc->lpLoopVarFPCount     = 0;
         pLoopDsc->lpVarInOutFPCount    = 0;
@@ -7172,63 +6888,106 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
     // Until we have post-dominators, we'll special-case for single-exit blocks.
     //
     // Todo: it is not clear if this is a correctness requirement or a profitability heuristic.
-    // It seems like the latter. Ideally have enough safeguards to prevent hoisting exception
-    // or side-effect dependent things.
+    // It seems like the latter. Ideally there are enough safeguards to prevent hoisting exception
+    // or side-effect dependent things. Note that HoistVisitor uses `m_beforeSideEffect` to determine if it's
+    // ok to hoist a side-effect. It allows this only for the first block (the entry block), before any
+    // side-effect has been seen. After the first block, it assumes that there has been a side effect and
+    // no further side-effect can be hoisted. It is true that we don't analyze any program behavior in the
+    // flow graph between the entry block and the subsequent blocks, whether they be the next block dominating
+    // the exit block, or the pre-headers of nested loops.
     //
     // We really should consider hoisting from conditionally executed blocks, if they are frequently executed
     // and it is safe to evaluate the tree early.
     //
     ArrayStack<BasicBlock*> defExec(getAllocatorLoopHoist());
-    BasicBlockList*         preHeadersList = existingPreHeaders;
+
+    // Add the pre-headers of any child loops to the list of blocks to consider for hoisting.
+    // Note that these are not necessarily definitely executed. However, it is a heuristic that they will
+    // often provide good opportunities for further hoisting since we hoist from inside-out,
+    // and the inner loop may have already hoisted something loop-invariant to them. If the child
+    // loop pre-header block would be added anyway (by dominating the loop exit block), we don't
+    // add it here, and let it be added naturally, below.
+    //
+    // Note that all pre-headers get added first, which means they get considered for hoisting last. It is
+    // assumed that the order does not matter for correctness (since there is no execution order known).
+    // Note that the order does matter for the hoisting profitability heuristics, as we might
+    // run out of hoisting budget when processing the blocks.
+    //
+    // For example, consider this loop nest:
+    //
+    // for (....) { // loop L00
+    //    pre-header 1
+    //    for (...) { // loop L01
+    //    }
+    //    // pre-header 2
+    //    for (...) { // loop L02
+    //       // pre-header 3
+    //       for (...) { // loop L03
+    //       }
+    //    }
+    // }
+    //
+    // When processing the outer loop L00 (with an assumed single exit), we will push on the defExec stack
+    // pre-header 2, pre-header 1, the loop exit block, any IDom tree blocks leading to the entry block,
+    // and finally the entry block. (Note that the child loop iteration order of a loop is from "farthest"
+    // from the loop "head" to "nearest".) Blocks are considered for hoisting in the opposite order.
+    //
+    // Note that pre-header 3 is not pushed, since it is not a direct child. It would have been processed
+    // when loop L02 was considered for hoisting.
+    //
+    // The order of pushing pre-header 1 and pre-header 2 is based on the order in the loop table (which is
+    // convenient). But note that it is arbitrary because there is not guaranteed execution order amongst
+    // the child loops.
+
+    for (BasicBlock::loopNumber childLoop = pLoopDsc->lpChild; //
+         childLoop != BasicBlock::NOT_IN_LOOP;                 //
+         childLoop = optLoopTable[childLoop].lpSibling)
+    {
+        if (optLoopTable[childLoop].lpIsRemoved())
+        {
+            continue;
+        }
+        INDEBUG(optLoopTable[childLoop].lpValidatePreHeader());
+        BasicBlock* childPreHead = optLoopTable[childLoop].lpHead;
+        if (pLoopDsc->lpExitCnt == 1)
+        {
+            if (fgDominate(childPreHead, pLoopDsc->lpExit))
+            {
+                // If the child loop pre-header dominates the exit, it will get added in the dominator tree
+                // loop below.
+                continue;
+            }
+        }
+        else
+        {
+            // If the child loop pre-header is the loop entry for a multi-exit loop, it will get added below.
+            if (childPreHead == pLoopDsc->lpEntry)
+            {
+                continue;
+            }
+        }
+        JITDUMP("  --  " FMT_BB " (child loop pre-header)\n", childPreHead->bbNum);
+        defExec.Push(childPreHead);
+    }
 
     if (pLoopDsc->lpExitCnt == 1)
     {
         assert(pLoopDsc->lpExit != nullptr);
         JITDUMP("  Considering hoisting in blocks that either dominate exit block " FMT_BB
-                " or preheaders of nested loops, if any:\n",
+                ", or pre-headers of nested loops, if any:\n",
                 pLoopDsc->lpExit->bbNum);
 
         // Push dominators, until we reach "entry" or exit the loop.
-        // Also push the preheaders that were added for the nested loops,
-        // if any, along the way such that in the final list, the dominating
-        // blocks are visited before the dominated blocks.
-        //
-        // TODO-CQ: In future, we should create preheaders upfront before building
-        // dominators so we don't have to do this extra work here.
 
         BasicBlock* cur = pLoopDsc->lpExit;
-        while (cur != nullptr && pLoopDsc->lpContains(cur) && cur != pLoopDsc->lpEntry)
+        while ((cur != nullptr) && (cur != pLoopDsc->lpEntry))
         {
             JITDUMP("  --  " FMT_BB " (dominate exit block)\n", cur->bbNum);
+            assert(pLoopDsc->lpContains(cur));
             defExec.Push(cur);
             cur = cur->bbIDom;
-
-            for (; preHeadersList != nullptr; preHeadersList = preHeadersList->next)
-            {
-                BasicBlock* preHeaderBlock = preHeadersList->block;
-                BasicBlock* lpEntry        = optLoopEntry(preHeaderBlock);
-                if (cur->bbNum < lpEntry->bbNum)
-                {
-                    JITDUMP("  --  " FMT_BB " (preheader of " FMT_LP ")\n", preHeaderBlock->bbNum,
-                            lpEntry->bbNatLoopNum);
-                    defExec.Push(preHeaderBlock);
-                }
-                else
-                {
-                    break;
-                }
-            }
         }
-
-        // If we didn't reach the entry block, give up and *just* push the entry block (and the pre-headers).
-        if (cur != pLoopDsc->lpEntry)
-        {
-            JITDUMP("  -- odd, we didn't reach entry from exit via dominators. Only considering hoisting in entry "
-                    "block " FMT_BB "\n",
-                    pLoopDsc->lpEntry->bbNum);
-            defExec.Reset();
-            preHeadersList = existingPreHeaders;
-        }
+        noway_assert(cur == pLoopDsc->lpEntry);
     }
     else // More than one exit
     {
@@ -7239,22 +6998,13 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
                 pLoopDsc->lpEntry->bbNum, lnum);
     }
 
-    // Push the remaining preheaders, if any.
-    for (; preHeadersList != nullptr; preHeadersList = preHeadersList->next)
-    {
-        BasicBlock* preHeaderBlock = preHeadersList->block;
-        JITDUMP("  --  " FMT_BB " (preheader of " FMT_LP ")\n", preHeaderBlock->bbNum,
-                optLoopEntry(preHeaderBlock)->bbNatLoopNum);
-        defExec.Push(preHeaderBlock);
-    }
-
     JITDUMP("  --  " FMT_BB " (entry block)\n", pLoopDsc->lpEntry->bbNum);
     defExec.Push(pLoopDsc->lpEntry);
 
     optHoistLoopBlocks(lnum, &defExec, hoistCtxt);
 
     const unsigned numHoisted = pLoopDsc->lpHoistedFPExprCount + pLoopDsc->lpHoistedExprCount;
-    return pLoopDsc->lpHoistAddedPreheader || (numHoisted > 0);
+    return numHoisted > 0;
 }
 
 bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
@@ -7268,26 +7018,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
     int loopVarCount;
     int varInOutCount;
 
-    if (varTypeIsFloating(tree))
-    {
-        hoistedExprCount = pLoopDsc->lpHoistedFPExprCount;
-        loopVarCount     = pLoopDsc->lpLoopVarFPCount;
-        varInOutCount    = pLoopDsc->lpVarInOutFPCount;
-
-        availRegCount = CNT_CALLEE_SAVED_FLOAT;
-        if (!loopContainsCall)
-        {
-            availRegCount += CNT_CALLEE_TRASH_FLOAT - 1;
-        }
-#ifdef TARGET_ARM
-        // For ARM each double takes two FP registers
-        // For now on ARM we won't track singles/doubles
-        // and instead just assume that we always have doubles.
-        //
-        availRegCount /= 2;
-#endif
-    }
-    else
+    if (varTypeUsesIntReg(tree))
     {
         hoistedExprCount = pLoopDsc->lpHoistedExprCount;
         loopVarCount     = pLoopDsc->lpLoopVarCount;
@@ -7304,6 +7035,27 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
         {
             availRegCount = (availRegCount + 1) / 2;
         }
+#endif
+    }
+    else
+    {
+        assert(varTypeUsesFloatReg(tree));
+
+        hoistedExprCount = pLoopDsc->lpHoistedFPExprCount;
+        loopVarCount     = pLoopDsc->lpLoopVarFPCount;
+        varInOutCount    = pLoopDsc->lpVarInOutFPCount;
+
+        availRegCount = CNT_CALLEE_SAVED_FLOAT;
+        if (!loopContainsCall)
+        {
+            availRegCount += CNT_CALLEE_TRASH_FLOAT - 1;
+        }
+#ifdef TARGET_ARM
+        // For ARM each double takes two FP registers
+        // For now on ARM we won't track singles/doubles
+        // and instead just assume that we always have doubles.
+        //
+        availRegCount /= 2;
 #endif
     }
 
@@ -7328,7 +7080,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
         // Don't hoist expressions that are not heavy: tree->GetCostEx() < (2*IND_COST_EX)
         if (tree->GetCostEx() < (2 * IND_COST_EX))
         {
-            JITDUMP("    tree cost too low: %d < %d (loopVarCount %u >= availableRegCount %u)\n", tree->GetCostEx(),
+            JITDUMP("    tree cost too low: %d < %d (loopVarCount %u >= availRegCount %u)\n", tree->GetCostEx(),
                     2 * IND_COST_EX, loopVarCount, availRegCount);
             return false;
         }
@@ -7347,7 +7099,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
         // Don't hoist expressions that barely meet CSE cost requirements: tree->GetCostEx() == MIN_CSE_COST
         if (tree->GetCostEx() <= MIN_CSE_COST + 1)
         {
-            JITDUMP("    tree not good CSE: %d <= %d (varInOutCount %u > availableRegCount %u)\n", tree->GetCostEx(),
+            JITDUMP("    tree not good CSE: %d <= %d (varInOutCount %u > availRegCount %u)\n", tree->GetCostEx(),
                     2 * MIN_CSE_COST + 1, varInOutCount, availRegCount)
             return false;
         }
@@ -8080,7 +7832,8 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
         weight_t    blockWeight = block->getBBWeight(this);
 
         JITDUMP("\n    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop " FMT_LP " <" FMT_BB ".." FMT_BB ">\n",
-                block->bbNum, refCntWtd2str(blockWeight), loopNum, loopDsc->lpTop->bbNum, loopDsc->lpBottom->bbNum);
+                block->bbNum, refCntWtd2str(blockWeight, /* padForDecimalPlaces */ true), loopNum,
+                loopDsc->lpTop->bbNum, loopDsc->lpBottom->bbNum);
 
         if (blockWeight < (BB_UNITY_WEIGHT / 10))
         {
@@ -8114,9 +7867,8 @@ void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnu
         return;
     }
 
-    // Create a loop pre-header in which to put the hoisted code.
-    const bool newPreheader = fgCreateLoopPreHeader(lnum);
-    optLoopTable[lnum].lpHoistAddedPreheader |= newPreheader;
+    // We should already have a pre-header for the loop.
+    INDEBUG(optLoopTable[lnum].lpValidatePreHeader());
 
     // If the block we're hoisting from and the pre-header are in different EH regions, don't hoist.
     // TODO: we could probably hoist things that won't raise exceptions, such as constants.
@@ -8254,6 +8006,8 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNSet* loopVnInv
 // If there already exists a block that meets the pre-header requirements, that block is marked
 // as a pre-header, and no flow graph modification is made.
 //
+// A loop with a pre-header has the flag LPFLG_HAS_PREHEAD, and its pre-header block has the flag BBF_LOOP_PREHEADER.
+//
 // Note that the pre-header block can be in a different EH region from blocks in the loop, including the
 // entry block. Code doing hoisting is required to check the EH legality of hoisting to the pre-header
 // before doing so.
@@ -8265,17 +8019,13 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNSet* loopVnInv
 // handle queries about the pre-header dominating other blocks, even without re-computing dominators.
 // The preds lists have been maintained.
 //
-// Currently, if you create a pre-header but don't put any code in it, any subsequent fgUpdateFlowGraph()
-// pass might choose to compact the empty pre-header with a predecessor block. That is, a pre-header
-// block might disappear if not used.
-//
 // The code does not depend on the order of the BasicBlock bbNum.
 //
 // Arguments:
 //    lnum  - loop index
 //
 // Returns:
-//    true if new preheader was created
+//    true if new pre-header was created
 //
 bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 {
@@ -8288,7 +8038,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
     LoopDsc& loop = optLoopTable[lnum];
 
-    // Have we already created a loop-preheader block?
+    // Have we already created a loop pre-header block?
 
     if (loop.lpFlags & LPFLG_HAS_PREHEAD)
     {
@@ -8296,6 +8046,9 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
         INDEBUG(loop.lpValidatePreHeader());
         return false;
     }
+
+    // Assert that we haven't created SSA. It is assumed that we create all loop pre-headers before building SSA.
+    assert(fgSsaPassesCompleted == 0);
 
     BasicBlock* head  = loop.lpHead;
     BasicBlock* top   = loop.lpTop;
@@ -8441,8 +8194,8 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
                 if (useEdgeWeights)
                 {
-                    const flowList* edgeToEntry    = fgGetPredForBlock(entry, head);
-                    const flowList* edgeToSkipLoop = fgGetPredForBlock(skipLoopBlock, head);
+                    const FlowEdge* edgeToEntry    = fgGetPredForBlock(entry, head);
+                    const FlowEdge* edgeToSkipLoop = fgGetPredForBlock(skipLoopBlock, head);
                     noway_assert(edgeToEntry != nullptr);
                     noway_assert(edgeToSkipLoop != nullptr);
 
@@ -8477,35 +8230,6 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
     // Link in the preHead block
     fgInsertBBbefore(top, preHead);
-
-    // Ideally we would re-run SSA and VN if we optimized by doing loop hoisting.
-    // However, that is too expensive at this point. Instead, we update the phi
-    // node block references, if we created pre-header block due to hoisting.
-    // This is sufficient because any definition participating in SSA that flowed
-    // into the phi via the loop header block will now flow through the preheader
-    // block from the header block.
-
-    for (Statement* const stmt : top->Statements())
-    {
-        GenTree* tree = stmt->GetRootNode();
-        if (tree->OperGet() != GT_ASG)
-        {
-            break;
-        }
-        GenTree* op2 = tree->gtGetOp2();
-        if (op2->OperGet() != GT_PHI)
-        {
-            break;
-        }
-        for (GenTreePhi::Use& use : op2->AsPhi()->Uses())
-        {
-            GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
-            if (phiArg->gtPredBB == head)
-            {
-                phiArg->gtPredBB = preHead;
-            }
-        }
-    }
 
     // In which EH region should the pre-header live?
     //
@@ -8660,12 +8384,12 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
         }
     }
 
-    flowList* const edgeToPreHeader = fgGetPredForBlock(preHead, head);
+    FlowEdge* const edgeToPreHeader = fgGetPredForBlock(preHead, head);
     noway_assert(edgeToPreHeader != nullptr);
     edgeToPreHeader->setEdgeWeights(preHead->bbWeight, preHead->bbWeight, preHead);
 
     noway_assert(fgGetPredForBlock(entry, preHead) == nullptr);
-    flowList* const edgeFromPreHeader = fgAddRefPred(entry, preHead);
+    FlowEdge* const edgeFromPreHeader = fgAddRefPred(entry, preHead);
     edgeFromPreHeader->setEdgeWeights(preHead->bbWeight, preHead->bbWeight, entry);
 
     /*
@@ -8760,7 +8484,10 @@ void Compiler::optComputeLoopSideEffects()
             optComputeLoopNestSideEffects(lnum);
         }
     }
+}
 
+void Compiler::optComputeInterestingVarSets()
+{
     VarSetOps::AssignNoCopy(this, lvaFloatVars, VarSetOps::MakeEmpty(this));
 #ifndef TARGET_64BIT
     VarSetOps::AssignNoCopy(this, lvaLongVars, VarSetOps::MakeEmpty(this));
@@ -8771,7 +8498,7 @@ void Compiler::optComputeLoopSideEffects()
         LclVarDsc* varDsc = lvaGetDesc(i);
         if (varDsc->lvTracked)
         {
-            if (varTypeIsFloating(varDsc->lvType))
+            if (varTypeUsesFloatReg(varDsc->lvType))
             {
                 VarSetOps::AddElemD(this, lvaFloatVars, varDsc->lvVarIndex);
             }
@@ -8878,11 +8605,11 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 
             if (oper == GT_ASG)
             {
-                GenTree* lhs = tree->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
+                GenTree* lhs = tree->gtGetOp1();
 
-                if (lhs->OperGet() == GT_IND)
+                if (lhs->OperIsIndir())
                 {
-                    GenTree* arg = lhs->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
+                    GenTree* arg = lhs->AsIndir()->Addr()->gtEffectiveVal(/*commaOnly*/ true);
 
                     if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
                     {
@@ -8948,28 +8675,12 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         }
                     }
                 }
-                else if (lhs->OperIsBlk())
+                else // Otherwise, must be local lhs form.
                 {
-                    GenTreeLclVarCommon* lclVarTree;
-                    bool                 isEntire;
-                    if (!tree->DefinesLocal(this, &lclVarTree, &isEntire))
-                    {
-                        // For now, assume arbitrary side effects on GcHeap/ByrefExposed...
-                        memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
-                    }
-                    else if (lvaVarAddrExposed(lclVarTree->GetLclNum()))
-                    {
-                        memoryHavoc |= memoryKindSet(ByrefExposed);
-                    }
-                }
-                // Otherwise, must be local lhs form.  I should assert that.
-                else if (lhs->OperGet() == GT_LCL_VAR)
-                {
-                    GenTreeLclVar* lhsLcl = lhs->AsLclVar();
-                    GenTree*       rhs    = tree->AsOp()->gtOp2;
-                    ValueNum       rhsVN  = rhs->gtVNPair.GetLiberal();
+                    GenTreeLclVarCommon* lhsLcl = lhs->AsLclVarCommon();
+                    ValueNum             rhsVN  = tree->AsOp()->gtOp2->gtVNPair.GetLiberal();
                     // If we gave the RHS a value number, propagate it.
-                    if (rhsVN != ValueNumStore::NoVN)
+                    if (lhsLcl->OperIs(GT_LCL_VAR) && (rhsVN != ValueNumStore::NoVN))
                     {
                         rhsVN = vnStore->VNNormalValue(rhsVN);
                         if (lhsLcl->HasSsaName())
@@ -9011,11 +8722,17 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 
 #ifdef FEATURE_HW_INTRINSICS
                     case GT_HWINTRINSIC:
-                        if (tree->AsHWIntrinsic()->OperIsMemoryStore())
+                    {
+                        GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
+                        NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
+                        if (hwintrinsic->OperIsMemoryStoreOrBarrier())
                         {
+                            // For barriers, we model the behavior after GT_MEMORYBARRIER
                             memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                         }
                         break;
+                    }
 #endif // FEATURE_HW_INTRINSICS
 
                     case GT_LOCKADD:
@@ -9071,6 +8788,12 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                 }
             }
         }
+
+        // Clear the Value Number from the statement root node, if it was set above. This is to
+        // ensure that for those blocks that are unreachable, which we still handle in this loop
+        // but not during Value Numbering, fgDebugCheckExceptionSets() will skip the trees. Ideally,
+        // we wouldn't be touching the gtVNPair at all (here) before actual Value Numbering.
+        stmt->GetRootNode()->gtVNPair.SetBoth(ValueNumStore::NoVN);
     }
 
     if (memoryHavoc != emptyMemoryKindSet)
@@ -9308,1123 +9031,6 @@ ssize_t Compiler::optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEB
     return scale;
 }
 
-//-----------------------------------------------------------------------------
-// OptTestInfo:     Member of OptBoolsDsc struct used to test if a GT_JTRUE or GT_RETURN node
-//                  is a boolean comparison
-//
-struct OptTestInfo
-{
-    Statement* testStmt; // Last statement of the basic block
-    GenTree*   testTree; // The root node of the testStmt (GT_JTRUE or GT_RETURN).
-    GenTree*   compTree; // The compare node (i.e. GT_EQ or GT_NE node) of the testTree
-    bool       isBool;   // If the compTree is boolean expression
-};
-
-//-----------------------------------------------------------------------------
-// OptBoolsDsc:     Descriptor used for Boolean Optimization
-//
-class OptBoolsDsc
-{
-public:
-    OptBoolsDsc(BasicBlock* b1, BasicBlock* b2, Compiler* comp)
-    {
-        m_b1   = b1;
-        m_b2   = b2;
-        m_b3   = nullptr;
-        m_comp = comp;
-    }
-
-private:
-    BasicBlock* m_b1; // The first basic block with the BBJ_COND conditional jump type
-    BasicBlock* m_b2; // The next basic block of m_b1. Either BBJ_COND or BBJ_RETURN type
-    BasicBlock* m_b3; // m_b1->bbJumpDest. Null if m_b2 is not a return block.
-
-    Compiler* m_comp; // The pointer to the Compiler instance
-
-    OptTestInfo m_testInfo1; // The first test info
-    OptTestInfo m_testInfo2; // The second test info
-    GenTree*    m_t3;        // The root node of the first statement of m_b3
-
-    GenTree* m_c1; // The first operand of m_testInfo1.compTree
-    GenTree* m_c2; // The first operand of m_testInfo2.compTree
-
-    bool m_sameTarget; // if m_b1 and m_b2 jumps to the same destination
-
-    genTreeOps m_foldOp;   // The fold operator (e.g., GT_AND or GT_OR)
-    var_types  m_foldType; // The type of the folded tree
-    genTreeOps m_cmpOp;    // The comparison operator (e.g., GT_EQ or GT_NE)
-
-public:
-    bool optOptimizeBoolsCondBlock();
-    bool optOptimizeBoolsReturnBlock(BasicBlock* b3);
-#ifdef DEBUG
-    void optOptimizeBoolsGcStress();
-#endif
-
-private:
-    Statement* optOptimizeBoolsChkBlkCond();
-    GenTree* optIsBoolComp(OptTestInfo* pOptTest);
-    bool optOptimizeBoolsChkTypeCostCond();
-    void optOptimizeBoolsUpdateTrees();
-};
-
-//-----------------------------------------------------------------------------
-//  optOptimizeBoolsCondBlock:  Optimize boolean when bbJumpKind of both m_b1 and m_b2 are BBJ_COND
-//
-//  Returns:
-//      true if boolean optimization is done and m_b1 and m_b2 are folded into m_b1, else false.
-//
-//  Notes:
-//      m_b1 and m_b2 are set on entry.
-//
-//      Case 1: if b1.bbJumpDest == b2.bbJumpDest, it transforms
-//          B1 : brtrue(t1, Bx)
-//          B2 : brtrue(t2, Bx)
-//          B3 :
-//      to
-//          B1 : brtrue(t1|t2, BX)
-//          B3 :
-//
-//          For example, (x == 0 && y == 0 && z == 0) generates
-//              B1: GT_JTRUE (BBJ_COND), jump to B4
-//              B2: GT_JTRUE (BBJ_COND), jump to B4
-//              B3: GT_RETURN (BBJ_RETURN)
-//              B4: GT_RETURN (BBJ_RETURN)
-//          and B1 and B2 are folded into B1:
-//              B1: GT_JTRUE (BBJ_COND), jump to B4
-//              B3: GT_RETURN (BBJ_RETURN)
-//              B4: GT_RETURN (BBJ_RETURN)
-//
-//      Case 2: if B1.bbJumpDest == B2->bbNext, it transforms
-//          B1 : brtrue(t1, B3)
-//          B2 : brtrue(t2, Bx)
-//          B3 :
-//      to
-//          B1 : brtrue((!t1) && t2, Bx)
-//          B3 :
-//
-bool OptBoolsDsc::optOptimizeBoolsCondBlock()
-{
-    assert(m_b1 != nullptr && m_b2 != nullptr && m_b3 == nullptr);
-
-    // Check if m_b1 and m_b2 jump to the same target and get back pointers to m_testInfo1 and t2 tree nodes
-
-    m_t3 = nullptr;
-
-    // Check if m_b1 and m_b2 have the same bbJumpDest
-
-    if (m_b1->bbJumpDest == m_b2->bbJumpDest)
-    {
-        // Given the following sequence of blocks :
-        //        B1: brtrue(t1, BX)
-        //        B2: brtrue(t2, BX)
-        //        B3:
-        // we will try to fold it to :
-        //        B1: brtrue(t1|t2, BX)
-        //        B3:
-
-        m_sameTarget = true;
-    }
-    else if (m_b1->bbJumpDest == m_b2->bbNext)
-    {
-        // Given the following sequence of blocks :
-        //        B1: brtrue(t1, B3)
-        //        B2: brtrue(t2, BX)
-        //        B3:
-        // we will try to fold it to :
-        //        B1: brtrue((!t1)&&t2, BX)
-        //        B3:
-
-        m_sameTarget = false;
-    }
-    else
-    {
-        return false;
-    }
-
-    Statement* const s1 = optOptimizeBoolsChkBlkCond();
-    if (s1 == nullptr)
-    {
-        return false;
-    }
-
-    // Find the branch conditions of m_b1 and m_b2
-
-    m_c1 = optIsBoolComp(&m_testInfo1);
-    if (m_c1 == nullptr)
-    {
-        return false;
-    }
-
-    m_c2 = optIsBoolComp(&m_testInfo2);
-    if (m_c2 == nullptr)
-    {
-        return false;
-    }
-
-    // Find the type and cost conditions of m_testInfo1 and m_testInfo2
-
-    if (!optOptimizeBoolsChkTypeCostCond())
-    {
-        return false;
-    }
-
-    // Get the fold operator and the comparison operator
-
-    genTreeOps foldOp;
-    genTreeOps cmpOp;
-    var_types  foldType = m_c1->TypeGet();
-    if (varTypeIsGC(foldType))
-    {
-        foldType = TYP_I_IMPL;
-    }
-
-    assert(m_testInfo1.compTree->OperIs(GT_EQ, GT_NE, GT_LT, GT_GE));
-
-    if (m_sameTarget)
-    {
-        // Both conditions must be the same
-
-        if (m_testInfo1.compTree->gtOper != m_testInfo2.compTree->gtOper)
-        {
-            return false;
-        }
-
-        if (m_testInfo1.compTree->gtOper == GT_EQ)
-        {
-            // t1:c1==0 t2:c2==0 ==> Branch to BX if either value is 0
-            // So we will branch to BX if (c1&c2)==0
-
-            foldOp = GT_AND;
-            cmpOp  = GT_EQ;
-        }
-        else if (m_testInfo1.compTree->gtOper == GT_LT)
-        {
-            // t1:c1<0 t2:c2<0 ==> Branch to BX if either value < 0
-            // So we will branch to BX if (c1|c2)<0
-
-            foldOp = GT_OR;
-            cmpOp  = GT_LT;
-        }
-        else if (m_testInfo1.compTree->gtOper == GT_GE)
-        {
-            return false;
-        }
-        else
-        {
-            // t1:c1!=0 t2:c2!=0 ==> Branch to BX if either value is non-0
-            // So we will branch to BX if (c1|c2)!=0
-
-            foldOp = GT_OR;
-            cmpOp  = GT_NE;
-        }
-    }
-    else
-    {
-        if (m_testInfo1.compTree->gtOper == m_testInfo2.compTree->gtOper)
-        {
-            return false;
-        }
-
-        if (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_NE)
-        {
-            // t1:c1==0 t2:c2!=0 ==> Branch to BX if both values are non-0
-            // So we will branch to BX if (c1&c2)!=0
-
-            foldOp = GT_AND;
-            cmpOp  = GT_NE;
-        }
-        else if (m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_GE)
-        {
-            // t1:c1<0 t2:c2>=0 ==> Branch to BX if both values >= 0
-            // So we will branch to BX if (c1|c2)>=0
-
-            foldOp = GT_OR;
-            cmpOp  = GT_GE;
-        }
-        else if (m_testInfo1.compTree->gtOper == GT_GE)
-        {
-            return false;
-        }
-        else if (m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_EQ)
-        {
-            // t1:c1!=0 t2:c2==0 ==> Branch to BX if both values are 0
-            // So we will branch to BX if (c1|c2)==0
-
-            foldOp = GT_OR;
-            cmpOp  = GT_EQ;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    // Anding requires both values to be 0 or 1
-
-    if ((foldOp == GT_AND) && (!m_testInfo1.isBool || !m_testInfo2.isBool))
-    {
-        return false;
-    }
-
-    //
-    // Now update the trees
-    //
-
-    m_foldOp   = foldOp;
-    m_foldType = foldType;
-    m_cmpOp    = cmpOp;
-
-    optOptimizeBoolsUpdateTrees();
-
-#ifdef DEBUG
-    if (m_comp->verbose)
-    {
-        printf("Folded %sboolean conditions of " FMT_BB " and " FMT_BB " to :\n", m_c2->OperIsLeaf() ? "" : "non-leaf ",
-               m_b1->bbNum, m_b2->bbNum);
-        m_comp->gtDispStmt(s1);
-        printf("\n");
-    }
-#endif
-
-    // Return true to continue the bool optimization for the rest of the BB chain
-    return true;
-}
-
-//-----------------------------------------------------------------------------
-// optOptimizeBoolsChkBlkCond: Checks block conditions if it can be boolean optimized
-//
-// Return:
-//      If all conditions pass, returns the last statement of m_b1, else return nullptr.
-//
-// Notes:
-//      This method checks if the second (and third block for cond/return/return case) contains only one statement,
-//      and checks if tree operators are of the right type, e.g, GT_JTRUE, GT_RETURN.
-//
-//      On entry, m_b1, m_b2 are set and m_b3 is set for cond/return/return case.
-//      If it passes all the conditions, m_testInfo1.testTree, m_testInfo2.testTree and m_t3 are set
-//      to the root nodes of m_b1, m_b2 and m_b3 each.
-//      SameTarget is also updated to true if m_b1 and m_b2 jump to the same destination.
-//
-Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
-{
-    assert(m_b1 != nullptr && m_b2 != nullptr);
-
-    bool optReturnBlock = false;
-    if (m_b3 != nullptr)
-    {
-        optReturnBlock = true;
-    }
-
-    // Find the block conditions of m_b1 and m_b2
-
-    if (m_b2->countOfInEdges() > 1 || (optReturnBlock && m_b3->countOfInEdges() > 1))
-    {
-        return nullptr;
-    }
-
-    // Find the condition for the first block
-
-    Statement* s1 = m_b1->lastStmt();
-
-    GenTree* testTree1 = s1->GetRootNode();
-    assert(testTree1->gtOper == GT_JTRUE);
-
-    // The second and the third block must contain a single statement
-
-    Statement* s2 = m_b2->firstStmt();
-    if (s2->GetPrevStmt() != s2)
-    {
-        return nullptr;
-    }
-
-    GenTree* testTree2 = s2->GetRootNode();
-
-    if (!optReturnBlock)
-    {
-        assert(testTree2->gtOper == GT_JTRUE);
-    }
-    else
-    {
-        if (testTree2->gtOper != GT_RETURN)
-        {
-            return nullptr;
-        }
-
-        Statement* s3 = m_b3->firstStmt();
-        if (s3->GetPrevStmt() != s3)
-        {
-            return nullptr;
-        }
-
-        GenTree* testTree3 = s3->GetRootNode();
-        if (testTree3->gtOper != GT_RETURN)
-        {
-            return nullptr;
-        }
-
-        if (!varTypeIsIntegral(testTree2->TypeGet()) || !varTypeIsIntegral(testTree3->TypeGet()))
-        {
-            return nullptr;
-        }
-
-        // The third block is Return with "CNS_INT int 0/1"
-        if (testTree3->AsOp()->gtOp1->gtOper != GT_CNS_INT)
-        {
-            return nullptr;
-        }
-
-        if (testTree3->AsOp()->gtOp1->gtType != TYP_INT)
-        {
-            return nullptr;
-        }
-
-        m_t3 = testTree3;
-    }
-
-    m_testInfo1.testStmt = s1;
-    m_testInfo1.testTree = testTree1;
-    m_testInfo2.testStmt = s2;
-    m_testInfo2.testTree = testTree2;
-
-    return s1;
-}
-
-//-----------------------------------------------------------------------------
-// optOptimizeBoolsChkTypeCostCond: Checks if type conditions meet the folding condition, and
-//                                  if cost to fold is not too expensive
-//
-// Return:
-//      True if it meets type conditions and cost conditions.	Else false.
-//
-bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
-{
-    assert(m_testInfo1.compTree->OperIs(GT_EQ, GT_NE, GT_LT, GT_GE) && m_testInfo1.compTree->AsOp()->gtOp1 == m_c1);
-    assert(m_testInfo2.compTree->OperIs(GT_EQ, GT_NE, GT_LT, GT_GE) && m_testInfo2.compTree->AsOp()->gtOp1 == m_c2);
-
-    //
-    // Leave out floats where the bit-representation is more complicated
-    // - there are two representations for 0.
-    //
-    if (varTypeIsFloating(m_c1->TypeGet()) || varTypeIsFloating(m_c2->TypeGet()))
-    {
-        return false;
-    }
-
-    // Make sure the types involved are of the same sizes
-    if (genTypeSize(m_c1->TypeGet()) != genTypeSize(m_c2->TypeGet()))
-    {
-        return false;
-    }
-    if (genTypeSize(m_testInfo1.compTree->TypeGet()) != genTypeSize(m_testInfo2.compTree->TypeGet()))
-    {
-        return false;
-    }
-#ifdef TARGET_ARMARCH
-    // Skip the small operand which we cannot encode.
-    if (varTypeIsSmall(m_c1->TypeGet()))
-        return false;
-#endif
-    // The second condition must not contain side effects
-    //
-    if (m_c2->gtFlags & GTF_GLOB_EFFECT)
-    {
-        return false;
-    }
-
-    // The second condition must not be too expensive
-    //
-    if (m_c2->GetCostEx() > 12)
-    {
-        return false;
-    }
-
-    return true;
-}
-
-//-----------------------------------------------------------------------------
-// optOptimizeBoolsUpdateTrees: Fold the trees based on fold type and comparison type,
-//                              update the edges, unlink removed blocks and update loop table
-//
-void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
-{
-    assert(m_b1 != nullptr && m_b2 != nullptr);
-
-    bool optReturnBlock = false;
-    if (m_b3 != nullptr)
-    {
-        optReturnBlock = true;
-    }
-
-    assert(m_foldOp != NULL && m_foldType != NULL && m_c1 != nullptr && m_c2 != nullptr);
-
-    GenTree* cmpOp1 = m_comp->gtNewOperNode(m_foldOp, m_foldType, m_c1, m_c2);
-    if (m_testInfo1.isBool && m_testInfo2.isBool)
-    {
-        // When we 'OR'/'AND' two booleans, the result is boolean as well
-        cmpOp1->gtFlags |= GTF_BOOLEAN;
-    }
-
-    GenTree* t1Comp = m_testInfo1.compTree;
-    t1Comp->SetOper(m_cmpOp);
-    t1Comp->AsOp()->gtOp1         = cmpOp1;
-    t1Comp->AsOp()->gtOp2->gtType = m_foldType; // Could have been varTypeIsGC()
-    if (optReturnBlock)
-    {
-        // Update tree when m_b1 is BBJ_COND and m_b2 and m_b3 are GT_RETURN (BBJ_RETURN)
-        t1Comp->AsOp()->gtOp2->AsIntCon()->gtIconVal = 0;
-        m_testInfo1.testTree->gtOper                 = GT_RETURN;
-        m_testInfo1.testTree->gtType                 = m_testInfo2.testTree->gtType;
-
-        // Update the return count of flow graph
-        assert(m_comp->fgReturnCount >= 2);
-        --m_comp->fgReturnCount;
-    }
-
-#if FEATURE_SET_FLAGS
-    // For comparisons against zero we will have the GTF_SET_FLAGS set
-    // and this can cause an assert to fire in fgMoveOpsLeft(GenTree* tree)
-    // during the CSE phase.
-    //
-    // So make sure to clear any GTF_SET_FLAGS bit on these operations
-    // as they are no longer feeding directly into a comparisons against zero
-
-    // Make sure that the GTF_SET_FLAGS bit is cleared.
-    // Fix 388436 ARM JitStress WP7
-    m_c1->gtFlags &= ~GTF_SET_FLAGS;
-    m_c2->gtFlags &= ~GTF_SET_FLAGS;
-
-    // The new top level node that we just created does feed directly into
-    // a comparison against zero, so set the GTF_SET_FLAGS bit so that
-    // we generate an instruction that sets the flags, which allows us
-    // to omit the cmp with zero instruction.
-
-    // Request that the codegen for cmpOp1 sets the condition flags
-    // when it generates the code for cmpOp1.
-    //
-    cmpOp1->gtRequestSetFlags();
-#endif
-
-    // Recost/rethread the tree if necessary
-    //
-    if (m_comp->fgStmtListThreaded)
-    {
-        m_comp->gtSetStmtInfo(m_testInfo1.testStmt);
-        m_comp->fgSetStmtSeq(m_testInfo1.testStmt);
-    }
-
-    if (!optReturnBlock)
-    {
-        // Update edges if m_b1: BBJ_COND and m_b2: BBJ_COND
-
-        flowList* edge1 = m_comp->fgGetPredForBlock(m_b1->bbJumpDest, m_b1);
-        flowList* edge2;
-
-        if (m_sameTarget)
-        {
-            edge2 = m_comp->fgGetPredForBlock(m_b2->bbJumpDest, m_b2);
-        }
-        else
-        {
-            edge2 = m_comp->fgGetPredForBlock(m_b2->bbNext, m_b2);
-
-            m_comp->fgRemoveRefPred(m_b1->bbJumpDest, m_b1);
-
-            m_b1->bbJumpDest = m_b2->bbJumpDest;
-
-            m_comp->fgAddRefPred(m_b2->bbJumpDest, m_b1);
-        }
-
-        assert(edge1 != nullptr);
-        assert(edge2 != nullptr);
-
-        weight_t edgeSumMin = edge1->edgeWeightMin() + edge2->edgeWeightMin();
-        weight_t edgeSumMax = edge1->edgeWeightMax() + edge2->edgeWeightMax();
-        if ((edgeSumMax >= edge1->edgeWeightMax()) && (edgeSumMax >= edge2->edgeWeightMax()))
-        {
-            edge1->setEdgeWeights(edgeSumMin, edgeSumMax, m_b1->bbJumpDest);
-        }
-        else
-        {
-            edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, m_b1->bbJumpDest);
-        }
-    }
-
-    /* Modify the target of the conditional jump and update bbRefs and bbPreds */
-
-    if (optReturnBlock)
-    {
-        m_b1->bbJumpDest = nullptr;
-        m_b1->bbJumpKind = BBJ_RETURN;
-#ifdef DEBUG
-        m_b1->bbJumpSwt = m_b2->bbJumpSwt;
-#endif
-        assert(m_b2->bbJumpKind == BBJ_RETURN);
-        assert(m_b1->bbNext == m_b2);
-        assert(m_b3 != nullptr);
-    }
-    else
-    {
-        assert(m_b1->bbJumpKind == BBJ_COND);
-        assert(m_b2->bbJumpKind == BBJ_COND);
-        assert(m_b1->bbJumpDest == m_b2->bbJumpDest);
-        assert(m_b1->bbNext == m_b2);
-        assert(m_b2->bbNext != nullptr);
-    }
-
-    if (!optReturnBlock)
-    {
-        // Update bbRefs and bbPreds
-        //
-        // Replace pred 'm_b2' for 'm_b2->bbNext' with 'm_b1'
-        // Remove  pred 'm_b2' for 'm_b2->bbJumpDest'
-        m_comp->fgReplacePred(m_b2->bbNext, m_b2, m_b1);
-        m_comp->fgRemoveRefPred(m_b2->bbJumpDest, m_b2);
-    }
-
-    // Get rid of the second block
-
-    m_comp->fgUnlinkBlock(m_b2);
-    m_b2->bbFlags |= BBF_REMOVED;
-    // If m_b2 was the last block of a try or handler, update the EH table.
-    m_comp->ehUpdateForDeletedBlock(m_b2);
-
-    if (optReturnBlock)
-    {
-        // Get rid of the third block
-        m_comp->fgUnlinkBlock(m_b3);
-        m_b3->bbFlags |= BBF_REMOVED;
-        // If m_b3 was the last block of a try or handler, update the EH table.
-        m_comp->ehUpdateForDeletedBlock(m_b3);
-    }
-
-    // Update loop table
-    m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b2);
-    if (optReturnBlock)
-    {
-        m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b3);
-    }
-
-    // Update IL range of first block
-    m_b1->bbCodeOffsEnd = optReturnBlock ? m_b3->bbCodeOffsEnd : m_b2->bbCodeOffsEnd;
-}
-
-//-----------------------------------------------------------------------------
-//  optOptimizeBoolsReturnBlock: Optimize boolean when m_b1 is BBJ_COND and m_b2 and m_b3 are BBJ_RETURN
-//
-// Arguments:
-//      b3:    Pointer to basic block b3
-//
-//  Returns:
-//      true if boolean optimization is done and m_b1, m_b2 and m_b3 are folded into m_b1, else false.
-//
-//  Notes:
-//      m_b1, m_b2 and m_b3 of OptBoolsDsc are set on entry.
-//
-//      if B1.bbJumpDest == b3, it transforms
-//          B1 : brtrue(t1, B3)
-//          B2 : ret(t2)
-//          B3 : ret(0)
-//      to
-//          B1 : ret((!t1) && t2)
-//
-//          For example, (x==0 && y==0) generates:
-//              B1: GT_JTRUE (BBJ_COND), jumps to B3
-//              B2: GT_RETURN (BBJ_RETURN)
-//              B3: GT_RETURN (BBJ_RETURN),
-//          and it is folded into
-//              B1: GT_RETURN (BBJ_RETURN)
-//
-bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
-{
-    assert(m_b1 != nullptr && m_b2 != nullptr);
-
-    // m_b3 is set for cond/return/return case
-    m_b3 = b3;
-
-    m_sameTarget        = false;
-    Statement* const s1 = optOptimizeBoolsChkBlkCond();
-    if (s1 == nullptr)
-    {
-        return false;
-    }
-
-    // Find the branch conditions of m_b1 and m_b2
-
-    m_c1 = optIsBoolComp(&m_testInfo1);
-    if (m_c1 == nullptr)
-    {
-        return false;
-    }
-
-    m_c2 = optIsBoolComp(&m_testInfo2);
-    if (m_c2 == nullptr)
-    {
-        return false;
-    }
-
-    // Find the type and cost conditions of m_testInfo1 and m_testInfo2
-
-    if (!optOptimizeBoolsChkTypeCostCond())
-    {
-        return false;
-    }
-
-    // Get the fold operator (m_foldOp, e.g., GT_OR/GT_AND) and
-    // the comparison operator (m_cmpOp, e.g., GT_EQ/GT_NE/GT_GE/GT_LT)
-
-    var_types foldType = m_c1->TypeGet();
-    if (varTypeIsGC(foldType))
-    {
-        foldType = TYP_I_IMPL;
-    }
-    m_foldType = foldType;
-
-    m_foldOp = GT_NONE;
-    m_cmpOp  = GT_NONE;
-
-    genTreeOps foldOp;
-    genTreeOps cmpOp;
-
-    ssize_t it1val = m_testInfo1.compTree->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-    ssize_t it2val = m_testInfo2.compTree->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-    ssize_t it3val = m_t3->AsOp()->gtOp1->AsIntCon()->gtIconVal;
-
-    if ((m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_EQ) &&
-        (it1val == 0 && it2val == 0 && it3val == 0))
-    {
-        // Case: x == 0 && y == 0
-        //      t1:c1!=0 t2:c2==0 t3:c3==0
-        //      ==> true if (c1|c2)==0
-        foldOp = GT_OR;
-        cmpOp  = GT_EQ;
-    }
-    else if ((m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_NE) &&
-             (it1val == 0 && it2val == 0 && it3val == 0))
-    {
-        // Case: x == 1 && y ==1
-        //      t1:c1!=1 t2:c2==1 t3:c3==0 is reversed from optIsBoolComp() to: t1:c1==0 t2:c2!=0 t3:c3==0
-        //      ==> true if (c1&c2)!=0
-        foldOp = GT_AND;
-        cmpOp  = GT_NE;
-    }
-    else if ((m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_GE) &&
-             (it1val == 0 && it2val == 0 && it3val == 0))
-    {
-        // Case: x >= 0 && y >= 0
-        //      t1:c1<0 t2:c2>=0 t3:c3==0
-        //      ==> true if (c1|c2)>=0
-
-        foldOp = GT_OR;
-        cmpOp  = GT_GE;
-    }
-    else if ((m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_EQ) &&
-             (it1val == 0 && it2val == 0 && it3val == 1))
-    {
-        // Case: x == 0 || y == 0
-        //      t1:c1==0 t2:c2==0 t3:c3==1
-        //      ==> true if (c1&c2)==0
-        foldOp = GT_AND;
-        cmpOp  = GT_EQ;
-    }
-    else if ((m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_NE) &&
-             (it1val == 0 && it2val == 0 && it3val == 1))
-    {
-        // Case: x == 1 || y == 1
-        //      t1:c1==1 t2:c2==1 t3:c3==1 is reversed from optIsBoolComp() to: t1:c1!=0 t2:c2!=0 t3:c3==1
-        //      ==> true if (c1|c2)!=0
-        foldOp = GT_OR;
-        cmpOp  = GT_NE;
-    }
-    else if ((m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_LT) &&
-             (it1val == 0 && it2val == 0 && it3val == 1))
-    {
-        // Case: x < 0 || y < 0
-        //      t1:c1<0 t2:c2<0 t3:c3==1
-        //      ==> true if (c1|c2)<0
-
-        foldOp = GT_OR;
-        cmpOp  = GT_LT;
-    }
-    else
-    {
-        // Require NOT operation for operand(s). Do Not fold.
-        return false;
-    }
-
-    if ((foldOp == GT_AND || (cmpOp == GT_NE && foldOp != GT_OR)) && (!m_testInfo1.isBool || !m_testInfo2.isBool))
-    {
-        // x == 1 && y == 1: Skip cases where x or y is greater than 1, e.g., x=3, y=1
-        // x == 0 || y == 0: Skip cases where x and y have opposite bits set, e.g., x=2, y=1
-        // x == 1 || y == 1: Skip cases where either x or y is greater than 1, e.g., x=2, y=0
-        return false;
-    }
-
-    m_foldOp = foldOp;
-    m_cmpOp  = cmpOp;
-
-    // Now update the trees
-
-    optOptimizeBoolsUpdateTrees();
-
-#ifdef DEBUG
-    if (m_comp->verbose)
-    {
-        printf("Folded %sboolean conditions of " FMT_BB ", " FMT_BB " and " FMT_BB " to :\n",
-               m_c2->OperIsLeaf() ? "" : "non-leaf ", m_b1->bbNum, m_b2->bbNum, m_b3->bbNum);
-        m_comp->gtDispStmt(s1);
-        printf("\n");
-    }
-#endif
-
-    // Return true to continue the bool optimization for the rest of the BB chain
-    return true;
-}
-
-//-----------------------------------------------------------------------------
-//  optOptimizeBoolsGcStress: Replace x==null with (x|x)==0 if x is a GC-type.
-//                            This will stress code-gen and the emitter to make sure they support such trees.
-//
-#ifdef DEBUG
-
-void OptBoolsDsc::optOptimizeBoolsGcStress()
-{
-    if (!m_comp->compStressCompile(m_comp->STRESS_OPT_BOOLS_GC, 20))
-    {
-        return;
-    }
-
-    assert(m_b1->bbJumpKind == BBJ_COND);
-    Statement* const stmt = m_b1->lastStmt();
-    GenTree* const   cond = stmt->GetRootNode();
-
-    assert(cond->gtOper == GT_JTRUE);
-
-    OptTestInfo test;
-    test.testStmt = stmt;
-    test.testTree = cond;
-
-    GenTree* comparand = optIsBoolComp(&test);
-
-    if (comparand == nullptr || !varTypeIsGC(comparand->TypeGet()))
-    {
-        return;
-    }
-    GenTree* relop  = test.compTree;
-    bool     isBool = test.isBool;
-
-    if (comparand->gtFlags & (GTF_ASG | GTF_CALL | GTF_ORDER_SIDEEFF))
-    {
-        return;
-    }
-
-    GenTree* comparandClone = m_comp->gtCloneExpr(comparand);
-
-    noway_assert(relop->AsOp()->gtOp1 == comparand);
-    genTreeOps oper      = m_comp->compStressCompile(m_comp->STRESS_OPT_BOOLS_GC, 50) ? GT_OR : GT_AND;
-    relop->AsOp()->gtOp1 = m_comp->gtNewOperNode(oper, TYP_I_IMPL, comparand, comparandClone);
-
-    // Comparand type is already checked, and we have const int, there is no harm
-    // morphing it into a TYP_I_IMPL.
-    noway_assert(relop->AsOp()->gtOp2->gtOper == GT_CNS_INT);
-    relop->AsOp()->gtOp2->gtType = TYP_I_IMPL;
-
-    // Recost/rethread the tree if necessary
-    //
-    if (m_comp->fgStmtListThreaded)
-    {
-        m_comp->gtSetStmtInfo(test.testStmt);
-        m_comp->fgSetStmtSeq(test.testStmt);
-    }
-}
-
-#endif
-
-//-----------------------------------------------------------------------------
-// optIsBoolComp:   Function used by folding of boolean conditionals
-//
-// Arguments:
-//      pOptTest    The test info for the test tree
-//
-// Return:
-//      On success, return the first operand (gtOp1) of compTree, else return nullptr.
-//
-// Notes:
-//      On entry, testTree is set.
-//      On success, compTree is set to the compare node (i.e. GT_EQ or GT_NE or GT_LT or GT_GE) of the testTree.
-//      isBool is set to true if the comparand (i.e., operand 1 of compTree is boolean. Otherwise, false.
-//
-//      Given a GT_JTRUE or GT_RETURN node, this method checks if it is a boolean comparison
-//      of the form "if (boolVal ==/!=/>=/<  0/1)".This is translated into
-//      a GT_EQ/GT_NE/GT_GE/GT_LT node with "opr1" being a boolean lclVar and "opr2" the const 0/1.
-//
-//      When isBool == true, if the comparison was against a 1 (i.e true)
-//      then we morph the tree by reversing the GT_EQ/GT_NE/GT_GE/GT_LT and change the 1 to 0.
-//
-GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
-{
-    pOptTest->isBool = false;
-
-    assert(pOptTest->testTree->gtOper == GT_JTRUE || pOptTest->testTree->gtOper == GT_RETURN);
-    GenTree* cond = pOptTest->testTree->AsOp()->gtOp1;
-
-    // The condition must be "!= 0" or "== 0" or >=0 or <0
-    // we don't optimize unsigned < and >= operations
-    if (!cond->OperIs(GT_EQ, GT_NE) && (!cond->OperIs(GT_LT, GT_GE) || cond->IsUnsigned()))
-    {
-        return nullptr;
-    }
-
-    // Return the compare node to the caller
-
-    pOptTest->compTree = cond;
-
-    // Get hold of the comparands
-
-    GenTree* opr1 = cond->AsOp()->gtOp1;
-    GenTree* opr2 = cond->AsOp()->gtOp2;
-
-    if (opr2->gtOper != GT_CNS_INT)
-    {
-        return nullptr;
-    }
-
-    if (!opr2->IsIntegralConst(0) && !opr2->IsIntegralConst(1))
-    {
-        return nullptr;
-    }
-
-    ssize_t ival2 = opr2->AsIntCon()->gtIconVal;
-
-    // Is the value a boolean?
-    // We can either have a boolean expression (marked GTF_BOOLEAN) or
-    // a local variable that is marked as being boolean (lvIsBoolean)
-
-    if (opr1->gtFlags & GTF_BOOLEAN)
-    {
-        pOptTest->isBool = true;
-    }
-    else if ((opr1->gtOper == GT_CNS_INT) && (opr1->IsIntegralConst(0) || opr1->IsIntegralConst(1)))
-    {
-        pOptTest->isBool = true;
-    }
-    else if (opr1->gtOper == GT_LCL_VAR)
-    {
-        // is it a boolean local variable?
-
-        unsigned lclNum = opr1->AsLclVarCommon()->GetLclNum();
-        noway_assert(lclNum < m_comp->lvaCount);
-
-        if (m_comp->lvaTable[lclNum].lvIsBoolean)
-        {
-            pOptTest->isBool = true;
-        }
-    }
-
-    // Was our comparison against the constant 1 (i.e. true)
-    if (ival2 == 1)
-    {
-        // If this is a boolean expression tree we can reverse the relop
-        // and change the true to false.
-        if (pOptTest->isBool)
-        {
-            m_comp->gtReverseCond(cond);
-            opr2->AsIntCon()->gtIconVal = 0;
-        }
-        else
-        {
-            return nullptr;
-        }
-    }
-
-    return opr1;
-}
-
-//-----------------------------------------------------------------------------
-// optOptimizeBools:    Folds boolean conditionals for GT_JTRUE/GT_RETURN nodes
-//
-// Returns:
-//    suitable phase status
-//
-// Notes:
-//      If the operand of GT_JTRUE/GT_RETURN node is GT_EQ/GT_NE/GT_GE/GT_LT of the form
-//      "if (boolVal ==/!=/>=/<  0/1)", the GT_EQ/GT_NE/GT_GE/GT_LT nodes are translated into a
-//      GT_EQ/GT_NE/GT_GE/GT_LT node with
-//          "op1" being a boolean GT_OR/GT_AND lclVar and
-//          "op2" the const 0/1.
-//      For example, the folded tree for the below boolean optimization is shown below:
-//      Case 1:     (x == 0 && y ==0) => (x | y) == 0
-//          *  RETURN   int
-//          \--*  EQ        int
-//             +--*  OR         int
-//             |  +--*  LCL_VAR     int     V00 arg0
-//             |  \--*  LCL_VAR     int     V01 arg1
-//             \--*  CNS_INT    int     0
-//
-//      Case 2:     (x == null && y == null) ==> (x | y) == 0
-//          *  RETURN    int
-//          \-- * EQ        int
-//              + -- * OR        long
-//              |    +-- * LCL_VAR   ref    V00 arg0
-//              |    \-- * LCL_VAR   ref    V01 arg1
-//              \-- * CNS_INT   long   0
-//
-//      Case 3:     (x == 0 && y == 0 && z == 0) ==> ((x | y) | z) == 0
-//          *  RETURN    int
-//          \-- * EQ        int
-//              + -- * OR        int
-//              |    +-- * OR        int
-//              |    |   +-- * LCL_VAR   int    V00 arg0
-//              |    |   \-- * LCL_VAR   int    V01 arg1
-//              |    \-- * LCL_VAR   int    V02 arg2
-//              \-- * CNS_INT   int    0
-//
-//      Case 4:     (x == 0 && y == 0 && z == 0 && w == 0) ==> (((x | y) | z) | w) == 0
-//          *  RETURN    int
-//          \-- *  EQ        int
-//              +  *  OR        int
-//              |  +--*  OR        int
-//              |  |  +--*  OR        int
-//              |  |  |  +--*  LCL_VAR   int    V00 arg0
-//              |  |  |  \--*  LCL_VAR   int    V01 arg1
-//              |  |  \--*  LCL_VAR   int    V02 arg2
-//              |  \--*  LCL_VAR   int    V03 arg3
-//              \--*  CNS_INT   int    0
-//
-//      Case 5:     (x != 0 && y != 0) => (x | y) != 0
-//          *  RETURN   int
-//          \--*  NE        int
-//             +--*  OR         int
-//             |  +--*  LCL_VAR     int     V00 arg0
-//             |  \--*  LCL_VAR     int     V01 arg1
-//             \--*  CNS_INT    int     0
-//
-//      Case 6:     (x >= 0 && y >= 0) => (x | y) >= 0
-//          *  RETURN   int
-//          \--*  GE        int
-//             +--*  OR         int
-//             |  +--*  LCL_VAR     int     V00 arg0
-//             |  \--*  LCL_VAR     int     V01 arg1
-//             \--*  CNS_INT    int     0
-//
-//      Case 7:     (x < 0 || y < 0) => (x & y) < 0
-//          *  RETURN   int
-//          \--*  LT        int
-//             +--*  AND         int
-//             |  +--*  LCL_VAR     int     V00 arg0
-//             |  \--*  LCL_VAR     int     V01 arg1
-//             \--*  CNS_INT    int     0
-//
-//      Patterns that are not optimized include (x == 1 && y == 1), (x == 1 || y == 1),
-//      (x == 0 || y == 0) because currently their comptree is not marked as boolean expression.
-//      When m_foldOp == GT_AND or m_cmpOp == GT_NE, both compTrees must be boolean expression
-//      in order to skip below cases when compTree is not boolean expression:
-//          - x == 1 && y == 1 ==> (x&y)!=0: Skip cases where x or y is greater than 1, e.g., x=3, y=1
-//          - x == 1 || y == 1 ==> (x|y)!=0: Skip cases where either x or y is greater than 1, e.g., x=2, y=0
-//          - x == 0 || y == 0 ==> (x&y)==0: Skip cases where x and y have opposite bits set, e.g., x=2, y=1
-//
-PhaseStatus Compiler::optOptimizeBools()
-{
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In optOptimizeBools()\n");
-    }
-#endif
-    bool     change    = false;
-    unsigned numCond   = 0;
-    unsigned numReturn = 0;
-    unsigned numPasses = 0;
-    unsigned stress    = false;
-
-    do
-    {
-        numPasses++;
-        change = false;
-
-        for (BasicBlock* const b1 : Blocks())
-        {
-            // We're only interested in conditional jumps here
-
-            if (b1->bbJumpKind != BBJ_COND)
-            {
-                continue;
-            }
-
-            // If there is no next block, we're done
-
-            BasicBlock* b2 = b1->bbNext;
-            if (b2 == nullptr)
-            {
-                break;
-            }
-
-            // The next block must not be marked as BBF_DONT_REMOVE
-            if (b2->bbFlags & BBF_DONT_REMOVE)
-            {
-                continue;
-            }
-
-            OptBoolsDsc optBoolsDsc(b1, b2, this);
-
-            // The next block needs to be a condition or return block.
-
-            if (b2->bbJumpKind == BBJ_COND)
-            {
-                if ((b1->bbJumpDest != b2->bbJumpDest) && (b1->bbJumpDest != b2->bbNext))
-                {
-                    continue;
-                }
-
-                // When it is conditional jumps
-
-                if (optBoolsDsc.optOptimizeBoolsCondBlock())
-                {
-                    change = true;
-                    numCond++;
-                }
-            }
-            else if (b2->bbJumpKind == BBJ_RETURN)
-            {
-                // Set b3 to b1 jump destination
-                BasicBlock* b3 = b1->bbJumpDest;
-
-                // b3 must not be marked as BBF_DONT_REMOVE
-
-                if (b3->bbFlags & BBF_DONT_REMOVE)
-                {
-                    continue;
-                }
-
-                // b3 must be RETURN type
-
-                if (b3->bbJumpKind != BBJ_RETURN)
-                {
-                    continue;
-                }
-
-                if (optBoolsDsc.optOptimizeBoolsReturnBlock(b3))
-                {
-                    change = true;
-                    numReturn++;
-                }
-            }
-            else
-            {
-#ifdef DEBUG
-                optBoolsDsc.optOptimizeBoolsGcStress();
-                stress = true;
-#endif
-            }
-        }
-    } while (change);
-
-    JITDUMP("\noptimized %u BBJ_COND cases, %u BBJ_RETURN cases in %u passes\n", numCond, numReturn, numPasses);
-
-    const bool modified = stress || ((numCond + numReturn) > 0);
-    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
-}
-
 typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> LclVarRefCounts;
 
 //------------------------------------------------------------------------------------------
@@ -10464,7 +9070,7 @@ void Compiler::optRemoveRedundantZeroInits()
     bool            hasGCSafePoint = false;
     bool            canThrow       = false;
 
-    assert(fgStmtListThreaded);
+    assert(fgNodeThreading == NodeThreading::AllTrees);
 
     for (BasicBlock* block = fgFirstBB; (block != nullptr) && ((block->bbFlags & BBF_MARKED) == 0);
          block             = block->GetUniqueSucc())
@@ -10492,8 +9098,7 @@ void Compiler::optRemoveRedundantZeroInits()
                 {
                     case GT_LCL_VAR:
                     case GT_LCL_FLD:
-                    case GT_LCL_VAR_ADDR:
-                    case GT_LCL_FLD_ADDR:
+                    case GT_LCL_ADDR:
                     {
                         unsigned  lclNum    = tree->AsLclVarCommon()->GetLclNum();
                         unsigned* pRefCount = refCounts.LookupPointer(lclNum);
@@ -10611,10 +9216,13 @@ void Compiler::optRemoveRedundantZeroInits()
 
                             if (!bbInALoop || bbIsReturn)
                             {
+                                bool neverTracked = lclDsc->IsAddressExposed() || lclDsc->lvPinned ||
+                                                    (lclDsc->lvPromoted && varTypeIsStruct(lclDsc));
+
                                 if (BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclNum) ||
                                     (lclDsc->lvIsStructField &&
                                      BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclDsc->lvParentLcl)) ||
-                                    ((!lclDsc->lvTracked || !isEntire) &&
+                                    ((neverTracked || !isEntire) &&
                                      !fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn)))
                                 {
                                     // We are guaranteed to have a zero initialization in the prolog or a
@@ -10655,6 +9263,7 @@ void Compiler::optRemoveRedundantZeroInits()
                                 // the prolog and this explicit initialization. Therefore, it doesn't
                                 // require zero initialization in the prolog.
                                 lclDsc->lvHasExplicitInit = 1;
+                                lclVar->gtFlags |= GTF_VAR_EXPLICIT_INIT;
                                 JITDUMP("Marking V%02u as having an explicit init\n", lclNum);
                             }
                         }
@@ -10669,11 +9278,8 @@ void Compiler::optRemoveRedundantZeroInits()
 
         if (removedTrackedDefs)
         {
-            LclVarRefCounts::KeyIterator iter(defsInBlock.Begin());
-            LclVarRefCounts::KeyIterator end(defsInBlock.End());
-            for (; !iter.Equal(end); iter++)
+            for (const unsigned int lclNum : LclVarRefCounts::KeyIteration(&defsInBlock))
             {
-                unsigned int lclNum = iter.Get();
                 if (defsInBlock[lclNum] == 0)
                 {
                     VarSetOps::RemoveElemD(this, block->bbVarDef, lvaGetDesc(lclNum)->lvVarIndex);
@@ -10687,6 +9293,139 @@ void Compiler::optRemoveRedundantZeroInits()
     {
         block->bbFlags &= ~BBF_MARKED;
     }
+}
+
+//------------------------------------------------------------------------
+// optVNBasedDeadStoreRemoval: VN(value)-based dead store removal.
+//
+// The phase iterates over partial stores referenced by the SSA
+// descriptors and deletes those which do not change the local's value.
+//
+// Return Value:
+//    A suitable phase status.
+//
+PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
+{
+#ifdef DEBUG
+    static ConfigMethodRange JitEnableVNBasedDeadStoreRemovalRange;
+    JitEnableVNBasedDeadStoreRemovalRange.EnsureInit(JitConfig.JitEnableVNBasedDeadStoreRemovalRange());
+
+    if (!JitEnableVNBasedDeadStoreRemovalRange.Contains(info.compMethodHash()))
+    {
+        JITDUMP("VN-based dead store removal disabled by JitEnableVNBasedDeadStoreRemovalRange\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+#endif
+
+    bool madeChanges = false;
+
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+    {
+        if (!lvaInSsa(lclNum))
+        {
+            continue;
+        }
+
+        LclVarDsc* varDsc   = lvaGetDesc(lclNum);
+        unsigned   defCount = varDsc->lvPerSsaData.GetCount();
+        if (defCount <= 1)
+        {
+            continue;
+        }
+
+        for (unsigned defIndex = 1; defIndex < defCount; defIndex++)
+        {
+            LclSsaVarDsc* defDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex);
+            GenTreeOp*    store  = defDsc->GetAssignment();
+
+            if (store != nullptr)
+            {
+                assert(store->OperIs(GT_ASG) && defDsc->m_vnPair.BothDefined());
+
+                JITDUMP("Considering [%06u] for removal...\n", dspTreeID(store));
+
+                GenTree* lhs = store->gtGetOp1();
+                if (lhs->AsLclVarCommon()->GetLclNum() != lclNum)
+                {
+                    JITDUMP(" -- no; composite definition\n");
+                    continue;
+                }
+
+                ValueNum oldStoreValue;
+                if ((lhs->gtFlags & GTF_VAR_USEASG) == 0)
+                {
+                    LclSsaVarDsc* lastDefDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex - 1);
+                    if (lastDefDsc->GetBlock() != defDsc->GetBlock())
+                    {
+                        JITDUMP(" -- no; last def not in the same block\n");
+                        continue;
+                    }
+
+                    if ((lhs->gtFlags & GTF_VAR_EXPLICIT_INIT) != 0)
+                    {
+                        // Removing explicit inits is not profitable for primitives and not safe for structs.
+                        JITDUMP(" -- no; 'explicit init'\n");
+                        continue;
+                    }
+
+                    // CQ heuristic: avoid removing defs of enregisterable locals where this is likely to
+                    // make them "must-init", extending live ranges. Here we assume the first SSA def was
+                    // the implicit "live-in" one, which is not guaranteed, but very likely.
+                    if ((defIndex == 1) && (varDsc->TypeGet() != TYP_STRUCT))
+                    {
+                        JITDUMP(" -- no; first explicit def of a non-STRUCT local\n", lclNum);
+                        continue;
+                    }
+
+                    oldStoreValue = lastDefDsc->m_vnPair.GetConservative();
+                }
+                else
+                {
+                    ValueNum oldLclValue = varDsc->GetPerSsaData(defDsc->GetUseDefSsaNum())->m_vnPair.GetConservative();
+                    oldStoreValue =
+                        vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclExactSize(lclNum), lhs->TypeGet(),
+                                           lhs->AsLclFld()->GetLclOffs(), lhs->AsLclFld()->GetSize());
+                }
+
+                GenTree* rhs = store->gtGetOp2();
+                ValueNum storeValue;
+                if (lhs->TypeIs(TYP_STRUCT) && rhs->IsIntegralConst(0))
+                {
+                    storeValue = vnStore->VNForZeroObj(lhs->AsLclVarCommon()->GetLayout(this));
+                }
+                else
+                {
+                    storeValue = rhs->GetVN(VNK_Conservative);
+                }
+
+                if (oldStoreValue == storeValue)
+                {
+                    JITDUMP("Removed dead store:\n");
+                    DISPTREE(store);
+
+                    lhs->gtFlags &= ~(GTF_VAR_DEF | GTF_VAR_USEASG);
+
+                    store->ChangeOper(GT_COMMA);
+                    if (store->IsReverseOp())
+                    {
+                        std::swap(store->gtOp1, store->gtOp2);
+                        store->ClearReverseOp();
+                    }
+                    store->gtType = store->gtGetOp2()->TypeGet();
+                    store->SetAllEffectsFlags(store->gtOp1, store->gtOp2);
+                    gtUpdateTreeAncestorsSideEffects(store);
+
+                    madeChanges = true;
+                }
+                else
+                {
+                    JITDUMP(" -- no; not redundant\n");
+                }
+            }
+        }
+    }
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 #ifdef DEBUG
@@ -10929,15 +9668,4 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
 // Assume the caller is going to fix up the table and `bbNatLoopNum` block annotations before the next time
 // `fgDebugCheckLoopTable()` is called.
 #endif // DEBUG
-}
-
-ValueNum Compiler::optConservativeNormalVN(GenTree* tree)
-{
-    if (optLocalAssertionProp)
-    {
-        return ValueNumStore::NoVN;
-    }
-
-    assert(vnStore != nullptr);
-    return vnStore->VNConservativeNormalValue(tree->gtVNPair);
 }

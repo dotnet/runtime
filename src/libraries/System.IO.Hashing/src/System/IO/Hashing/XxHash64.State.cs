@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using static System.IO.Hashing.XxHashShared;
 
 // Implemented from the specification at
 // https://github.com/Cyan4973/xxHash/blob/f9155bd4c57e2270a4ffbb176485e5d713de1c9b/doc/xxhash_spec.md
@@ -13,12 +14,6 @@ namespace System.IO.Hashing
 {
     public sealed partial class XxHash64
     {
-        internal const ulong Prime64_1 = 0x9E3779B185EBCA87;
-        internal const ulong Prime64_2 = 0xC2B2AE3D27D4EB4F;
-        internal const ulong Prime64_3 = 0x165667B19E3779F9;
-        internal const ulong Prime64_4 = 0x85EBCA77C2B2AE63;
-        internal const ulong Prime64_5 = 0x27D4EB2F165667C5;
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ulong Avalanche(ulong hash)
         {

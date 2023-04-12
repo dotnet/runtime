@@ -14,8 +14,10 @@ namespace DebuggerTests;
 
 public class DebuggerTestFirefox : DebuggerTestBase
 {
+    private new TimeSpan TestTimeout => base.TestTimeout * 5;
     internal FirefoxInspectorClient _client;
-    public DebuggerTestFirefox(ITestOutputHelper testOutput, string driver = "debugger-driver.html"):base(testOutput, driver)
+    public DebuggerTestFirefox(ITestOutputHelper testOutput, string driver = "debugger-driver.html", string locale = "en-US")
+        : base(testOutput, driver, locale)
     {
         if (insp.Client is not FirefoxInspectorClient)
             throw new Exception($"Bug: client should be {nameof(FirefoxInspectorClient)} for use with {nameof(DebuggerTestFirefox)}");
@@ -37,7 +39,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
             };
 
         await Ready();
-        await insp.OpenSessionAsync(fn, TestTimeout);
+        await insp.OpenSessionAsync(fn, "", TestTimeout);
     }
 
     internal override Dictionary<string, string> SubscribeToScripts(Inspector insp)

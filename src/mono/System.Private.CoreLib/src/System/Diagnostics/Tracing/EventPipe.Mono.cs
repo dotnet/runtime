@@ -21,7 +21,12 @@ namespace System.Diagnostics.Tracing
         // These ICalls are used by EventSource to interact with the EventPipe.
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr CreateProvider(string providerName, Interop.Advapi32.EtwEnableCallback callbackFunc);
+        private static extern unsafe IntPtr CreateProvider(string providerName, IntPtr callbackFunc, IntPtr callbackContext);
+
+        internal static unsafe IntPtr CreateProvider(string providerName,
+            delegate* unmanaged<byte*, int, byte, long, long, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR*, void*, void> callbackFunc,
+            void* callbackContext)
+            => CreateProvider(providerName, (IntPtr)callbackFunc, (IntPtr)callbackContext);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern unsafe IntPtr DefineEvent(IntPtr provHandle, uint eventID, long keywords, uint eventVersion, uint level, byte* pMetadata, uint metadataLength);

@@ -10,21 +10,22 @@ using System.Text.RegularExpressions;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class ApkBuilder
+public partial class ApkBuilder
 {
     private const string DefaultMinApiLevel = "21";
+    private const string DefaultTargetApiLevel = "31";
 
     public string? ProjectName { get; set; }
     public string? AppDir { get; set; }
     public string? AndroidNdk { get; set; }
     public string? AndroidSdk { get; set; }
     public string? MinApiLevel { get; set; }
+    public string? TargetApiLevel { get; set; }
     public string? BuildApiLevel { get; set; }
     public string? BuildToolsVersion { get; set; }
     public string OutputDir { get; set; } = ""!;
     public bool StripDebugSymbols { get; set; }
     public string? NativeMainSource { get; set; }
-    public bool IncludeNetworkSecurityConfig { get; set; }
     public string? KeyStorePath { get; set; }
     public bool ForceInterpreter { get; set; }
     public bool ForceAOT { get; set; }
@@ -35,7 +36,10 @@ public class ApkBuilder
     public bool StaticLinkedRuntime { get; set; }
     public string? RuntimeComponents { get; set; }
     public string? DiagnosticPorts { get; set; }
+    public bool IsLibraryMode { get; set; }
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
+    public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
+    public string[] NativeDependencies { get; set; } = Array.Empty<string>();
 
     private TaskLoggingHelper logger;
 
@@ -45,7 +49,7 @@ public class ApkBuilder
     }
 
     public (string apk, string packageId) BuildApk(
-        string abi,
+        string runtimeIdentifier,
         string mainLibraryFileName,
         string monoRuntimeHeaders)
     {
@@ -59,15 +63,9 @@ public class ApkBuilder
             throw new ArgumentException($"MainLibraryFileName='{mainLibraryFileName}' was not found in AppDir='{AppDir}'");
         }
 
-        var networkSecurityConfigFilePath = Path.Combine(AppDir, "res", "xml", "network_security_config.xml");
-        if (IncludeNetworkSecurityConfig && !File.Exists(networkSecurityConfigFilePath))
+        if (string.IsNullOrEmpty(runtimeIdentifier))
         {
-            throw new ArgumentException($"IncludeNetworkSecurityConfig is set but the file '{networkSecurityConfigFilePath}' was not found");
-        }
-
-        if (string.IsNullOrEmpty(abi))
-        {
-            throw new ArgumentException("abi should not be empty (e.g. x86, x86_64, armeabi-v7a or arm64-v8a");
+            throw new ArgumentException("RuntimeIdentifier should not be empty and should contain a valid android RID");
         }
 
         if (!string.IsNullOrEmpty(ProjectName) && ProjectName.Contains(' '))
@@ -125,14 +123,24 @@ public class ApkBuilder
         if (string.IsNullOrEmpty(MinApiLevel))
             MinApiLevel = DefaultMinApiLevel;
 
-        // make sure BuildApiLevel >= MinApiLevel
+        if (string.IsNullOrEmpty(TargetApiLevel))
+            TargetApiLevel = DefaultTargetApiLevel;
+
+        // make sure BuildApiLevel >= MinApiLevel and BuildApiLevel >= TargetApiLevel
         // only if these api levels are not "preview" (not integers)
-        if (int.TryParse(BuildApiLevel, out int intApi) &&
-            int.TryParse(MinApiLevel, out int intMinApi) &&
-            intApi < intMinApi)
+        if (int.TryParse(BuildApiLevel, out int intApi))
         {
-            throw new ArgumentException($"BuildApiLevel={BuildApiLevel} <= MinApiLevel={MinApiLevel}. " +
-                "Make sure you've downloaded some recent build-tools in Android SDK");
+            if (int.TryParse(MinApiLevel, out int intMinApi) && intApi < intMinApi)
+            {
+                throw new ArgumentException($"BuildApiLevel={BuildApiLevel} < MinApiLevel={MinApiLevel}. " +
+                    "Make sure you've downloaded some recent build-tools in Android SDK");
+            }
+
+            if (int.TryParse(TargetApiLevel, out int intTargetApi) && intApi < intTargetApi)
+            {
+                throw new ArgumentException($"BuildApiLevel={BuildApiLevel} < TargetApiLevel={TargetApiLevel}. " +
+                    "Make sure you've downloaded some recent build-tools in Android SDK");
+            }
         }
 
         string buildToolsFolder = Path.Combine(AndroidSdk, "build-tools", BuildToolsVersion);
@@ -144,35 +152,39 @@ public class ApkBuilder
         var assemblerFiles = new StringBuilder();
         var assemblerFilesToLink = new StringBuilder();
         var aotLibraryFiles = new List<string>();
-        foreach (ITaskItem file in Assemblies)
+
+        if (!IsLibraryMode)
         {
-            // use AOT files if available
-            var obj = file.GetMetadata("AssemblerFile");
-            var llvmObj = file.GetMetadata("LlvmObjectFile");
-            var lib = file.GetMetadata("LibraryFile");
-
-            if (!string.IsNullOrEmpty(obj))
+            foreach (ITaskItem file in Assemblies)
             {
-                var name = Path.GetFileNameWithoutExtension(obj);
-                assemblerFiles.AppendLine($"add_library({name} OBJECT {obj})");
-                assemblerFilesToLink.AppendLine($"    {name}");
+                // use AOT files if available
+                var obj = file.GetMetadata("AssemblerFile");
+                var llvmObj = file.GetMetadata("LlvmObjectFile");
+                var lib = file.GetMetadata("LibraryFile");
+
+                if (!string.IsNullOrEmpty(obj))
+                {
+                    var name = Path.GetFileNameWithoutExtension(obj);
+                    assemblerFiles.AppendLine($"add_library({name} OBJECT {obj})");
+                    assemblerFilesToLink.AppendLine($"    {name}");
+                }
+
+                if (!string.IsNullOrEmpty(llvmObj))
+                {
+                    var name = Path.GetFileNameWithoutExtension(llvmObj);
+                    assemblerFilesToLink.AppendLine($"    {llvmObj}");
+                }
+
+                if (!string.IsNullOrEmpty(lib))
+                {
+                    aotLibraryFiles.Add(lib);
+                }
             }
 
-            if (!string.IsNullOrEmpty(llvmObj))
+            if (ForceAOT && assemblerFiles.Length == 0 && aotLibraryFiles.Count == 0)
             {
-                var name = Path.GetFileNameWithoutExtension(llvmObj);
-                assemblerFilesToLink.AppendLine($"    {llvmObj}");
+                throw new InvalidOperationException("Need list of AOT files.");
             }
-
-            if (!string.IsNullOrEmpty(lib))
-            {
-                aotLibraryFiles.Add(lib);
-            }
-        }
-
-        if (ForceAOT && assemblerFiles.Length == 0 && aotLibraryFiles.Count == 0)
-        {
-            throw new InvalidOperationException("Need list of AOT files.");
         }
 
         Directory.CreateDirectory(OutputDir);
@@ -180,9 +192,8 @@ public class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "obj"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets-tozip"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
-        Directory.CreateDirectory(Path.Combine(OutputDir, "res"));
 
-        var extensionsToIgnore = new List<string> { ".so", ".a" };
+        var extensionsToIgnore = new List<string> { ".so", ".a", ".dex", ".jar" };
         if (StripDebugSymbols)
         {
             extensionsToIgnore.Add(".pdb");
@@ -209,19 +220,8 @@ public class ApkBuilder
                 // aapt complains on such files
                 return false;
             }
-            if (file.Contains("/res/"))
-            {
-                // exclude everything in the `res` folder
-                return false;
-            }
             return true;
         });
-
-        // copy the res directory as is
-        if (Directory.Exists(Path.Combine(AppDir, "res")))
-        {
-            Utils.DirectoryCopy(Path.Combine(AppDir, "res"), Path.Combine(OutputDir, "res"));
-        }
 
         // add AOT .so libraries
         foreach (var aotlib in aotLibraryFiles)
@@ -238,7 +238,6 @@ public class ApkBuilder
         string androidJar = Path.Combine(AndroidSdk, "platforms", "android-" + BuildApiLevel, "android.jar");
         string androidToolchain = Path.Combine(AndroidNdk, "build", "cmake", "android.toolchain.cmake");
         string javac = "javac";
-        string cmake = "cmake";
         string zip = "zip";
 
         Utils.RunProcess(logger, zip, workingDir: assetsToZipDirectory, args: "-q -r ../assets/assets.zip .");
@@ -247,87 +246,104 @@ public class ApkBuilder
         if (!File.Exists(androidJar))
             throw new ArgumentException($"API level={BuildApiLevel} is not downloaded in Android SDK");
 
-        // 1. Build libmonodroid.so` via cmake
+        // 1. Build libmonodroid.so via cmake
 
         string nativeLibraries = "";
-        string monoRuntimeLib = "";
-        if (StaticLinkedRuntime)
+        if (IsLibraryMode)
         {
-            monoRuntimeLib = Path.Combine(AppDir, "libmonosgen-2.0.a");
+            nativeLibraries = string.Join("\n    ", NativeDependencies.Select(dep => dep));
         }
         else
         {
-            monoRuntimeLib = Path.Combine(AppDir, "libmonosgen-2.0.so");
-        }
-
-        if (!File.Exists(monoRuntimeLib))
-        {
-            throw new ArgumentException($"{monoRuntimeLib} was not found");
-        }
-        else
-        {
-            nativeLibraries += $"{monoRuntimeLib}{Environment.NewLine}";
-        }
-
-        if (StaticLinkedRuntime)
-        {
-            string[] staticComponentStubLibs = Directory.GetFiles(AppDir, "libmono-component-*-stub-static.a");
-            bool staticLinkAllComponents = false;
-            string[] staticLinkedComponents = Array.Empty<string>();
-
-            if (!string.IsNullOrEmpty(RuntimeComponents) && RuntimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
-                staticLinkAllComponents = true;
-            else if (!string.IsNullOrEmpty(RuntimeComponents))
-                staticLinkedComponents = RuntimeComponents.Split(";");
-
-            // by default, component stubs will be linked and depending on how mono runtime has been build,
-            // stubs can disable or dynamic load components.
-            foreach (string staticComponentStubLib in staticComponentStubLibs)
+            string monoRuntimeLib = "";
+            if (StaticLinkedRuntime)
             {
-                string componentLibToLink = staticComponentStubLib;
-                if (staticLinkAllComponents)
-                {
-                    // static link component.
-                    componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
-                }
-                else
-                {
-                    foreach (string staticLinkedComponent in staticLinkedComponents)
-                    {
-                        if (componentLibToLink.Contains(staticLinkedComponent, StringComparison.OrdinalIgnoreCase))
-                        {
-                            // static link component.
-                            componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
-                            break;
-                        }
-                    }
-                }
-
-                // if lib doesn't exist (primarily due to runtime build without static lib support), fallback linking stub lib.
-                if (!File.Exists(componentLibToLink))
-                {
-                    logger.LogMessage(MessageImportance.High, $"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
-                    componentLibToLink = staticComponentStubLib;
-                }
-
-                nativeLibraries += $"    {componentLibToLink}{Environment.NewLine}";
+                monoRuntimeLib = Path.Combine(AppDir, "libmonosgen-2.0.a");
+            }
+            else
+            {
+                monoRuntimeLib = Path.Combine(AppDir, "libmonosgen-2.0.so");
             }
 
-            // There's a circular dependency between static mono runtime lib and static component libraries.
-            // Adding mono runtime lib before and after component libs will resolve issues with undefined symbols
-            // due to circular dependency.
-            nativeLibraries += $"    {monoRuntimeLib}{Environment.NewLine}";
+            if (!File.Exists(monoRuntimeLib))
+            {
+                throw new ArgumentException($"{monoRuntimeLib} was not found");
+            }
+            else
+            {
+                nativeLibraries += $"{monoRuntimeLib}{Environment.NewLine}";
+            }
+
+            if (StaticLinkedRuntime)
+            {
+                string[] staticComponentStubLibs = Directory.GetFiles(AppDir, "libmono-component-*-stub-static.a");
+                bool staticLinkAllComponents = false;
+                string[] staticLinkedComponents = Array.Empty<string>();
+
+                if (!string.IsNullOrEmpty(RuntimeComponents) && RuntimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
+                    staticLinkAllComponents = true;
+                else if (!string.IsNullOrEmpty(RuntimeComponents))
+                    staticLinkedComponents = RuntimeComponents.Split(";");
+
+                // by default, component stubs will be linked and depending on how mono runtime has been build,
+                // stubs can disable or dynamic load components.
+                foreach (string staticComponentStubLib in staticComponentStubLibs)
+                {
+                    string componentLibToLink = staticComponentStubLib;
+                    if (staticLinkAllComponents)
+                    {
+                        // static link component.
+                        componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
+                    }
+                    else
+                    {
+                        foreach (string staticLinkedComponent in staticLinkedComponents)
+                        {
+                            if (componentLibToLink.Contains(staticLinkedComponent, StringComparison.OrdinalIgnoreCase))
+                            {
+                                // static link component.
+                                componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
+                                break;
+                            }
+                        }
+                    }
+
+                    // if lib doesn't exist (primarily due to runtime build without static lib support), fallback linking stub lib.
+                    if (!File.Exists(componentLibToLink))
+                    {
+                        logger.LogMessage(MessageImportance.High, $"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
+                        componentLibToLink = staticComponentStubLib;
+                    }
+
+                    nativeLibraries += $"    {componentLibToLink}{Environment.NewLine}";
+                }
+
+                // There's a circular dependency between static mono runtime lib and static component libraries.
+                // Adding mono runtime lib before and after component libs will resolve issues with undefined symbols
+                // due to circular dependency.
+                nativeLibraries += $"    {monoRuntimeLib}{Environment.NewLine}";
+            }
+        }
+
+        StringBuilder extraLinkerArgs = new StringBuilder();
+        foreach (ITaskItem item in ExtraLinkerArguments)
+        {
+            extraLinkerArgs.AppendLine($"    \"{item.ItemSpec}\"");
         }
 
         nativeLibraries += assemblerFilesToLink.ToString();
 
         string aotSources = assemblerFiles.ToString();
+        string monodroidSource = (IsLibraryMode) ? "monodroid-librarymode.c" : "monodroid.c";
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
+            .Replace("%ProjectName%", ProjectName)
             .Replace("%MonoInclude%", monoRuntimeHeaders)
             .Replace("%NativeLibrariesToLink%", nativeLibraries)
+            .Replace("%MONODROID_SOURCE%", monodroidSource)
             .Replace("%AotSources%", aotSources)
-            .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c");
+            .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c")
+            .Replace("%APP_LINKER_ARGS%", extraLinkerArgs.ToString());
 
         var defines = new StringBuilder();
         if (ForceInterpreter)
@@ -356,28 +372,13 @@ public class ApkBuilder
         cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
 
         File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
+        File.WriteAllText(Path.Combine(OutputDir, monodroidSource), Utils.GetEmbeddedResource(monodroidSource));
 
-        File.WriteAllText(Path.Combine(OutputDir, "monodroid.c"), Utils.GetEmbeddedResource("monodroid.c"));
+        AndroidProject project = new AndroidProject("monodroid", runtimeIdentifier, AndroidNdk, logger);
+        project.GenerateCMake(OutputDir, MinApiLevel, StripDebugSymbols);
+        project.BuildCMake(OutputDir, StripDebugSymbols);
 
-        string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " +
-            $"-DANDROID_PLATFORM=android-{MinApiLevel} -B monodroid";
-
-        string cmakeBuildArgs = "--build monodroid";
-
-        if (StripDebugSymbols)
-        {
-            // Use "-s" to strip debug symbols, it complains it's unused but it works
-            cmakeGenArgs+= " -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_C_FLAGS=\"-s -Wno-unused-command-line-argument\"";
-            cmakeBuildArgs += " --config MinSizeRel";
-        }
-        else
-        {
-            cmakeGenArgs += " -DCMAKE_BUILD_TYPE=Debug";
-            cmakeBuildArgs += " --config Debug";
-        }
-
-        Utils.RunProcess(logger, cmake, workingDir: OutputDir, args: cmakeGenArgs);
-        Utils.RunProcess(logger, cmake, workingDir: OutputDir, args: cmakeBuildArgs);
+        string abi = project.Abi;
 
         // 2. Compile Java files
 
@@ -387,7 +388,7 @@ public class ApkBuilder
         string javaActivityPath = Path.Combine(javaSrcFolder, "MainActivity.java");
         string monoRunnerPath = Path.Combine(javaSrcFolder, "MonoRunner.java");
 
-        Regex checkNumerics = new Regex(@"\.(\d)");
+        Regex checkNumerics = DotNumberRegex();
         if (!string.IsNullOrEmpty(ProjectName) && checkNumerics.IsMatch(ProjectName))
             ProjectName = checkNumerics.Replace(ProjectName, @"_$1");
 
@@ -396,13 +397,9 @@ public class ApkBuilder
         File.WriteAllText(javaActivityPath,
             Utils.GetEmbeddedResource("MainActivity.java")
                 .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName)));
+
         if (!string.IsNullOrEmpty(NativeMainSource))
             File.Copy(NativeMainSource, javaActivityPath, true);
-
-        string networkSecurityConfigAttribute =
-            IncludeNetworkSecurityConfig
-                ? "a:networkSecurityConfig=\"@xml/network_security_config\""
-                : string.Empty;
 
         string envVariables = "";
         foreach (ITaskItem item in EnvironmentVariables)
@@ -412,8 +409,10 @@ public class ApkBuilder
             envVariables += $"\t\tsetEnv(\"{name}\", \"{value}\");\n";
         }
 
+        string jniLibraryName = (IsLibraryMode) ? ProjectName! : "System.Security.Cryptography.Native.Android";
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
             .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName))
+            .Replace("%JNI_LIBRARY_NAME%", jniLibraryName)
             .Replace("%EnvVariables%", envVariables);
 
         File.WriteAllText(monoRunnerPath, monoRunner);
@@ -421,8 +420,8 @@ public class ApkBuilder
         File.WriteAllText(Path.Combine(OutputDir, "AndroidManifest.xml"),
             Utils.GetEmbeddedResource("AndroidManifest.xml")
                 .Replace("%PackageName%", packageId)
-                .Replace("%NetworkSecurityConfig%", networkSecurityConfigAttribute)
-                .Replace("%MinSdkLevel%", MinApiLevel));
+                .Replace("%MinSdkLevel%", MinApiLevel)
+                .Replace("%TargetSdkVersion%", TargetApiLevel));
 
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
         Utils.RunProcess(logger, javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
@@ -432,7 +431,7 @@ public class ApkBuilder
         {
             string[] classFiles = Directory.GetFiles(Path.Combine(OutputDir, "obj"), "*.class", SearchOption.AllDirectories);
 
-            if (!classFiles.Any())
+            if (classFiles.Length == 0)
                 throw new InvalidOperationException("Didn't find any .class files");
 
             Utils.RunProcess(logger, d8, $"--no-desugaring {string.Join(" ", classFiles)}", workingDir: OutputDir);
@@ -446,19 +445,25 @@ public class ApkBuilder
 
         string debugModeArg = StripDebugSymbols ? string.Empty : "--debug-mode";
         string apkFile = Path.Combine(OutputDir, "bin", $"{ProjectName}.unaligned.apk");
-        string resources = IncludeNetworkSecurityConfig ? "-S res" : string.Empty;
-        Utils.RunProcess(logger, aapt, $"package -f -m -F {apkFile} -A assets {resources} -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
+        Utils.RunProcess(logger, aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
 
         var dynamicLibs = new List<string>();
         dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));
-        dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => Path.GetFileName(file) != "libmonodroid.so"));
+
+        if (IsLibraryMode)
+        {
+            dynamicLibs.AddRange(NativeDependencies);
+        }
+        else
+        {
+            dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => Path.GetFileName(file) != "libmonodroid.so"));
+        }
 
         // add all *.so files to lib/%abi%/
-
         string[] dynamicLinkedComponents = Array.Empty<string>();
         bool dynamicLinkAllComponents = false;
         if (!StaticLinkedRuntime && !string.IsNullOrEmpty(RuntimeComponents) && RuntimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
-                dynamicLinkAllComponents = true;
+            dynamicLinkAllComponents = true;
         if (!string.IsNullOrEmpty(RuntimeComponents) && !StaticLinkedRuntime)
             dynamicLinkedComponents = RuntimeComponents.Split(";");
 
@@ -506,6 +511,17 @@ public class ApkBuilder
             Utils.RunProcess(logger, aapt, $"add {apkFile} {destRelative}", workingDir: OutputDir);
         }
         Utils.RunProcess(logger, aapt, $"add {apkFile} classes.dex", workingDir: OutputDir);
+
+        // Include prebuilt .dex files
+        int sequence = 2;
+        var dexFiles = Directory.GetFiles(AppDir, "*.dex");
+        foreach (var dexFile in dexFiles)
+        {
+            var classesFileName = $"classes{sequence++}.dex";
+            File.Copy(dexFile, Path.Combine(OutputDir, classesFileName));
+            logger.LogMessage(MessageImportance.High, $"Adding dex file {Path.GetFileName(dexFile)} as {classesFileName}");
+            Utils.RunProcess(logger, aapt, $"add {apkFile} {classesFileName}", workingDir: OutputDir);
+        }
 
         // 4. Align APK
 
@@ -635,4 +651,7 @@ public class ApkBuilder
             .FirstOrDefault()
             .ToString();
     }
+
+    [GeneratedRegex(@"\.(\d)")]
+    private static partial Regex DotNumberRegex();
 }

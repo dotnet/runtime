@@ -111,7 +111,7 @@ namespace System.Linq
             immutableArray.ThrowNullRefIfNotInitialized();
             Requires.NotNull(predicate, nameof(predicate));
 
-            foreach (var v in immutableArray.array!)
+            foreach (T v in immutableArray.array!)
             {
                 if (predicate(v))
                 {
@@ -137,7 +137,7 @@ namespace System.Linq
             immutableArray.ThrowNullRefIfNotInitialized();
             Requires.NotNull(predicate, nameof(predicate));
 
-            foreach (var v in immutableArray.array!)
+            foreach (T v in immutableArray.array!)
             {
                 if (!predicate(v))
                 {
@@ -193,7 +193,7 @@ namespace System.Linq
 
             int i = 0;
             int n = immutableArray.Length;
-            foreach (var item in items)
+            foreach (TDerived item in items)
             {
                 if (i == n)
                 {
@@ -256,7 +256,7 @@ namespace System.Linq
                 return default;
             }
 
-            var result = immutableArray[0];
+            T result = immutableArray[0];
             for (int i = 1, n = immutableArray.Length; i < n; i++)
             {
                 result = func(result, immutableArray[i]);
@@ -274,8 +274,8 @@ namespace System.Linq
         {
             Requires.NotNull(func, nameof(func));
 
-            var result = seed;
-            foreach (var v in immutableArray.array!)
+            TAccumulate result = seed;
+            foreach (T v in immutableArray.array!)
             {
                 result = func(result, v);
             }
@@ -331,7 +331,7 @@ namespace System.Linq
         {
             Requires.NotNull(predicate, nameof(predicate));
 
-            foreach (var v in immutableArray.array!)
+            foreach (T v in immutableArray.array!)
             {
                 if (predicate(v))
                 {
@@ -376,7 +376,7 @@ namespace System.Linq
         {
             Requires.NotNull(predicate, nameof(predicate));
 
-            foreach (var v in immutableArray.array!)
+            foreach (T v in immutableArray.array!)
             {
                 if (predicate(v))
                 {
@@ -474,7 +474,7 @@ namespace System.Linq
 
             bool first = true;
             T? result = default;
-            foreach (var v in immutableArray.array!)
+            foreach (T v in immutableArray.array!)
             {
                 if (predicate(v))
                 {
@@ -517,7 +517,7 @@ namespace System.Linq
 
             bool first = true;
             T? result = default;
-            foreach (var v in immutableArray.array!)
+            foreach (T v in immutableArray.array!)
             {
                 if (predicate(v))
                 {
@@ -576,7 +576,7 @@ namespace System.Linq
             Requires.NotNull(keySelector, nameof(keySelector));
 
             var result = new Dictionary<TKey, T>(immutableArray.Length, comparer);
-            foreach (var v in immutableArray)
+            foreach (T v in immutableArray)
             {
                 result.Add(keySelector(v), v);
             }
@@ -601,7 +601,7 @@ namespace System.Linq
             Requires.NotNull(elementSelector, nameof(elementSelector));
 
             var result = new Dictionary<TKey, TElement>(immutableArray.Length, comparer);
-            foreach (var v in immutableArray.array!)
+            foreach (T v in immutableArray.array!)
             {
                 result.Add(keySelector(v), elementSelector(v));
             }

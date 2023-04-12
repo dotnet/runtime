@@ -4,7 +4,7 @@ parameters:
   archType: ''
   osSubgroup: ''
   crossBuild: false
-  framework: 'net7.0'
+  framework: 'net8.0'
   isOfficialAllConfigurations: false
   isSourceBuild: false
   liveRuntimeBuildConfig: ''
@@ -70,7 +70,7 @@ jobs:
           - _crossBuildPropertyArg: /p:CrossBuild=true
 
         # force a value for OS when cross-building
-        - ${{ if in(parameters.osGroup, 'Browser', 'iOS', 'tvOS', 'Android', 'FreeBSD') }}:
+        - ${{ if in(parameters.osGroup, 'browser', 'ios', 'tvos', 'android', 'freebsd') }}:
           - _osArg: -os ${{ parameters.osGroup }}
 
         - ${{ if ne(parameters.framework, '') }}:

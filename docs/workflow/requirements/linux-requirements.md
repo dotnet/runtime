@@ -4,7 +4,6 @@
 * [Environment](#environment)
   * [Toolchain Setup](#toolchain-setup)
     * [Additional Requirements for Cross-Building](#additional-requirements-for-cross-building)
-      * [Alpine ARM Cross-Building Requirements](#alpine-arm-cross-building-requirements)
   * [Gentoo Special Case](#gentoo-special-case)
 
 This guide will walk you through the requirements to build _dotnet/runtime_ on Linux. Before building there is environment setup that needs to happen to pull in all the dependencies required by the build.
@@ -38,14 +37,13 @@ Install the following packages for the toolchain:
 * liblttng-ust-dev
 * libssl-dev
 * libkrb5-dev
-* libnuma-dev (optional, enables numa support)
 * zlib1g-dev
 * ninja-build (optional, enables building native code with ninja instead of make)
 
 ```bash
-sudo apt install -y cmake llvm lld clang build-essential
+sudo apt install -y cmake llvm lld clang build-essential \
 python-is-python3 curl git lldb libicu-dev liblttng-ust-dev \
-libssl-dev libnuma-dev libkrb5-dev zlib1g-dev ninja-build
+libssl-dev libkrb5-dev zlib1g-dev ninja-build
 ```
 
 You now have all the required components.

@@ -14,6 +14,7 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <TieredCompilation>false</TieredCompilation>
+    <EventSourceSupport>true</EventSourceSupport>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -28,8 +29,8 @@
     <ObjWriterRidWithoutPlatform>$(RuntimeIdentifier.Substring(0, $(_objWriterRidPlatformIndex)))</ObjWriterRidWithoutPlatform>
     <ObjWriterRidPlatform>$(RuntimeIdentifier.Substring($(_objWriterRidPlatformIndex)).TrimStart('-'))</ObjWriterRidPlatform>
 
-    <!-- If it's not win/osx/linux-musl, it's a non-portable Linux. Treat as Linux. -->
-    <ObjWriterRidWithoutPlatform Condition="'$(ObjWriterRidWithoutPlatform)' != 'win' and '$(ObjWriterRidWithoutPlatform)' != 'osx' and '$(ObjWriterRidWithoutPlatform)' != 'linux-musl'">linux</ObjWriterRidWithoutPlatform>
+    <!-- If it's not win/osx/freebsd/linux-musl, it's a non-portable Linux. Treat as Linux. -->
+    <ObjWriterRidWithoutPlatform Condition="'$(ObjWriterRidWithoutPlatform)' != 'win' and '$(ObjWriterRidWithoutPlatform)' != 'osx' and '$(ObjWriterRidWithoutPlatform)' != 'linux-musl' and '$(ObjWriterRidWithoutPlatform)' != 'freebsd'">linux</ObjWriterRidWithoutPlatform>
 
     <!-- OSX builds have a version -->
     <ObjWriterRidWithoutPlatform Condition="'$(ObjWriterRidWithoutPlatform)' == 'osx' and '$(ObjWriterRidPlatform)' == 'x64'">osx.10.12</ObjWriterRidWithoutPlatform>
@@ -45,6 +46,8 @@
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'win-x64'">$(runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'osx.11.0-arm64'">$(runtimeosx110arm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'osx.10.12-x64'">$(runtimeosx1012x64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
+    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'freebsd-x64'">$(runtimefreebsdx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
+    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'freebsd-arm64'">$(runtimefreebsdarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
 
     <!-- CoreDisTools are used in debugging visualizers. -->
     <IncludeCoreDisTools Condition="'$(Configuration)' != 'Release' and '$(CrossHostArch)' == ''">true</IncludeCoreDisTools>
@@ -86,6 +89,7 @@
   <ItemGroup>
     <Compile Include="..\..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
     <Compile Include="..\..\Common\InstructionSetHelpers.cs" Link="InstructionSetHelpers.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs" Link="HelperExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>

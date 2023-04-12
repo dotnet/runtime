@@ -1376,7 +1376,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                             If declaringType.IsConstructedGenericType Then
                                 declaringType = declaringType.GetGenericTypeDefinition
                             End If
-                            Dim rawMethod As MethodBase = Nothing
+                            Dim rawMethod As MethodInfo = Nothing
                             For Each candidate As MethodInfo In declaringType.GetTypeInfo.GetDeclaredMethods(item.Name)
                                 If candidate.HasSameMetadataDefinitionAs(item) Then
                                     rawMethod = candidate

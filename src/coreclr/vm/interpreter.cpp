@@ -112,7 +112,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
     SetFlag<Flag_typeHasGenericArgs>(methInfo->args.sigInst.classInstCount > 0);
     SetFlag<Flag_methHasGenericArgs>(methInfo->args.sigInst.methInstCount > 0);
     _ASSERTE_MSG(!GetFlag<Flag_hasGenericsContextArg>()
-                 || ((GetFlag<Flag_typeHasGenericArgs>() & !(GetFlag<Flag_hasThisArg>() && GetFlag<Flag_thisArgIsObjPtr>())) || GetFlag<Flag_methHasGenericArgs>()),
+                 || ((GetFlag<Flag_typeHasGenericArgs>() && !(GetFlag<Flag_hasThisArg>() && GetFlag<Flag_thisArgIsObjPtr>())) || GetFlag<Flag_methHasGenericArgs>()),
                  "If the method takes a generic parameter, is a static method of generic class (or meth of a value class), and/or itself takes generic parameters");
 
     if (GetFlag<Flag_hasThisArg>())
@@ -7781,7 +7781,7 @@ bool Interpreter::StaticFldAddrWork(CORINFO_ACCESS_FLAGS accessFlgs, /*out (byre
 
         EnsureClassInit(GetMethodTableFromClsHnd(fldTok.hClass));
 
-        if (fldInfo.fieldAccessor == CORINFO_FIELD_STATIC_TLS)
+        if ((fldInfo.fieldAccessor == CORINFO_FIELD_STATIC_TLS) || (fldInfo.fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED))
         {
             NYI_INTERP("Thread-local static.");
         }

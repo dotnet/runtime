@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Program
+public class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static uint PerformMod_1(uint i)
@@ -59,7 +60,8 @@ class Program
         return a - b * c;
     }
 
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         var result = 100;
 

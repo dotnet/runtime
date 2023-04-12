@@ -15,7 +15,7 @@ namespace System.Net
     // Utf-8 characters.
     internal sealed class HttpListenerRequestUriBuilder
     {
-        private static readonly Encoding s_utf8Encoding = new UTF8Encoding(false, true);
+        private static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(false, true);
         private static readonly Encoding s_ansiEncoding = Encoding.GetEncoding(0, new EncoderExceptionFallback(), new DecoderExceptionFallback());
 
         private readonly string _rawUri;

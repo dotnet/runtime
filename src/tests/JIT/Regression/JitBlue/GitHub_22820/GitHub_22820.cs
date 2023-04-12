@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // Repro for https://github.com/dotnet/coreclr/issues/22820.
 // On x86 we need to report enclosed handler
@@ -17,7 +18,7 @@ class DisposableObject : IDisposable
     }
 }
 
-class Program
+public class Program
 {
     public static bool IsExpectedException(Exception e)
     {
@@ -31,7 +32,8 @@ class Program
         return new DisposableObject();
     }
     
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = 0;
 

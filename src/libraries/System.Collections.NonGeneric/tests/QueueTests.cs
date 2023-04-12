@@ -109,7 +109,7 @@ namespace System.Collections.Tests
             Assert.Equal(testQueue.ToArray(), items);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void DebuggerAttribute_NullQueue_ThrowsArgumentNullException()
         {
             bool threwNull = false;

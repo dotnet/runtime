@@ -735,6 +735,9 @@ namespace Test
     {
         [Obsolete(""This is a test"")]
         public bool Test { get; set; }
+
+        [Obsolete]
+        public bool Test2 { get; set; }
     }
 }
 ";

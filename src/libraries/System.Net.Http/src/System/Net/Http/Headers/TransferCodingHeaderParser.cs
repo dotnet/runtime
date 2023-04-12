@@ -37,14 +37,8 @@ namespace System.Net.Http.Headers
             return resultLength;
         }
 
-        private static TransferCodingHeaderValue CreateTransferCoding()
-        {
-            return new TransferCodingHeaderValue();
-        }
+        private static TransferCodingHeaderValue CreateTransferCoding() => new TransferCodingHeaderValue();
 
-        private static TransferCodingHeaderValue CreateTransferCodingWithQuality()
-        {
-            return new TransferCodingWithQualityHeaderValue();
-        }
+        private static TransferCodingWithQualityHeaderValue CreateTransferCodingWithQuality() => new TransferCodingWithQualityHeaderValue();
     }
 }

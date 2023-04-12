@@ -1315,6 +1315,43 @@ QueueUserAPC(
          IN HANDLE hThread,
          IN ULONG_PTR dwData);
 
+#if defined(HOST_X86) || defined(HOST_AMD64)
+// MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
+// We define matching signatures for use on Unix platforms.
+//
+// IMPORTANT: Unlike MSVC, Unix does not explicitly zero ECX for __cpuid
+
+#if __has_builtin(__cpuid)
+extern "C" void __cpuid(int cpuInfo[4], int function_id);
+#else
+inline void __cpuid(int cpuInfo[4], int function_id)
+{
+    // Based on the Clang implementation provided in cpuid.h:
+    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
+
+    __asm("  cpuid\n" \
+        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
+        : "0"(function_id)
+    );
+}
+#endif // __cpuid
+
+#if __has_builtin(__cpuidex)
+extern "C" void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
+#else
+inline void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
+{
+    // Based on the Clang implementation provided in cpuid.h:
+    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
+
+    __asm("  cpuid\n" \
+        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
+        : "0"(function_id), "2"(subFunction_id)
+    );
+}
+#endif // __cpuidex
+#endif // HOST_X86 || HOST_AMD64
+
 #ifdef HOST_X86
 
 //
@@ -1461,6 +1498,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 //
 
 #elif defined(HOST_AMD64)
+
 // copied from winnt.h
 
 #define CONTEXT_AMD64   0x100000
@@ -1482,10 +1520,32 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define CONTEXT_EXCEPTION_REQUEST 0x40000000
 #define CONTEXT_EXCEPTION_REPORTING 0x80000000
 
+#define XSTATE_GSSE (2)
+#define XSTATE_AVX (XSTATE_GSSE)
+#define XSTATE_AVX512_KMASK (5)
+#define XSTATE_AVX512_ZMM_H (6)
+#define XSTATE_AVX512_ZMM (7)
+
+#define XSTATE_MASK_GSSE (UI64(1) << (XSTATE_GSSE))
+#define XSTATE_MASK_AVX (XSTATE_MASK_GSSE)
+#define XSTATE_MASK_AVX512 ((UI64(1) << (XSTATE_AVX512_KMASK)) | \
+                            (UI64(1) << (XSTATE_AVX512_ZMM_H)) | \
+                            (UI64(1) << (XSTATE_AVX512_ZMM)))
+
 typedef struct DECLSPEC_ALIGN(16) _M128A {
     ULONGLONG Low;
     LONGLONG High;
 } M128A, *PM128A;
+
+typedef struct DECLSPEC_ALIGN(16) _M256 {
+    M128A Low;
+    M128A High;
+} M256, *PM256;
+
+typedef struct DECLSPEC_ALIGN(16) _M512 {
+    M256 Low;
+    M256 High;
+} M512, *PM512;
 
 typedef struct _XMM_SAVE_AREA32 {
     WORD   ControlWord;
@@ -1623,6 +1683,82 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     DWORD64 LastBranchFromRip;
     DWORD64 LastExceptionToRip;
     DWORD64 LastExceptionFromRip;
+
+    // XSTATE
+    DWORD64 XStateFeaturesMask;
+    DWORD64 XStateReserved0;
+
+    // XSTATE_AVX
+    struct {
+        M128A Ymm0H;
+        M128A Ymm1H;
+        M128A Ymm2H;
+        M128A Ymm3H;
+        M128A Ymm4H;
+        M128A Ymm5H;
+        M128A Ymm6H;
+        M128A Ymm7H;
+        M128A Ymm8H;
+        M128A Ymm9H;
+        M128A Ymm10H;
+        M128A Ymm11H;
+        M128A Ymm12H;
+        M128A Ymm13H;
+        M128A Ymm14H;
+        M128A Ymm15H;
+    };
+
+    // XSTATE_AVX512_KMASK
+    struct {
+        DWORD64 KMask0;
+        DWORD64 KMask1;
+        DWORD64 KMask2;
+        DWORD64 KMask3;
+        DWORD64 KMask4;
+        DWORD64 KMask5;
+        DWORD64 KMask6;
+        DWORD64 KMask7;
+    };
+
+    // XSTATE_AVX512_ZMM_H
+    struct {
+        M256 Zmm0H;
+        M256 Zmm1H;
+        M256 Zmm2H;
+        M256 Zmm3H;
+        M256 Zmm4H;
+        M256 Zmm5H;
+        M256 Zmm6H;
+        M256 Zmm7H;
+        M256 Zmm8H;
+        M256 Zmm9H;
+        M256 Zmm10H;
+        M256 Zmm11H;
+        M256 Zmm12H;
+        M256 Zmm13H;
+        M256 Zmm14H;
+        M256 Zmm15H;
+    };
+
+    // XSTATE_AVX512_ZMM
+    struct {
+        M512 Zmm16;
+        M512 Zmm17;
+        M512 Zmm18;
+        M512 Zmm19;
+        M512 Zmm20;
+        M512 Zmm21;
+        M512 Zmm22;
+        M512 Zmm23;
+        M512 Zmm24;
+        M512 Zmm25;
+        M512 Zmm26;
+        M512 Zmm27;
+        M512 Zmm28;
+        M512 Zmm29;
+        M512 Zmm30;
+        M512 Zmm31;
+    };
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
 //
@@ -2619,6 +2755,8 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define PAL_CS_NATIVE_DATA_SIZE 12
 #elif defined(__FreeBSD__) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 24
+#elif defined(__FreeBSD__) && defined(HOST_ARM64)
+#define PAL_CS_NATIVE_DATA_SIZE 24
 #elif defined(__linux__) && defined(HOST_ARM)
 #define PAL_CS_NATIVE_DATA_SIZE 80
 #elif defined(__linux__) && defined(HOST_ARM64)
@@ -2867,14 +3005,6 @@ BOOL
 PALAPI
 FreeLibrary(
     IN OUT HMODULE hLibModule);
-
-PALIMPORT
-PAL_NORETURN
-VOID
-PALAPI
-FreeLibraryAndExitThread(
-    IN HMODULE hLibModule,
-    IN DWORD dwExitCode);
 
 PALIMPORT
 BOOL
@@ -3637,7 +3767,7 @@ to the variable that 'Addend' points to.
 Parameters
 
 lpAddend
-[in/out] Pointer to the variable to to added.
+[in/out] Pointer to the variable to added.
 
 Return Values
 
@@ -3724,23 +3854,6 @@ YieldProcessor()
     return;
 #endif
 }
-
-PALIMPORT
-DWORD
-PALAPI
-GetCurrentProcessorNumber();
-
-/*++
-Function:
-PAL_HasGetCurrentProcessorNumber
-
-Checks if GetCurrentProcessorNumber is available in the current environment
-
---*/
-PALIMPORT
-BOOL
-PALAPI
-PAL_HasGetCurrentProcessorNumber();
 
 #define FORMAT_MESSAGE_ALLOCATE_BUFFER 0x00000100
 #define FORMAT_MESSAGE_IGNORE_INSERTS  0x00000200
@@ -3944,8 +4057,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
    defines */
 #ifndef PAL_STDCPP_COMPAT
 #define exit          PAL_exit
-#define printf        PAL_printf
-#define vprintf       PAL_vprintf
 #define wcstod        PAL_wcstod
 #define wcstoul       PAL_wcstoul
 #define wcscat        PAL_wcscat
@@ -4015,6 +4126,10 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define _mm_getcsr    PAL__mm_getcsr
 #define _mm_setcsr    PAL__mm_setcsr
 #endif // HOST_AMD64
+
+// Forward declare functions that are in header files we can't include yet
+int printf(const char *, ...);
+int vprintf(const char *, va_list);
 
 #endif // !PAL_STDCPP_COMPAT
 
@@ -4092,14 +4207,13 @@ PALIMPORT int remove(const char*);
 PALIMPORT DLLEXPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t) THROW_DECL;
 PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);
 PALIMPORT DLLEXPORT int __cdecl _stricmp(const char *, const char *);
-PALIMPORT DLLEXPORT int __cdecl vsprintf_s(char *, size_t, const char *, va_list);
 PALIMPORT char * __cdecl _gcvt_s(char *, int, double, int);
 PALIMPORT int __cdecl __iscsym(int);
 PALIMPORT DLLEXPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
 PALIMPORT int __cdecl _wcsnicmp(const WCHAR *, const WCHAR *, size_t);
-PALIMPORT int __cdecl _vsnprintf(char *, size_t, const char *, va_list);
 PALIMPORT DLLEXPORT int __cdecl _vsnprintf_s(char *, size_t, size_t, const char *, va_list);
 PALIMPORT DLLEXPORT int __cdecl _snprintf_s(char *, size_t, size_t, const char *, ...);
+PALIMPORT DLLEXPORT int __cdecl vsprintf_s(char *, size_t, const char *, va_list);
 PALIMPORT DLLEXPORT int __cdecl sprintf_s(char *, size_t, const char *, ... );
 PALIMPORT DLLEXPORT int __cdecl sscanf_s(const char *, const char *, ...);
 PALIMPORT DLLEXPORT errno_t __cdecl _itow_s(int, WCHAR *, size_t, int);
@@ -4364,9 +4478,6 @@ PALIMPORT PAL_FILE * __cdecl _wfopen(const WCHAR *, const WCHAR *);
 
 PALIMPORT int __cdecl rand(void);
 PALIMPORT void __cdecl srand(unsigned int);
-
-PALIMPORT DLLEXPORT int __cdecl printf(const char *, ...);
-PALIMPORT int __cdecl vprintf(const char *, va_list);
 
 #ifdef _MSC_VER
 #define PAL_get_caller _MSC_VER

@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class RuntimeMethodHandleNode : ObjectNode, ISymbolDefinitionNode
+    public class RuntimeMethodHandleNode : DehydratableObjectNode, ISymbolDefinitionNode
     {
         private MethodDesc _targetMethod;
 
@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool IsShareable => false;
         public override bool StaticDependenciesAreComputed => true;
 
-        public override ObjectNodeSection GetSection(NodeFactory factory)
+        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
         {
             if (factory.Target.IsWindows)
                 return ObjectNodeSection.ReadOnlyDataSection;
@@ -52,7 +52,13 @@ namespace ILCompiler.DependencyAnalysis
                 && _targetMethod.HasInstantiation && _targetMethod.IsVirtual)
             {
                 dependencies ??= new DependencyList();
-                dependencies.Add(factory.GVMDependencies(_targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "GVM dependencies for runtime method handle");
+                MethodDesc canonMethod = _targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                dependencies.Add(factory.GVMDependencies(canonMethod), "GVM dependencies for runtime method handle");
+
+                // GVM analysis happens on canonical forms, but this is potentially injecting new genericness
+                // into the system. Ensure reflection analysis can still see this.
+                if (_targetMethod.IsAbstract)
+                    factory.MetadataManager.GetDependenciesDueToMethodCodePresence(ref dependencies, factory, canonMethod, methodIL: null);
             }
 
             factory.MetadataManager.GetDependenciesDueToLdToken(ref dependencies, factory, _targetMethod);
@@ -62,7 +68,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private static Utf8String s_NativeLayoutSignaturePrefix = new Utf8String("__RMHSignature_");
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
 

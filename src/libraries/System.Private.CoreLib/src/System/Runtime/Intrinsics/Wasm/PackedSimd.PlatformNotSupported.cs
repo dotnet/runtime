@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 #pragma warning disable IDE0060
@@ -25,31 +26,31 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<nint>   Splat(nint   value) { throw new PlatformNotSupportedException(); }
         public static Vector128<nuint>  Splat(nuint  value) { throw new PlatformNotSupportedException(); }
 
-        public static int    ExtractLane(Vector128<sbyte>  value, byte index) { throw new PlatformNotSupportedException(); }
-        public static uint   ExtractLane(Vector128<byte>   value, byte index) { throw new PlatformNotSupportedException(); }
-        public static int    ExtractLane(Vector128<short>  value, byte index) { throw new PlatformNotSupportedException(); }
-        public static uint   ExtractLane(Vector128<ushort> value, byte index) { throw new PlatformNotSupportedException(); }
-        public static int    ExtractLane(Vector128<int>    value, byte index) { throw new PlatformNotSupportedException(); }
-        public static uint   ExtractLane(Vector128<uint>   value, byte index) { throw new PlatformNotSupportedException(); }
-        public static long   ExtractLane(Vector128<long>   value, byte index) { throw new PlatformNotSupportedException(); }
-        public static ulong  ExtractLane(Vector128<ulong>  value, byte index) { throw new PlatformNotSupportedException(); }
-        public static float  ExtractLane(Vector128<float>  value, byte index) { throw new PlatformNotSupportedException(); }
-        public static double ExtractLane(Vector128<double> value, byte index) { throw new PlatformNotSupportedException(); }
-        public static nint   ExtractLane(Vector128<nint>   value, byte index) { throw new PlatformNotSupportedException(); }
-        public static nuint  ExtractLane(Vector128<nuint>  value, byte index) { throw new PlatformNotSupportedException(); }
+        public static int    ExtractLane(Vector128<sbyte>  value, [ConstantExpected(Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
+        public static uint   ExtractLane(Vector128<byte>   value, [ConstantExpected(Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
+        public static int    ExtractLane(Vector128<short>  value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
+        public static uint   ExtractLane(Vector128<ushort> value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
+        public static int    ExtractLane(Vector128<int>    value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
+        public static uint   ExtractLane(Vector128<uint>   value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
+        public static long   ExtractLane(Vector128<long>   value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
+        public static ulong  ExtractLane(Vector128<ulong>  value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
+        public static float  ExtractLane(Vector128<float>  value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
+        public static double ExtractLane(Vector128<double> value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
+        public static nint   ExtractLane(Vector128<nint>   value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
+        public static nuint  ExtractLane(Vector128<nuint>  value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
-        public static Vector128<sbyte>  ReplaceLane(Vector128<sbyte>  vector, byte imm, int    value) { throw new PlatformNotSupportedException(); }
-        public static Vector128<byte>   ReplaceLane(Vector128<byte>   vector, byte imm, uint   value) { throw new PlatformNotSupportedException(); }
-        public static Vector128<short>  ReplaceLane(Vector128<short>  vector, byte imm, int    value) { throw new PlatformNotSupportedException(); }
-        public static Vector128<ushort> ReplaceLane(Vector128<ushort> vector, byte imm, uint   value) { throw new PlatformNotSupportedException(); }
-        public static Vector128<int>    ReplaceLane(Vector128<int>    vector, byte imm, int    value) { throw new PlatformNotSupportedException(); }
-        public static Vector128<int>    ReplaceLane(Vector128<uint>   vector, byte imm, uint   value) { throw new PlatformNotSupportedException(); }
-        public static Vector128<long>   ReplaceLane(Vector128<long>   vector, byte imm, long   value) { throw new PlatformNotSupportedException(); }
-        public static Vector128<ulong>  ReplaceLane(Vector128<ulong>  vector, byte imm, ulong  value) { throw new PlatformNotSupportedException(); }
-        public static Vector128<float>  ReplaceLane(Vector128<float>  vector, byte imm, float  value) { throw new PlatformNotSupportedException(); }
-        public static Vector128<double> ReplaceLane(Vector128<double> vector, byte imm, double value) { throw new PlatformNotSupportedException(); }
-        public static Vector128<nint>   ReplaceLane(Vector128<nint>   vector, byte imm, nint   value) { throw new PlatformNotSupportedException(); }
-        public static Vector128<nuint>  ReplaceLane(Vector128<nuint>  vector, byte imm, nuint  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte>  ReplaceLane(Vector128<sbyte>  vector, [ConstantExpected(Max = (byte)(15))] byte imm, int    value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte>   ReplaceLane(Vector128<byte>   vector, [ConstantExpected(Max = (byte)(15))] byte imm, uint   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short>  ReplaceLane(Vector128<short>  vector, [ConstantExpected(Max = (byte)(7))] byte imm, int    value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ReplaceLane(Vector128<ushort> vector, [ConstantExpected(Max = (byte)(7))] byte imm, uint   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    ReplaceLane(Vector128<int>    vector, [ConstantExpected(Max = (byte)(3))] byte imm, int    value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    ReplaceLane(Vector128<uint>   vector, [ConstantExpected(Max = (byte)(3))] byte imm, uint   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   ReplaceLane(Vector128<long>   vector, [ConstantExpected(Max = (byte)(1))] byte imm, long   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  ReplaceLane(Vector128<ulong>  vector, [ConstantExpected(Max = (byte)(1))] byte imm, ulong  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float>  ReplaceLane(Vector128<float>  vector, [ConstantExpected(Max = (byte)(3))] byte imm, float  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> ReplaceLane(Vector128<double> vector, [ConstantExpected(Max = (byte)(1))] byte imm, double value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<nint>   ReplaceLane(Vector128<nint>   vector, [ConstantExpected(Max = (byte)(3))] byte imm, nint   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<nuint>  ReplaceLane(Vector128<nuint>  vector, [ConstantExpected(Max = (byte)(3))] byte imm, nuint  value) { throw new PlatformNotSupportedException(); }
 
         public static Vector128<sbyte> Shuffle(Vector128<sbyte> lower, Vector128<sbyte> upper, Vector128<sbyte> indices) { throw new PlatformNotSupportedException(); }
         public static Vector128<byte>  Shuffle(Vector128<byte>  lower, Vector128<byte>  upper, Vector128<byte>  indices) { throw new PlatformNotSupportedException(); }
@@ -101,6 +102,41 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<nint>   Negate(Vector128<nint>   value) { throw new PlatformNotSupportedException(); }
         public static Vector128<nuint>  Negate(Vector128<nuint>  value) { throw new PlatformNotSupportedException(); }
 
+        // Bit shifts
+
+        public static Vector128<sbyte>  ShiftLeft(Vector128<sbyte>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte>   ShiftLeft(Vector128<byte>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short>  ShiftLeft(Vector128<short>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftLeft(Vector128<ushort> value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    ShiftLeft(Vector128<int>    value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   ShiftLeft(Vector128<uint>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   ShiftLeft(Vector128<long>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  ShiftLeft(Vector128<ulong>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<nint>   ShiftLeft(Vector128<nint>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<nuint>  ShiftLeft(Vector128<nuint>  value, int count) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<sbyte>  ShiftRightArithmetic(Vector128<sbyte>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte>   ShiftRightArithmetic(Vector128<byte>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short>  ShiftRightArithmetic(Vector128<short>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftRightArithmetic(Vector128<ushort> value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    ShiftRightArithmetic(Vector128<int>    value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   ShiftRightArithmetic(Vector128<uint>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   ShiftRightArithmetic(Vector128<long>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  ShiftRightArithmetic(Vector128<ulong>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<nint>   ShiftRightArithmetic(Vector128<nint>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<nuint>  ShiftRightArithmetic(Vector128<nuint>  value, int count) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<sbyte>  ShiftRightLogical(Vector128<sbyte>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte>   ShiftRightLogical(Vector128<byte>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short>  ShiftRightLogical(Vector128<short>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    ShiftRightLogical(Vector128<int>    value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   ShiftRightLogical(Vector128<uint>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   ShiftRightLogical(Vector128<long>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  ShiftRightLogical(Vector128<ulong>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<nint>   ShiftRightLogical(Vector128<nint>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<nuint>  ShiftRightLogical(Vector128<nuint>  value, int count) { throw new PlatformNotSupportedException(); }
+
         public static Vector128<sbyte>  And(Vector128<sbyte>  left, Vector128<sbyte>  right) { throw new PlatformNotSupportedException(); }
         public static Vector128<byte>   And(Vector128<byte>   left, Vector128<byte>   right) { throw new PlatformNotSupportedException(); }
         public static Vector128<short>  And(Vector128<short>  left, Vector128<short>  right) { throw new PlatformNotSupportedException(); }
@@ -150,5 +186,11 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<double> CompareNotEqual(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
         public static Vector128<nint>   CompareNotEqual(Vector128<nint>   left, Vector128<nint>   right) { throw new PlatformNotSupportedException(); }
         public static Vector128<nuint>  CompareNotEqual(Vector128<nuint>  left, Vector128<nuint>  right) { throw new PlatformNotSupportedException(); }
+
+        internal static Vector128<sbyte>  ConvertNarrowingSignedSaturate(Vector128<short>   lower, Vector128<short> upper) { throw new PlatformNotSupportedException(); }
+        internal static Vector128<short>  ConvertNarrowingSignedSaturate(Vector128<int>     lower, Vector128<int>   upper) { throw new PlatformNotSupportedException(); }
+
+        internal static Vector128<byte>   ConvertNarrowingUnsignedSaturate(Vector128<short> lower, Vector128<short> upper) { throw new PlatformNotSupportedException(); }
+        internal static Vector128<ushort> ConvertNarrowingUnsignedSaturate(Vector128<int>   lower, Vector128<int>   upper) { throw new PlatformNotSupportedException(); }
     }
 }

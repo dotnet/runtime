@@ -1,19 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
-    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <PackageDescription>Provides the functionality to bind an object to data in configuration providers for Microsoft.Extensions.Configuration. This package enables you to represent the configuration data as strongly-typed classes defined in the application code. To bind a configuration, use the Microsoft.Extensions.Configuration.ConfigurationBinder.Get extension method on the IConfiguration object. To use this package, you also need to install a package for the configuration provider, for example, Microsoft.Extensions.Configuration.Json for the JSON provider.</PackageDescription>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj" />
     <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs" Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs" />
     <Compile Include="$(CommonPath)System\ThrowHelper.cs" Link="Common\System\ThrowHelper.cs" />
-    <None Include="..\README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -30,5 +27,20 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.netcoreapp.cs" Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.netcoreapp.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj"
+                      ReferenceOutputAssembly="false"
+                      PackAsAnalyzer="true" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <IncludeMultiTargetRoslynComponentTargets>false</IncludeMultiTargetRoslynComponentTargets>
+    <DisableNETStandardCompatErrors>true</DisableNETStandardCompatErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="buildTransitive\$(PackageId).targets" PackagePath="buildTransitive\netstandard2.0\" />
   </ItemGroup>
 </Project>

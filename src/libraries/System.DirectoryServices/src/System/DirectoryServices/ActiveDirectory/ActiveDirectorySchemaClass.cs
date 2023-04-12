@@ -1082,7 +1082,7 @@ namespace System.DirectoryServices.ActiveDirectory
         // This method retrieves all the values of a property (single valued) from the values
         // that were retrieved from the server.
         //
-        private ICollection GetValuesFromCache(string propertyName)
+        private ArrayList GetValuesFromCache(string propertyName)
         {
             // retrieve the properties from the server if necessary
             InitializePropertiesFromSchemaContainer();

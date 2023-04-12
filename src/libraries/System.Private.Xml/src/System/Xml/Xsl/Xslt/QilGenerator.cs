@@ -1516,7 +1516,7 @@ namespace System.Xml.Xsl.Xslt
 
         // REVIEW: Can we handle both sort's and with-param's in the document order?
         // CompileSorts() creates helper variables in varHelper
-        private QilNode? CompileSorts(IList<XslNode> content, ref LoopFocus parentLoop)
+        private QilList? CompileSorts(IList<XslNode> content, ref LoopFocus parentLoop)
         {
             QilList keyList = _f.BaseFactory.SortKeyList();
 

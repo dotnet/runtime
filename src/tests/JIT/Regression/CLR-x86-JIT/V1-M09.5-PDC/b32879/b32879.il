@@ -6,8 +6,9 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern mscorlib { }
-.assembly 'bug' { }
+.assembly 'b32879' { }
 .class public auto ansi HiDad extends [mscorlib]System.Object
 {
   .method public static void main() il managed forwardref
@@ -56,11 +57,14 @@
 
 } 
 
-.class auto ansi _vbProject extends [mscorlib]System.Object
+.class public auto ansi _vbProject extends [mscorlib]System.Object
 {
   .field static assembly class [mscorlib]System.Collections.Dictionary _vbEventCollection
-  .method public static int32 _main(class [mscorlib]System.String[] _s) il managed forwardref
+  .method public static int32 _main() il managed forwardref
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  8
     IL_0000:  call       void HiDad::main()

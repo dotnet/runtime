@@ -30,7 +30,11 @@ namespace ILCompiler.DependencyAnalysis
             if (!relocsOnly)
             {
                 // The concrete slot won't be known until we're emitting data - don't ask for it in relocsOnly.
-                dictionarySlot = factory.GenericDictionaryLayout(_dictionaryOwner).GetSlotForEntry(lookup);
+                if (!factory.GenericDictionaryLayout(_dictionaryOwner).TryGetSlotForEntry(lookup, out dictionarySlot))
+                {
+                    encoder.EmitZeroReg(result);
+                    return;
+                }
             }
 
             // Load the generic dictionary cell
@@ -82,9 +86,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         Debug.Assert(contextRegister == encoder.TargetRegister.Arg0);
 
-                        MetadataType target = (MetadataType)_target;
-
-                        if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                        if (!TriggersLazyStaticConstructor(factory))
                         {
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
                             encoder.EmitRET();
@@ -96,8 +98,8 @@ namespace ILCompiler.DependencyAnalysis
 
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextSize(factory.Target);
-                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, factory.Target.PointerSize - cctorContextSize, 0, AddrModeSize.Int32);
-                            encoder.EmitCMP(ref initialized, 1);
+                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, -cctorContextSize, 0, AddrModeSize.Int64);
+                            encoder.EmitCMP(ref initialized, 0);
                             encoder.EmitRETIfEqual();
 
                             AddrMode loadCctor = new AddrMode(encoder.TargetRegister.Arg0, null, -cctorContextSize, 0, AddrModeSize.Int64);
@@ -119,7 +121,7 @@ namespace ILCompiler.DependencyAnalysis
                         AddrMode loadFromResult = new AddrMode(encoder.TargetRegister.Result, null, 0, 0, AddrModeSize.Int64);
                         encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromResult);
 
-                        if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                        if (!TriggersLazyStaticConstructor(factory))
                         {
                             encoder.EmitRET();
                         }
@@ -130,8 +132,8 @@ namespace ILCompiler.DependencyAnalysis
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg0, nonGcRegionLookup, relocsOnly);
 
                             int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextSize(factory.Target);
-                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, factory.Target.PointerSize - cctorContextSize, 0, AddrModeSize.Int32);
-                            encoder.EmitCMP(ref initialized, 1);
+                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, -cctorContextSize, 0, AddrModeSize.Int64);
+                            encoder.EmitCMP(ref initialized, 0);
                             encoder.EmitRETIfEqual();
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
@@ -153,7 +155,7 @@ namespace ILCompiler.DependencyAnalysis
                         EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg1, _lookupSignature, relocsOnly);
 
                         ISymbolNode helperEntrypoint;
-                        if (factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                        if (TriggersLazyStaticConstructor(factory))
                         {
                             // There is a lazy class constructor. We need the non-GC static base because that's where the
                             // class constructor context lives.

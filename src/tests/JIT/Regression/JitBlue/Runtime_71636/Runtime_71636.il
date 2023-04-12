@@ -1,17 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly extern System.Runtime { }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
+.assembly extern xunit.core {}
 .assembly extern System.Console { }
 
-.assembly Runtime_71636.dll { }
+.assembly Runtime_71636 { }
 
-.class Runtime_71636 extends [System.Runtime]System.Object
+.class public Runtime_71636 extends [System.Runtime]System.Object
 {
   .field private static native int s_globalCounter;
 
   .method public static int32 Main()
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
 
     call bool Runtime_71636::ProblemWithLdElemA()

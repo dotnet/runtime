@@ -56,14 +56,14 @@ namespace System.Security.Cryptography.X509Certificates
                 case AlgId.CALG_RSA_KEYX:
                 case AlgId.CALG_RSA_SIGN:
                     {
-                        RSA rsa = new RSABCrypt();
+                        var rsa = new RSABCrypt();
                         rsa.ImportRSAPublicKey(encodedKeyValue, out _);
                         return rsa;
                     }
                 case AlgId.CALG_DSS_SIGN:
                     {
                         byte[] keyBlob = ConstructDSSPublicKeyCspBlob(encodedKeyValue, encodedParameters);
-                        DSACryptoServiceProvider dsa = new DSACryptoServiceProvider();
+                        var dsa = new DSACryptoServiceProvider();
                         dsa.ImportCspBlob(keyBlob);
                         return dsa;
                     }
@@ -135,7 +135,13 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     unsafe
                     {
-                        bool success = Interop.Crypt32.CryptImportPublicKeyInfoEx2(Interop.Crypt32.CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), importFlags, null, out bCryptKeyHandle);
+                        bool success = Interop.Crypt32.CryptImportPublicKeyInfoEx2(
+                            Interop.Crypt32.CertEncodingType.X509_ASN_ENCODING,
+                            &(certContext.DangerousCertContext->pCertInfo->SubjectPublicKeyInfo),
+                            importFlags,
+                            null,
+                            out bCryptKeyHandle);
+
                         if (!success)
                         {
                             Exception e = Marshal.GetHRForLastWin32Error().ToCryptographicException();

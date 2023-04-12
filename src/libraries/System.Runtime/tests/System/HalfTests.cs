@@ -934,7 +934,7 @@ namespace System.Tests
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
             yield return new object[] { Half.Epsilon, "G", invariantFormat, "6E-08" };
 
-            yield return new object[] { 32.5f, "C100", invariantFormat, "¤32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5f, "C100", invariantFormat, "\u00A432.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { 32.5f, "P100", invariantFormat, "3,250.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
             yield return new object[] { 32.5f, "E100", invariantFormat, "3.2500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
             yield return new object[] { 32.5f, "F100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
@@ -2074,6 +2074,49 @@ namespace System.Tests
         public static void BitIncrement(Half value, Half expectedResult)
         {
             AssertExtensions.Equal(expectedResult, Half.BitIncrement(value), Half.Zero);
+        }
+
+        public static IEnumerable<object[]> Lerp_TestData()
+        {
+            yield return new object[] { Half.NegativeInfinity,  Half.NegativeInfinity, (Half)(0.5f),  Half.NegativeInfinity };
+            yield return new object[] { Half.NegativeInfinity,  Half.NaN,              (Half)(0.5f),  Half.NaN };
+            yield return new object[] { Half.NegativeInfinity,  Half.PositiveInfinity, (Half)(0.5f),  Half.NaN };
+            yield return new object[] { Half.NegativeInfinity,  (Half)(0.0f),          (Half)(0.5f),  Half.NegativeInfinity };
+            yield return new object[] { Half.NegativeInfinity,  (Half)(1.0f),          (Half)(0.5f),  Half.NegativeInfinity };
+            yield return new object[] { Half.NaN,               Half.NegativeInfinity, (Half)(0.5f),  Half.NaN };
+            yield return new object[] { Half.NaN,               Half.NaN,              (Half)(0.5f),  Half.NaN };
+            yield return new object[] { Half.NaN,               Half.PositiveInfinity, (Half)(0.5f),  Half.NaN };
+            yield return new object[] { Half.NaN,               (Half)(0.0f),          (Half)(0.5f),  Half.NaN };
+            yield return new object[] { Half.NaN,               (Half)(1.0f),          (Half)(0.5f),  Half.NaN };
+            yield return new object[] { Half.PositiveInfinity,  Half.NegativeInfinity, (Half)(0.5f),  Half.NaN };
+            yield return new object[] { Half.PositiveInfinity,  Half.NaN,              (Half)(0.5f),  Half.NaN };
+            yield return new object[] { Half.PositiveInfinity,  Half.PositiveInfinity, (Half)(0.5f),  Half.PositiveInfinity };
+            yield return new object[] { Half.PositiveInfinity,  (Half)(0.0f),          (Half)(0.5f),  Half.PositiveInfinity };
+            yield return new object[] { Half.PositiveInfinity,  (Half)(1.0f),          (Half)(0.5f),  Half.PositiveInfinity };
+            yield return new object[] { (Half)(1.0f),           (Half)(3.0f),          (Half)(0.0f),  (Half)(1.0f) };
+            yield return new object[] { (Half)(1.0f),           (Half)(3.0f),          (Half)(0.5f),  (Half)(2.0f) };
+            yield return new object[] { (Half)(1.0f),           (Half)(3.0f),          (Half)(1.0f),  (Half)(3.0f) };
+            yield return new object[] { (Half)(1.0f),           (Half)(3.0f),          (Half)(2.0f),  (Half)(5.0f) };
+            yield return new object[] { (Half)(2.0f),           (Half)(4.0f),          (Half)(0.0f),  (Half)(2.0f) };
+            yield return new object[] { (Half)(2.0f),           (Half)(4.0f),          (Half)(0.5f),  (Half)(3.0f) };
+            yield return new object[] { (Half)(2.0f),           (Half)(4.0f),          (Half)(1.0f),  (Half)(4.0f) };
+            yield return new object[] { (Half)(2.0f),           (Half)(4.0f),          (Half)(2.0f),  (Half)(6.0f) };
+            yield return new object[] { (Half)(3.0f),           (Half)(1.0f),          (Half)(0.0f),  (Half)(3.0f) };
+            yield return new object[] { (Half)(3.0f),           (Half)(1.0f),          (Half)(0.5f),  (Half)(2.0f) };
+            yield return new object[] { (Half)(3.0f),           (Half)(1.0f),          (Half)(1.0f),  (Half)(1.0f) };
+            yield return new object[] { (Half)(3.0f),           (Half)(1.0f),          (Half)(2.0f), -(Half)(1.0f) };
+            yield return new object[] { (Half)(4.0f),           (Half)(2.0f),          (Half)(0.0f),  (Half)(4.0f) };
+            yield return new object[] { (Half)(4.0f),           (Half)(2.0f),          (Half)(0.5f),  (Half)(3.0f) };
+            yield return new object[] { (Half)(4.0f),           (Half)(2.0f),          (Half)(1.0f),  (Half)(2.0f) };
+            yield return new object[] { (Half)(4.0f),           (Half)(2.0f),          (Half)(2.0f),  (Half)(0.0f) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Lerp_TestData))]
+        public static void LerpTest(Half value1, Half value2, Half amount, Half expectedResult)
+        {
+            AssertExtensions.Equal(+expectedResult, Half.Lerp(+value1, +value2, amount), Half.Zero);
+            AssertExtensions.Equal((expectedResult == Half.Zero) ? expectedResult : -expectedResult, Half.Lerp(-value1, -value2, amount), Half.Zero);
         }
     }
 }

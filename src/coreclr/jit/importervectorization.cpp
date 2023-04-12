@@ -68,47 +68,47 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
     return true;
 }
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_64BIT)
+#if defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
-// CreateConstVector: a helper to create Vector128/256.Create(<cns>) node
+// CreateConstVector: a helper to create Vector128/256/512.Create(<cns>) node
 //
 // Arguments:
 //    comp     - Compiler object
-//    simdType - Vector type, either TYP_SIMD32 (xarch only) or TYP_SIMD16
+//    simdType - Vector type, TYP_SIMD64 (xarch only), TYP_SIMD32 (xarch only) or TYP_SIMD16
 //    cns      - Constant data
 //
 // Return Value:
-//    GenTreeHWIntrinsic node representing Vector128/256.Create(<cns>)
+//    GenTreeVecCon node representing Vector128/256/512.Create(<cns>)
 //
-static GenTreeHWIntrinsic* CreateConstVector(Compiler* comp, var_types simdType, WCHAR* cns)
+static GenTreeVecCon* CreateConstVector(Compiler* comp, var_types simdType, WCHAR* cns)
 {
-    const CorInfoType baseType = CORINFO_TYPE_ULONG;
-
-    // We can use e.g. UINT here to support SIMD for 32bit as well,
-    // but it significantly complicates code, so 32bit support is left up-for-grabs
-    assert(sizeof(ssize_t) == 8);
-
 #ifdef TARGET_XARCH
+    if (simdType == TYP_SIMD64)
+    {
+        simd64_t       simd64Val = {};
+        GenTreeVecCon* vecCon    = comp->gtNewVconNode(simdType);
+
+        memcpy(&vecCon->gtSimdVal, cns, sizeof(simd64_t));
+        return vecCon;
+    }
+
     if (simdType == TYP_SIMD32)
     {
-        ssize_t fourLongs[4];
-        memcpy(fourLongs, cns, sizeof(ssize_t) * 4);
+        simd32_t       simd32Val = {};
+        GenTreeVecCon* vecCon    = comp->gtNewVconNode(simdType);
 
-        GenTree* long1 = comp->gtNewIconNode(fourLongs[0], TYP_LONG);
-        GenTree* long2 = comp->gtNewIconNode(fourLongs[1], TYP_LONG);
-        GenTree* long3 = comp->gtNewIconNode(fourLongs[2], TYP_LONG);
-        GenTree* long4 = comp->gtNewIconNode(fourLongs[3], TYP_LONG);
-        return comp->gtNewSimdHWIntrinsicNode(simdType, long1, long2, long3, long4, NI_Vector256_Create, baseType, 32);
+        memcpy(&vecCon->gtSimdVal, cns, sizeof(simd32_t));
+        return vecCon;
     }
 #endif // TARGET_XARCH
 
-    ssize_t twoLongs[2];
-    memcpy(twoLongs, cns, sizeof(ssize_t) * 2);
-
     assert(simdType == TYP_SIMD16);
-    GenTree* long1 = comp->gtNewIconNode(twoLongs[0], TYP_LONG);
-    GenTree* long2 = comp->gtNewIconNode(twoLongs[1], TYP_LONG);
-    return comp->gtNewSimdHWIntrinsicNode(simdType, long1, long2, NI_Vector128_Create, baseType, 16);
+
+    simd16_t       simd16Val = {};
+    GenTreeVecCon* vecCon    = comp->gtNewVconNode(simdType);
+
+    memcpy(&vecCon->gtSimdVal, cns, sizeof(simd16_t));
+    return vecCon;
 }
 
 //------------------------------------------------------------------------
@@ -156,17 +156,17 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         return nullptr;
     }
 
-    CorInfoType baseType = CORINFO_TYPE_ULONG;
+    CorInfoType baseType = CORINFO_TYPE_NATIVEUINT;
 
     int       simdSize;
     var_types simdType;
 
     NamedIntrinsic niEquals;
 
-    GenTree* cnsVec1     = nullptr;
-    GenTree* cnsVec2     = nullptr;
-    GenTree* toLowerVec1 = nullptr;
-    GenTree* toLowerVec2 = nullptr;
+    GenTreeVecCon* cnsVec1     = nullptr;
+    GenTreeVecCon* cnsVec2     = nullptr;
+    GenTree*       toLowerVec1 = nullptr;
+    GenTree*       toLowerVec2 = nullptr;
 
     // Optimization: don't use two vectors for Length == 8 or 16
     bool useSingleVector = false;
@@ -265,17 +265,17 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     {
         // Apply ASCII-only ToLowerCase mask (bitwise OR 0x20 for all a-Z chars)
         assert((toLowerVec1 != nullptr) && (toLowerVec2 != nullptr));
-        vec1 = gtNewSimdBinOpNode(GT_OR, simdType, vec1, toLowerVec1, baseType, simdSize, false);
-        vec2 = gtNewSimdBinOpNode(GT_OR, simdType, vec2, toLowerVec2, baseType, simdSize, false);
+        vec1 = gtNewSimdBinOpNode(GT_OR, simdType, vec1, toLowerVec1, baseType, simdSize);
+        vec2 = gtNewSimdBinOpNode(GT_OR, simdType, vec2, toLowerVec2, baseType, simdSize);
     }
 
     // ((v1 ^ cns1) | (v2 ^ cns2)) == zero
-    GenTree* xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize, false);
-    GenTree* xor2 = gtNewSimdBinOpNode(GT_XOR, simdType, vec2, cnsVec2, baseType, simdSize, false);
-    GenTree* orr  = gtNewSimdBinOpNode(GT_OR, simdType, xor1, xor2, baseType, simdSize, false);
+    GenTree* xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize);
+    GenTree* xor2 = gtNewSimdBinOpNode(GT_XOR, simdType, vec2, cnsVec2, baseType, simdSize);
+    GenTree* orr  = gtNewSimdBinOpNode(GT_OR, simdType, xor1, xor2, baseType, simdSize);
     return gtNewSimdHWIntrinsicNode(TYP_BOOL, useSingleVector ? xor1 : orr, zero, niEquals, baseType, simdSize);
 }
-#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_64BIT)
+#endif // defined(FEATURE_HW_INTRINSICS)
 
 //------------------------------------------------------------------------
 // impCreateCompareInd: creates the following tree:
@@ -380,7 +380,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
         //   [ ch1 ]
         //   [value]
         //
-        return impCreateCompareInd(data, TYP_SHORT, dataOffset, cns[0], cmpMode);
+        return impCreateCompareInd(data, TYP_USHORT, dataOffset, cns[0], cmpMode);
     }
     if (len == 2)
     {
@@ -532,7 +532,7 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVar*   data,
         {
             indirCmp = impExpandHalfConstEqualsSWAR(gtClone(data)->AsLclVar(), cnsData, len, dataOffset, cmpMode);
         }
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_64BIT)
+#if defined(FEATURE_HW_INTRINSICS)
         else if (len <= 32)
         {
             indirCmp = impExpandHalfConstEqualsSIMD(gtClone(data)->AsLclVar(), cnsData, len, dataOffset, cmpMode);
@@ -731,10 +731,8 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     GenTreeLclVar* varStrLcl   = gtNewLclvNode(varStrTmp, varStr->TypeGet());
 
     // Create a tree representing string's Length:
-    // TODO-Unroll-CQ: Consider using ARR_LENGTH here, but we'll have to modify QMARK to propagate BBF_HAS_IDX_LEN
     int      strLenOffset = OFFSETOF__CORINFO_String__stringLen;
-    GenTree* lenOffset    = gtNewIconNode(strLenOffset, TYP_I_IMPL);
-    GenTree* lenNode      = gtNewIndir(TYP_INT, gtNewOperNode(GT_ADD, TYP_BYREF, varStrLcl, lenOffset));
+    GenTree* lenNode      = gtNewArrLen(TYP_INT, varStrLcl, strLenOffset, compCurBB);
     varStrLcl             = gtClone(varStrLcl)->AsLclVar();
 
     GenTree* unrolled = impExpandHalfConstEquals(varStrLcl, lenNode, needsNullcheck, startsWith, (WCHAR*)str, cnsLength,
@@ -854,7 +852,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     {
         // check for fake "" first
         cnsLength = 0;
-        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"\")...\n", str)
+        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"\")...\n")
     }
     else
     {
@@ -867,7 +865,8 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%ws\")...\n", str)
     }
 
-    CORINFO_CLASS_HANDLE spanCls      = gtGetStructHandle(spanObj);
+    CORINFO_CLASS_HANDLE spanCls;
+    info.compCompHnd->getArgType(sig, sig->args, &spanCls);
     CORINFO_FIELD_HANDLE pointerHnd   = info.compCompHnd->getFieldInClass(spanCls, 0);
     CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(spanCls, 1);
     const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);

@@ -19,7 +19,6 @@
 #include "regdisplay.h"
 #include "stackframeiterator.h"
 #include "thread.h"
-#include "rwlock.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 //#include "PalRedhawk.h"
@@ -6487,18 +6486,15 @@ void ETW::EnumerationLog::EnumerationHelper(Module* moduleFilter, BaseDomain* do
         }
         else
         {
-            AppDomainIterator appDomainIterator(FALSE);
-            while (appDomainIterator.Next())
+            AppDomain * pDomain = AppDomain::GetCurrentDomain();
+            if (pDomain != NULL)
             {
-                AppDomain* pDomain = appDomainIterator.GetDomain();
-                if (pDomain != NULL)
-                {
-                    // See code:#TableLockHolder
-                    ReJitManager::TableLockHolder lkRejitMgrAD(pDomain->GetReJitManager());
+                // See code:#TableLockHolder
+                ReJitManager::TableLockHolder lkRejitMgrAD(pDomain->GetReJitManager());
 
-                    ETW::EnumerationLog::IterateAppDomain(pDomain, enumerationOptions);
-                }
+                ETW::EnumerationLog::IterateAppDomain(pDomain, enumerationOptions);
             }
+
             ETW::EnumerationLog::IterateDomain(SharedDomain::GetDomain(), enumerationOptions);
         }
     }

@@ -87,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis
             if (type.IsInterface)
                 return ((MetadataType)type).IsDynamicInterfaceCastableImplementation();
 
-            TypeDesc declType = type.GetClosestDefType();
+            DefType declType = type.GetClosestDefType();
 
             for (int interfaceIndex = 0; interfaceIndex < declType.RuntimeInterfaces.Length; interfaceIndex++)
             {
@@ -143,7 +143,7 @@ namespace ILCompiler.DependencyAnalysis
             var defaultStaticEntryCountReservation = builder.ReserveShort();
             int entryCount = 0;
 
-            TypeDesc declType = _type.GetClosestDefType();
+            DefType declType = _type.GetClosestDefType();
             TypeDesc declTypeDefinition = declType.GetTypeDefinition();
             DefType[] declTypeRuntimeInterfaces = declType.RuntimeInterfaces;
             DefType[] declTypeDefinitionRuntimeInterfaces = declTypeDefinition.RuntimeInterfaces;

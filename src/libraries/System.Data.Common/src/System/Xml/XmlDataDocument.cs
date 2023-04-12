@@ -864,7 +864,7 @@ namespace System.Xml
             return DataSetMapper.GetRowFromElement(e);
         }
 
-        private XmlNode? GetRowInsertBeforeLocation(DataRow row, XmlNode parentElement)
+        private XmlElement? GetRowInsertBeforeLocation(DataRow row, XmlNode parentElement)
         {
             DataRow refRow = row;
             int i;
@@ -1569,7 +1569,7 @@ namespace System.Xml
                 // create new element if we didn't find one.
                 if (!fFound && !Convert.IsDBNull(value))
                 {
-                    XmlElement newElem = new XmlBoundElement(string.Empty, col.EncodedColumnName, col.Namespace, this);
+                    var newElem = new XmlBoundElement(string.Empty, col.EncodedColumnName, col.Namespace, this);
                     newElem.AppendChild(CreateTextNode(col.ConvertObjectToXml(value)));
 
                     XmlNode? elemBefore = GetColumnInsertAfterLocation(col, rowElement);
@@ -3008,13 +3008,17 @@ namespace System.Xml
         protected override XPathNavigator? CreateNavigator(XmlNode node)
         {
             Debug.Assert(node.OwnerDocument == this || node == this);
-            if (XPathNodePointer.s_xmlNodeType_To_XpathNodeType_Map[(int)(node.NodeType)] == -1)
+
+            if (XPathNodePointer.XmlNodeTypeToXpathNodeTypeMap[(int)(node.NodeType)] == -1)
                 return null;
+
             if (IsTextNode(node.NodeType))
             {
                 XmlNode? parent = node.ParentNode;
                 if (parent != null && parent.NodeType == XmlNodeType.Attribute)
+                {
                     return null;
+                }
                 else
                 {
 #if DEBUG

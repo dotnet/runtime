@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class App
+    public class App
     {
         private static double[] m_ad = new double[2];
         private static uint m_u;
@@ -17,7 +18,8 @@ namespace Test
             return unchecked(m_ad[0] - (double)m_u * (m_ad[1] - loc));
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Static1();
             return 100;

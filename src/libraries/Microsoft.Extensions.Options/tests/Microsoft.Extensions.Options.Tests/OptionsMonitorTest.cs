@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
@@ -471,7 +472,7 @@ namespace Microsoft.Extensions.Options.Tests
         /// Tests the fix for https://github.com/dotnet/runtime/issues/61086
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67611", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67611", TestRuntimes.Mono)]
         public void TestCurrentValueDoesNotAllocateOnceValueIsCached()
         {
             var monitor = new OptionsMonitor<FakeOptions>(
@@ -485,5 +486,56 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - initialBytes);
         }
 #endif
+
+        /// <summary>
+        /// Replicates https://github.com/dotnet/runtime/issues/79529
+        /// </summary>
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Synchronous wait is not supported on browser")]
+        public void InstantiatesOnlyOneOptionsInstance()
+        {
+            using AutoResetEvent @event = new(initialState: false);
+
+            OptionsMonitor<FakeOptions> monitor = new(
+                // WaitHandleConfigureOptions makes instance configuration slow enough to force a race condition
+                new OptionsFactory<FakeOptions>(new[] { new WaitHandleConfigureOptions(@event) }, Enumerable.Empty<IPostConfigureOptions<FakeOptions>>()),
+                Enumerable.Empty<IOptionsChangeTokenSource<FakeOptions>>(),
+                new OptionsCache<FakeOptions>());
+
+            using Barrier barrier = new(participantCount: 2);
+            Task<FakeOptions>[] instanceTasks = Enumerable.Range(0, 2)
+                .Select(_ => Task.Factory.StartNew(
+                    () =>
+                    {
+                        barrier.SignalAndWait();
+                        return monitor.Get("someName");
+                    },
+                    CancellationToken.None,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default)
+                )
+                .ToArray();
+
+            // No tasks can finish yet; but give them a chance to run and get blocked on the WaitHandle
+            Assert.Equal(-1, Task.WaitAny(instanceTasks, TimeSpan.FromSeconds(0.01)));
+
+            // 1 release should be sufficient to complete both tasks
+            @event.Set();
+            Assert.True(Task.WaitAll(instanceTasks, TimeSpan.FromSeconds(30)));
+            Assert.Equal(1, instanceTasks.Select(t => t.Result).Distinct().Count());
+        }
+
+        private class WaitHandleConfigureOptions : IConfigureNamedOptions<FakeOptions>
+        {
+            private readonly WaitHandle _waitHandle;
+
+            public WaitHandleConfigureOptions(WaitHandle waitHandle)
+            {
+                _waitHandle = waitHandle;
+            }
+
+            void IConfigureNamedOptions<FakeOptions>.Configure(string? name, FakeOptions options) => _waitHandle.WaitOne();
+            void IConfigureOptions<FakeOptions>.Configure(FakeOptions options) => _waitHandle.WaitOne();
+        }
     }
 }

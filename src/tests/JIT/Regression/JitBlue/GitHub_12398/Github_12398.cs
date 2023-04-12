@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct S0
 {
@@ -12,9 +13,10 @@ struct S0
     public sbyte F2;
 }
 
-class GitHub_12398
+public class GitHub_12398
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = 100;
         if (TestBinary() != 0) {

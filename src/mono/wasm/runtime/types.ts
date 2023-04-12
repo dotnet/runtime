@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { DotnetHostBuilder } from "./run-outer";
-import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./types/emscripten";
+import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr, EmscriptenModuleInternal } from "./types/emscripten";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -88,6 +88,10 @@ export type MonoConfig = {
      */
     maxParallelDownloads?: number,
     /**
+     * We are making up to 2 more delayed attempts to download same asset. Default true.
+     */
+    enableDownloadRetry?: boolean,
+    /**
      * Name of the assembly with main entrypoint
      */
     mainAssemblyName?: string,
@@ -115,6 +119,14 @@ export type MonoConfig = {
      * initial number of workers to add to the emscripten pthread pool
      */
     pthreadPoolSize?: number,
+    /**
+     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is false.
+     */
+    startupMemoryCache?: boolean,
+    /**
+     * hash of assets
+     */
+    assetsHash?: string,
 };
 
 export type MonoConfigInternal = MonoConfig & {
@@ -126,6 +138,7 @@ export type MonoConfigInternal = MonoConfig & {
     logExitCode?: boolean
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
+    exitAfterSnapshot?: number,
 };
 
 export type RunArguments = {
@@ -134,12 +147,6 @@ export type RunArguments = {
     environmentVariables?: { [name: string]: string },
     runtimeOptions?: string[],
     diagnosticTracing?: boolean,
-}
-
-export type MonoConfigError = {
-    isError: true,
-    message: string,
-    error: any
 }
 
 export interface ResourceRequest {
@@ -168,13 +175,13 @@ export interface AssetEntry extends ResourceRequest {
     /**
      * If true, an attempt will be made to load the asset from each location in MonoConfig.remoteSources.
      */
-    loadRemote?: boolean, // 
+    loadRemote?: boolean, //
     /**
      * If true, the runtime startup would not fail if the asset download was not successful.
      */
     isOptional?: boolean
     /**
-     * If provided, runtime doesn't have to fetch the data. 
+     * If provided, runtime doesn't have to fetch the data.
      * Runtime would set the buffer to null after instantiation to free the memory.
      */
     buffer?: ArrayBuffer
@@ -199,6 +206,7 @@ export type AssetBehaviours =
     | "vfs" // load asset into the virtual filesystem (for fopen, File.Open, etc)
     | "dotnetwasm" // the binary of the dotnet runtime
     | "js-module-threads" // the javascript module for threads
+    | "symbols" // the symbols for the wasm native code
 
 export type RuntimeHelpers = {
     runtime_interop_module: MonoAssembly;
@@ -207,13 +215,12 @@ export type RuntimeHelpers = {
     runtime_interop_exports_class: MonoClass;
 
     _i52_error_scratch_buffer: Int32Ptr;
-    mono_wasm_load_runtime_done: boolean;
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
-    mono_wasm_symbols_are_ready: boolean;
 
     loaded_files: string[];
     maxParallelDownloads: number;
+    enableDownloadRetry: boolean;
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
     enablePerfMeasure: boolean;
@@ -225,11 +232,20 @@ export type RuntimeHelpers = {
     quit: Function,
     locateFile: (path: string, prefix?: string) => string,
     javaScriptExports: JavaScriptExports,
+    loadedFiles: string[],
+    loadedMemorySnapshot: boolean,
+    storeMemorySnapshotPending: boolean,
+    memorySnapshotCacheKey: string,
+    subtle: SubtleCrypto | null,
+    preferredIcuAsset: string | null,
+    invariantMode: boolean,
+    updateMemoryViews: () => void
 }
 
 export type GlobalizationMode =
     "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
     "invariant" | //  operate in invariant globalization mode.
+    "hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
     "auto" // (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
 
 
@@ -243,6 +259,7 @@ export type BrowserProfilerOptions = {
 
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
+export type DotnetModuleInternal = EmscriptenModule & DotnetModuleConfig & EmscriptenModuleInternal;
 
 export type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean,
@@ -259,7 +276,7 @@ export type DotnetModuleConfig = {
 
 export type DotnetModuleConfigImports = {
     require?: (name: string) => any;
-    fetch?: (url: string) => Promise<Response>;
+    fetch?: (url: string, options: any | undefined) => Promise<Response>;
     fs?: {
         promises?: {
             readFile?: (path: string) => Promise<string | Buffer>,
@@ -361,7 +378,7 @@ export type EarlyReplacements = {
     require: any,
     requirePromise: Promise<Function>,
     noExitRuntime: boolean,
-    updateGlobalBufferAndViews: Function,
+    updateMemoryViews: Function,
     pthreadReplacements: PThreadReplacements | undefined | null
     scriptDirectory: string;
     scriptUrl: string
@@ -370,7 +387,7 @@ export interface ExitStatusError {
     new(status: number): any;
 }
 export type PThreadReplacements = {
-    loadWasmModuleToWorker: (worker: Worker, onFinishedLoading?: (worker: Worker) => void) => void,
+    loadWasmModuleToWorker(worker: Worker): Promise<Worker>,
     threadInitTLS: () => void,
     allocateUnusedWorker: () => void,
 }

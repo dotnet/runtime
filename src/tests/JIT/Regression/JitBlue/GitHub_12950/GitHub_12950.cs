@@ -3,8 +3,9 @@
 
 using System;
 using System.Numerics;
+using Xunit;
 
-class Program
+public class Program
 {
     struct BoundingBoxTest
     {
@@ -17,14 +18,15 @@ class Program
         }
     }
     
-    public static void Test()
+    internal static void Test()
     {
         var box = new BoundingBoxTest();
         box.Min = Vector3.Min(box.Min, box.Min);
         var hmm = box.GetHashCode();
     }
     
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         var someMemory = new int[1];
         var someMoreMemory = new int[1];

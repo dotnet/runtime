@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -129,6 +130,8 @@ namespace System.Collections.Generic
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected HashSet(SerializationInfo info, StreamingContext context)
         {
             // We can't do anything with the keys and values until the entire graph has been
@@ -358,14 +361,18 @@ namespace System.Collections.Generic
 
         public Enumerator GetEnumerator() => new Enumerator(this);
 
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() =>
+            Count == 0 ? SZGenericArrayEnumerator<T>.Empty :
+            GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
 
         #endregion
 
         #region ISerializable methods
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
@@ -706,7 +713,15 @@ namespace System.Collections.Generic
                 }
             }
 
-            return ContainsAllElements(other);
+            foreach (T element in other)
+            {
+                if (!Contains(element))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>Determines whether a <see cref="HashSet{T}"/> object is a proper superset of the specified collection.</summary>
@@ -743,7 +758,7 @@ namespace System.Collections.Generic
                     }
 
                     // Now perform element check.
-                    return ContainsAllElements(otherAsSet);
+                    return otherAsSet.IsSubsetOfHashSetWithSameComparer(this);
                 }
             }
 
@@ -811,8 +826,8 @@ namespace System.Collections.Generic
                 }
 
                 // Already confirmed that the sets have the same number of distinct elements, so if
-                // one is a superset of the other then they must be equal.
-                return ContainsAllElements(otherAsSet);
+                // one is a subset of the other then they must be equal.
+                return IsSubsetOfHashSetWithSameComparer(otherAsSet);
             }
             else
             {
@@ -843,17 +858,8 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            // Check array index valid index into array.
-            if (arrayIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-
-            // Also throw if count less than 0.
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), count, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             // Will the array, starting at arrayIndex, be able to hold elements? Note: not
             // checking arrayIndex >= array.Length (consistency with list of allowing
@@ -1179,24 +1185,6 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Checks if this contains of other's elements. Iterates over other's elements and
-        /// returns false as soon as it finds an element in other that's not in this.
-        /// Used by SupersetOf, ProperSupersetOf, and SetEquals.
-        /// </summary>
-        private bool ContainsAllElements(IEnumerable<T> other)
-        {
-            foreach (T element in other)
-            {
-                if (!Contains(element))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        /// <summary>
         /// Implementation Notes:
         /// If other is a hashset and is using same equality comparer, then checking subset is
         /// faster. Simply check that each element in this is in other.
@@ -1391,7 +1379,7 @@ namespace System.Collections.Generic
         /// <param name="other"></param>
         /// <param name="returnIfUnfound">Allows us to finish faster for equals and proper superset
         /// because unfoundCount must be 0.</param>
-        private unsafe (int UniqueCount, int UnfoundCount) CheckUniqueAndUnfoundElements(IEnumerable<T> other, bool returnIfUnfound)
+        private (int UniqueCount, int UnfoundCount) CheckUniqueAndUnfoundElements(IEnumerable<T> other, bool returnIfUnfound)
         {
             // Need special case in case this has no elements.
             if (_count == 0)

@@ -3,10 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace mdarray
 {
-    class Runtime_60957
+    public class Runtime_60957
     {
         public static int access_count = 0;
 
@@ -319,7 +320,8 @@ namespace mdarray
             }
         }
 
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             const int n = 10;
             int[,] a = new int[n,n];

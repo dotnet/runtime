@@ -88,9 +88,11 @@ namespace System.Reflection
             int count = 0;
             TypeAttributes Attributes = type.Attributes;
 
+#pragma warning disable SYSLIB0050 // TypeAttributes.Serializable is obsolete
             /* IsSerializable returns true for delegates/enums as well */
             if ((Attributes & TypeAttributes.Serializable) != 0)
                 count++;
+#pragma warning restore SYSLIB0050
             if ((Attributes & TypeAttributes.Import) != 0)
                 count++;
 
@@ -99,8 +101,10 @@ namespace System.Reflection
             object[] attrs = new object[count];
             count = 0;
 
+#pragma warning disable SYSLIB0050 // TypeAttributes.Serializable is obsolete
             if ((Attributes & TypeAttributes.Serializable) != 0)
                 attrs[count++] = new SerializableAttribute();
+#pragma warning restore SYSLIB0050
             if ((Attributes & TypeAttributes.Import) != 0)
                 attrs[count++] = new ComImportAttribute();
 
@@ -136,6 +140,14 @@ namespace System.Reflection
             return attrs;
         }
 
+        private static bool AttrTypeMatches(Type? attributeType, Type attrType)
+        {
+            if (attributeType == null)
+                return true;
+            return attributeType.IsAssignableFrom(attrType) ||
+                (attributeType.IsGenericTypeDefinition && attrType.IsGenericType && attributeType.IsAssignableFrom(attrType.GetGenericTypeDefinition()));
+        }
+
         internal static object[] GetCustomAttributes(ICustomAttributeProvider obj, Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(obj);
@@ -158,9 +170,9 @@ namespace System.Reflection
             if (!inherit && res.Length == 1)
             {
                 if (res[0] == null)
-                    throw new CustomAttributeFormatException("Invalid custom attribute format");
+                    throw new CustomAttributeFormatException(SR.Arg_CustomAttributeFormatException);
 
-                if (attributeType != null)
+                if (attributeType != null && !attributeType.IsGenericTypeDefinition)
                 {
                     if (attributeType.IsAssignableFrom(res[0].GetType()))
                     {
@@ -206,7 +218,7 @@ namespace System.Reflection
                     foreach (object attr in res)
                     {
                         if (attr == null)
-                            throw new CustomAttributeFormatException("Invalid custom attribute format");
+                            throw new CustomAttributeFormatException(SR.Arg_CustomAttributeFormatException);
                     }
                     var result = new Attribute[res.Length];
                     res.CopyTo(result, 0);
@@ -217,15 +229,13 @@ namespace System.Reflection
                 foreach (object attr in res)
                 {
                     if (attr == null)
-                        throw new CustomAttributeFormatException("Invalid custom attribute format");
+                        throw new CustomAttributeFormatException(SR.Arg_CustomAttributeFormatException);
 
-                    Type attrType = attr.GetType();
-                    if (attributeType != null && !attributeType.IsAssignableFrom(attrType))
-                        continue;
-                    a.Add(attr);
+                    if (AttrTypeMatches(attributeType, attr.GetType()))
+                        a.Add(attr);
                 }
 
-                if (attributeType == null || attributeType.IsValueType)
+                if (attributeType == null || attributeType.IsValueType || attributeType.IsGenericTypeDefinition)
                     array = new Attribute[a.Count];
                 else
                     array = (Array.CreateInstance(attributeType, a.Count) as object[])!;
@@ -244,14 +254,11 @@ namespace System.Reflection
                 {
                     AttributeUsageAttribute usage;
                     if (attr == null)
-                        throw new CustomAttributeFormatException("Invalid custom attribute format");
+                        throw new CustomAttributeFormatException(SR.Arg_CustomAttributeFormatException);
 
                     Type attrType = attr.GetType();
-                    if (attributeType != null)
-                    {
-                        if (!attributeType.IsAssignableFrom(attrType))
-                            continue;
-                    }
+                    if (!AttrTypeMatches(attributeType, attr.GetType()))
+                        continue;
 
                     AttributeInfo? firstAttribute;
                     if (attributeInfos.TryGetValue(attrType, out firstAttribute))
@@ -284,7 +291,7 @@ namespace System.Reflection
                 }
             } while (btype != null);
 
-            if (attributeType == null || attributeType.IsValueType)
+            if (attributeType == null || attributeType.IsValueType || attributeType.IsGenericTypeDefinition)
                 array = new Attribute[a.Count];
             else
                 array = (Array.CreateInstance(attributeType, a.Count) as object[])!;
@@ -329,14 +336,13 @@ namespace System.Reflection
             if (attributeType == typeof(CustomAttribute))
                 attributeType = null;
 
-            const string Message = "Invalid custom attribute data format";
             IList<CustomAttributeData> r;
             IList<CustomAttributeData> res = GetCustomAttributesDataBase(obj, attributeType, false);
             // shortcut
             if (!inherit && res.Count == 1)
             {
                 if (res[0] == null)
-                    throw new CustomAttributeFormatException(Message);
+                    throw new CustomAttributeFormatException(SR.Arg_CustomAttributeFormatException);
                 if (attributeType != null)
                 {
                     if (attributeType.IsAssignableFrom(res[0].AttributeType))
@@ -376,7 +382,7 @@ namespace System.Reflection
                     foreach (CustomAttributeData attrData in res)
                     {
                         if (attrData == null)
-                            throw new CustomAttributeFormatException(Message);
+                            throw new CustomAttributeFormatException(SR.Arg_CustomAttributeFormatException);
                     }
 
                     var result = new CustomAttributeData[res.Count];
@@ -389,7 +395,7 @@ namespace System.Reflection
                     foreach (CustomAttributeData attrData in res)
                     {
                         if (attrData == null)
-                            throw new CustomAttributeFormatException(Message);
+                            throw new CustomAttributeFormatException(SR.Arg_CustomAttributeFormatException);
                         if (!attributeType.IsAssignableFrom(attrData.AttributeType))
                             continue;
                         a.Add(attrData);
@@ -410,7 +416,7 @@ namespace System.Reflection
                 {
                     AttributeUsageAttribute usage;
                     if (attrData == null)
-                        throw new CustomAttributeFormatException(Message);
+                        throw new CustomAttributeFormatException(SR.Arg_CustomAttributeFormatException);
 
                     Type attrType = attrData.AttributeType;
                     if (attributeType != null)
@@ -526,9 +532,11 @@ namespace System.Reflection
             int count = 0;
             TypeAttributes Attributes = type.Attributes;
 
+#pragma warning disable SYSLIB0050 // TypeAttributes.Serializable is obsolete
             /* IsSerializable returns true for delegates/enums as well */
             if ((Attributes & TypeAttributes.Serializable) != 0)
                 count++;
+#pragma warning restore SYSLIB0050
             if ((Attributes & TypeAttributes.Import) != 0)
                 count++;
 
@@ -537,8 +545,10 @@ namespace System.Reflection
             CustomAttributeData[] attrsData = new CustomAttributeData[count];
             count = 0;
 
+#pragma warning disable SYSLIB0050 // TypeAttributes.Serializable is obsolete
             if ((Attributes & TypeAttributes.Serializable) != 0)
                 attrsData[count++] = new RuntimeCustomAttributeData((typeof(SerializableAttribute)).GetConstructor(Type.EmptyTypes)!);
+#pragma warning restore SYSLIB0050
             if ((Attributes & TypeAttributes.Import) != 0)
                 attrsData[count++] = new RuntimeCustomAttributeData((typeof(ComImportAttribute)).GetConstructor(Type.EmptyTypes)!);
 
@@ -782,8 +792,8 @@ namespace System.Reflection
 
         private sealed class AttributeInfo
         {
-            private AttributeUsageAttribute _usage;
-            private int _inheritanceLevel;
+            private readonly AttributeUsageAttribute _usage;
+            private readonly int _inheritanceLevel;
 
             public AttributeInfo(AttributeUsageAttribute usage, int inheritanceLevel)
             {

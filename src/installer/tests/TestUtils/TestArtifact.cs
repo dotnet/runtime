@@ -31,18 +31,21 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public string Location { get; }
         public string Name { get; }
 
+        protected string DirectoryToDelete { get; init; }
+
         private readonly List<TestArtifact> _copies = new List<TestArtifact>();
 
-        public TestArtifact(string location, string? name = null)
+        public TestArtifact(string location)
         {
             Location = location;
-            Name = name ?? Path.GetFileName(Location);
+            Name = Path.GetFileName(Location);
+            DirectoryToDelete = Location;
         }
 
         protected TestArtifact(TestArtifact source)
         {
             Name = source.Name;
-            Location = GetNewTestArtifactPath(Name);
+            (Location, DirectoryToDelete) = GetNewTestArtifactPath(source.Name);
 
             CopyRecursive(source.Location, Location, overwrite: true);
 
@@ -56,16 +59,15 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public virtual void Dispose()
         {
-            if (!PreserveTestRuns() && Directory.Exists(Location))
+            if (!PreserveTestRuns() && Directory.Exists(DirectoryToDelete))
             {
                 try
                 {
-                    Directory.Delete(Location, true);
+                    Directory.Delete(DirectoryToDelete, true);
+                    Debug.Assert(!Directory.Exists(DirectoryToDelete));
 
                     // Delete lock file last
-                    Debug.Assert(!Directory.Exists(Location));
-                    var lockPath = Directory.GetParent(Location) + ".lock";
-                    File.Delete(lockPath);
+                    File.Delete($"{DirectoryToDelete}.lock");
                 } catch (Exception e)
                 {
                     Console.WriteLine("delete failed" + e);
@@ -80,7 +82,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _copies.Clear();
         }
 
-        protected static string GetNewTestArtifactPath(string artifactName)
+        protected static (string, string) GetNewTestArtifactPath(string artifactName)
         {
             Exception? lastException = null;
             for (int i = 0; i < 10; i++)
@@ -100,7 +102,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     continue;
                 }
                 Directory.CreateDirectory(artifactPath);
-                return artifactPath;
+                return (artifactPath, parentPath);
             }
             Debug.Assert(lastException != null);
             throw lastException;

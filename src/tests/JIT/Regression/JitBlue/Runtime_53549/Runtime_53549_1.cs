@@ -5,6 +5,7 @@ using System;
 using System.Globalization;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class A
 {
@@ -30,12 +31,12 @@ class B : A
     public override decimal X => d + 1;
 }
 
-class Repro
+public class Repro
 {
     static string s;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int F(A[] a)
+    static int F(A[] a)
     {
         int i = 0;
         for (; i < a.Length; i++)
@@ -46,7 +47,8 @@ class Repro
         return i;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         A[] a = new A[1000];
 

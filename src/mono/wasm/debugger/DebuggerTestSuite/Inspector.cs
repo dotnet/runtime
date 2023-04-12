@@ -26,10 +26,10 @@ namespace DebuggerTests
 
         ConcurrentDictionary<string, TaskCompletionSource<JObject>> notifications = new ();
         ConcurrentDictionary<string, Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>>> eventListeners = new ();
-
+        ConcurrentQueue<(string, JObject)> nextNotifications = new (); //in a multithreaded runtime we can receive more than one pause at same time
         public const string PAUSE = "pause";
         public const string APP_READY = "app-ready";
-        public CancellationToken Token { get; }
+        public CancellationToken Token { get; set; }
         public InspectorClient Client { get; }
         public DebuggerProxyBase? Proxy { get; }
         public bool DetectAndFailOnAssertions { get; set; } = true;
@@ -81,11 +81,21 @@ namespace DebuggerTests
             {
                 if (tcs.Task.IsCompleted)
                 {
+                    Client.CurrentSessionId = new SessionId(tcs.Task.Result["sessionId"]?.Value<string>());
                     notifications.Remove(what, out _);
                     return tcs.Task;
                 }
 
                 throw new Exception($"Invalid internal state, waiting for {what} while another wait is already setup");
+            }
+            else if (nextNotifications.TryDequeue(out (string what, JObject args) notification))
+            {
+                var n = new TaskCompletionSource<JObject>();
+                Client.CurrentSessionId = new SessionId(notification.args["sessionId"]?.Value<string>());
+                if (what != notification.what)
+                    throw new Exception($"Unexpected different notification type");
+                n.SetResult(notification.args);
+                return n.Task;
             }
             else
             {
@@ -106,8 +116,12 @@ namespace DebuggerTests
             if (notifications.TryGetValue(what, out TaskCompletionSource<JObject>? tcs))
             {
                 if (tcs.Task.IsCompleted)
-                    throw new Exception($"Invalid internal state. Notifying for {what} again, but the previous one hasn't been read.");
-
+                {
+                    nextNotifications.Enqueue((what, args));
+                    return;
+                    //throw new Exception($"Invalid internal state. Notifying for {what} again, but the previous one hasn't been read.");
+                }
+                Client.CurrentSessionId = new SessionId(args["sessionId"]?.Value<string>());
                 notifications[what].SetResult(args);
                 notifications.Remove(what, out _);
             }
@@ -156,7 +170,7 @@ namespace DebuggerTests
             }
         }
 
-        private (string line, string type) FormatConsoleAPICalled(JObject args)
+        internal (string line, string type) FormatConsoleAPICalled(JObject args)
         {
             string? type = args?["type"]?.Value<string>();
             List<string> consoleArgs = new();
@@ -194,14 +208,28 @@ namespace DebuggerTests
             return ($"console.{type}: {output}", type);
         }
 
-        async Task OnMessage(string method, JObject args, CancellationToken token)
+        async Task OnMessage(string sessionId, string method, JObject args, CancellationToken token)
         {
             bool fail = false;
             switch (method)
             {
+                case "Target.attachedToTarget":
+                {
+                    var sessionIdNewTarget = new SessionId(args["sessionId"]?.Value<string>());
+                    await Client.SendCommand(sessionIdNewTarget, "Profiler.enable", null, token);
+                    await Client.SendCommand(sessionIdNewTarget, "Runtime.enable", null, token);
+                    await Client.SendCommand(sessionIdNewTarget, "Debugger.enable", null, token);
+                    await Client.SendCommand(sessionIdNewTarget, "Runtime.runIfWaitingForDebugger", null, token);
+                    await Client.SendCommand(sessionIdNewTarget, "Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32}), token);
+                    break;
+                }
                 case "Debugger.paused":
+                {
+                    if (sessionId != "")
+                        args.Add("sessionId", sessionId);
                     NotifyOf(PAUSE, args);
                     break;
+                }
                 case "Mono.runtimeReady":
                 {
                     _gotRuntimeReady = true;
@@ -224,6 +252,8 @@ namespace DebuggerTests
                         case "trace": _logger.LogTrace(line); break;
                         default: _logger.LogInformation(line); break;
                     }
+                    if (line == "console.debug: #debugger-app-ready#")
+                        await Client.SendCommand("DotnetDebugger.runTests", JObject.FromObject(new { type = "DotnetDebugger.runTests", to = "root" }), token);
 
                     if (!_gotAppReady && line == "console.debug: #debugger-app-ready#")
                     {
@@ -260,6 +290,8 @@ namespace DebuggerTests
             if (eventListeners.TryGetValue(method, out Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>>? listener)
                     && listener != null)
             {
+                if (sessionId != "")
+                    args.Add("sessionId", sessionId);
                 ProtocolEventHandlerReturn result = await listener(args, token).ConfigureAwait(false);
                 if (result is ProtocolEventHandlerReturn.RemoveHandler)
                     eventListeners.Remove(method, out _);
@@ -319,13 +351,12 @@ namespace DebuggerTests
             });
         }
 
-        public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, TimeSpan span)
+        public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, string urlToInspect, TimeSpan span)
         {
             var start = DateTime.Now;
             try
             {
                 await LaunchBrowser(start, span);
-
                 var init_cmds = getInitCmds(Client, _cancellationTokenSource.Token);
 
                 Task<Result> readyTask = Task.Run(async () => Result.FromJson(await WaitFor(APP_READY)));
@@ -341,7 +372,10 @@ namespace DebuggerTests
                     string cmd_name = init_cmds[cmdIdx].Item1;
 
                     if (_isFailingWithException is not null)
+                    {
+                        _logger.LogError($"_isFailingWithException. {_isFailingWithException}.");
                         throw _isFailingWithException;
+                    }
 
                     if (completedTask.IsCanceled)
                     {
@@ -356,11 +390,15 @@ namespace DebuggerTests
                         _logger.LogError($"Command {cmd_name} failed with {completedTask.Exception}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}.");
                         throw completedTask.Exception!;
                     }
+
                     await Client.ProcessCommand(completedTask.Result, _cancellationTokenSource.Token);
                     Result res = completedTask.Result;
+
                     if (!res.IsOk)
                         throw new ArgumentException($"Command {cmd_name} failed with: {res.Error}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}");
 
+                    if (DebuggerTestBase.RunningOnChrome && cmd_name == "Debugger.enable")
+                        await Client.SendCommand("Page.navigate", JObject.FromObject(new { url = urlToInspect }), _cancellationTokenSource.Token);
                     init_cmds.RemoveAt(cmdIdx);
                 }
 

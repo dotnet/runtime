@@ -10,8 +10,8 @@ namespace System.Security.Cryptography
     internal sealed class BasicSymmetricCipherLiteBCrypt : ILiteSymmetricCipher
     {
         private readonly bool _encrypting;
+        private readonly byte[]? _currentIv;
         private SafeKeyHandle _hKey;
-        private byte[]? _currentIv;
 
         public int BlockSizeInBytes { get; }
         public int PaddingSizeInBytes { get; }

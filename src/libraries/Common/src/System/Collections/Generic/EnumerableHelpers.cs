@@ -8,6 +8,10 @@ namespace System.Collections.Generic
     /// </summary>
     internal static partial class EnumerableHelpers
     {
+        /// <summary>Gets an enumerator singleton for an empty collection.</summary>
+        internal static IEnumerator<T> GetEmptyEnumerator<T>() =>
+            ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator();
+
         /// <summary>Converts an enumerable to an array using the same logic as List{T}.</summary>
         /// <param name="source">The enumerable to convert.</param>
         /// <param name="length">The number of items stored in the resulting array, 0-indexed.</param>

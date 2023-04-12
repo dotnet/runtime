@@ -45,6 +45,9 @@
     <Compile Include="..\..\Common\TypeSystem\Canon\CanonTypes.cs">
       <Link>TypeSystem\Canon\CanonTypes.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Canon\CanonTypes.Metadata.cs">
+      <Link>TypeSystem\Canon\CanonTypes.Metadata.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Canon\CanonTypes.Diagnostic.cs">
       <Link>TypeSystem\Canon\CanonTypes.Diagnostic.cs</Link>
     </Compile>
@@ -174,6 +177,12 @@
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.cs">
+      <Link>Utilities\TypeNameParser.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs">
+      <Link>Utilities\ValueStringBuilder.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\GCPointerMap.Algorithm.cs">
       <Link>Utilities\GCPointerMap.Algorithm.cs</Link>
     </Compile>
@@ -227,6 +236,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedType.cs">
       <Link>TypeSystem\Common\InstantiatedType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedType.Metadata.cs">
+      <Link>TypeSystem\Common\InstantiatedType.Metadata.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedType.Diagnostic.cs">
       <Link>TypeSystem\Common\InstantiatedType.Diagnostic.cs</Link>
@@ -305,6 +317,12 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemContext.cs">
       <Link>TypeSystem\Common\TypeSystemContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemContext.Resolution.cs">
+      <Link>TypeSystem\Common\TypeSystemContext.Resolution.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemContext.FieldLayout.cs">
+      <Link>TypeSystem\Common\TypeSystemContext.FieldLayout.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemHelpers.cs">
       <Link>TypeSystem\Common\TypeSystemHelpers.cs</Link>

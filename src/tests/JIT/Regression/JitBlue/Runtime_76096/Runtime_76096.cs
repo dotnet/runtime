@@ -3,10 +3,12 @@
 
 using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
+using Xunit;
 
-unsafe class Runtime_76096
+public unsafe class Runtime_76096
 {
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = 100;
         if (ProblemWithMemoryNumbering())

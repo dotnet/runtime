@@ -365,7 +365,8 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     return false;
                 }
 
-                Logger::SetLogLevel(Logger::ParseLogLevelString(argv[i]));
+                o->verbosity = argv[i];
+                Logger::SetLogLevel(Logger::ParseLogLevelString(o->verbosity));
             }
             else if ((_strnicmp(&argv[i][1], "writeLogFile", argLen) == 0))
             {
@@ -456,7 +457,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     return false;
                 }
 
-                if (strlen(argv[i]) != (MD5_HASH_BUFFER_SIZE - 1))
+                if (strlen(argv[i]) != (MM3_HASH_BUFFER_SIZE - 1))
                 {
                     LogError("Arg '%s' is invalid, needed a valid method context hash.", argv[i]);
                     DumpHelp(argv[0]);

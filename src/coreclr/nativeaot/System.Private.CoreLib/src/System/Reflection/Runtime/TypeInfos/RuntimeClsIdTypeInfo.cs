@@ -34,6 +34,7 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override string Namespace => BaseType.Namespace;
         public sealed override StructLayoutAttribute StructLayoutAttribute => BaseType.StructLayoutAttribute;
         public sealed override string ToString() => BaseType.ToString();
+        public sealed override bool IsByRefLike => false;
 
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes
         {
@@ -45,8 +46,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
 
             // This logic is written to match CoreCLR's behavior.
             return other is RuntimeCLSIDTypeInfo;

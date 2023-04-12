@@ -46,7 +46,6 @@ namespace ILCompiler.DependencyAnalysis
         public TypeGVMEntriesNode(TypeDesc associatedType)
         {
             Debug.Assert(associatedType.IsTypeDefinition);
-            Debug.Assert(TypeNeedsGVMTableEntries(associatedType));
             _associatedType = associatedType;
         }
 
@@ -71,55 +70,11 @@ namespace ILCompiler.DependencyAnalysis
 
                 foreach (var entry in ScanForInterfaceGenericVirtualMethodEntries())
                     InterfaceGenericVirtualMethodTableNode.GetGenericVirtualMethodImplementationDependencies(ref _staticDependencies, context, entry.CallingMethod, entry.ImplementationType, entry.ImplementationMethod);
+
+                Debug.Assert(_staticDependencies.Count > 0);
             }
 
             return _staticDependencies;
-        }
-
-        public static bool TypeNeedsGVMTableEntries(TypeDesc type)
-        {
-            // Only non-interface deftypes can have entries for their GVMs in the GVM hashtables.
-            // Interface GVM entries are computed for types that implemenent the interface (not for the interface on its own)
-            if (!type.IsDefType || type.IsInterface)
-                return false;
-
-            // Type declares GVMs
-            if (type.HasGenericVirtualMethods())
-                return true;
-
-            //
-            // Check if the type implements any interface with GVM methods, where the method implementations could be on
-            // base types.
-            // Example:
-            //      interface IFace {
-            //          void IFaceGVMethod<U>();
-            //      }
-            //      class BaseClass {
-            //          public virtual void IFaceGVMethod<U>() { ... }
-            //      }
-            //      public class DerivedClass : BaseClass, IFace { }
-            //
-            foreach (var iface in type.RuntimeInterfaces)
-            {
-                foreach (var method in iface.GetVirtualMethods())
-                {
-                    if (!method.HasInstantiation || method.Signature.IsStatic)
-                        continue;
-
-                    MethodDesc slotDecl = type.ResolveInterfaceMethodTarget(method);
-                    if (slotDecl == null)
-                    {
-                        var resolution = type.ResolveInterfaceMethodToDefaultImplementationOnType(method, out slotDecl);
-                        if (resolution == DefaultInterfaceMethodResolution.None)
-                            slotDecl = null;
-                    }
-
-                    if (slotDecl != null)
-                        return true;
-                }
-            }
-
-            return false;
         }
 
         public IEnumerable<TypeGVMEntryInfo> ScanForGenericVirtualMethodEntries()
@@ -143,13 +98,12 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (var method in iface.GetVirtualMethods())
                 {
-                    Debug.Assert(!method.Signature.IsStatic);
-
                     if (!method.HasInstantiation)
                         continue;
 
                     DefaultInterfaceMethodResolution resolution = DefaultInterfaceMethodResolution.None;
-                    MethodDesc slotDecl = _associatedType.ResolveInterfaceMethodTarget(method);
+                    MethodDesc slotDecl = method.Signature.IsStatic ?
+                        _associatedType.ResolveInterfaceMethodToStaticVirtualMethodOnType(method) : _associatedType.ResolveInterfaceMethodTarget(method);
                     if (slotDecl == null)
                     {
                         resolution = _associatedType.ResolveInterfaceMethodToDefaultImplementationOnType(method, out slotDecl);

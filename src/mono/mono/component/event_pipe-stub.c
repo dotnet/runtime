@@ -76,7 +76,6 @@ static EventPipeProvider *
 event_pipe_stub_create_provider (
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data);
 
 static void
@@ -327,7 +326,6 @@ static EventPipeProvider *
 event_pipe_stub_create_provider (
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data)
 {
 	return (EventPipeProvider *)_max_event_pipe_type_size;

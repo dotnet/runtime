@@ -7,9 +7,7 @@
 // before the jump, but if this statement has unconditional throw call, then
 // it tries to remove the jump during its optimization. 
 
-.assembly extern System.Runtime
-{
-}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Runtime.Extensions
 {
 }
@@ -18,7 +16,7 @@
 }
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit GitHub_18291
+.class public auto ansi beforefieldinit GitHub_18291
        extends [System.Runtime]System.Object
 {
   .method static uint16 ILGEN_METHOD(native unsigned int, int8, native int)
@@ -136,8 +134,8 @@
   }
 
 
-  .method private hidebysig static int32 
-          Main(string[] args) cil managed
+  .method public hidebysig static int32 
+          Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

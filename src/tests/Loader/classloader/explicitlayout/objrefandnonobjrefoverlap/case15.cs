@@ -40,7 +40,7 @@ public class Test{
         return;
     }
 
-  public static int Main(string[] args){
+  public static int Main(){
       bool caught=false;
       try{
           Go();

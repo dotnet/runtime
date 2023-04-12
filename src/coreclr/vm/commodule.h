@@ -63,11 +63,6 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefFromSignature(QCall::Module
 // GetTokenFromTypeSpec
 extern "C" mdTypeSpec QCALLTYPE ModuleBuilder_GetTokenFromTypeSpec(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength);
 
-// GetType
-// Given a class type, this method will look for that type
-//  with in the module.
-extern "C" void QCALLTYPE RuntimeModule_GetType(QCall::ModuleHandle pModule, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType, QCall::ObjectHandleOnStack keepAlive);
-
 // GetStringConstant
 // If this is a dynamic module, this routine will define a new
 //  string constant or return the token of an existing constant.

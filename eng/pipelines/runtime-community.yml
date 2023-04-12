@@ -8,7 +8,6 @@ trigger:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - '**.md'
     - eng/Version.Details.xml
@@ -31,113 +30,115 @@ variables:
   - template: /eng/pipelines/common/variables.yml
 
 extends:
-  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    jobs:
-    #
-    # Evaluate paths
-    #
-    - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-      - template: /eng/pipelines/common/evaluate-default-paths.yml
+    stages:
+    - stage: Build
+      jobs:
+      #
+      # Evaluate paths
+      #
+      - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+        - template: /eng/pipelines/common/evaluate-default-paths.yml
 
-    #
-    # s390x & PPC64 little endian
-    # Build the whole product using Mono and run libraries tests
-    #
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/common/global-build-job.yml
-        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-        buildConfig: Release
-        runtimeFlavor: mono
-        platforms:
-        - Linux_s390x
-        - Linux_ppc64le
-        variables:
-          # map dependencies variables to local variables
-          - name: librariesContainsChange
-            value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-          - name: monoContainsChange
-            value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
-        jobParameters:
-          testGroup: innerloop
-          nameSuffix: AllSubsets_Mono
-          buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
-          timeoutInMinutes: 180
-          condition: >-
-            or(
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-              eq(variables['isRollingBuild'], true))
-          # extra steps, run tests
-          extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-          extraStepsParameters:
-            creator: dotnet-bot
-            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      #
+      # s390x & PPC64 little endian
+      # Build the whole product using Mono and run libraries tests
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: Release
+          runtimeFlavor: mono
+          platforms:
+          - linux_s390x
+          - linux_ppc64le
+          variables:
+            # map dependencies variables to local variables
+            - name: librariesContainsChange
+              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+            - name: monoContainsChange
+              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: AllSubsets_Mono
+            buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+            timeoutInMinutes: 180
             condition: >-
               or(
-              eq(variables['librariesContainsChange'], true),
-              eq(variables['monoContainsChange'], true),
-              eq(variables['isRollingBuild'], true))
-
-    #
-    # Build the whole product using Mono
-    #
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/common/global-build-job.yml
-        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-        buildConfig: Release
-        runtimeFlavor: mono
-        platforms:
-        - FreeBSD_x64
-        variables:
-          # map dependencies variables to local variables
-          - name: librariesContainsChange
-            value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-          - name: monoContainsChange
-            value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
-        jobParameters:
-          testScope: innerloop
-          nameSuffix: AllSubsets_Mono
-          buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-          timeoutInMinutes: 120
-          condition: >-
-            or(
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-              eq(variables['isRollingBuild'], true))
-
-    #
-    # Build the whole product using Mono and run libraries tests
-    #
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/common/global-build-job.yml
-        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-        buildConfig: Release
-        runtimeFlavor: mono
-        platforms:
-        - Linux_armv6
-        variables:
-          # map dependencies variables to local variables
-          - name: librariesContainsChange
-            value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-          - name: monoContainsChange
-            value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
-        jobParameters:
-          testScope: innerloop
-          nameSuffix: AllSubsets_Mono
-          buildArgs: -s mono+clr.iltools+clr.packages+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
-          timeoutInMinutes: 120
-          condition: >-
-            or(
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-              eq(variables['isRollingBuild'], true))
-          ${{ if eq(variables['isRollingBuild'], true) }}:
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
             # extra steps, run tests
             extraStepsTemplate: /eng/pipelines/libraries/helix.yml
             extraStepsParameters:
               creator: dotnet-bot
               testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+              condition: >-
+                or(
+                eq(variables['librariesContainsChange'], true),
+                eq(variables['monoContainsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      #
+      # Build the whole product using Mono
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: Release
+          runtimeFlavor: mono
+          platforms:
+          - freebsd_x64
+          variables:
+            # map dependencies variables to local variables
+            - name: librariesContainsChange
+              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+            - name: monoContainsChange
+              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+          jobParameters:
+            testScope: innerloop
+            nameSuffix: AllSubsets_Mono
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+            timeoutInMinutes: 120
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      #
+      # Build the whole product using Mono and run libraries tests
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: Release
+          runtimeFlavor: mono
+          platforms:
+          - linux_armv6
+          variables:
+            # map dependencies variables to local variables
+            - name: librariesContainsChange
+              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+            - name: monoContainsChange
+              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+          jobParameters:
+            testScope: innerloop
+            nameSuffix: AllSubsets_Mono
+            buildArgs: -s mono+clr.iltools+clr.packages+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+            timeoutInMinutes: 120
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+            ${{ if eq(variables['isRollingBuild'], true) }}:
+              # extra steps, run tests
+              extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+              extraStepsParameters:
+                creator: dotnet-bot
+                testRunNamePrefixSuffix: Mono_$(_BuildConfig)

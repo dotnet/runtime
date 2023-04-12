@@ -381,15 +381,11 @@ namespace System.Globalization
             // We know a bounds check error occurred. Now we just need to figure
             // out the correct error message to surface.
 
-            if (length1 < 0 || length2 < 0)
-            {
-                throw new ArgumentOutOfRangeException((length1 < 0) ? nameof(length1) : nameof(length2), SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length1);
+            ArgumentOutOfRangeException.ThrowIfNegative(length2);
 
-            if (offset1 < 0 || offset2 < 0)
-            {
-                throw new ArgumentOutOfRangeException((offset1 < 0) ? nameof(offset1) : nameof(offset2), SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset1);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset2);
 
             if (offset1 > (string1 == null ? 0 : string1.Length) - length1)
             {
@@ -491,6 +487,10 @@ namespace System.Globalization
         private unsafe int CompareStringCore(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsCompareString(string1, string2, options) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                JsCompareString(string1, string2, options) :
+#endif
                 IcuCompareString(string1, string2, options);
 
         /// <summary>

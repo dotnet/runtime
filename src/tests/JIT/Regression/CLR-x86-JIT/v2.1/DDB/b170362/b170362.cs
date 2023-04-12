@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public struct MyStruct
 {
@@ -11,11 +12,12 @@ public struct MyStruct
 
 }
 
-class MainApp
+public class MainApp
 {
     static byte s = 1;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         MyStruct myStruct;
 

@@ -367,8 +367,12 @@ namespace Internal.TypeSystem
 
         private TValue AddOrGetExistingInner(TValue value, out bool addedValue)
         {
+#if NET5_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(value);
+#else
             if (value == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(value));
+#endif
 
             if (_entryInProcessOfWritingSentinel == null)
             {
@@ -592,8 +596,12 @@ namespace Internal.TypeSystem
         /// <returns>Value from the hashtable if found, otherwise null.</returns>
         public TValue GetValueIfExists(TValue value)
         {
+#if NET5_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(value);
+#else
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
+#endif
 
             TValue[] hashTableLocal = GetCurrentHashtable();
             Debug.Assert(hashTableLocal.Length > 0);

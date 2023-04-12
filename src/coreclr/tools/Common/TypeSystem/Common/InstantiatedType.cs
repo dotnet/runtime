@@ -4,6 +4,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
+#if TYPE_LOADER_IMPLEMENTATION
+using MetadataType = Internal.TypeSystem.DefType;
+#endif
+
 namespace Internal.TypeSystem
 {
     public sealed partial class InstantiatedType : MetadataType
@@ -51,7 +55,7 @@ namespace Internal.TypeSystem
 
         private MetadataType InitializeBaseType()
         {
-            var uninst = _typeDef.MetadataBaseType;
+            var uninst = _typeDef.BaseType;
 
             return (_baseType = (uninst != null) ? (MetadataType)uninst.InstantiateSignature(_instantiation, default(Instantiation)) : null);
         }
@@ -66,19 +70,13 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override MetadataType MetadataBaseType
-        {
-            get
-            {
-                if (_baseType == this)
-                    return InitializeBaseType();
-                return _baseType;
-            }
-        }
-
         // Type system implementations that support the notion of intrinsic types
         // will provide an implementation that adds the flag if necessary.
         partial void AddComputedIntrinsicFlag(ref TypeFlags flags);
+
+        // Type system implementations that support the notion of inline arrays
+        // will provide an implementation that adds the flag if necessary.
+        partial void AddComputedInlineArrayFlag(ref TypeFlags flags);
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
@@ -111,6 +109,8 @@ namespace Internal.TypeSystem
 
                 if (_typeDef.IsByRefLike)
                     flags |= TypeFlags.IsByRefLike;
+
+                AddComputedInlineArrayFlag(ref flags);
 
                 AddComputedIntrinsicFlag(ref flags);
             }
@@ -181,7 +181,7 @@ namespace Internal.TypeSystem
             if (typicalFinalizer == null)
                 return null;
 
-            MetadataType typeInHierarchy = this;
+            DefType typeInHierarchy = this;
 
             // Note, we go back to the type definition/typical method definition in this code.
             // If the finalizer is implemented on a base type that is also a generic, then the
@@ -190,7 +190,7 @@ namespace Internal.TypeSystem
 
             while (typicalFinalizer.OwningType.GetTypeDefinition() != typeInHierarchy.GetTypeDefinition())
             {
-                typeInHierarchy = typeInHierarchy.MetadataBaseType;
+                typeInHierarchy = typeInHierarchy.BaseType;
             }
 
             if (typeInHierarchy == typicalFinalizer.OwningType)
@@ -280,74 +280,6 @@ namespace Internal.TypeSystem
             return _typeDef;
         }
 
-        // Properties that are passed through from the type definition
-        public override ClassLayoutMetadata GetClassLayout()
-        {
-            return _typeDef.GetClassLayout();
-        }
-
-        public override bool IsExplicitLayout
-        {
-            get
-            {
-                return _typeDef.IsExplicitLayout;
-            }
-        }
-
-        public override bool IsSequentialLayout
-        {
-            get
-            {
-                return _typeDef.IsSequentialLayout;
-            }
-        }
-
-        public override bool IsBeforeFieldInit
-        {
-            get
-            {
-                return _typeDef.IsBeforeFieldInit;
-            }
-        }
-
-        public override bool IsModuleType
-        {
-            get
-            {
-                // The global module type cannot be generic.
-                return false;
-            }
-        }
-
-        public override bool IsSealed
-        {
-            get
-            {
-                return _typeDef.IsSealed;
-            }
-        }
-
-        public override bool IsAbstract
-        {
-            get
-            {
-                return _typeDef.IsAbstract;
-            }
-        }
-
-        public override ModuleDesc Module
-        {
-            get
-            {
-                return _typeDef.Module;
-            }
-        }
-
-        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
-        {
-            return _typeDef.HasCustomAttribute(attributeNamespace, attributeName);
-        }
-
         public override DefType ContainingType
         {
             get
@@ -355,18 +287,6 @@ namespace Internal.TypeSystem
                 // Return the result from the typical type definition.
                 return _typeDef.ContainingType;
             }
-        }
-
-        public override MetadataType GetNestedType(string name)
-        {
-            // Return the result from the typical type definition.
-            return _typeDef.GetNestedType(name);
-        }
-
-        public override IEnumerable<MetadataType> GetNestedTypes()
-        {
-            // Return the result from the typical type definition.
-            return _typeDef.GetNestedTypes();
         }
 
         public override TypeDesc UnderlyingType

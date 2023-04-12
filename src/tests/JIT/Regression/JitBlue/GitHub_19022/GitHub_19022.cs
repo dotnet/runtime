@@ -3,14 +3,16 @@
 
 using System;
 using System.Numerics;
+using Xunit;
 
 namespace JitCrashPOC
 {
-    class Program
+    public class Program
     {
         static public int s_res;
 
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             var map = new ItemRunner();
 

@@ -102,6 +102,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         private bool _composite;
         private ulong _imageBase;
         private int _readyToRunHeaderRVA;
+        private string _ownerCompositeExecutable;
         private ReadyToRunHeader _readyToRunHeader;
         private List<ReadyToRunCoreHeader> _readyToRunAssemblyHeaders;
         private List<ReadyToRunAssembly> _readyToRunAssemblies;
@@ -285,6 +286,15 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
+        public string OwnerCompositeExecutable
+        {
+            get
+            {
+                EnsureHeader();
+                return _ownerCompositeExecutable;
+            }
+        }
+
         /// <summary>
         /// Parsed instance entrypoint table entries.
         /// </summary>
@@ -333,6 +343,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
 
         }
+
+        public bool ValidateDebugInfo;
 
         internal Dictionary<int, int> RuntimeFunctionToDebugInfo
         {
@@ -662,6 +674,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             Debug.Assert(_readyToRunHeaderRVA != 0);
             int r2rHeaderOffset = GetOffset(_readyToRunHeaderRVA);
             _readyToRunHeader = new ReadyToRunHeader(Image, _readyToRunHeaderRVA, r2rHeaderOffset);
+
+            FindOwnerCompositeExecutable();
 
             _readyToRunAssemblies = new List<ReadyToRunAssembly>();
             if (_composite)
@@ -1180,12 +1194,19 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 hashPersonalityRoutines.Add(x64UnwindInfo.PersonalityRoutineRVA);
             }
+            if (ValidateDebugInfo)
+            {
+                CheckNonEmptyDebugInfo(firstRuntimeFunction);
+            }
 
             for (int i = 1; i < runtimeFunctions.Count; i++)
             {
                 Debug.Assert(runtimeFunctions[i - 1].StartAddress.CompareTo(runtimeFunctions[i].StartAddress) < 0, "RuntimeFunctions are not sorted");
                 Debug.Assert(runtimeFunctions[i - 1].EndAddress <= runtimeFunctions[i].StartAddress, "RuntimeFunctions intervals overlap");
-
+                if (ValidateDebugInfo)
+                {
+                    CheckNonEmptyDebugInfo(runtimeFunctions[i - 1]);
+                }
                 if (x64UnwindInfo != null && ((x64UnwindInfo.Flags & (int)ILCompiler.Reflection.ReadyToRun.Amd64.UnwindFlags.UNW_FLAG_CHAININFO) == 0))
                 {
                     Amd64.UnwindInfo x64UnwindInfoCurr = (Amd64.UnwindInfo)runtimeFunctions[i].UnwindInfo;
@@ -1196,6 +1217,17 @@ namespace ILCompiler.Reflection.ReadyToRun
                         hashPersonalityRoutines.Add(currPersonalityRoutineRVA);
                         Debug.Assert(hashPersonalityRoutines.Count < 3, "There are more than two different runtimefunctions PersonalityRVAs");
                     }
+                }
+            }
+        }
+
+        public void CheckNonEmptyDebugInfo(RuntimeFunction function)
+        {
+            if (function.DebugInfo != null)
+            {
+                foreach (NativeVarInfo varInfo in function.DebugInfo.VariablesList)
+                {
+                    Debug.Assert(varInfo.StartOffset < varInfo.EndOffset, "Empty debug info for Variable " + varInfo.VariableNumber + " in " + function.Method.Signature);
                 }
             }
         }
@@ -1356,6 +1388,21 @@ namespace ILCompiler.Reflection.ReadyToRun
                 ReadyToRunCoreHeader assemblyHeader = new ReadyToRunCoreHeader(Image, ref headerOffset);
                 _readyToRunAssemblyHeaders.Add(assemblyHeader);
                 _readyToRunAssemblies.Add(new ReadyToRunAssembly(this));
+            }
+        }
+
+        private void FindOwnerCompositeExecutable()
+        {
+            _ownerCompositeExecutable = null;
+            foreach (ReadyToRunSection section in ReadyToRunHeader.Sections.Values)
+            {
+                if (section.Type == ReadyToRunSectionType.OwnerCompositeExecutable)
+                {
+                    int oceOffset = GetOffset(section.RelativeVirtualAddress);
+                    string ownerCompositeExecutable = Encoding.UTF8.GetString(Image, oceOffset, section.Size - 1); // exclude the zero terminator
+                    _ownerCompositeExecutable = ownerCompositeExecutable.ToEscapedString(placeQuotes: false);
+                    break;
+                }
             }
         }
 

@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
+using SourceGenerators.Tests;
 using Xunit;
 
 using StringMarshalling = Microsoft.Interop.StringMarshalling;
@@ -22,22 +23,23 @@ namespace LibraryImportGenerator.UnitTests
         [Fact]
         public async Task ParameterTypeNotSupported_ReportsDiagnostic()
         {
-            string source = @"
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-namespace NS
-{
-    class MyClass { }
-}
-partial class Test
-{
-    [LibraryImport(""DoesNotExist"")]
-    public static partial void Method1(NS.MyClass c);
+            string source = """
 
-    [LibraryImport(""DoesNotExist"")]
-    public static partial void Method2(int i, List<int> list);
-}
-";
+                using System.Collections.Generic;
+                using System.Runtime.InteropServices;
+                namespace NS
+                {
+                    class MyClass { }
+                }
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial void Method1(NS.MyClass c);
+
+                    [LibraryImport("DoesNotExist")]
+                    public static partial void Method2(int i, List<int> list);
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
@@ -60,22 +62,23 @@ partial class Test
         [Fact]
         public async Task ReturnTypeNotSupported_ReportsDiagnostic()
         {
-            string source = @"
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-namespace NS
-{
-    class MyClass { }
-}
-partial class Test
-{
-    [LibraryImport(""DoesNotExist"")]
-    public static partial NS.MyClass Method1();
+            string source = """
 
-    [LibraryImport(""DoesNotExist"")]
-    public static partial List<int> Method2();
-}
-";
+                using System.Collections.Generic;
+                using System.Runtime.InteropServices;
+                namespace NS
+                {
+                    class MyClass { }
+                }
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial NS.MyClass Method1();
+
+                    [LibraryImport("DoesNotExist")]
+                    public static partial List<int> Method2();
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
@@ -98,14 +101,15 @@ partial class Test
         [Fact]
         public async Task ParameterTypeNotSupportedWithDetails_ReportsDiagnostic()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-partial class Test
-{
-    [LibraryImport(""DoesNotExist"")]
-    public static partial void Method(char c, string s);
-}
-";
+            string source = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial void Method(char c, string s);
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
@@ -126,17 +130,18 @@ partial class Test
         [Fact]
         public async Task ReturnTypeNotSupportedWithDetails_ReportsDiagnostic()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-partial class Test
-{
-    [LibraryImport(""DoesNotExist"")]
-    public static partial char Method1();
+            string source = """
 
-    [LibraryImport(""DoesNotExist"")]
-    public static partial string Method2();
-}
-";
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial char Method1();
+
+                    [LibraryImport("DoesNotExist")]
+                    public static partial string Method2();
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
@@ -157,17 +162,18 @@ partial class Test
         [Fact]
         public async Task ParameterConfigurationNotSupported_ReportsDiagnostic()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-partial class Test
-{
-    [LibraryImport(""DoesNotExist"")]
-    public static partial void Method1([MarshalAs(UnmanagedType.BStr)] int i1, int i2);
+            string source = """
 
-    [LibraryImport(""DoesNotExist"")]
-    public static partial void Method2(int i1, [MarshalAs(UnmanagedType.FunctionPtr)] bool b2);
-}
-";
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial void Method1([MarshalAs(UnmanagedType.BStr)] int i1, int i2);
+
+                    [LibraryImport("DoesNotExist")]
+                    public static partial void Method2(int i1, [MarshalAs(UnmanagedType.FunctionPtr)] bool b2);
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
@@ -190,19 +196,20 @@ partial class Test
         [Fact]
         public async Task ReturnConfigurationNotSupported_ReportsDiagnostic()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-partial class Test
-{
-    [LibraryImport(""DoesNotExist"")]
-    [return: MarshalAs(UnmanagedType.BStr)]
-    public static partial int Method1(int i);
+            string source = """
 
-    [LibraryImport(""DoesNotExist"")]
-    [return: MarshalAs(UnmanagedType.FunctionPtr)]
-    public static partial bool Method2(int i);
-}
-";
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    [return: MarshalAs(UnmanagedType.BStr)]
+                    public static partial int Method1(int i);
+
+                    [LibraryImport("DoesNotExist")]
+                    [return: MarshalAs(UnmanagedType.FunctionPtr)]
+                    public static partial bool Method2(int i);
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
@@ -225,18 +232,19 @@ partial class Test
         [Fact]
         public async Task MarshalAsUnmanagedTypeNotSupported_ReportsDiagnostic()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-partial class Test
-{
-    [LibraryImport(""DoesNotExist"")]
-    [return: MarshalAs(1)]
-    public static partial int Method1(int i);
+            string source = """
 
-    [LibraryImport(""DoesNotExist"")]
-    public static partial int Method2([MarshalAs((short)0)] bool b);
-}
-";
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    [return: MarshalAs(1)]
+                    public static partial int Method1(int i);
+
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int Method2([MarshalAs((short)0)] bool b);
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
@@ -265,18 +273,19 @@ partial class Test
         [Fact]
         public async Task MarshalAsFieldNotSupported_ReportsDiagnostic()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-partial class Test
-{
-    [LibraryImport(""DoesNotExist"")]
-    [return: MarshalAs(UnmanagedType.I4, SafeArraySubType=VarEnum.VT_I4)]
-    public static partial int Method1(int i);
+            string source = """
 
-    [LibraryImport(""DoesNotExist"")]
-    public static partial int Method2([MarshalAs(UnmanagedType.I1, IidParameterIndex = 1)] bool b);
-}
-";
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    [return: MarshalAs(UnmanagedType.I4, SafeArraySubType=VarEnum.VT_I4)]
+                    public static partial int Method1(int i);
+
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int Method2([MarshalAs(UnmanagedType.I1, IidParameterIndex = 1)] bool b);
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
@@ -299,29 +308,33 @@ partial class Test
         [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task StringMarshallingForwardingNotSupported_ReportsDiagnostic()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-partial class Test
-{
-    [LibraryImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Utf8)]
-    public static partial void Method1(string s);
+            string source = """
 
-    [LibraryImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Native))]
-    public static partial void Method2(string s);
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Utf8)]
+                    public static partial void Method1(string s);
 
-    struct Native
-    {
-        public Native(string s) { }
-        public string ToManaged() => default;
-    }
-}
-" + CodeSnippets.LibraryImportAttributeDeclaration;
+                    [LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Native))]
+                    public static partial void Method2(string s);
+
+                    struct Native
+                    {
+                        public Native(string s) { }
+                        public string ToManaged() => default;
+                    }
+                }
+                """ + CodeSnippets.LibraryImportAttributeDeclaration;
 
             // Compile against Standard so that we generate forwarders
             Compilation comp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
-
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(
+                comp,
+                new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(TestTargetFramework.Standard)),
+                out var generatorDiags,
+                new Microsoft.Interop.LibraryImportGenerator());
             DiagnosticResult[] expectedDiags = new DiagnosticResult[]
             {
                 (new DiagnosticResult(GeneratorDiagnostics.CannotForwardToDllImport))
@@ -338,24 +351,25 @@ partial class Test
         [Fact]
         public async Task InvalidStringMarshallingConfiguration_ReportsDiagnostic()
         {
-            string source = @$"
-using System.Runtime.InteropServices;
-{CodeSnippets.DisableRuntimeMarshalling}
-partial class Test
-{{
-    [LibraryImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Custom)]
-    public static partial void Method1(out int i);
+            string source = $$"""
 
-    [LibraryImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Utf8, StringMarshallingCustomType = typeof(Native))]
-    public static partial void Method2(out int i);
-
-    struct Native
-    {{
-        public Native(string s) {{ }}
-        public string ToManaged() => default;
-    }}
-}}
-";
+                using System.Runtime.InteropServices;
+                {{CodeSnippets.DisableRuntimeMarshalling}}
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Custom)]
+                    public static partial void Method1(out int i);
+                
+                    [LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Utf8, StringMarshallingCustomType = typeof(Native))]
+                    public static partial void Method2(out int i);
+                
+                    struct Native
+                    {
+                        public Native(string s) { }
+                        public string ToManaged() => default;
+                    }
+                }
+                """;
 
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
@@ -376,17 +390,18 @@ partial class Test
         [Fact]
         public async Task NonPartialMethod_ReportsDiagnostic()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-partial class Test
-{
-    [LibraryImport(""DoesNotExist"")]
-    public static void Method() { }
+            string source = """
 
-    [LibraryImport(""DoesNotExist"")]
-    public static extern void ExternMethod();
-}
-";
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static void Method() { }
+
+                    [LibraryImport("DoesNotExist")]
+                    public static extern void ExternMethod();
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
@@ -408,14 +423,15 @@ partial class Test
         [Fact]
         public async Task NonStaticMethod_ReportsDiagnostic()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-partial class Test
-{
-    [LibraryImport(""DoesNotExist"")]
-    public partial void Method();
-}
-";
+            string source = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public partial void Method();
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
@@ -435,17 +451,18 @@ partial class Test
         [Fact]
         public async Task GenericMethod_ReportsDiagnostic()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-partial class Test
-{
-    [LibraryImport(""DoesNotExist"")]
-    public static partial void Method1<T>();
+            string source = """
 
-    [LibraryImport(""DoesNotExist"")]
-    public static partial void Method2<T, U>();
-}
-";
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial void Method1<T>();
+
+                    [LibraryImport("DoesNotExist")]
+                    public static partial void Method2<T, U>();
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
@@ -471,14 +488,15 @@ partial class Test
         [InlineData("record")]
         public async Task NonPartialParentType_Diagnostic(string typeKind)
         {
-            string source = $@"
-using System.Runtime.InteropServices;
-{typeKind} Test
-{{
-    [LibraryImport(""DoesNotExist"")]
-    public static partial void Method();
-}}
-";
+            string source = $$"""
+
+                using System.Runtime.InteropServices;
+                {{typeKind}} Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial void Method();
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
 
             // Also expect CS0751: A partial method must be declared within a partial type
@@ -504,17 +522,18 @@ using System.Runtime.InteropServices;
         [InlineData("record")]
         public async Task NonPartialGrandparentType_Diagnostic(string typeKind)
         {
-            string source = $@"
-using System.Runtime.InteropServices;
-{typeKind} Test
-{{
-    partial class TestInner
-    {{
-        [LibraryImport(""DoesNotExist"")]
-        static partial void Method();
-    }}
-}}
-";
+            string source = $$"""
+
+                using System.Runtime.InteropServices;
+                {{typeKind}} Test
+                {
+                    partial class TestInner
+                    {
+                        [LibraryImport("DoesNotExist")]
+                        static partial void Method();
+                    }
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 

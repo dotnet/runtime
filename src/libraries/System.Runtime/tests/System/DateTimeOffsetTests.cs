@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using Xunit;
 
@@ -72,6 +73,23 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(new DateTime(max.Year, max.Month, max.Day, max.Hour, max.Minute, max.Second + 1, max.Millisecond, DateTimeKind.Utc)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTimeOffset(new DateTime(max.Year, max.Month, max.Day, max.Hour, max.Minute, max.Second, max.Millisecond + 1, DateTimeKind.Utc)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("microsecond", () => new DateTimeOffset(new DateTime(max.Year, max.Month, max.Day, max.Hour, max.Minute, max.Second, max.Millisecond, max.Microsecond + 1, DateTimeKind.Utc)));
+        }
+
+        [Fact]
+        public static void Ctor_DateOnly_TimeOnly_TimeSpan()
+        {
+            var dateTimeOffset = new DateTimeOffset(DateOnly.MinValue, TimeOnly.MinValue, TimeSpan.FromHours(-14));
+            VerifyDateTimeOffset(dateTimeOffset, 1, 1, 1, 0, 0, 0, 0, 0, TimeSpan.FromHours(-14));
+            
+            dateTimeOffset = new DateTimeOffset(DateOnly.MaxValue, TimeOnly.MaxValue, TimeSpan.FromHours(14));
+            VerifyDateTimeOffset(dateTimeOffset, 9999, 12, 31, 23, 59, 59, 999, 999, TimeSpan.FromHours(14), 900);
+
+            dateTimeOffset = new DateTimeOffset(new DateOnly(2012, 12, 31), new TimeOnly(13, 50, 10), TimeSpan.Zero);
+            VerifyDateTimeOffset(dateTimeOffset, 2012, 12, 31, 13, 50, 10, 0, 0, TimeSpan.Zero);
+
+            DateTimeOffset now = DateTimeOffset.Now;
+            DateTimeOffset constructed = new DateTimeOffset(DateOnly.FromDateTime(now.DateTime), TimeOnly.FromDateTime(now.DateTime), now.Offset);
+            Assert.Equal(now, constructed);
         }
 
         [Fact]
@@ -283,6 +301,24 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(max.Year, max.Month, max.Day, max.Hour + 1, max.Minute, max.Second, TimeSpan.Zero));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(max.Year, max.Month, max.Day, max.Hour, max.Minute + 1, max.Second, TimeSpan.Zero));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(max.Year, max.Month, max.Day, max.Hour, max.Minute, max.Second + 1, TimeSpan.Zero));
+        }
+
+        [Theory]
+        [InlineData(2022, 12, 31, 23, 59, 59)]
+        [InlineData(2000, 1, 1, 12, 34, 59)]
+        [InlineData(2005, 2, 3, 4, 4, 1)]
+        public static void Deconstruct_DateOnly_TimeOnly_TimeSpan(int year, int month, int day, int hour, int minute, int second)
+        {
+            var date = new DateOnly(year, month, day);
+            var time = new TimeOnly(hour, minute, second);
+
+            var offset = TimeSpan.FromHours(10);
+            var dateTimeOffset = new DateTimeOffset(date, time, offset);
+            var (obtainedDate, obtainedTime, obtainedOffset) = dateTimeOffset;
+            
+            Assert.Equal(date, obtainedDate);
+            Assert.Equal(time, obtainedTime);
+            Assert.Equal(offset, obtainedOffset);
         }
 
         [Fact]
@@ -1381,29 +1417,79 @@ namespace System.Tests
             Assert.Equal(expectedString, actual.ToString("u"));
         }
 
+        [Theory]
+        [InlineData(5)]
+        [InlineData(-5)]
+        [InlineData(0)]
+        [InlineData(14 * 60)]  // max offset
+        [InlineData(-14 * 60)] // min offset
+        public static void TotalNumberOfMinutesTest(int minutesCount)
+        {
+            DateTimeOffset dto = new DateTimeOffset(new DateTime(2022, 11, 12), TimeSpan.FromMinutes(minutesCount));
+            Assert.Equal(minutesCount, dto.TotalOffsetMinutes);
+            Assert.Equal(minutesCount, dto.Offset.TotalMinutes);
+        }
+
+        [Fact]
+        public static void TotalNumberOfMinutesNowTest()
+        {
+            DateTimeOffset dto = DateTimeOffset.UtcNow;
+            Assert.Equal(0, dto.TotalOffsetMinutes);
+
+            dto = DateTimeOffset.Now;
+            Assert.Equal(dto.Offset.TotalMinutes, dto.TotalOffsetMinutes);
+        }
+
         [Fact]
         public static void TryFormat_ToString_EqualResults()
         {
-            DateTimeOffset expected = DateTimeOffset.MaxValue;
-            string expectedString = expected.ToString();
+            // UTF16
+            {
+                DateTimeOffset expected = DateTimeOffset.MaxValue;
+                string expectedString = expected.ToString();
 
-            // Just the right amount of space, succeeds
-            Span<char> actual = new char[expectedString.Length];
-            Assert.True(expected.TryFormat(actual, out int charsWritten));
-            Assert.Equal(expectedString.Length, charsWritten);
-            Assert.Equal<char>(expectedString.ToCharArray(), actual.ToArray());
+                // Just the right amount of space, succeeds
+                Span<char> actual = new char[expectedString.Length];
+                Assert.True(expected.TryFormat(actual, out int charsWritten));
+                Assert.Equal(expectedString.Length, charsWritten);
+                Assert.Equal<char>(expectedString.ToCharArray(), actual.ToArray());
 
-            // Too little space, fails
-            actual = new char[expectedString.Length - 1];
-            Assert.False(expected.TryFormat(actual, out charsWritten));
-            Assert.Equal(0, charsWritten);
+                // Too little space, fails
+                actual = new char[expectedString.Length - 1];
+                Assert.False(expected.TryFormat(actual, out charsWritten));
+                Assert.Equal(0, charsWritten);
 
-            // More than enough space, succeeds
-            actual = new char[expectedString.Length + 1];
-            Assert.True(expected.TryFormat(actual, out charsWritten));
-            Assert.Equal(expectedString.Length, charsWritten);
-            Assert.Equal<char>(expectedString.ToCharArray(), actual.Slice(0, expectedString.Length).ToArray());
-            Assert.Equal(0, actual[actual.Length - 1]);
+                // More than enough space, succeeds
+                actual = new char[expectedString.Length + 1];
+                Assert.True(expected.TryFormat(actual, out charsWritten));
+                Assert.Equal(expectedString.Length, charsWritten);
+                Assert.Equal<char>(expectedString.ToCharArray(), actual.Slice(0, expectedString.Length).ToArray());
+                Assert.Equal(0, actual[actual.Length - 1]);
+            }
+
+            // UTF8
+            {
+                DateTimeOffset expected = DateTimeOffset.MaxValue;
+                string expectedString = expected.ToString();
+
+                // Just the right amount of space, succeeds
+                Span<byte> actual = new byte[expectedString.Length];
+                Assert.True(((IUtf8SpanFormattable)expected).TryFormat(actual, out int charsWritten, default, null));
+                Assert.Equal(expectedString.Length, charsWritten);
+                Assert.Equal(expectedString, Encoding.UTF8.GetString(actual));
+
+                // Too little space, fails
+                actual = new byte[expectedString.Length - 1];
+                Assert.False(((IUtf8SpanFormattable)expected).TryFormat(actual, out charsWritten, default, null));
+                Assert.Equal(0, charsWritten);
+
+                // More than enough space, succeeds
+                actual = new byte[expectedString.Length + 1];
+                Assert.True(((IUtf8SpanFormattable)expected).TryFormat(actual, out charsWritten, default, null));
+                Assert.Equal(expectedString.Length, charsWritten);
+                Assert.Equal(expectedString, Encoding.UTF8.GetString(actual.Slice(0, expectedString.Length)));
+                Assert.Equal(0, actual[actual.Length - 1]);
+            }
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
@@ -1411,13 +1497,27 @@ namespace System.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60562", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void TryFormat_MatchesExpected(DateTimeOffset dateTimeOffset, string format, IFormatProvider provider, string expected)
         {
-            var destination = new char[expected.Length];
+            // UTF16
+            {
+                var destination = new char[expected.Length];
 
-            Assert.False(dateTimeOffset.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
+                Assert.False(dateTimeOffset.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
 
-            Assert.True(dateTimeOffset.TryFormat(destination, out int charsWritten, format, provider));
-            Assert.Equal(destination.Length, charsWritten);
-            Assert.Equal(expected, new string(destination));
+                Assert.True(dateTimeOffset.TryFormat(destination, out int charsWritten, format, provider));
+                Assert.Equal(destination.Length, charsWritten);
+                Assert.Equal(expected, new string(destination));
+            }
+
+            // UTF8
+            {
+                var destination = new byte[expected.Length];
+
+                Assert.False(((IUtf8SpanFormattable)dateTimeOffset).TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
+
+                Assert.True(((IUtf8SpanFormattable)dateTimeOffset).TryFormat(destination, out int charsWritten, format, provider));
+                Assert.Equal(destination.Length, charsWritten);
+                Assert.Equal(expected, Encoding.UTF8.GetString(destination));
+            }
         }
 
         [Fact]

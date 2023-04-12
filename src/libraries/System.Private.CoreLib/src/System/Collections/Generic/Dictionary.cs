@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -136,7 +137,7 @@ namespace System.Collections.Generic
                     return;
                 }
 
-                // Comparers differ need to rehash all the entires via Add
+                // Comparers differ need to rehash all the entries via Add
                 int count = source._count;
                 for (int i = 0; i < count; i++)
                 {
@@ -156,6 +157,8 @@ namespace System.Collections.Generic
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected Dictionary(SerializationInfo info, StreamingContext context)
         {
             // We can't do anything with the keys and values until the entire graph has been deserialized
@@ -339,8 +342,11 @@ namespace System.Collections.Generic
         public Enumerator GetEnumerator() => new Enumerator(this, Enumerator.KeyValuePair);
 
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() =>
-            new Enumerator(this, Enumerator.KeyValuePair);
+            Count == 0 ? GenericEmptyEnumerator<KeyValuePair<TKey, TValue>>.Instance :
+            GetEnumerator();
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
@@ -380,7 +386,7 @@ namespace System.Collections.Generic
                     Entry[]? entries = _entries;
                     uint collisionCount = 0;
 
-                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
+                    // ValueType: Devirtualize with EqualityComparer<TKey>.Default intrinsic
                     i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
                     do
                     {
@@ -500,7 +506,7 @@ namespace System.Collections.Generic
             if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
                 comparer == null)
             {
-                // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
+                // ValueType: Devirtualize with EqualityComparer<TKey>.Default intrinsic
                 while (true)
                 {
                     // Should be a while loop https://github.com/dotnet/runtime/issues/9422
@@ -655,7 +661,7 @@ namespace System.Collections.Generic
                 if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
                     comparer == null)
                 {
-                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
+                    // ValueType: Devirtualize with EqualityComparer<TKey>.Default intrinsic
                     while (true)
                     {
                         // Should be a while loop https://github.com/dotnet/runtime/issues/9422
@@ -1078,7 +1084,7 @@ namespace System.Collections.Generic
                 object[]? objects = array as object[];
                 if (objects == null)
                 {
-                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+                    ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
                 }
 
                 try
@@ -1095,12 +1101,12 @@ namespace System.Collections.Generic
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+                    ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
                 }
             }
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this, Enumerator.KeyValuePair);
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<KeyValuePair<TKey, TValue>>)this).GetEnumerator();
 
         /// <summary>
         /// Ensures that the dictionary can hold up to 'capacity' entries without any further expansion of its backing storage
@@ -1513,9 +1519,11 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() => new Enumerator(_dictionary);
+            IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() =>
+                Count == 0 ? SZGenericArrayEnumerator<TKey>.Empty :
+                GetEnumerator();
 
-            IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<TKey>)this).GetEnumerator();
 
             void ICollection.CopyTo(Array array, int index)
             {
@@ -1553,7 +1561,7 @@ namespace System.Collections.Generic
                     object[]? objects = array as object[];
                     if (objects == null)
                     {
-                        ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+                        ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
                     }
 
                     int count = _dictionary._count;
@@ -1567,7 +1575,7 @@ namespace System.Collections.Generic
                     }
                     catch (ArrayTypeMismatchException)
                     {
-                        ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+                        ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
                     }
                 }
             }
@@ -1705,9 +1713,11 @@ namespace System.Collections.Generic
 
             bool ICollection<TValue>.Contains(TValue item) => _dictionary.ContainsValue(item);
 
-            IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() => new Enumerator(_dictionary);
+            IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() =>
+                Count == 0 ? SZGenericArrayEnumerator<TValue>.Empty :
+                GetEnumerator();
 
-            IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<TValue>)this).GetEnumerator();
 
             void ICollection.CopyTo(Array array, int index)
             {
@@ -1745,7 +1755,7 @@ namespace System.Collections.Generic
                     object[]? objects = array as object[];
                     if (objects == null)
                     {
-                        ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+                        ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
                     }
 
                     int count = _dictionary._count;
@@ -1759,7 +1769,7 @@ namespace System.Collections.Generic
                     }
                     catch (ArrayTypeMismatchException)
                     {
-                        ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+                        ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
                     }
                 }
             }

@@ -207,8 +207,8 @@ class EditAndContinueModule : public Module
 
 private:
     // Constructor is invoked only by Module::Create
-    friend Module *Module::Create(Assembly *pAssembly, mdToken moduleRef, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker);
-    EditAndContinueModule(Assembly *pAssembly, mdToken moduleRef, PEAssembly *pPEAssembly);
+    friend Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker);
+    EditAndContinueModule(Assembly *pAssembly, PEAssembly *pPEAssembly);
 
 protected:
 #ifndef DACCESS_COMPILE

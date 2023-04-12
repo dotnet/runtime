@@ -30,7 +30,7 @@ Please note that choosing the same image as the host OS you are running on will 
 Once you have chosen an image, the build is one command run from the root of the runtime repository:
 
 ```bash
-docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-20210714125435-9b5bbc2 ./build.sh --subset clr
+docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-20210714125435-9b5bbc2 ./build.sh --subset clr
 ```
 
 Dissecting the command:
@@ -76,7 +76,7 @@ To build CoreCLR on Linux, run `build.sh` while specifying the `clr` subset:
 ./build.sh --subset clr <other args>
 ```
 
-After the build is completed, there should be some files placed in `artifacts/bin/coreclr/Linux.<arch>.<configuration>` (for example `artifacts/bin/coreclr/Linux.x64.Release`). The most important binaries are the following:
+After the build is completed, there should be some files placed in `artifacts/bin/coreclr/linux.<arch>.<configuration>` (for example `artifacts/bin/coreclr/linux.x64.Release`). The most important binaries are the following:
 
 * `corerun`: The command line host.  This program loads and starts the CoreCLR runtime and passes the managed program (e.g. `program.dll`) you want to run with it.
 * `libcoreclr.so`: The CoreCLR runtime itself.

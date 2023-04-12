@@ -30,9 +30,7 @@
 // Note: you will find below that Caller uses localloc - this is done in order to prevent a call to Caller to be transformed into fast tail call.
 // Note: DOTNET_GCStress=3 or DOTNET_GCStress=C are required in order to reliably expose this issue.
 
-.assembly extern System.Runtime
-{
-}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 
 .assembly Runtime_39581
 {
@@ -52,7 +50,7 @@
   .field public int32 h
 }
 
-.class private auto ansi beforefieldinit Runtime_39581.Program
+.class public auto ansi beforefieldinit Runtime_39581.Program
        extends [System.Runtime]System.Object
 {
   .method private hidebysig static valuetype int32x8 Callee(uint8* arg0) cil managed noinlining
@@ -100,7 +98,7 @@
     IL_000b:  ret
   }
 
-  .method private hidebysig static int32 Main(string[] args) cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

@@ -174,8 +174,6 @@ public:
 #else // HAVE_CLOCK_GETTIME_NSEC_NP
                 st = pthread_cond_timedwait(&m_condition, &m_mutex, &endTime);
 #endif // HAVE_CLOCK_GETTIME_NSEC_NP
-                // Verify that if the wait timed out, the event was not set
-                assert((st != ETIMEDOUT) || !m_state);
             }
 
             if (st != 0)
@@ -215,10 +213,9 @@ public:
     {
         pthread_mutex_lock(&m_mutex);
         m_state = true;
-        pthread_mutex_unlock(&m_mutex);
-
         // Unblock all threads waiting for the condition variable
         pthread_cond_broadcast(&m_condition);
+        pthread_mutex_unlock(&m_mutex);
     }
 
     void Reset()

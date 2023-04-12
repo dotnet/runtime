@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 
@@ -64,6 +65,8 @@ namespace System.Collections.Specialized
             _initialCapacity = dictionary._initialCapacity;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected OrderedDictionary(SerializationInfo info, StreamingContext context)
         {
             // We can't do anything with the keys and values until the entire graph has been deserialized
@@ -310,10 +313,8 @@ namespace System.Collections.Specialized
             {
                 throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
             }
-            if (index > Count || index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, Count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
             Hashtable objectsTable = EnsureObjectsTable();
             ArrayList objectsArray = EnsureObjectsArray();
             objectsTable.Add(key, value);
@@ -329,10 +330,8 @@ namespace System.Collections.Specialized
             {
                 throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
             }
-            if (index >= Count || index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
             Hashtable objectsTable = EnsureObjectsTable();
             ArrayList objectsArray = EnsureObjectsArray();
             object key = ((DictionaryEntry)objectsArray[index]!).Key;
@@ -380,6 +379,8 @@ namespace System.Collections.Specialized
 #endregion
 
 #region ISerializable implementation
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             ArgumentNullException.ThrowIfNull(info);
@@ -556,8 +557,7 @@ namespace System.Collections.Specialized
             {
                 ArgumentNullException.ThrowIfNull(array);
 
-                if (index < 0)
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
                 foreach (object? o in _objects)
                 {
                     Debug.Assert(o != null);

@@ -4,7 +4,6 @@
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Collections;
-using System.DirectoryServices.Interop;
 using System.Text;
 
 using INTPTR_INTPTRCAST = System.IntPtr;
@@ -50,7 +49,7 @@ namespace System.DirectoryServices
                 if (_innerList == null)
                 {
                     _innerList = new ArrayList();
-                    IEnumerator enumerator = new ResultsEnumerator(
+                    var enumerator = new ResultsEnumerator(
                         this,
                         _rootEntry.GetUsername(),
                         _rootEntry.GetPassword(),

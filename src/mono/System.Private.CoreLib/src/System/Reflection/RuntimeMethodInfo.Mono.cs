@@ -140,7 +140,7 @@ namespace System.Reflection
 
 #region Sync with _MonoReflectionMethod in object-internals.h
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed partial class RuntimeMethodInfo : MethodInfo
+    internal sealed unsafe partial class RuntimeMethodInfo : MethodInfo
     {
 #pragma warning disable 649
         internal IntPtr mhandle;
@@ -340,7 +340,7 @@ namespace System.Reflection
 
             // Have to clone because GetParametersInfo icall returns cached value
             var dest = new ParameterInfo[src.Length];
-            Array.FastCopy(src, 0, dest, 0, src.Length);
+            Array.FastCopy(ObjectHandleOnStack.Create (ref src), 0, ObjectHandleOnStack.Create (ref dest), 0, src.Length);
             return dest;
         }
 
@@ -382,7 +382,7 @@ namespace System.Reflection
          * Exceptions thrown by the called method propagate normally.
          */
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern object? InternalInvoke(object? obj, in Span<object?> parameters, out Exception? exc);
+        internal extern object? InternalInvoke(object? obj, IntPtr *args, out Exception? exc);
 
         public override RuntimeMethodHandle MethodHandle
         {
@@ -476,7 +476,7 @@ namespace System.Reflection
             return attrs;
         }
 
-        private Attribute GetDllImportAttribute()
+        private DllImportAttribute GetDllImportAttribute()
         {
             string entryPoint;
             string? dllName;
@@ -555,7 +555,7 @@ namespace System.Reflection
             return attrsData;
         }
 
-        private CustomAttributeData? GetDllImportAttributeData()
+        private RuntimeCustomAttributeData? GetDllImportAttributeData()
         {
             if ((Attributes & MethodAttributes.PinvokeImpl) == 0)
                 return null;
@@ -622,11 +622,11 @@ namespace System.Reflection
             ArgumentNullException.ThrowIfNull(methodInstantiation);
 
             if (!IsGenericMethodDefinition)
-                throw new InvalidOperationException("not a generic method definition");
+                throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));
 
             /*FIXME add GetGenericArgumentsLength() internal vcall to speed this up*/
             if (GetGenericArguments().Length != methodInstantiation.Length)
-                throw new ArgumentException("Incorrect length");
+                throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, GetGenericArguments().Length, methodInstantiation.Length));
 
             bool hasUserType = false;
             foreach (Type type in methodInstantiation)
@@ -640,14 +640,14 @@ namespace System.Reflection
             if (hasUserType)
             {
                 if (RuntimeFeature.IsDynamicCodeSupported)
-                    return new MethodOnTypeBuilderInst(this, methodInstantiation);
+                    return new MethodOnTypeBuilderInstantiation(this, methodInstantiation);
 
-                throw new NotSupportedException("User types are not supported under full aot");
+                throw new NotSupportedException(SR.PlatformNotSupported_ReflectionEmit);
             }
 
             MethodInfo ret = MakeGenericMethod_impl(methodInstantiation);
             if (ret == null)
-                throw new ArgumentException(string.Format("The method has {0} generic parameter(s) but {1} generic argument(s) were provided.", GetGenericArguments().Length, methodInstantiation.Length));
+                throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, GetGenericArguments().Length, methodInstantiation.Length));
             return ret;
         }
 
@@ -710,7 +710,7 @@ namespace System.Reflection
     }
 #region Sync with _MonoReflectionMethod in object-internals.h
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed partial class RuntimeConstructorInfo : ConstructorInfo
+    internal sealed unsafe partial class RuntimeConstructorInfo : ConstructorInfo
     {
 #pragma warning disable 649
         internal IntPtr mhandle;
@@ -816,7 +816,7 @@ namespace System.Reflection
          * to match the types of the method signature.
          */
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern object InternalInvoke(object? obj, in Span<object?> parameters, out Exception exc);
+        internal extern object InternalInvoke(object? obj, IntPtr *args, out Exception exc);
 
         public override RuntimeMethodHandle MethodHandle
         {

@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 
 struct Big10DW
@@ -133,9 +134,10 @@ struct Big100000DW
 }
 
 
-class Test_hugestruct
+public class Test_hugestruct
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Big100000DW b = new Big100000DW();
         b.b10.b10.b10.b10.i5 = 0;

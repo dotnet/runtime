@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -45,6 +46,8 @@ namespace System
             return (_invocationList == null) || (_invocationList is LoaderAllocator) || (_invocationList is System.Reflection.Emit.DynamicResolver);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new SerializationException(SR.Serialization_DelegatesNotSupported);
@@ -545,7 +548,7 @@ namespace System
                     RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(method);
 
                     // need a proper declaring type instance method on a generic type
-                    if (RuntimeTypeHandle.IsGenericTypeDefinition(declaringType) || RuntimeTypeHandle.HasInstantiation(declaringType))
+                    if (declaringType.IsGenericType)
                     {
                         // we are returning the 'Invoke' method of this delegate so use this.GetType() for the exact type
                         RuntimeType reflectedType = (RuntimeType)GetType();

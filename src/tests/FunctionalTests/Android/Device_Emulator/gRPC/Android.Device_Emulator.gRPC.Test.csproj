@@ -13,7 +13,7 @@
 
     <PublishTrimmed>true</PublishTrimmed>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
-    
+
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- Disable CS8981 because the generated code from the protobuf files contains classes with lowercase names -->
@@ -21,16 +21,8 @@
     <NoWarn>CS8981;SYSLIB0039</NoWarn>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <IncludeNetworkSecurityConfig>true</IncludeNetworkSecurityConfig>
-  </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="Program.cs" />
-
-    <None Include="$(MSBuildProjectDirectory)\res\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
   <!-- Based on grpc-dotnet's testassets/InteropTestsClient/InteropTestsClient.csproj -->

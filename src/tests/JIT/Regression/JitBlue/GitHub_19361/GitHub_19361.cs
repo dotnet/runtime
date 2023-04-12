@@ -10,6 +10,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace Repro
 {
@@ -57,7 +58,7 @@ namespace Repro
         }
     }
 
-    class Program
+    public class Program
     {
         public const int DefaultSeed = 20010415;
         public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
@@ -92,7 +93,8 @@ namespace Repro
             return list;
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Console.WriteLine("Starting stress loop");
             var compositeSources = GetCompositeSources();

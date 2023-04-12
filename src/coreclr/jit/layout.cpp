@@ -15,7 +15,8 @@ class ClassLayoutTable
     // Each layout is assigned a number, starting with TYP_UNKNOWN + 1. This way one could use a single
     // unsigned value to represent the notion of type - values below TYP_UNKNOWN are var_types and values
     // above it are struct layouts.
-    static constexpr unsigned FirstLayoutNum = TYP_UNKNOWN + 1;
+    static constexpr unsigned ZeroSizedBlockLayoutNum = TYP_UNKNOWN + 1;
+    static constexpr unsigned FirstLayoutNum          = TYP_UNKNOWN + 2;
 
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned>               BlkLayoutIndexMap;
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<CORINFO_CLASS_STRUCT_>, unsigned> ObjLayoutIndexMap;
@@ -36,21 +37,36 @@ class ClassLayoutTable
     unsigned m_layoutCount;
     // The capacity of m_layoutLargeArray (when more than 3 layouts are stored).
     unsigned m_layoutLargeCapacity;
+    // We furthermore fast-path the 0-sized block layout which is used for
+    // block locals that may grow (e.g. the outgoing arg area in every non-x86
+    // compilation).
+    ClassLayout m_zeroSizedBlockLayout;
 
 public:
-    ClassLayoutTable() : m_layoutCount(0), m_layoutLargeCapacity(0)
+    ClassLayoutTable() : m_layoutCount(0), m_layoutLargeCapacity(0), m_zeroSizedBlockLayout(0)
     {
     }
 
-    // Get the layout number (FirstLayoutNum-based) of the specified layout.
+    // Get a number that uniquely identifies the specified layout.
     unsigned GetLayoutNum(ClassLayout* layout) const
     {
+        if (layout == &m_zeroSizedBlockLayout)
+        {
+            return ZeroSizedBlockLayoutNum;
+        }
+
         return GetLayoutIndex(layout) + FirstLayoutNum;
     }
 
-    // Get the layout having the specified layout number (FirstLayoutNum-based)
+    // Get the layout that corresponds to the specified identifier number.
     ClassLayout* GetLayoutByNum(unsigned num) const
     {
+        if (num == ZeroSizedBlockLayoutNum)
+        {
+            // Fine to cast away const as ClassLayout is immutable
+            return const_cast<ClassLayout*>(&m_zeroSizedBlockLayout);
+        }
+
         assert(num >= FirstLayoutNum);
         return GetLayoutByIndex(num - FirstLayoutNum);
     }
@@ -58,12 +74,22 @@ public:
     // Get the layout having the specified size but no class handle.
     ClassLayout* GetBlkLayout(Compiler* compiler, unsigned blockSize)
     {
+        if (blockSize == 0)
+        {
+            return &m_zeroSizedBlockLayout;
+        }
+
         return GetLayoutByIndex(GetBlkLayoutIndex(compiler, blockSize));
     }
 
-    // Get the number of a layout having the specified size but no class handle.
+    // Get a number that uniquely identifies a layout having the specified size but no class handle.
     unsigned GetBlkLayoutNum(Compiler* compiler, unsigned blockSize)
     {
+        if (blockSize == 0)
+        {
+            return ZeroSizedBlockLayoutNum;
+        }
+
         return GetBlkLayoutIndex(compiler, blockSize) + FirstLayoutNum;
     }
 
@@ -73,7 +99,7 @@ public:
         return GetLayoutByIndex(GetObjLayoutIndex(compiler, classHandle));
     }
 
-    // Get the number of a layout for the specified class handle.
+    // Get a number that uniquely identifies a layout for the specified class handle.
     unsigned GetObjLayoutNum(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
     {
         return GetObjLayoutIndex(compiler, classHandle) + FirstLayoutNum;
@@ -102,6 +128,7 @@ private:
     unsigned GetLayoutIndex(ClassLayout* layout) const
     {
         assert(layout != nullptr);
+        assert(layout != &m_zeroSizedBlockLayout);
 
         if (HasSmallCapacity())
         {
@@ -128,6 +155,9 @@ private:
 
     unsigned GetBlkLayoutIndex(Compiler* compiler, unsigned blockSize)
     {
+        // The 0-sized block layout has its own fast path.
+        assert(blockSize != 0);
+
         if (HasSmallCapacity())
         {
             for (unsigned i = 0; i < m_layoutCount; i++)
@@ -337,7 +367,7 @@ ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classH
     var_types type = compiler->impNormStructType(classHandle);
 
     INDEBUG(const char* className = compiler->eeGetClassName(classHandle);)
-    INDEBUG(const char16_t* shortClassName = compiler->eeGetShortClassName(classHandle);)
+    INDEBUG(const char* shortClassName = compiler->eeGetShortClassName(classHandle);)
 
     ClassLayout* layout = new (compiler, CMK_ClassLayout)
         ClassLayout(classHandle, isValueClass, size, type DEBUGARG(className) DEBUGARG(shortClassName));

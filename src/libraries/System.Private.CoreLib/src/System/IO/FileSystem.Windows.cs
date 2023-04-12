@@ -120,13 +120,6 @@ namespace System.IO
         public static DateTimeOffset GetCreationTime(SafeFileHandle fileHandle) =>
             GetAttributeData(fileHandle).ftCreationTime.ToDateTimeOffset();
 
-        public static FileSystemInfo GetFileSystemInfo(string fullPath, bool asDirectory)
-        {
-            return asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
-        }
-
         public static DateTimeOffset GetLastAccessTime(string fullPath) =>
             GetAttributeData(fullPath).ftLastAccessTime.ToDateTimeOffset();
 
@@ -772,7 +765,7 @@ namespace System.IO
                 path,
                 dwDesiredAccess: 0,
                 FileShare.ReadWrite | FileShare.Delete,
-                lpSecurityAttributes: (Interop.Kernel32.SECURITY_ATTRIBUTES*)IntPtr.Zero,
+                lpSecurityAttributes: null,
                 FileMode.Open,
                 dwFlagsAndAttributes: flags,
                 hTemplateFile: IntPtr.Zero);

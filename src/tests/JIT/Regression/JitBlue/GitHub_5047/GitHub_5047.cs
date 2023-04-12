@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Program
+public class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static float Get42()
@@ -26,7 +27,8 @@ class Program
         return x;
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         const int Pass = 100;
         const int Fail = -1;

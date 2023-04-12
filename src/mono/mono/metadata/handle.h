@@ -135,7 +135,6 @@ HandleStack* mono_handle_stack_alloc (void);
 void mono_handle_stack_free (HandleStack *handlestack);
 MonoRawHandle mono_stack_mark_pop_value (MonoThreadInfo *info, HandleStackMark *stackmark, MonoRawHandle value);
 MONO_COMPONENT_API MonoThreadInfo* mono_stack_mark_record_size (MonoThreadInfo *info, HandleStackMark *stackmark, const char *func_name);
-void mono_handle_stack_free_domain (HandleStack *stack, MonoDomain *domain);
 
 #ifdef MONO_HANDLE_TRACK_SP
 void mono_handle_chunk_leak_check (HandleStack *handles);
@@ -487,28 +486,6 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 
 #define mono_handle_domain(handle) MONO_HANDLE_DOMAIN ((handle))
 
-/* Given an object and a MonoClassField, return the value (must be non-object)
- * of the field.  It's the caller's responsibility to check that the object is
- * of the correct class. */
-#define MONO_HANDLE_GET_FIELD_VAL(HANDLE,TYPE,FIELD) (*(TYPE *)(mono_handle_unsafe_field_addr (MONO_HANDLE_CAST (MonoObject, (HANDLE)), (FIELD))))
-#define MONO_HANDLE_GET_FIELD_BOOL(handle, type, field) (MONO_BOOL (MONO_HANDLE_GET_FIELD_VAL ((handle), type, (field))))
-
-#define MONO_HANDLE_NEW_GET_FIELD(HANDLE,TYPE,FIELD) MONO_HANDLE_NEW (TYPE, MONO_HANDLE_SUPPRESS (*(TYPE**)(mono_handle_unsafe_field_addr (MONO_HANDLE_CAST (MonoObject, MONO_HANDLE_UNSUPPRESS (HANDLE)), (FIELD)))))
-
-#define MONO_HANDLE_SET_FIELD_VAL(HANDLE,TYPE,FIELD,VAL) do {		\
-		MonoObjectHandle __obj = (HANDLE);			\
-		MonoClassField *__field = (FIELD);			\
-		TYPE __value = (VAL);					\
-		*(TYPE*)(mono_handle_unsafe_field_addr (__obj, __field)) = __value; \
-	} while (0)
-
-#define MONO_HANDLE_SET_FIELD_REF(HANDLE,FIELD,VALH) do {		\
-		MonoObjectHandle __obj = MONO_HANDLE_CAST (MonoObject, (HANDLE)); \
-		MonoClassField *__field = (FIELD);			\
-		MonoObjectHandle __value = MONO_HANDLE_CAST (MonoObject, (VALH)); \
-		MONO_HANDLE_SUPPRESS (mono_gc_wbarrier_generic_store_internal (mono_handle_unsafe_field_addr (__obj, __field), MONO_HANDLE_RAW (__value))); \
-	} while (0)
-
 #define MONO_HANDLE_GET_CLASS(handle) (MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoObject, (handle)), vtable)->klass)
 
 /* Baked typed handles we all want */
@@ -601,15 +578,6 @@ mono_handle_assign_raw (MonoObjectHandleOut dest, void *src)
 	g_assert (dest.__raw);
 	MONO_HANDLE_SUPPRESS (*dest.__raw = (MonoObject*)src);
 	return dest;
-}
-
-/* It is unsafe to call this function directly - it does not pin the handle!  Use MONO_HANDLE_GET_FIELD_VAL(). */
-static inline gpointer
-mono_handle_unsafe_field_addr (MonoObjectHandle h, MonoClassField *field)
-{
-	/* TODO: metadata-update: fix all callers */
-	g_assert (!m_field_is_from_update (field));
-	return MONO_HANDLE_SUPPRESS (((gchar *)MONO_HANDLE_RAW (h)) + field->offset);
 }
 
 /* Matches ObjectHandleOnStack in managed code */

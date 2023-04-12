@@ -1,14 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <NoWarn>$(NoWarn);CA2249</NoWarn>
-    <!-- Suppressions to avoid ifdefs:
-        CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring'
-        CA1846: Prefer 'AsSpan' over 'Substring' when span-based overloads are available -->
-    <NoWarn>$(NoWarn);CA1845;CA1846;IDE0059;IDE0060;CA1822</NoWarn>
+    <NoWarn>$(NoWarn);IDE0059;IDE0060;CA1822;CA1859</NoWarn>
     <Nullable>annotations</Nullable>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
@@ -170,8 +168,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentThread.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.LocalFree.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Logoncli\Interop.DsGetDcName.cs"
              Link="Common\Interop\Windows\Logoncli\Interop.DsGetDcName.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Netutils\Interop.NetApiBufferFree.cs"
@@ -190,6 +188,8 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeLsaPolicyHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeTokenHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeTokenHandle.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -30,6 +31,8 @@ namespace System.Globalization
 
         private readonly string _cultureName;
         private readonly CultureData _cultureData;
+
+        private bool HasEmptyCultureName { get { return _cultureName.Length == 0; } }
 
         // // Name of the text info we're using (ie: _cultureData.TextInfoName)
         private readonly string _textInfoName;
@@ -150,16 +153,17 @@ namespace System.Globalization
             return ChangeCase(c, toUpper: false);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static char ToLowerInvariant(char c)
         {
-            if (GlobalizationMode.Invariant)
-            {
-                return InvariantModeCasing.ToLower(c);
-            }
-
             if (UnicodeUtility.IsAsciiCodePoint(c))
             {
                 return ToLowerAsciiInvariant(c);
+            }
+
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToLower(c);
             }
 
             return Invariant.ChangeCase(c, toUpper: false);
@@ -190,128 +194,48 @@ namespace System.Globalization
         internal void ChangeCaseToLower(ReadOnlySpan<char> source, Span<char> destination)
         {
             Debug.Assert(destination.Length >= source.Length);
-            ChangeCaseCommon<ToLowerConversion>(ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length);
+            ChangeCaseCommon<ToLowerConversion>(source, destination);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ChangeCaseToUpper(ReadOnlySpan<char> source, Span<char> destination)
         {
             Debug.Assert(destination.Length >= source.Length);
-            ChangeCaseCommon<ToUpperConversion>(ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length);
+            ChangeCaseCommon<ToUpperConversion>(source, destination);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ChangeCaseCommon<TConversion>(ReadOnlySpan<char> source, Span<char> destination) where TConversion : struct
+        private unsafe void ChangeCaseCommon<TConversion>(ReadOnlySpan<char> source, Span<char> destination) where TConversion : struct
         {
-            Debug.Assert(destination.Length >= source.Length);
-            ChangeCaseCommon<TConversion>(ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length);
-        }
-
-        private unsafe void ChangeCaseCommon<TConversion>(ref char source, ref char destination, int charCount) where TConversion : struct
-        {
-            Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion));
-            bool toUpper = typeof(TConversion) == typeof(ToUpperConversion); // JIT will treat this as a constant in release builds
-
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(charCount >= 0);
+            Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion));
 
-            if (charCount == 0)
+            if (source.IsEmpty)
             {
-                goto Return;
+                return;
             }
 
-            fixed (char* pSource = &source)
-            fixed (char* pDestination = &destination)
-            {
-                nuint currIdx = 0; // in chars
+            bool toUpper = typeof(TConversion) == typeof(ToUpperConversion); // JIT will treat this as a constant in release builds
+            int charsConsumed = 0;
 
-                if (IsAsciiCasingSameAsInvariant)
+            if (IsAsciiCasingSameAsInvariant)
+            {
+                OperationStatus operationStatus = toUpper
+                    ? Ascii.ToUpper(source, destination, out charsConsumed)
+                    : Ascii.ToLower(source, destination, out charsConsumed);
+
+                if (operationStatus != OperationStatus.InvalidData)
                 {
-                    // Read 4 chars (two 32-bit integers) at a time
-
-                    if (charCount >= 4)
-                    {
-                        nuint lastIndexWhereCanReadFourChars = (uint)charCount - 4;
-                        do
-                        {
-                            // This is a mostly branchless case change routine. Generally speaking, we assume that the majority
-                            // of input is ASCII, so the 'if' checks below should normally evaluate to false. However, within
-                            // the ASCII data, we expect that characters of either case might be about equally distributed, so
-                            // we want the case change operation itself to be branchless. This gives optimal performance in the
-                            // common case. We also expect that developers aren't passing very long (16+ character) strings into
-                            // this method, so we won't bother vectorizing until data shows us that it's worthwhile to do so.
-
-                            uint tempValue = Unsafe.ReadUnaligned<uint>(pSource + currIdx);
-                            if (!Utf16Utility.AllCharsInUInt32AreAscii(tempValue))
-                            {
-                                goto NonAscii;
-                            }
-                            tempValue = (toUpper) ? Utf16Utility.ConvertAllAsciiCharsInUInt32ToUppercase(tempValue) : Utf16Utility.ConvertAllAsciiCharsInUInt32ToLowercase(tempValue);
-                            Unsafe.WriteUnaligned<uint>(pDestination + currIdx, tempValue);
-
-                            tempValue = Unsafe.ReadUnaligned<uint>(pSource + currIdx + 2);
-                            if (!Utf16Utility.AllCharsInUInt32AreAscii(tempValue))
-                            {
-                                goto NonAsciiSkipTwoChars;
-                            }
-                            tempValue = (toUpper) ? Utf16Utility.ConvertAllAsciiCharsInUInt32ToUppercase(tempValue) : Utf16Utility.ConvertAllAsciiCharsInUInt32ToLowercase(tempValue);
-                            Unsafe.WriteUnaligned<uint>(pDestination + currIdx + 2, tempValue);
-                            currIdx += 4;
-                        } while (currIdx <= lastIndexWhereCanReadFourChars);
-
-                        // At this point, there are fewer than 4 characters remaining to convert.
-                        Debug.Assert((uint)charCount - currIdx < 4);
-                    }
-
-                    // If there are 2 or 3 characters left to convert, we'll convert 2 of them now.
-                    if ((charCount & 2) != 0)
-                    {
-                        uint tempValue = Unsafe.ReadUnaligned<uint>(pSource + currIdx);
-                        if (!Utf16Utility.AllCharsInUInt32AreAscii(tempValue))
-                        {
-                            goto NonAscii;
-                        }
-                        tempValue = (toUpper) ? Utf16Utility.ConvertAllAsciiCharsInUInt32ToUppercase(tempValue) : Utf16Utility.ConvertAllAsciiCharsInUInt32ToLowercase(tempValue);
-                        Unsafe.WriteUnaligned<uint>(pDestination + currIdx, tempValue);
-                        currIdx += 2;
-                    }
-
-                    // If there's a single character left to convert, do it now.
-                    if ((charCount & 1) != 0)
-                    {
-                        uint tempValue = pSource[currIdx];
-                        if (tempValue > 0x7Fu)
-                        {
-                            goto NonAscii;
-                        }
-                        tempValue = (toUpper) ? Utf16Utility.ConvertAllAsciiCharsInUInt32ToUppercase(tempValue) : Utf16Utility.ConvertAllAsciiCharsInUInt32ToLowercase(tempValue);
-                        pDestination[currIdx] = (char)tempValue;
-                    }
-
-                    // And we're finished!
-
-                    goto Return;
-
-                // If we reached this point, we found non-ASCII data.
-                // Fall back down the p/invoke code path.
-
-                NonAsciiSkipTwoChars:
-                    currIdx += 2;
-
-                NonAscii:
-                    Debug.Assert(currIdx < (uint)charCount, "We somehow read past the end of the buffer.");
-                    charCount -= (int)currIdx;
+                    Debug.Assert(operationStatus == OperationStatus.Done);
+                    return;
                 }
-
-                // We encountered non-ASCII data and therefore can't perform invariant case conversion; or the requested culture
-                // has a case conversion that's different from the invariant culture, even for ASCII data (e.g., tr-TR converts
-                // 'i' (U+0069) to Latin Capital Letter I With Dot Above (U+0130)).
-
-                ChangeCaseCore(pSource + currIdx, charCount, pDestination + currIdx, charCount, toUpper);
             }
 
-        Return:
-            return;
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            fixed (char* pDestination = &MemoryMarshal.GetReference(destination))
+            {
+                ChangeCaseCore(pSource + charsConsumed, source.Length - charsConsumed, pDestination + charsConsumed, destination.Length - charsConsumed, toUpper);
+            }
         }
 
         private unsafe string ChangeCaseCommon<TConversion>(string source) where TConversion : struct
@@ -483,16 +407,17 @@ namespace System.Globalization
             return ChangeCase(c, toUpper: true);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static char ToUpperInvariant(char c)
         {
-            if (GlobalizationMode.Invariant)
-            {
-                return InvariantModeCasing.ToUpper(c);
-            }
-
             if (UnicodeUtility.IsAsciiCodePoint(c))
             {
                 return ToUpperAsciiInvariant(c);
+            }
+
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToUpper(c);
             }
 
             return Invariant.ChangeCase(c, toUpper: true);
@@ -759,11 +684,16 @@ namespace System.Globalization
             if (GlobalizationMode.UseNls)
             {
                 NlsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                return;
             }
-            else
+#if TARGET_BROWSER
+            if (GlobalizationMode.Hybrid)
             {
-                IcuChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                JsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                return;
             }
+#endif
+            IcuChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
         }
 
         // Used in ToTitleCase():

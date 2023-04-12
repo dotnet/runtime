@@ -44,7 +44,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/77526", TestPlatforms.Browser)]
         public static void SyndicationFeed_Load_Write_RSS_Feed()
         {
             string path = Path.GetTempFileName();
@@ -178,7 +177,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73721", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJSOnWindows))]
         public static void SyndicationFeed_Write_RSS_Atom()
         {
             string RssPath = Path.GetTempFileName();

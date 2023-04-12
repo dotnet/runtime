@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-class test
+using Xunit;
+public class test
 {
     static sbyte si8;
     static char sc;
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         sbyte i8 = -1;
         char c = (char)i8;

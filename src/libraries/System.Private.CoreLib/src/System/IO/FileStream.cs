@@ -487,8 +487,17 @@ namespace System.IO
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
                 }
+                else if (!CanSeek)
+                {
+                    if(_strategy.IsClosed)
+                    {
+                        ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                    }
 
-                _strategy.Seek(value, SeekOrigin.Begin);
+                    ThrowHelper.ThrowNotSupportedException_UnseekableStream();
+                }
+
+                _strategy.Position = value;
             }
         }
 
@@ -511,8 +520,14 @@ namespace System.IO
         public override async ValueTask DisposeAsync()
         {
             await _strategy.DisposeAsync().ConfigureAwait(false);
-            Dispose(false);
-            GC.SuppressFinalize(this);
+
+            // For compatibility, derived classes must only call base.DisposeAsync(),
+            // otherwise we would end up calling Dispose twice (one from base.DisposeAsync() and one from here).
+            if (!_strategy.IsDerived)
+            {
+                Dispose(false);
+                GC.SuppressFinalize(this);
+            }
         }
 
         public override void CopyTo(Stream destination, int bufferSize)
@@ -575,7 +590,24 @@ namespace System.IO
 
         public override bool CanSeek => _strategy.CanSeek;
 
-        public override long Seek(long offset, SeekOrigin origin) => _strategy.Seek(offset, origin);
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            if (origin < SeekOrigin.Begin || origin > SeekOrigin.End)
+            {
+                throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin));
+            }
+            else if (!CanSeek)
+            {
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+
+                ThrowHelper.ThrowNotSupportedException_UnseekableStream();
+            }
+
+            return _strategy.Seek(offset, origin);
+        }
 
         internal Task BaseFlushAsync(CancellationToken cancellationToken)
             => base.FlushAsync(cancellationToken);
@@ -595,6 +627,9 @@ namespace System.IO
 
         internal ValueTask BaseWriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             => base.WriteAsync(buffer, cancellationToken);
+
+        internal ValueTask BaseDisposeAsync()
+            => base.DisposeAsync();
 
         internal Task BaseCopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             => base.CopyToAsync(destination, bufferSize, cancellationToken);

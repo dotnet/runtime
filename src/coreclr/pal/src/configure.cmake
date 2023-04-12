@@ -46,7 +46,6 @@ check_include_files(lwp.h HAVE_LWP_H)
 check_include_files(runetype.h HAVE_RUNETYPE_H)
 check_include_files(semaphore.h HAVE_SEMAPHORE_H)
 check_include_files(sys/prctl.h HAVE_PRCTL_H)
-check_include_files(numa.h HAVE_NUMA_H)
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
 check_include_files("sys/ptrace.h" HAVE_SYS_PTRACE_H)
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
@@ -372,20 +371,6 @@ int main(void)
 
   exit(-1 == max_priority || -1 == min_priority);
 }" HAVE_SCHED_GET_PRIORITY)
-set(CMAKE_REQUIRED_LIBRARIES pthread)
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <sched.h>
-
-int main(void)
-{
-  if (sched_getcpu() >= 0)
-  {
-    exit(0);
-  }
-  exit(1);
-}" HAVE_SCHED_GETCPU)
-set(CMAKE_REQUIRED_LIBRARIES)
 check_cxx_source_runs("
 #include <stdlib.h>
 #include <time.h>
@@ -1047,6 +1032,15 @@ int main(int argc, char **argv)
 check_symbol_exists(unw_get_save_loc libunwind.h HAVE_UNW_GET_SAVE_LOC)
 check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
 
+check_cxx_source_compiles("
+#include <libunwind.h>
+
+int main(int argc, char **argv)
+{
+    int flag = (int)UNW_AARCH64_X19;
+    return 0;
+}" HAVE_UNW_AARCH64_X19)
+
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   list(REMOVE_AT CMAKE_REQUIRED_INCLUDES 0 1)
 endif()
@@ -1340,7 +1334,13 @@ elseif(CLR_CMAKE_TARGET_FREEBSD)
   set(PAL_PT_READ_D PT_READ_D)
   set(PAL_PT_WRITE_D PT_WRITE_D)
   set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
-  set(BSD_REGS_STYLE "((reg).r_##rr)")
+  if (CLR_CMAKE_HOST_ARCH_AMD64)
+    set(BSD_REGS_STYLE "((reg).r_##rr)")
+  elseif(CLR_CMAKE_HOST_ARCH_ARM64)
+    set(BSD_REGS_STYLE "((reg).rr)")
+  else()
+    message(FATAL_ERROR "Unknown FreeBSD architecture")
+  endif()
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 elseif(CLR_CMAKE_TARGET_NETBSD)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)

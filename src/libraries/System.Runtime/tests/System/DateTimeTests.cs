@@ -5,8 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -104,6 +105,28 @@ namespace System.Tests
         {
             var dateTime = new DateTime(year, month, day, hour, minute, second, millisecond);
             VerifyDateTime(dateTime, year, month, day, hour, minute, second, millisecond, DateTimeKind.Unspecified);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Int_Int_Int_Int_Int_Int_Int_Int_TestData))]
+        public void Ctor_DateOnly_TimeOnly(int year, int month, int day, int hour, int minute, int second, int millisecond)
+        {
+            var date = new DateOnly(year, month, day);
+            var time = new TimeOnly(hour, minute, second, millisecond);
+            var dateTime = new DateTime(date, time);
+            
+            Assert.Equal(new DateTime(year, month, day, hour, minute, second, millisecond), dateTime);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Int_Int_Int_Int_Int_Int_Int_Int_TestData))]
+        public void Ctor_DateOnly_TimeOnly_DateTimeKind(int year, int month, int day, int hour, int minute, int second, int millisecond)
+        {
+            var date = new DateOnly(year, month, day);
+            var time = new TimeOnly(hour, minute, second, millisecond);
+            var dateTime = new DateTime(date, time, DateTimeKind.Local);
+            
+            Assert.Equal(new DateTime(year, month, day, hour, minute, second, millisecond, DateTimeKind.Local), dateTime);
         }
 
         [Theory]
@@ -355,6 +378,35 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("calendar", () => new DateTime(1, 1, 1, 1, 1, 1, 1, null, DateTimeKind.Local));
             AssertExtensions.Throws<ArgumentNullException>("calendar", () => new DateTime(1, 1, 1, 1, 1, 1, 1, 1, null));
             AssertExtensions.Throws<ArgumentNullException>("calendar", () => new DateTime(1, 1, 1, 1, 1, 1, 1, 1, null, DateTimeKind.Local));
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Int_Int_Int_Int_Int_Int_Int_Int_Int_TestData))]
+        public void DeconstructionTest_DateOnly_TimeOnly(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond)
+        {
+            var dateTime = new DateTime(year, month, day, hour, minute, second, millisecond, microsecond);
+            var (date, time) = dateTime;
+
+            Assert.Equal(year, date.Year);
+            Assert.Equal(month, date.Month);
+            Assert.Equal(day, date.Day);
+            Assert.Equal(hour, time.Hour);
+            Assert.Equal(minute, time.Minute);
+            Assert.Equal(second, time.Second);
+            Assert.Equal(millisecond, time.Millisecond);
+            Assert.Equal(microsecond, time.Microsecond);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Int_Int_Int_Int_Int_Int_Int_Int_Int_TestData))]
+        public void DeconstructionTest_Year_Month_Day(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond)
+        {
+            var dateTime = new DateTime(year, month, day, hour, minute, second, millisecond, microsecond);
+            var (obtainedYear, obtainedMonth, obtainedDay) = dateTime;
+
+            Assert.Equal(year, obtainedYear);
+            Assert.Equal(month, obtainedMonth);
+            Assert.Equal(day, obtainedDay);
         }
 
         [Theory]
@@ -1957,6 +2009,57 @@ namespace System.Tests
             Assert.Equal(expected, DateTime.Parse(input, culture));
         }
 
+        public static IEnumerable<object[]> FormatAndParse_DifferentUnicodeSpaces_Succeeds_MemberData()
+        {
+            char[] spaceTypes = new[] { ' ',      // space
+                                        '\u00A0', // no-break space
+                                        '\u202F', // narrow no-break space
+                                      };
+            return spaceTypes.SelectMany(formatSpaceChar => spaceTypes.Select(parseSpaceChar => new object[] { formatSpaceChar, parseSpaceChar }));
+        }
+
+        [Theory]
+        [MemberData(nameof(FormatAndParse_DifferentUnicodeSpaces_Succeeds_MemberData))]
+        public void FormatAndParse_DifferentUnicodeSpaces_Succeeds(char formatSpaceChar, char parseSpaceChar)
+        {
+            var dateTime = new DateTime(2020, 5, 7, 9, 37, 40, DateTimeKind.Local);
+
+            DateTimeFormatInfo formatDtfi = CreateDateTimeFormatInfo(formatSpaceChar);
+            string formatted = dateTime.ToString(formatDtfi);
+            Assert.Contains(formatSpaceChar, formatted);
+
+            DateTimeFormatInfo parseDtfi = CreateDateTimeFormatInfo(parseSpaceChar);
+            Assert.Equal(dateTime, DateTime.Parse(formatted, parseDtfi));
+
+            static DateTimeFormatInfo CreateDateTimeFormatInfo(char spaceChar)
+            {
+                return new DateTimeFormatInfo()
+                {
+                    Calendar = DateTimeFormatInfo.InvariantInfo.Calendar,
+                    CalendarWeekRule = DateTimeFormatInfo.InvariantInfo.CalendarWeekRule,
+                    FirstDayOfWeek = DayOfWeek.Monday,
+                    AMDesignator = "AM",
+                    DateSeparator = "/",
+                    FullDateTimePattern = $"dddd,{spaceChar}MMMM{spaceChar}d,{spaceChar}yyyy{spaceChar}h:mm:ss{spaceChar}tt",
+                    LongDatePattern = $"dddd,{spaceChar}MMMM{spaceChar}d,{spaceChar}yyyy",
+                    LongTimePattern = $"h:mm:ss{spaceChar}tt",
+                    MonthDayPattern = "MMMM d",
+                    PMDesignator = "PM",
+                    ShortDatePattern = "M/d/yyyy",
+                    ShortTimePattern = $"h:mm{spaceChar}tt",
+                    TimeSeparator = ":",
+                    YearMonthPattern = $"MMMM{spaceChar}yyyy",
+                    AbbreviatedDayNames = new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" },
+                    ShortestDayNames = new[] { "Su", "Mo", "Tu", "We", "Th", "Fr", "Sa" },
+                    DayNames = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" },
+                    AbbreviatedMonthNames = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "" },
+                    MonthNames = new[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "" },
+                    AbbreviatedMonthGenitiveNames = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "" },
+                    MonthGenitiveNames = new[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "" }
+                };
+            }
+        }
+
         public static IEnumerable<object[]> ParseExact_ValidInput_Succeeds_MemberData()
         {
             foreach (DateTimeStyles style in new[] { DateTimeStyles.None, DateTimeStyles.AllowWhiteSpaces })
@@ -2536,23 +2639,47 @@ namespace System.Tests
             DateTime dt = DateTime.UtcNow;
             string expected = dt.ToString(format);
 
-            // Just the right length, succeeds
-            Span<char> dest = new char[expected.Length];
-            Assert.True(dt.TryFormat(dest, out int charsWritten, format));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal<char>(expected.ToCharArray(), dest.ToArray());
+            // UTF16
+            {
+                // Just the right length, succeeds
+                Span<char> dest = new char[expected.Length];
+                Assert.True(dt.TryFormat(dest, out int charsWritten, format));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal<char>(expected.ToCharArray(), dest.ToArray());
 
-            // Too short, fails
-            dest = new char[expected.Length - 1];
-            Assert.False(dt.TryFormat(dest, out charsWritten, format));
-            Assert.Equal(0, charsWritten);
+                // Too short, fails
+                dest = new char[expected.Length - 1];
+                Assert.False(dt.TryFormat(dest, out charsWritten, format));
+                Assert.Equal(0, charsWritten);
 
-            // Longer than needed, succeeds
-            dest = new char[expected.Length + 1];
-            Assert.True(dt.TryFormat(dest, out charsWritten, format));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal<char>(expected.ToCharArray(), dest.Slice(0, expected.Length).ToArray());
-            Assert.Equal(0, dest[dest.Length - 1]);
+                // Longer than needed, succeeds
+                dest = new char[expected.Length + 1];
+                Assert.True(dt.TryFormat(dest, out charsWritten, format));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal<char>(expected.ToCharArray(), dest.Slice(0, expected.Length).ToArray());
+                Assert.Equal(0, dest[dest.Length - 1]);
+            }
+
+            // UTF8
+            {
+                // Just the right length, succeeds
+                Span<byte> dest = new byte[expected.Length];
+                Assert.True(((IUtf8SpanFormattable)dt).TryFormat(dest, out int bytesWritten, format, null));
+                Assert.Equal(expected.Length, bytesWritten);
+                Assert.Equal(expected, Encoding.UTF8.GetString(dest));
+
+                // Too short, fails
+                dest = new byte[expected.Length - 1];
+                Assert.False(((IUtf8SpanFormattable)dt).TryFormat(dest, out bytesWritten, format, null));
+                Assert.Equal(0, bytesWritten);
+
+                // Longer than needed, succeeds
+                dest = new byte[expected.Length + 1];
+                Assert.True(((IUtf8SpanFormattable)dt).TryFormat(dest, out bytesWritten, format, null));
+                Assert.Equal(expected.Length, bytesWritten);
+                Assert.Equal(expected, Encoding.UTF8.GetString(dest.Slice(0, expected.Length)));
+                Assert.Equal(0, dest[dest.Length - 1]);
+            }
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
@@ -2560,19 +2687,53 @@ namespace System.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60562", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void TryFormat_MatchesExpected(DateTime dateTime, string format, IFormatProvider provider, string expected)
         {
-            var destination = new char[expected.Length];
+            // UTF16
+            {
+                var destination = new char[expected.Length];
 
-            Assert.False(dateTime.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
+                Assert.False(dateTime.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
 
-            Assert.True(dateTime.TryFormat(destination, out int charsWritten, format, provider));
-            Assert.Equal(destination.Length, charsWritten);
-            Assert.Equal(expected, new string(destination));
+                Assert.True(dateTime.TryFormat(destination, out int charsWritten, format, provider));
+                Assert.Equal(destination.Length, charsWritten);
+                Assert.Equal(expected, new string(destination));
+            }
+
+            // UTF8
+            {
+                var destination = new byte[expected.Length];
+
+                Assert.False(((IUtf8SpanFormattable)dateTime).TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
+
+                Assert.True(((IUtf8SpanFormattable)dateTime).TryFormat(destination, out int byteWritten, format, provider));
+                Assert.Equal(destination.Length, byteWritten);
+                Assert.Equal(expected, Encoding.UTF8.GetString(destination));
+            }
         }
 
         [Fact]
         public static void UnixEpoch()
         {
             VerifyDateTime(DateTime.UnixEpoch, 1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        }
+
+        [Fact]
+        public static void ParseExact_InvariantName_RespectsCustomNames()
+        {
+            var c = new CultureInfo("");
+            c.DateTimeFormat.DayNames = new[] { "A", "B", "C", "D", "E", "F", "G" };
+            c.DateTimeFormat.AbbreviatedDayNames = new[] { "abc", "bcd", "cde", "def", "efg", "fgh", "ghi" };
+            c.DateTimeFormat.MonthNames = new[] { "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "" };
+            c.DateTimeFormat.AbbreviatedMonthNames = new[] { "hij", "ijk", "jkl", "klm", "lmn", "mno", "nop", "opq", "pqr", "qrs", "rst", "stu", "" };
+
+            DateTime expected = new DateTime(2023, 3, 4, 9, 30, 12, DateTimeKind.Utc);
+
+            Assert.Equal(expected, DateTime.ParseExact("Saturday, March 4, 2023 9:30:12 AM", "dddd, MMMM d, yyyy h':'mm':'ss tt", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact("G, J 4, 2023 9:30:12 AM", "dddd, MMMM d, yyyy h':'mm':'ss tt", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
+            Assert.Equal(expected, DateTime.ParseExact("G, J 4, 2023 9:30:12 AM", "dddd, MMMM d, yyyy h':'mm':'ss tt", c, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
+
+            Assert.Equal(expected, DateTime.ParseExact("Sat, 04 Mar 2023 09:30:12 GMT", "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact("ghi, 04 jkl 2023 09:30:12 GMT", "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
+            Assert.Equal(expected, DateTime.ParseExact("ghi, 04 jkl 2023 09:30:12 GMT", "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'", c, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
         }
 
         public enum DateTimeUnits

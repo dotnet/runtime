@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- SYSLIB0003: CAS is obsolete, but we still have tests referencing it -->
     <NoWarn>$(NoWarn);SYSLIB0003</NoWarn>
@@ -32,6 +32,7 @@
     <Compile Include="System\DirectoryServices\DirectoryServicesTests.Windows.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectoryComInterop.cs" />
     <ProjectReference Include="..\src\System.DirectoryServices.csproj" />
+    <ProjectReference Include="..\..\System.Security.Permissions\src\System.Security.Permissions.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.DirectoryServices" />

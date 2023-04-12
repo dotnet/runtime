@@ -155,17 +155,5 @@ namespace System.Threading
         {
             throw new PlatformNotSupportedException();
         }
-
-        private static int ComputeCurrentProcessorId()
-        {
-            int processorId = Interop.Sys.SchedGetCpu();
-
-            // sched_getcpu doesn't exist on all platforms. On those it doesn't exist on, the shim
-            // returns -1.  As a fallback in that case and to spread the threads across the buckets
-            // by default, we use the current managed thread ID as a proxy.
-            if (processorId < 0) processorId = Environment.CurrentManagedThreadId;
-
-            return processorId;
-        }
     }
 }

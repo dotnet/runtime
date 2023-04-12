@@ -400,7 +400,7 @@ void Compiler::DumpCfiInfo(bool                  isHotCode,
                 printf("    CodeOffset: 0x%02X Op: AdjustCfaOffset Offset:0x%X\n", codeOffset, offset);
                 break;
             default:
-                printf("    Unrecognized CFI_CODE: 0x%IX\n", *(UINT64*)pCode);
+                printf("    Unrecognized CFI_CODE: 0x%llX\n", *(UINT64*)pCode);
                 break;
         }
     }
@@ -464,6 +464,10 @@ UNATIVE_OFFSET Compiler::unwindGetCurrentOffset(FuncInfoDsc* func)
 #elif defined(TARGET_LOONGARCH64)
 
 // See unwindLoongarch64.cpp
+
+#elif defined(TARGET_RISCV64)
+
+// See unwindRiscv64.cpp
 
 #else // TARGET*
 

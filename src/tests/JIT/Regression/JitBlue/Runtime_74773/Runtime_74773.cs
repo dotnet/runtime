@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 public class _74773 {
     static string s_string_16 = "Q57IY";
     bool bool_23 = false;
@@ -13,7 +14,7 @@ public class _74773 {
         }
     }
 
-    public void Method3() {
+    internal void Method3() {
         unchecked {
             int __loopvar3 = s_loopInvariant;
             do {
@@ -25,7 +26,8 @@ public class _74773 {
         }
     }
 
-    public static int Main(string[] args) {
+    [Fact]
+    public static int TestEntryPoint() {
         new _74773().Method3();
         return 100;
     }

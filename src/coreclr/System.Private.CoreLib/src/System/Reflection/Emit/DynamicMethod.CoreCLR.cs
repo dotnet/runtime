@@ -26,14 +26,10 @@ namespace System.Reflection.Emit
         internal RuntimeType? _typeOwner;
         private MethodInvoker? _invoker;
         private Signature? _signature;
-
-        // We want the creator of the DynamicMethod to control who has access to the
-        // DynamicMethod (just like we do for delegates). However, a user can get to
-        // the corresponding RTDynamicMethod using Exception.TargetSite, StackFrame.GetMethod, etc.
-        // If we allowed use of RTDynamicMethod, the creator of the DynamicMethod would
-        // not be able to bound access to the DynamicMethod. Hence, we need to ensure that
-        // we do not allow direct use of RTDynamicMethod.
-        private RTDynamicMethod _dynMethod;
+        private string _name;
+        private MethodAttributes _attributes;
+        private CallingConventions _callingConvention;
+        private RuntimeParameterInfo[]? _parameters;
 
         // needed to keep the object alive during jitting
         // assigned by the DynamicResolver ctor
@@ -45,22 +41,8 @@ namespace System.Reflection.Emit
         // Delegate and method creation
         //
 
-        public sealed override Delegate CreateDelegate(Type delegateType)
-        {
-            if (_restrictedSkipVisibility)
-            {
-                // Compile the method since accessibility checks are done as part of compilation.
-                GetMethodDescriptor();
-                IRuntimeMethodInfo? methodHandle = _methodHandle;
-                System.Runtime.CompilerServices.RuntimeHelpers.CompileMethod(methodHandle != null ? methodHandle.Value : RuntimeMethodHandleInternal.EmptyHandle);
-                GC.KeepAlive(methodHandle);
-            }
-
-            MulticastDelegate d = (MulticastDelegate)Delegate.CreateDelegateNoSecurityCheck(delegateType, null, GetMethodDescriptor());
-            // stash this MethodInfo by brute force.
-            d.StoreDynamicMethod(GetMethodInfo());
-            return d;
-        }
+        public sealed override Delegate CreateDelegate(Type delegateType) =>
+            CreateDelegate(delegateType, target: null);
 
         public sealed override Delegate CreateDelegate(Type delegateType, object? target)
         {
@@ -69,13 +51,13 @@ namespace System.Reflection.Emit
                 // Compile the method since accessibility checks are done as part of compilation
                 GetMethodDescriptor();
                 IRuntimeMethodInfo? methodHandle = _methodHandle;
-                System.Runtime.CompilerServices.RuntimeHelpers.CompileMethod(methodHandle != null ? methodHandle.Value : RuntimeMethodHandleInternal.EmptyHandle);
+                CompileMethod(methodHandle != null ? methodHandle.Value : RuntimeMethodHandleInternal.EmptyHandle);
                 GC.KeepAlive(methodHandle);
             }
 
             MulticastDelegate d = (MulticastDelegate)Delegate.CreateDelegateNoSecurityCheck(delegateType, target, GetMethodDescriptor());
             // stash this MethodInfo by brute force.
-            d.StoreDynamicMethod(GetMethodInfo());
+            d.StoreDynamicMethod(this);
             return d;
         }
 
@@ -168,8 +150,8 @@ namespace System.Reflection.Emit
                 {
                     Debug.Assert(parameters != null);
                     StackAllocedArguments argStorage = default;
-                    Span<object?> copyOfParameters = new(ref argStorage._arg0, argCount);
-                    Span<ParameterCopyBackAction> shouldCopyBackParameters = new(ref argStorage._copyBack0, argCount);
+                    Span<object?> copyOfParameters = argStorage._args.AsSpan(argCount);
+                    Span<ParameterCopyBackAction> shouldCopyBackParameters = argStorage._copyBacks.AsSpan(argCount);
 
                     StackAllocatedByRefs byrefStorage = default;
 #pragma warning disable CS8500

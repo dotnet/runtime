@@ -26,24 +26,18 @@ namespace ILCompiler
 
         public static void RootType(IRootingServiceProvider rootProvider, TypeDesc type, string reason)
         {
-            rootProvider.AddCompilationRoot(type, reason);
-
-            InstantiatedType fallbackNonCanonicalOwningType = null;
+            rootProvider.AddReflectionRoot(type, reason);
 
             // Instantiate generic types over something that will be useful at runtime
             if (type.IsGenericDefinition)
             {
-                Instantiation canonInst = TypeExtensions.GetInstantiationThatMeetsConstraints(type.Instantiation, allowCanon: true);
-                if (canonInst.IsNull)
+                Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(type.Instantiation, allowCanon: true);
+                if (inst.IsNull)
                     return;
 
-                Instantiation concreteInst = TypeExtensions.GetInstantiationThatMeetsConstraints(type.Instantiation, allowCanon: false);
-                if (!concreteInst.IsNull)
-                    fallbackNonCanonicalOwningType = ((MetadataType)type).MakeInstantiatedType(concreteInst);
+                type = ((MetadataType)type).MakeInstantiatedType(inst);
 
-                type = ((MetadataType)type).MakeInstantiatedType(canonInst);
-
-                rootProvider.AddCompilationRoot(type, reason);
+                rootProvider.AddReflectionRoot(type, reason);
             }
 
             // Also root base types. This is so that we make methods on the base types callable.
@@ -57,30 +51,15 @@ namespace ILCompiler
 
             if (type.IsDefType)
             {
-                foreach (var method in type.GetMethods())
+                foreach (var method in type.ConvertToCanonForm(CanonicalFormKind.Specific).GetMethods())
                 {
                     if (method.HasInstantiation)
                     {
-                        // Make a non-canonical instantiation.
-                        // We currently have a file format limitation that requires generic methods to be concrete.
-                        // A rooted canonical method body is not visible to the reflection mapping tables.
-                        Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(method.Instantiation, allowCanon: false);
-
+                        Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(method.Instantiation, allowCanon: true);
                         if (inst.IsNull)
-                        {
-                            // Can't root anything useful
-                        }
-                        else if (!method.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                        {
-                            // Owning type is not canonical, can use the instantiation directly.
-                            TryRootMethod(rootProvider, method.MakeInstantiatedMethod(inst), reason);
-                        }
-                        else if (fallbackNonCanonicalOwningType != null)
-                        {
-                            // We have a fallback non-canonical type we can root a body on
-                            MethodDesc alternateMethod = method.Context.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), fallbackNonCanonicalOwningType);
-                            TryRootMethod(rootProvider, alternateMethod.MakeInstantiatedMethod(inst), reason);
-                        }
+                            continue;
+
+                        TryRootMethod(rootProvider, method.MakeInstantiatedMethod(inst), reason);
                     }
                     else
                     {
@@ -162,7 +141,7 @@ namespace ILCompiler
             if (typicalMethod.IsGenericMethodDefinition || typicalMethod.OwningType.IsGenericDefinition)
             {
                 dependencies ??= new DependencyList();
-                dependencies.Add(factory.ReflectableMethod(typicalMethod), reason);
+                dependencies.Add(factory.ReflectedMethod(typicalMethod), reason);
             }
 
             // If there's any genericness involved, try to create a fitting instantiation that would be usable at runtime.
@@ -172,7 +151,7 @@ namespace ILCompiler
             if (method.OwningType.IsGenericDefinition || method.OwningType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
             {
                 TypeDesc owningType = method.OwningType.GetTypeDefinition();
-                Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(owningType.Instantiation, allowCanon: !method.HasInstantiation);
+                Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(owningType.Instantiation, allowCanon: true);
                 if (inst.IsNull)
                 {
                     return false;
@@ -187,7 +166,7 @@ namespace ILCompiler
             {
                 method = method.GetMethodDefinition();
 
-                Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(method.Instantiation, allowCanon: false);
+                Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(method.Instantiation, allowCanon: true);
                 if (inst.IsNull)
                 {
                     return false;
@@ -207,7 +186,7 @@ namespace ILCompiler
             }
 
             dependencies ??= new DependencyList();
-            dependencies.Add(factory.ReflectableMethod(method), reason);
+            dependencies.Add(factory.ReflectedMethod(method), reason);
 
             return true;
         }
@@ -227,7 +206,7 @@ namespace ILCompiler
             // for it below.
             if (typicalField.OwningType.HasInstantiation)
             {
-                dependencies.Add(factory.ReflectableField(typicalField), reason);
+                dependencies.Add(factory.ReflectedField(typicalField), reason);
             }
 
             // If there's any genericness involved, try to create a fitting instantiation that would be usable at runtime.
@@ -248,7 +227,7 @@ namespace ILCompiler
                     ((MetadataType)owningType).MakeInstantiatedType(inst));
             }
 
-            dependencies.Add(factory.ReflectableField(field), reason);
+            dependencies.Add(factory.ReflectedField(field), reason);
 
             return true;
         }
@@ -270,7 +249,7 @@ namespace ILCompiler
 
                 dependencies ??= new DependencyList();
 
-                dependencies.Add(factory.MaximallyConstructableType(type), reason);
+                dependencies.Add(factory.ReflectedType(type), reason);
 
                 // If there's any unknown genericness involved, try to create a fitting instantiation that would be usable at runtime.
                 // This is not a complete solution to the problem.
@@ -281,7 +260,7 @@ namespace ILCompiler
                     Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(type.Instantiation, allowCanon: true);
                     if (!inst.IsNull)
                     {
-                        dependencies.Add(factory.MaximallyConstructableType(((MetadataType)type).MakeInstantiatedType(inst)), reason);
+                        dependencies.Add(factory.ReflectedType(((MetadataType)type).MakeInstantiatedType(inst)), reason);
                     }
                 }
             }

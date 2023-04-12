@@ -4,8 +4,8 @@
 
      In the simple case, no scenarios are specified and the default CoreCLR optimization configuration
      is used to run the tests. If a set of comma-separated scenarios are specified in the `_Scenarios`
-     property, then each test is run for each of the specified CoreCLR scenarios (e.g., COMPlus_JitStress=1;
-     COMPlus_JitStressRegs=4; COMPlus_JitStress=2 + COMPlus_JitStressRegs=0x1000). The set of acceptable
+     property, then each test is run for each of the specified CoreCLR scenarios (e.g., DOTNET_JitStress=1;
+     DOTNET_JitStressRegs=4; DOTNET_JitStress=2 + DOTNET_JitStressRegs=0x1000). The set of acceptable
      scenario names is defined and interpreted by src\tests\Common\testenvironment.proj.
 
     "RunInParallelForEachScenario" is the "root" target for this Project. It first creates the
@@ -78,12 +78,21 @@
       </_BaseProjectsToBuild>
     </ItemGroup>
 
-    <!-- For BuildWasmApps we want to build the project twice, with: TestUsingWorkloads=true, and TestUsingWorkloads=false -->
+    <!-- For BuildWasmApps we want to build the project 4 times, with: TestUsingWorkloads=true, and TestUsingWorkloads=false and TestUsingWebcil=true and TestUsingWebcil=false-->
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
       <_TestUsingWorkloadsValues Include="true;false" />
+      <_TestUsingWebcilValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
+
+      <!-- now make the cartesian product of true and false values for two categories -->
+      <_TestUsingCrossProductValuesTemp Include="@(_TestUsingWorkloadsValues)">
+        <Workloads>%(_TestUsingWorkloadsValues.Identity)</Workloads>
+      </_TestUsingCrossProductValuesTemp>
+      <_TestUsingCrossProductValues Include="@(_TestUsingCrossProductValuesTemp)">
+        <Webcil>%(_TestUsingWebcilValues.Identity)</Webcil>
+      </_TestUsingCrossProductValues>
 
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
-        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingWorkloadsValues.Identity)</AdditionalProperties>
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingCrossProductValues.Workloads);TestUsingWebcil=%(_TestUsingCrossProductValues.Webcil)</AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BuildWasmAppsProjectsToBuild>
     </ItemGroup>
@@ -143,7 +152,7 @@
     <Error Condition="!Exists('$(TestEnvFilePath)')" Text="File $(TestEnvFilePath) not found!" />
   </Target>
 
-  <Target Condition="'$(Scenarios)' != '' and '$(TargetOS)' != 'Browser' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator'" Name="CreateAllScenarioTestEnvFiles">
+  <Target Condition="'$(Scenarios)' != '' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator'" Name="CreateAllScenarioTestEnvFiles">
     <!-- This target creates one __TestEnv file for each of the scenarios in the $(Scenarios) comma-separated list. -->
 
     <Message Importance="High" Text="Creating per-scenario TestEnv files for scenarios $(Scenarios)" />

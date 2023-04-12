@@ -195,14 +195,14 @@ namespace Internal.NativeFormat
         // This is the price we have to pay for using UTF8. Thing like High Surrogate Start Char - '\ud800'
         // can be expressed in UTF-16 (which is the format used to store ECMA metadata), but don't have
         // a representation in UTF-8.
-        private static Encoding _stringEncoding = new UTF8Encoding(false, false);
+        private static readonly UTF8Encoding s_stringEncoding = new UTF8Encoding(false, false);
 
         public void WriteString(string s)
         {
             // The actual bytes are only necessary for the final version during the growing phase
             if (IsGrowing())
             {
-                byte[] bytes = _stringEncoding.GetBytes(s);
+                byte[] bytes = s_stringEncoding.GetBytes(s);
 
                 _encoder.WriteUnsigned((uint)bytes.Length);
                 for (int i = 0; i < bytes.Length; i++)
@@ -210,7 +210,7 @@ namespace Internal.NativeFormat
             }
             else
             {
-                int byteCount = _stringEncoding.GetByteCount(s);
+                int byteCount = s_stringEncoding.GetByteCount(s);
                 _encoder.WriteUnsigned((uint)byteCount);
                 WritePad(byteCount);
             }
@@ -516,12 +516,6 @@ namespace Internal.NativeFormat
         public Vertex GetMDArrayTypeSignature(Vertex elementType, uint rank, uint[] bounds, uint[] lowerBounds)
         {
             MDArrayTypeSignature sig = new MDArrayTypeSignature(elementType, rank, bounds, lowerBounds);
-            return Unify(sig);
-        }
-
-        public Vertex GetCallingConventionConverterSignature(uint flags, Vertex signature)
-        {
-            CallingConventionConverterSignature sig = new CallingConventionConverterSignature(flags, GetRelativeOffsetSignature(signature));
             return Unify(sig);
         }
     }
@@ -1463,49 +1457,6 @@ namespace Internal.NativeFormat
                 if (_lowerBounds[i] != other._lowerBounds[i])
                     return false;
             }
-
-            return true;
-        }
-    }
-
-#if NATIVEFORMAT_PUBLICWRITER
-    public
-#else
-    internal
-#endif
-    class CallingConventionConverterSignature : Vertex
-    {
-        private uint _flags;
-        private Vertex _signature;
-
-        public CallingConventionConverterSignature(uint flags, Vertex signature)
-        {
-            _flags = flags;
-            _signature = signature;
-        }
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.WriteUnsigned(_flags);
-            _signature.Save(writer);
-        }
-
-        public override int GetHashCode()
-        {
-            return 509 * 197 + ((int)_flags) * 23 + 647 * _signature.GetHashCode();
-        }
-
-        public override bool Equals(object obj)
-        {
-            CallingConventionConverterSignature other = obj as CallingConventionConverterSignature;
-            if (other == null)
-                return false;
-
-            if (_flags != other._flags)
-                return false;
-
-            if (!_signature.Equals(other._signature))
-                return false;
 
             return true;
         }

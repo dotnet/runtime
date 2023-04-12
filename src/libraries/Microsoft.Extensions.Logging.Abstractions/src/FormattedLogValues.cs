@@ -17,8 +17,10 @@ namespace Microsoft.Extensions.Logging
     {
         internal const int MaxCachedFormatters = 1024;
         private const string NullFormat = "[null]";
-        private static int _count;
-        private static ConcurrentDictionary<string, LogValuesFormatter> _formatters = new ConcurrentDictionary<string, LogValuesFormatter>();
+
+        private static int s_count;
+        private static readonly ConcurrentDictionary<string, LogValuesFormatter> s_formatters = new ConcurrentDictionary<string, LogValuesFormatter>();
+
         private readonly LogValuesFormatter? _formatter;
         private readonly object?[]? _values;
         private readonly string _originalMessage;
@@ -30,18 +32,18 @@ namespace Microsoft.Extensions.Logging
         {
             if (values != null && values.Length != 0 && format != null)
             {
-                if (_count >= MaxCachedFormatters)
+                if (s_count >= MaxCachedFormatters)
                 {
-                    if (!_formatters.TryGetValue(format, out _formatter))
+                    if (!s_formatters.TryGetValue(format, out _formatter))
                     {
                         _formatter = new LogValuesFormatter(format);
                     }
                 }
                 else
                 {
-                    _formatter = _formatters.GetOrAdd(format, f =>
+                    _formatter = s_formatters.GetOrAdd(format, f =>
                     {
-                        Interlocked.Increment(ref _count);
+                        Interlocked.Increment(ref s_count);
                         return new LogValuesFormatter(f);
                     });
                 }

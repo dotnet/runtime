@@ -557,7 +557,7 @@ namespace System.Data
         ///      Func(child[(relation_name)].column_name)
         /// When the function is called we have already parsed the Aggregate name, and open paren
         /// </summary>
-        private ExpressionNode ParseAggregateArgument(FunctionId aggregate)
+        private AggregateNode ParseAggregateArgument(FunctionId aggregate)
         {
             Debug.Assert(_token == Tokens.LeftParen, "ParseAggregateArgument(): Invalid argument, token <> '('");
 

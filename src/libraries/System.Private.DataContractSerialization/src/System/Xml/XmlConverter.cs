@@ -14,7 +14,7 @@ using System.Globalization;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-
+using System.Buffers;
 
 namespace System.Xml
 {
@@ -30,6 +30,10 @@ namespace System.Xml
         public const int MaxUInt64Chars = 32;
         public const int MaxPrimitiveChars = MaxDateTimeChars;
 
+        // Matches IsWhitespace below
+        private static readonly IndexOfAnyValues<char> s_whitespaceChars = IndexOfAnyValues.Create(" \t\r\n");
+        private static readonly IndexOfAnyValues<byte> s_whitespaceBytes = IndexOfAnyValues.Create(" \t\r\n"u8);
+
         public static bool ToBoolean(string value)
         {
             try
@@ -38,11 +42,11 @@ namespace System.Xml
             }
             catch (ArgumentException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "Boolean", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "Boolean", exception);
             }
             catch (FormatException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "Boolean", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "Boolean", exception);
             }
         }
 
@@ -67,15 +71,15 @@ namespace System.Xml
             }
             catch (ArgumentException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "Int32", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "Int32", exception);
             }
             catch (FormatException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "Int32", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "Int32", exception);
             }
             catch (OverflowException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "Int32", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "Int32", exception);
             }
         }
 
@@ -95,15 +99,15 @@ namespace System.Xml
             }
             catch (ArgumentException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "Int64", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "Int64", exception);
             }
             catch (FormatException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "Int64", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "Int64", exception);
             }
             catch (OverflowException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "Int64", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "Int64", exception);
             }
         }
 
@@ -123,15 +127,15 @@ namespace System.Xml
             }
             catch (ArgumentException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "float", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "float", exception);
             }
             catch (FormatException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "float", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "float", exception);
             }
             catch (OverflowException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "float", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "float", exception);
             }
         }
 
@@ -151,15 +155,15 @@ namespace System.Xml
             }
             catch (ArgumentException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "double", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "double", exception);
             }
             catch (FormatException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "double", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "double", exception);
             }
             catch (OverflowException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "double", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "double", exception);
             }
         }
 
@@ -179,15 +183,15 @@ namespace System.Xml
             }
             catch (ArgumentException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "decimal", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "decimal", exception);
             }
             catch (FormatException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "decimal", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "decimal", exception);
             }
             catch (OverflowException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "decimal", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "decimal", exception);
             }
         }
 
@@ -204,7 +208,7 @@ namespace System.Xml
             }
             catch (ArgumentException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(ToString(value), "DateTime", exception));
+                throw XmlExceptionHelper.CreateConversionException(ToString(value), "DateTime", exception);
             }
         }
 
@@ -216,11 +220,11 @@ namespace System.Xml
             }
             catch (ArgumentException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "DateTime", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "DateTime", exception);
             }
             catch (FormatException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "DateTime", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "DateTime", exception);
             }
         }
 
@@ -240,11 +244,11 @@ namespace System.Xml
             }
             catch (ArgumentException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "UniqueId", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "UniqueId", exception);
             }
             catch (FormatException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "UniqueId", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "UniqueId", exception);
             }
         }
 
@@ -261,15 +265,15 @@ namespace System.Xml
             }
             catch (ArgumentException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "TimeSpan", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "TimeSpan", exception);
             }
             catch (FormatException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "TimeSpan", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "TimeSpan", exception);
             }
             catch (OverflowException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "TimeSpan", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "TimeSpan", exception);
             }
         }
 
@@ -286,15 +290,15 @@ namespace System.Xml
             }
             catch (FormatException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "Guid", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "Guid", exception);
             }
             catch (ArgumentException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "Guid", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "Guid", exception);
             }
             catch (OverflowException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "Guid", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "Guid", exception);
             }
         }
 
@@ -311,15 +315,15 @@ namespace System.Xml
             }
             catch (ArgumentException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "UInt64", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "UInt64", exception);
             }
             catch (FormatException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "UInt64", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "UInt64", exception);
             }
             catch (OverflowException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value, "UInt64", exception));
+                throw XmlExceptionHelper.CreateConversionException(value, "UInt64", exception);
             }
         }
 
@@ -336,7 +340,7 @@ namespace System.Xml
             }
             catch (DecoderFallbackException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateEncodingException(buffer, offset, count, exception));
+                throw XmlExceptionHelper.CreateEncodingException(buffer, offset, count, exception);
             }
         }
 
@@ -348,7 +352,7 @@ namespace System.Xml
             }
             catch (DecoderFallbackException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateEncodingException(buffer, offset, count, exception));
+                throw XmlExceptionHelper.CreateEncodingException(buffer, offset, count, exception);
             }
         }
 
@@ -361,7 +365,7 @@ namespace System.Xml
             }
             catch (DecoderFallbackException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateEncodingException(value, exception));
+                throw XmlExceptionHelper.CreateEncodingException(value, exception);
             }
         }
 
@@ -373,7 +377,7 @@ namespace System.Xml
             }
             catch (DecoderFallbackException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateEncodingException(buffer, offset, count, exception));
+                throw XmlExceptionHelper.CreateEncodingException(buffer, offset, count, exception);
             }
         }
 
@@ -452,7 +456,7 @@ namespace System.Xml
             else
             {
                 if (index == qname.Length - 1)
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.Format(SR.XmlInvalidQualifiedName, qname)));
+                    throw new XmlException(SR.Format(SR.XmlInvalidQualifiedName, qname));
                 prefix = qname.Substring(0, index).Trim();
                 localName = qname.Substring(index + 1).Trim();
             }
@@ -699,22 +703,20 @@ namespace System.Xml
                     value = valueDiv10;
                 }
             }
-            Fx.Assert(value >= int.MinValue && value <= int.MaxValue, "");
+            Debug.Assert(value >= int.MinValue && value <= int.MaxValue);
             return count + ToCharsR((int)value, chars, offset);
         }
 
         private static unsafe bool IsNegativeZero(float value)
         {
             // Simple equals function will report that -0 is equal to +0, so compare bits instead
-            float negativeZero = -0e0F;
-            return (*(int*)&value == *(int*)&negativeZero);
+            return BitConverter.SingleToUInt32Bits(value) == 0x8000_0000U;
         }
 
         private static unsafe bool IsNegativeZero(double value)
         {
             // Simple equals function will report that -0 is equal to +0, so compare bits instead
-            double negativeZero = -0e0;
-            return (*(long*)&value == *(long*)&negativeZero);
+            return BitConverter.DoubleToUInt64Bits(value) == 0x8000_0000_0000_0000UL;
         }
 
         private static int ToInfinity(bool isNegative, byte[] buffer, int offset)
@@ -783,7 +785,7 @@ namespace System.Xml
         {
             for (int i = 0; i < s.Length; i++)
             {
-                DiagnosticUtility.DebugAssert(s[i] < 128, "");
+                Debug.Assert(s[i] < 128);
                 buffer[offset++] = (byte)s[i];
             }
             return s.Length;
@@ -999,7 +1001,7 @@ namespace System.Xml
 
         private static int ToCharsD2(int value, byte[] chars, int offset)
         {
-            DiagnosticUtility.DebugAssert(value >= 0 && value < 100, "");
+            Debug.Assert(value >= 0 && value < 100);
             if (value < 10)
             {
                 chars[offset + 0] = (byte)'0';
@@ -1016,7 +1018,7 @@ namespace System.Xml
 
         private static int ToCharsD4(int value, byte[] chars, int offset)
         {
-            DiagnosticUtility.DebugAssert(value >= 0 && value < 10000, "");
+            Debug.Assert(value >= 0 && value < 10000);
             ToCharsD2(value / 100, chars, offset + 0);
             ToCharsD2(value % 100, chars, offset + 2);
             return 4;
@@ -1024,7 +1026,7 @@ namespace System.Xml
 
         private static int ToCharsD7(int value, byte[] chars, int offset)
         {
-            DiagnosticUtility.DebugAssert(value >= 0 && value < 10000000, "");
+            Debug.Assert(value >= 0 && value < 10000000);
             int zeroCount = 7 - ToCharsR(value, chars, offset + 7);
             for (int i = 0; i < zeroCount; i++)
                 chars[offset + i] = (byte)'0';
@@ -1077,50 +1079,67 @@ namespace System.Xml
                     chars[offset++] = (byte)'Z';
                     break;
                 default:
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException());
+                    throw new InvalidOperationException();
             }
             return offset - offsetMin;
         }
 
-        public static bool IsWhitespace(string s)
-        {
-            for (int i = 0; i < s.Length; i++)
-            {
-                if (!IsWhitespace(s[i]))
-                    return false;
-            }
-            return true;
-        }
+        public static bool IsWhitespace(ReadOnlySpan<char> chars) =>
+            chars.IndexOfAnyExcept(s_whitespaceChars) < 0;
 
-        public static bool IsWhitespace(char ch)
+        public static bool IsWhitespace(ReadOnlySpan<byte> bytes) =>
+            bytes.IndexOfAnyExcept(s_whitespaceBytes) < 0;
+
+        public static bool IsWhitespace(char ch) =>
+            ch is <= ' ' and (' ' or '\t' or '\r' or '\n');
+
+        public static int StripWhitespace(Span<char> chars)
         {
-            return (ch <= ' ' && (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n'));
+            int count = chars.IndexOfAny(s_whitespaceChars);
+            if (count < 0)
+            {
+                return chars.Length;
+            }
+
+            foreach (char c in chars.Slice(count + 1))
+            {
+                if (!IsWhitespace(c))
+                {
+                    chars[count++] = c;
+                }
+            }
+
+            return count;
         }
 
         public static string StripWhitespace(string s)
         {
-            int count = s.Length;
-            for (int i = 0; i < s.Length; i++)
+            int indexOfWhitespace = s.AsSpan().IndexOfAny(s_whitespaceChars);
+            if (indexOfWhitespace < 0)
             {
-                if (IsWhitespace(s[i]))
+                return s;
+            }
+
+            int count = s.Length - 1;
+            foreach (char c in s.AsSpan(indexOfWhitespace + 1))
+            {
+                if (IsWhitespace(c))
                 {
                     count--;
                 }
             }
-            if (count == s.Length)
-                return s;
 
-            return string.Create(count, s, (chars, s) =>
+            return string.Create(count, s, static (chars, s) =>
             {
                 int count = 0;
-                for (int i = 0; i < s.Length; i++)
+                foreach (char c in s)
                 {
-                    char ch = s[i];
-                    if (!IsWhitespace(ch))
+                    if (!IsWhitespace(c))
                     {
-                        chars[count++] = ch;
+                        chars[count++] = c;
                     }
                 }
+                Debug.Assert(count == chars.Length);
             });
         }
     }

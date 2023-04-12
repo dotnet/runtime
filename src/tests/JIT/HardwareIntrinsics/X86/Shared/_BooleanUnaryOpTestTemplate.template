@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void {Method}{RetBaseType}()
+        [Fact]
+        public static void {Method}{RetBaseType}()
         {
             var test = new {TemplateName}UnaryOpTest__{Method}{RetBaseType}();
 
@@ -131,7 +133,7 @@ namespace JIT.HardwareIntrinsics.X86
             public DataTable({Op1BaseType}[] inArray1, int alignment)
             {
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
-                if ((alignment != 32 && alignment != 16) || (alignment * 2) < sizeOfinArray1)
+                if (((alignment != 64) && (alignment != 32) && (alignment != 16)) || (alignment * 2) < sizeOfinArray1)
                 {
                     throw new ArgumentException("Invalid value of alignment");
                 }

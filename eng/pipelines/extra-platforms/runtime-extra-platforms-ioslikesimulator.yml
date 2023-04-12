@@ -23,11 +23,11 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
     platforms:
-    - iOSSimulator_x64
-    - tvOSSimulator_x64
+    - iossimulator_x64
+    - tvossimulator_x64
     # don't run tests on arm64 PRs until we can get significantly more devices
     - ${{ if eq(variables['isRollingBuild'], true) }}:
-      - iOSSimulator_arm64
+      - iossimulator_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange

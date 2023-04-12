@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -143,4 +144,42 @@ namespace Microsoft.Interop
     /// the forwarder marshaller.
     /// </remarks>
     public sealed record MissingSupportCollectionMarshallingInfo(CountInfo CountInfo, MarshallingInfo ElementMarshallingInfo) : MissingSupportMarshallingInfo;
+
+
+    /// <summary>
+    /// Marshal an exception based on the same rules as the built-in COM system based on the unmanaged type of the native return marshaller.
+    /// </summary>
+    public sealed record ComExceptionMarshalling : MarshallingInfo
+    {
+        internal static MarshallingInfo CreateSpecificMarshallingInfo(ManagedTypeInfo unmanagedReturnType)
+        {
+            return unmanagedReturnType switch
+            {
+                SpecialTypeInfo(_, _, SpecialType.System_Void) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsVoidMarshaller}", unmanagedReturnType),
+                SpecialTypeInfo(_, _, SpecialType.System_Int32) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsHResultMarshaller}<int>", unmanagedReturnType),
+                SpecialTypeInfo(_, _, SpecialType.System_UInt32) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsHResultMarshaller}<uint>", unmanagedReturnType),
+                SpecialTypeInfo(_, _, SpecialType.System_Single) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsNaNMarshaller}<float>", unmanagedReturnType),
+                SpecialTypeInfo(_, _, SpecialType.System_Double) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsNaNMarshaller}<double>", unmanagedReturnType),
+                _ => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsDefaultMarshaller}<{MarshallerHelpers.GetCompatibleGenericTypeParameterSyntax(SyntaxFactory.ParseTypeName(unmanagedReturnType.FullTypeName))}>", unmanagedReturnType),
+            };
+
+            static NativeMarshallingAttributeInfo CreateWellKnownComExceptionMarshallingData(string marshallerName, ManagedTypeInfo unmanagedType)
+            {
+                ManagedTypeInfo marshallerTypeInfo = new ReferenceTypeInfo(marshallerName, marshallerName);
+                return new NativeMarshallingAttributeInfo(marshallerTypeInfo,
+                    new CustomTypeMarshallers(ImmutableDictionary<MarshalMode, CustomTypeMarshallerData>.Empty.Add(
+                        MarshalMode.UnmanagedToManagedOut,
+                        new CustomTypeMarshallerData(
+                            marshallerTypeInfo,
+                            unmanagedType,
+                            HasState: false,
+                            MarshallerShape.ToUnmanaged,
+                            IsStrictlyBlittable: true,
+                            BufferElementType: null,
+                            CollectionElementType: null,
+                            CollectionElementMarshallingInfo: null
+                            ))));
+            }
+        }
+    }
 }

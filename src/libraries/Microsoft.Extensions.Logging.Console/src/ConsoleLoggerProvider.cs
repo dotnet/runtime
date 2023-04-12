@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Logging.Console
         private ConcurrentDictionary<string, ConsoleFormatter> _formatters;
         private readonly ConsoleLoggerProcessor _messageQueue;
 
-        private IDisposable? _optionsReloadToken;
+        private readonly IDisposable? _optionsReloadToken;
         private IExternalScopeProvider _scopeProvider = NullExternalScopeProvider.Instance;
 
         /// <summary>

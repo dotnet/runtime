@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -174,9 +173,15 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_TypeInfoResolverImmutable()
+        public static void ThrowInvalidOperationException_DefaultTypeInfoResolverImmutable()
         {
-            throw new InvalidOperationException(SR.TypeInfoResolverImmutable);
+            throw new InvalidOperationException(SR.DefaultTypeInfoResolverImmutable);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_TypeInfoResolverChainImmutable()
+        {
+            throw new InvalidOperationException(SR.TypeInfoResolverChainImmutable);
         }
 
         [DoesNotReturn]
@@ -186,9 +191,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_PropertyInfoImmutable()
+        public static void ThrowInvalidOperationException_InvalidChainedResolver()
         {
-            throw new InvalidOperationException(SR.PropertyInfoImmutable);
+            throw new InvalidOperationException(SR.SerializerOptions_InvalidChainedResolver);
         }
 
         [DoesNotReturn]
@@ -226,9 +231,9 @@ namespace System.Text.Json
             // Soft cut-off length - once message becomes longer than that we won't be adding more elements
             const int CutOffLength = 50;
 
-            for (int propertyIdx = 0; propertyIdx < parent.PropertyCache.List.Count; propertyIdx++)
+            foreach (KeyValuePair<string, JsonPropertyInfo> kvp in parent.PropertyCache.List)
             {
-                JsonPropertyInfo property = parent.PropertyCache.List[propertyIdx].Value;
+                JsonPropertyInfo property = kvp.Value;
 
                 if (!property.IsRequired || requiredPropertiesSet[property.RequiredPropertyIndex])
                 {
@@ -464,6 +469,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_ExtensionDataConflictsWithUnmappedMemberHandling(Type classType, JsonPropertyInfo jsonPropertyInfo)
+        {
+            throw new InvalidOperationException(SR.Format(SR.ExtensionDataConflictsWithUnmappedMemberHandling, classType, jsonPropertyInfo.MemberName));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(JsonPropertyInfo jsonPropertyInfo)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializationDataExtensionPropertyInvalid, jsonPropertyInfo.PropertyType, jsonPropertyInfo.MemberName));
@@ -591,6 +602,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowJsonException_UnmappedJsonProperty(Type type, string unmappedPropertyName)
+        {
+            throw new JsonException(SR.Format(SR.UnmappedJsonProperty, unmappedPropertyName, type));
+        }
+
+        [DoesNotReturn]
         public static void ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties()
         {
             ThrowJsonException(SR.MetadataReferenceCannotContainOtherProperties);
@@ -709,6 +726,10 @@ namespace System.Text.Json
             throw new NotSupportedException(SR.Format(SR.NoMetadataForType, type, resolver?.GetType().FullName ?? "<null>"));
         }
 
+        public static NotSupportedException GetNotSupportedException_AmbiguousMetadataForType(Type type, Type match1, Type match2)
+        {
+            return new NotSupportedException(SR.Format(SR.AmbiguousMetadataForType, type, match1, match2));
+        }
 
         [DoesNotReturn]
         public static void ThrowNotSupportedException_ConstructorContainsNullParameterNames(Type declaringType)
@@ -731,12 +752,6 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_NoMetadataForTypeProperties(IJsonTypeInfoResolver? resolver, Type type)
         {
             throw GetInvalidOperationException_NoMetadataForTypeProperties(resolver, type);
-        }
-
-        [DoesNotReturn]
-        public static void ThrowInvalidOperationException_NoMetadataForTypeCtorParams(IJsonTypeInfoResolver? resolver, Type type)
-        {
-            throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeCtorParams, resolver?.GetType().FullName ?? "<null>", type));
         }
 
         [DoesNotReturn]

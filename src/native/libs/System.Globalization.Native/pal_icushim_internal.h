@@ -340,4 +340,8 @@ FOR_ALL_ICU_FUNCTIONS
 #define ucal_getWindowsTimeZoneID_ptr ucal_getWindowsTimeZoneID
 #define ucal_getTimeZoneIDForWindowsID_ptr ucal_getTimeZoneIDForWindowsID
 
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+const char* GlobalizationNative_GetICUDataPathFallback(void);
+#endif
+
 #endif // !defined(STATIC_ICU)

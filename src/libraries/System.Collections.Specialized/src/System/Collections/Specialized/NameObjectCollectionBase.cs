@@ -10,6 +10,7 @@
 
 #pragma warning disable 618 // obsolete types, namely IHashCodeProvider
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
@@ -77,11 +78,15 @@ namespace System.Collections.Specialized
             Reset(capacity);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected NameObjectCollectionBase(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -372,10 +377,7 @@ namespace System.Collections.Specialized
                 throw new ArgumentException(SR.Arg_MultiRank, nameof(array));
             }
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (array.Length - index < _entriesArray.Count)
             {
@@ -599,10 +601,7 @@ namespace System.Collections.Specialized
                     throw new ArgumentException(SR.Arg_MultiRank, nameof(array));
                 }
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < _coll.Count)
                 {

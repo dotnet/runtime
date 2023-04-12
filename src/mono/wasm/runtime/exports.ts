@@ -5,18 +5,21 @@ import ProductVersion from "consts:productVersion";
 import GitHash from "consts:gitHash";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
+import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
 
-import { ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, moduleExports, set_emscripten_entrypoint, set_environment, set_imports_exports } from "./imports";
-import { DotnetModule, is_nullish, EarlyImports, EarlyExports, EarlyReplacements, RuntimeAPI, CreateDotnetRuntimeType } from "./types";
+import { ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, moduleExports, set_emscripten_entrypoint, set_imports_exports } from "./imports";
+import { is_nullish, EarlyImports, EarlyExports, EarlyReplacements, RuntimeAPI, CreateDotnetRuntimeType, DotnetModuleInternal } from "./types";
 import { configure_emscripten_startup, mono_wasm_pthread_worker_init } from "./startup";
-import { mono_bind_static_method } from "./net6-legacy/method-calls";
 
 import { create_weak_ref } from "./weak-ref";
-import { export_binding_api, export_mono_api } from "./net6-legacy/exports-legacy";
 import { export_internal } from "./exports-internal";
 import { export_linker } from "./exports-linker";
 import { init_polyfills } from "./polyfills";
 import { export_api, export_module } from "./export-api";
+
+// legacy
+import { mono_bind_static_method } from "./net6-legacy/method-calls";
+import { export_binding_api, export_internal_api, export_mono_api } from "./net6-legacy/exports-legacy";
 import { set_legacy_exports } from "./net6-legacy/imports";
 
 const __initializeImportsAndExports: any = initializeImportsAndExports; // don't want to export the type
@@ -34,24 +37,26 @@ function initializeImportsAndExports(
     replacements: EarlyReplacements,
     callbackAPI: any
 ): RuntimeAPI {
-    const module = exports.module as DotnetModule;
+    const module = exports.module as DotnetModuleInternal;
     const globalThisAny = globalThis as any;
 
-    // we want to have same instance of MONO, BINDING and Module in dotnet iffe
+    // we want to have same instance of MONO, BINDING and Module in dotnet iife
     set_imports_exports(imports, exports);
-    set_legacy_exports(exports);
+    if (WasmEnableLegacyJsInterop) {
+        set_legacy_exports(exports);
+    }
     init_polyfills(replacements);
 
     // here we merge methods from the local objects into exported objects
-    Object.assign(exports.mono, export_mono_api());
-    Object.assign(exports.binding, export_binding_api());
-    Object.assign(exports.internal, export_internal());
+    if (WasmEnableLegacyJsInterop) {
+        Object.assign(exports.mono, export_mono_api());
+        Object.assign(exports.binding, export_binding_api());
+        Object.assign(exports.internal, export_internal_api());
+    }
     Object.assign(exports.internal, export_internal());
     const API = export_api();
     __linker_exports = export_linker();
     Object.assign(exportedRuntimeAPI, {
-        MONO: exports.mono,
-        BINDING: exports.binding,
         INTERNAL: exports.internal,
         IMPORTS: exports.marshaled_imports,
         Module: module,
@@ -62,17 +67,24 @@ function initializeImportsAndExports(
         },
         ...API,
     });
+    if (WasmEnableLegacyJsInterop) {
+        Object.assign(exportedRuntimeAPI, {
+            MONO: exports.mono,
+            BINDING: exports.binding,
+        });
+    }
+
     Object.assign(callbackAPI, API);
     if (exports.module.__undefinedConfig) {
         module.disableDotnet6Compatibility = true;
         module.configSrc = "./mono-config.json";
     }
 
-    if (!module.print) {
-        module.print = console.log.bind(console);
+    if (!module.out) {
+        module.out = console.log.bind(console);
     }
-    if (!module.printErr) {
-        module.printErr = console.error.bind(console);
+    if (!module.err) {
+        module.err = console.error.bind(console);
     }
 
     if (typeof module.disableDotnet6Compatibility === "undefined") {
@@ -82,13 +94,15 @@ function initializeImportsAndExports(
     if (imports.isGlobal || !module.disableDotnet6Compatibility) {
         Object.assign(module, exportedRuntimeAPI);
 
-        // backward compatibility
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
-            console.warn("MONO_WASM: Module.mono_bind_static_method is obsolete, please use [JSExportAttribute] interop instead");
-            return mono_bind_static_method(fqn, signature);
-        };
+        if (WasmEnableLegacyJsInterop) {
+            // backward compatibility
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
+                console.warn("MONO_WASM: Module.mono_bind_static_method is obsolete, please use [JSExportAttribute] interop instead");
+                return mono_bind_static_method(fqn, signature);
+            };
+        }
 
         const warnWrap = (name: string, provider: () => any) => {
             if (typeof globalThisAny[name] !== "undefined") {
@@ -133,19 +147,7 @@ function initializeImportsAndExports(
     list.registerRuntime(exportedRuntimeAPI);
 
     if (MonoWasmThreads && ENVIRONMENT_IS_PTHREAD) {
-        // eslint-disable-next-line no-inner-declarations
-        async function workerInit(): Promise<DotnetModule> {
-            await mono_wasm_pthread_worker_init();
-
-            // HACK: Emscripten's dotnet.worker.js expects the exports of dotnet.js module to be Module object
-            // until we have our own fix for dotnet.worker.js file
-            // we also skip all emscripten startup event and configuration of worker's JS state
-            // note that emscripten events are not firing either
-
-            return exportedRuntimeAPI.Module;
-        }
-        // Emscripten pthread worker.js is ok with a Promise here.
-        return <any>workerInit();
+        return <any>mono_wasm_pthread_worker_init(module, exportedRuntimeAPI);
     }
 
     configure_emscripten_startup(module, exportedRuntimeAPI);
@@ -169,8 +171,7 @@ class RuntimeList {
     }
 }
 
-function setEmscriptenEntrypoint(emscriptenEntrypoint: CreateDotnetRuntimeType, env: any) {
-    set_environment(env);
+function setEmscriptenEntrypoint(emscriptenEntrypoint: CreateDotnetRuntimeType) {
     Object.assign(moduleExports, export_module());
     set_emscripten_entrypoint(emscriptenEntrypoint);
 }

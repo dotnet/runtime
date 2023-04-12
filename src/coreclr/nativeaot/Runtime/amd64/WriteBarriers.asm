@@ -100,6 +100,21 @@ DEFINE_UNCHECKED_WRITE_BARRIER_CORE macro BASENAME, REFREG
     ;; we're in a debug build and write barrier checking has been enabled).
     UPDATE_GC_SHADOW BASENAME, REFREG, rcx
 
+ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    mov     r11, [g_write_watch_table]
+    cmp     r11, 0
+    je      &BASENAME&_CheckCardTable_&REFREG&
+
+    mov     r10, rcx
+    shr     r10, 0Ch ;; SoftwareWriteWatch::AddressToTableByteIndexShift
+    add     r10, r11
+    cmp     byte ptr [r10], 0
+    jne     &BASENAME&_CheckCardTable_&REFREG&
+    mov     byte ptr [r10], 0FFh
+endif
+
+&BASENAME&_CheckCardTable_&REFREG&:
+
     ;; If the reference is to an object that's not in an ephemeral generation we have no need to track it
     ;; (since the object won't be collected or moved by an ephemeral collection).
     cmp     REFREG, [g_ephemeral_low]
@@ -111,17 +126,25 @@ DEFINE_UNCHECKED_WRITE_BARRIER_CORE macro BASENAME, REFREG
     ;; track this write. The location address is translated into an offset in the card table bitmap. We set
     ;; an entire byte in the card table since it's quicker than messing around with bitmasks and we only write
     ;; the byte if it hasn't already been done since writes are expensive and impact scaling.
-    shr     rcx, 11
-    add     rcx, [g_card_table]
+    shr     rcx, 0Bh
+    mov     r10, [g_card_table]
+    cmp     byte ptr [rcx + r10], 0FFh
+    je      &BASENAME&_NoBarrierRequired_&REFREG&
+
+    ;; We get here if it's necessary to update the card table.
+    mov     byte ptr [rcx + r10], 0FFh
+
+ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    ;; Shift rcx by 0Ah more to get the card bundle byte (we shifted by 0x0B already)
+    shr     rcx, 0Ah
+    add     rcx, [g_card_bundle_table]
     cmp     byte ptr [rcx], 0FFh
-    jne     &BASENAME&_UpdateCardTable_&REFREG&
+    je      &BASENAME&_NoBarrierRequired_&REFREG&
+
+    mov     byte ptr [rcx], 0FFh
+endif
 
 &BASENAME&_NoBarrierRequired_&REFREG&:
-    ret
-
-;; We get here if it's necessary to update the card table.
-&BASENAME&_UpdateCardTable_&REFREG&:
-    mov     byte ptr [rcx], 0FFh
     ret
 
 endm
@@ -248,11 +271,10 @@ LEAF_END RhpCheckedXchg, _TEXT
 ;; On entry:
 ;;      rdi: address of ref-field (assigned to)
 ;;      rsi: address of the data (source)
-;;      rcx: be trashed
 ;;
 ;; On exit:
 ;;      rdi, rsi are incremented by 8,
-;;      rcx: trashed
+;;      rcx, r10, r11: trashed
 ;;
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
     mov     rcx, [rsi]
@@ -260,43 +282,63 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
 
     ;; Check whether the writes were even into the heap. If not there's no card update required.
     cmp     rdi, [g_lowest_address]
-    jb      RhpByRefAssignRef_NotInHeap
+    jb      RhpByRefAssignRef_NoBarrierRequired
     cmp     rdi, [g_highest_address]
-    jae     RhpByRefAssignRef_NotInHeap
+    jae     RhpByRefAssignRef_NoBarrierRequired
 
     ;; Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
     ;; we're in a debug build and write barrier checking has been enabled).
     UPDATE_GC_SHADOW BASENAME, rcx, rdi
 
+ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    mov     r11, [g_write_watch_table]
+    cmp     r11, 0
+    je      RhpByRefAssignRef_CheckCardTable
+
+    mov     r10, rdi
+    shr     r10, 0Ch ;; SoftwareWriteWatch::AddressToTableByteIndexShift
+    add     r10, r11
+    cmp     byte ptr [r10], 0
+    jne     RhpByRefAssignRef_CheckCardTable
+    mov     byte ptr [r10], 0FFh
+endif
+
+RhpByRefAssignRef_CheckCardTable:
+
     ;; If the reference is to an object that's not in an ephemeral generation we have no need to track it
     ;; (since the object won't be collected or moved by an ephemeral collection).
     cmp     rcx, [g_ephemeral_low]
-    jb      RhpByRefAssignRef_NotInHeap
+    jb      RhpByRefAssignRef_NoBarrierRequired
     cmp     rcx, [g_ephemeral_high]
-    jae     RhpByRefAssignRef_NotInHeap
+    jae     RhpByRefAssignRef_NoBarrierRequired
 
-    ;; move current rdi value into rcx and then increment the pointers
+    ;; move current rdi value into rcx, we need to keep rdi and eventually increment by 8
     mov     rcx, rdi
-    add     rsi, 8h
-    add     rdi, 8h
 
     ;; We have a location on the GC heap being updated with a reference to an ephemeral object so we must
     ;; track this write. The location address is translated into an offset in the card table bitmap. We set
     ;; an entire byte in the card table since it's quicker than messing around with bitmasks and we only write
     ;; the byte if it hasn't already been done since writes are expensive and impact scaling.
-    shr     rcx, 11
-    add     rcx, [g_card_table]
-    cmp     byte ptr [rcx], 0FFh
-    jne     RhpByRefAssignRef_UpdateCardTable
-    ret
+    shr     rcx, 0Bh
+    mov     r10, [g_card_table]
+    cmp     byte ptr [rcx + r10], 0FFh
+    je      RhpByRefAssignRef_NoBarrierRequired
 
 ;; We get here if it's necessary to update the card table.
-RhpByRefAssignRef_UpdateCardTable:
-    mov     byte ptr [rcx], 0FFh
-    ret
+    mov     byte ptr [rcx + r10], 0FFh
 
-RhpByRefAssignRef_NotInHeap:
-    ; Increment the pointers before leaving
+ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    ;; Shift rcx by 0Ah more to get the card bundle byte (we shifted by 0Bh already)
+    shr     rcx, 0Ah
+    add     rcx, [g_card_bundle_table]
+    cmp     byte ptr [rcx], 0FFh
+    je      RhpByRefAssignRef_NoBarrierRequired
+
+    mov     byte ptr [rcx], 0FFh
+endif
+
+RhpByRefAssignRef_NoBarrierRequired:
+    ;; Increment the pointers before leaving
     add     rdi, 8h
     add     rsi, 8h
     ret

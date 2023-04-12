@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -15,8 +15,6 @@ namespace System.Text.Json
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct ReadStack
     {
-        internal static readonly char[] SpecialCharacters = { '.', ' ', '\'', '/', '"', '[', ']', '(', ')', '\t', '\n', '\r', '\f', '\b', '\\', '\u0085', '\u2028', '\u2029' };
-
         /// <summary>
         /// Exposes the stackframe that is currently active.
         /// </summary>
@@ -36,9 +34,6 @@ namespace System.Text.Json
         /// If not zero, indicates that the stack is part of a re-entrant continuation of given depth.
         /// </summary>
         private int _continuationCount;
-
-        // State cache when deserializing objects with parameterized constructors.
-        private List<ArgumentState>? _ctorArgStateCache;
 
         /// <summary>
         /// Bytes consumed in the current loop.
@@ -202,8 +197,6 @@ namespace System.Text.Json
                     Current = _stack[_count - 1];
                 }
             }
-
-            SetConstructorArgumentState();
         }
 
         /// <summary>
@@ -325,7 +318,7 @@ namespace System.Text.Json
             {
                 if (propertyName != null)
                 {
-                    if (propertyName.IndexOfAny(SpecialCharacters) != -1)
+                    if (propertyName.AsSpan().ContainsSpecialCharacters())
                     {
                         sb.Append(@"['");
                         sb.Append(propertyName);
@@ -393,20 +386,7 @@ namespace System.Text.Json
         {
             if (Current.JsonTypeInfo.Converter.ConstructorIsParameterized)
             {
-                // A zero index indicates a new stack frame.
-                if (Current.CtorArgumentStateIndex == 0)
-                {
-                    _ctorArgStateCache ??= new List<ArgumentState>();
-
-                    var newState = new ArgumentState();
-                    _ctorArgStateCache.Add(newState);
-
-                    (Current.CtorArgumentStateIndex, Current.CtorArgumentState) = (_ctorArgStateCache.Count, newState);
-                }
-                else
-                {
-                    Current.CtorArgumentState = _ctorArgStateCache![Current.CtorArgumentStateIndex - 1];
-                }
+                Current.CtorArgumentState ??= new();
             }
         }
 

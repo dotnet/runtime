@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace TestApp
 {
@@ -26,10 +27,11 @@ namespace TestApp
         }
     }
 
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoOptimization)]
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             var comparer = EqualityComparer<StructWithValue>.Default;
 

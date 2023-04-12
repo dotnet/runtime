@@ -345,6 +345,13 @@ namespace Internal.IL.Stubs
                             InteropTypes.GetPInvokeMarshal(context)
                             .GetKnownMethod("SaveLastError", null)));
             }
+
+            if (MarshalHelpers.ShouldCheckForPendingException(context.Target, _pInvokeMetadata))
+            {
+                MetadataType lazyHelperType = context.SystemModule.GetKnownType("System.Runtime.InteropServices.ObjectiveC", "ObjectiveCMarshal");
+                callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(lazyHelperType
+                    .GetKnownMethod("ThrowPendingExceptionObject", null)));
+            }
         }
 
         private void EmitCalli(PInvokeILCodeStreams ilCodeStreams, CalliMarshallingMethodThunk calliThunk)
@@ -368,7 +375,7 @@ namespace Internal.IL.Stubs
             callsiteSetupCodeStream.Emit(ILOpcode.calli, emitter.NewToken(nativeSig));
         }
 
-        private MethodIL EmitIL()
+        private PInvokeILStubMethodIL EmitIL()
         {
             if (_targetMethod.HasCustomAttribute("System.Runtime.InteropServices", "LCIDConversionAttribute"))
                 throw new NotSupportedException();

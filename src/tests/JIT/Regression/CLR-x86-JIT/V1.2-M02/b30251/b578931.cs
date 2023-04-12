@@ -3,10 +3,12 @@
 //
 
 using System;
+using Xunit;
 
-class Test_b578931
+public class Test_b578931
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int N = 3;
         int tmp = (1 << N) - 1;

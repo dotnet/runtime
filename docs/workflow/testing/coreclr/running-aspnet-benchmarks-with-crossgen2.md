@@ -192,7 +192,7 @@ CoreRun.exe \runtime\artifacts\bin\coreclr\windows.x64.Release\crossgen2\crossge
 On Linux:
 
 ```bash
-./corerun /runtime/artifacts/bin/coreclr/Linux.x64.Release/crossgen2/crossgen2.dll
+corerun /runtime/artifacts/bin/coreclr/Linux.x64.Release/crossgen2/crossgen2.dll
 --Os --composite -o /path/to/results/composite/TotalComposite.dll /path/to/results/application/*.dll
 ```
 

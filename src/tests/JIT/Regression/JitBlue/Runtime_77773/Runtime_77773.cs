@@ -3,10 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-unsafe class Runtime_77773
+public unsafe class Runtime_77773
 {
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         var s1 = new StructWithField { Field = 1 };
         var s2 = new StructWithField { Field = 2 };

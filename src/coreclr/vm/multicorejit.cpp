@@ -91,7 +91,6 @@ void MulticoreJitFireEtwMethodCodeReturned(MethodDesc * pMethod)
 #ifdef MULTICOREJIT_LOGGING
 
 // %s ANSI
-// %S UNICODE
 void _MulticoreJitTrace(const char * format, ...)
 {
     static unsigned s_startTick = 0;
@@ -152,14 +151,18 @@ HRESULT MulticoreJitRecorder::WriteOutput()
     // Go into preemptive mode for file operations
     GCX_PREEMP();
 
+    EX_TRY
     {
         CFileStream fileStream;
 
-        if (SUCCEEDED(hr = fileStream.OpenForWrite(m_fullFileName)))
+        if (SUCCEEDED(hr = fileStream.OpenForWrite(m_fullFileName.GetUnicode())))
         {
             hr = WriteOutput(& fileStream);
         }
     }
+    EX_CATCH
+    { }
+    EX_END_CATCH(SwallowAllExceptions);
 
     return hr;
 }
@@ -187,7 +190,7 @@ HRESULT WriteData(IStream * pStream, const void * pData, unsigned len)
     return hr;
 }
 
-// Write string, round to to DWORD alignment
+// Write string, round to DWORD alignment
 HRESULT WriteString(const void * pString, unsigned len, IStream * pStream)
 {
     CONTRACTL
@@ -919,7 +922,7 @@ HRESULT MulticoreJitRecorder::StopProfile(bool appDomainShutdown)
         hr = WriteOutput();
     }
 
-    MulticoreJitTrace(("StopProfile: Save new profile to %S, hr=0x%x", m_fullFileName.GetUnicode(), hr));
+    MulticoreJitTrace(("StopProfile: Save new profile to %s, hr=0x%x", m_fullFileName.GetUTF8(), hr));
 
     return hr;
 }
@@ -937,7 +940,11 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
         return E_INVALIDARG;
     }
 
-    MulticoreJitTrace(("StartProfile('%S', '%S', %d)", pRoot, pFile, suffix));
+#ifdef MULTICOREJIT_LOGGING
+    MAKE_UTF8PTR_FROMWIDE(pRootUtf8, pRoot);
+    MAKE_UTF8PTR_FROMWIDE(pFileUtf8, pFile);
+    MulticoreJitTrace(("StartProfile('%s', '%s', %d)", pRootUtf8, pFileUtf8, suffix));
+#endif // MULTICOREJIT_LOGGING
 
     size_t lenFile = wcslen(pFile);
 
@@ -995,9 +1002,9 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
         // Append separator if root does not end with one
         unsigned len = m_fullFileName.GetCount();
 
-        if ((len != 0) && (m_fullFileName[len - 1] != W('\\')))
+        if ((len != 0) && (m_fullFileName[len - 1] != DIRECTORY_SEPARATOR_CHAR_W))
         {
-            m_fullFileName.Append(W('\\'));
+            m_fullFileName.Append(DIRECTORY_SEPARATOR_CHAR_W);
         }
 
         m_fullFileName.Append(pFile);
@@ -1049,7 +1056,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
                 player.SuppressRelease();
             }
 
-            MulticoreJitTrace(("ProcessProfile('%S') returns %x", m_fullFileName.GetUnicode(), hr1));
+            MulticoreJitTrace(("ProcessProfile('%s') returns %x", m_fullFileName.GetUTF8(), hr1));
 
             // Ignore error, even when we can't play back the file, we can still record new one
 
@@ -1061,7 +1068,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
         }
     }
 
-    MulticoreJitTrace(("StartProfile('%S', '%S', %d) returns %x", pRoot, pFile, suffix, hr));
+    MulticoreJitTrace(("StartProfile('%s', '%s', %d) returns %x", pRootUtf8, pFileUtf8, suffix, hr));
 
     _FireEtwMulticoreJit(W("STARTPROFILE"), m_fullFileName.GetUnicode(), hr, 0, 0);
 
@@ -1467,16 +1474,11 @@ void MulticoreJitManager::StopProfileAll()
     }
     CONTRACTL_END;
 
-    AppDomainIterator domain(TRUE);
+    AppDomain * pDomain = AppDomain::GetCurrentDomain();
 
-    while (domain.Next())
+    if (pDomain != NULL)
     {
-        AppDomain * pDomain = domain.GetDomain();
-
-        if (pDomain != NULL)
-        {
-            pDomain->GetMulticoreJitManager().StopProfile(true);
-        }
+        pDomain->GetMulticoreJitManager().StopProfile(true);
     }
 }
 
@@ -1508,16 +1510,11 @@ void MulticoreJitManager::DisableMulticoreJit()
 
 #ifdef PROFILING_SUPPORTED
 
-    AppDomainIterator domain(TRUE);
+    AppDomain * pDomain = AppDomain::GetCurrentDomain();
 
-    while (domain.Next())
+    if (pDomain != NULL)
     {
-        AppDomain * pDomain = domain.GetDomain();
-
-        if (pDomain != NULL)
-        {
-            pDomain->GetMulticoreJitManager().AbortProfile();
-        }
+        pDomain->GetMulticoreJitManager().AbortProfile();
     }
 
 #endif

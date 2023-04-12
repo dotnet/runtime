@@ -1136,8 +1136,8 @@ void EEResourceException::GetMessage(SString &result)
     // since we don't want to call managed code here.
     //
 
-    result.Printf("%s (message resource %S)",
-                  CoreLibBinder::GetExceptionName(m_kind), m_resourceName.GetUnicode());
+    result.Printf("%s (message resource %s)",
+                  CoreLibBinder::GetExceptionName(m_kind), m_resourceName.GetUTF8());
 }
 
 BOOL EEResourceException::GetThrowableMessage(SString &result)
@@ -1554,10 +1554,7 @@ void EEFileLoadException::SetFileName(const SString &fileName, BOOL removePath)
     {
         SString::CIterator i = fileName.End();
 
-        if (fileName.FindBack(i, W('\\')))
-            i++;
-
-        if (fileName.FindBack(i, W('/')))
+        if (fileName.FindBack(i, DIRECTORY_SEPARATOR_CHAR_W))
             i++;
 
         m_name.Set(fileName, i, fileName.End());
@@ -2159,7 +2156,7 @@ CLRLastThrownObjectException* CLRLastThrownObjectException::Validate()
                 "The 'LastThrownObject' should not be, but is, NULL.\n"
                 "The runtime may have lost track of the type of an exception in flight.\n"
                 "Please get a good stack trace, find the caller of Validate, and file a bug against the owner.\n\n"
-                "To suppress this assert 'set COMPlus_SuppressLostExceptionTypeAssert=1'");
+                "To suppress this assert 'set DOTNET_SuppressLostExceptionTypeAssert=1'");
         }
     }
 

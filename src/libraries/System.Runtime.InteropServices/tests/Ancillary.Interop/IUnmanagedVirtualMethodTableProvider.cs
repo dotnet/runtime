@@ -1,46 +1,19 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace System.Runtime.InteropServices
+// This type is for the COM Source Generator and defines basic vtable interactions that we would need in the COM source generator in one form or another.
+namespace System.Runtime.InteropServices.Marshalling
 {
-    public readonly ref struct VirtualMethodTableInfo
+    /// <summary>
+    /// This interface allows an object to provide information about a virtual method table for a managed interface to enable invoking methods in the virtual method table.
+    /// </summary>
+    public unsafe interface IUnmanagedVirtualMethodTableProvider
     {
-        public VirtualMethodTableInfo(IntPtr thisPointer, ReadOnlySpan<IntPtr> virtualMethodTable)
-        {
-            ThisPointer = thisPointer;
-            VirtualMethodTable = virtualMethodTable;
-        }
-
-        public IntPtr ThisPointer { get; }
-        public ReadOnlySpan<IntPtr> VirtualMethodTable { get; }
-
-        public void Deconstruct(out IntPtr thisPointer, out ReadOnlySpan<IntPtr> virtualMethodTable)
-        {
-            thisPointer = ThisPointer;
-            virtualMethodTable = VirtualMethodTable;
-        }
-    }
-
-    public interface IUnmanagedVirtualMethodTableProvider<T> where T : IEquatable<T>
-    {
-        protected VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(T typeKey);
-
-        public sealed VirtualMethodTableInfo GetVirtualMethodTableInfoForKey<TUnmanagedInterfaceType>()
-            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<T>
-        {
-            return GetVirtualMethodTableInfoForKey(TUnmanagedInterfaceType.TypeKey);
-        }
-    }
-
-
-    public interface IUnmanagedInterfaceType<T> where T : IEquatable<T>
-    {
-        public abstract static T TypeKey { get; }
+        /// <summary>
+        /// Get the information about the virtual method table for a given unmanaged interface type represented by <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">The managed type for the unmanaged interface.</param>
+        /// <returns>The virtual method table information for the unmanaged interface.</returns>
+        public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(Type type);
     }
 }

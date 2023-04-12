@@ -345,8 +345,8 @@ namespace System.Xml.Schema
     /// </summary>
     internal sealed class NamespaceListNode : SyntaxTreeNode
     {
-        private NamespaceList namespaceList;
-        private object particle;
+        private readonly NamespaceList namespaceList;
+        private readonly object particle;
 
         public NamespaceListNode(NamespaceList namespaceList, object particle)
         {
@@ -1246,7 +1246,7 @@ namespace System.Xml.Schema
             }
 
             // Add end marker
-            InteriorNode contentRoot = new SequenceNode();
+            var contentRoot = new SequenceNode();
             contentRoot.LeftChild = _contentNode;
             LeafNode endMarker = new LeafNode(_positions!.Add(_symbols!.AddName(XmlQualifiedName.Empty, null), null));
             contentRoot.RightChild = endMarker;

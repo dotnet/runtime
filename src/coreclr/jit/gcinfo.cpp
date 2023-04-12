@@ -240,7 +240,8 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
     }
 
     // Ignore any assignments of NULL.
-    if ((store->Data()->GetVN(VNK_Liberal) == ValueNumStore::VNForNull()) || store->Data()->IsIntegralConst(0))
+    GenTree* data = store->Data()->gtSkipReloadOrCopy();
+    if ((data->GetVN(VNK_Liberal) == ValueNumStore::VNForNull()) || data->IsIntegralConst(0))
     {
         return WBF_NoBarrier;
     }
@@ -253,7 +254,7 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
     }
 
     // Write-barriers are no-op for frozen objects (as values)
-    if (store->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
+    if (data->IsIconHandle(GTF_ICON_OBJ_HDL))
     {
         // Ignore frozen objects
         return WBF_NoBarrier;
@@ -284,7 +285,13 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
 //
 GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tgtAddr)
 {
-    // We will assume there is no point in trying to deconstruct a TYP_I_IMPL address.
+    if (tgtAddr->OperIs(GT_LCL_ADDR))
+    {
+        // No need for a GC barrier when writing to a local variable.
+        return GCInfo::WBF_NoBarrier;
+    }
+
+    // No point in trying to further deconstruct a TYP_I_IMPL address.
     if (tgtAddr->TypeGet() == TYP_I_IMPL)
     {
         return GCInfo::WBF_BarrierUnknown;
@@ -345,12 +352,6 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
                 }
             }
         }
-    }
-
-    if (tgtAddr->IsLocalAddrExpr() != nullptr)
-    {
-        // No need for a GC barrier when writing to a local variable.
-        return GCInfo::WBF_NoBarrier;
     }
 
     if (tgtAddr->TypeGet() == TYP_REF)

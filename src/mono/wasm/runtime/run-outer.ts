@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // WARNING: code in this file is executed before any of the emscripten code, so there is very little initialized already
-import { ENVIRONMENT_IS_WEB, emscriptenEntrypoint, runtimeHelpers, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_NODE } from "./imports";
+import { emscriptenEntrypoint, runtimeHelpers } from "./imports";
 import { setup_proxy_console } from "./logging";
 import { mono_exit } from "./run";
 import { DotnetModuleConfig, MonoConfig, MonoConfigInternal, mono_assert, RuntimeAPI } from "./types";
@@ -18,6 +18,7 @@ export interface DotnetHostBuilder {
     withDebugging(level: number): DotnetHostBuilder
     withMainAssembly(mainAssemblyName: string): DotnetHostBuilder
     withApplicationArgumentsFromQuery(): DotnetHostBuilder
+    withStartupMemoryCache(value: boolean): DotnetHostBuilder
     create(): Promise<RuntimeAPI>
     run(): Promise<number>
 }
@@ -137,6 +138,19 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    withStartupMemoryCache(value: boolean): DotnetHostBuilder {
+        try {
+            const configInternal: MonoConfigInternal = {
+                startupMemoryCache: value
+            };
+            Object.assign(this.moduleConfig.config!, configInternal);
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
     withConfig(config: MonoConfig): DotnetHostBuilder {
         try {
             const providedConfig = { ...config };
@@ -229,7 +243,8 @@ class HostBuilder implements DotnetHostBuilder {
     withRuntimeOptions(runtimeOptions: string[]): DotnetHostBuilder {
         try {
             mono_assert(runtimeOptions && Array.isArray(runtimeOptions), "must be array of strings");
-            Object.assign(this.moduleConfig, { runtimeOptions });
+            const configInternal = this.moduleConfig.config as MonoConfigInternal;
+            configInternal.runtimeOptions = [...(configInternal.runtimeOptions || []), ...(runtimeOptions|| [])];
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -269,7 +284,7 @@ class HostBuilder implements DotnetHostBuilder {
     async create(): Promise<RuntimeAPI> {
         try {
             if (!this.instance) {
-                if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_PTHREAD && (this.moduleConfig.config! as MonoConfigInternal).forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
+                if (ENVIRONMENT_IS_WEB && (this.moduleConfig.config! as MonoConfigInternal).forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
                     setup_proxy_console("main", globalThis.console, globalThis.location.origin);
                 }
                 if (ENVIRONMENT_IS_NODE) {
