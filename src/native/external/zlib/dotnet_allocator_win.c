@@ -5,6 +5,7 @@
 #include <heapapi.h>
 #include <intsafe.h>
 #include <winnt.h>
+#include <crtdbg.h> /* _ASSERTE */
 #include "zutil.h"
 
 /* A custom allocator for zlib that provides some defense-in-depth over standard malloc / free.
@@ -41,37 +42,28 @@ HANDLE GetZlibHeap()
     // We don't need a volatile read here since the publish is performed with release semantics.
     if (s_hPublishedHeap != NULL) { return s_hPublishedHeap; }
 
-    // Attempt to create a new heap. If we can't, fall back to the standard process heap.
-    // The heap will be dynamically sized.
-    BOOL fDefaultedToProcessHeap = FALSE;
+    // Attempt to create a new heap. The heap will be dynamically sized.
     HANDLE hNewHeap = HeapCreate(0, 0, 0);
 
     if (hNewHeap != NULL)
     {
-        // Attempt to set the LFH flag on our new heap. Since it's just an optimization, ignore failures.
-        // Ref: https://learn.microsoft.com/windows/win32/api/heapapi/nf-heapapi-heapsetinformation
-        ULONG ulHeapInformation = 2; // LFH
-        HeapSetInformation(hNewHeap, HeapCompatibilityInformation, &ulHeapInformation, sizeof(ulHeapInformation));
+        // We created a new heap. Attempt to publish it.
+        if (InterlockedCompareExchangePointer(&s_hPublishedHeap, hNewHeap, NULL) != NULL)
+        {
+            HeapDestroy(hNewHeap); // Somebody published before us. Destroy our heap.
+            hNewHeap = NULL; // Guard against accidental use later in the method.
+        }
     }
     else
     {
-        hNewHeap = GetProcessHeap();
-        fDefaultedToProcessHeap = TRUE;
+        // If we can't create a new heap, fall back to the process default heap.
+        InterlockedCompareExchangePointer(&s_hPublishedHeap, GetProcessHeap(), NULL);
     }
 
-    HANDLE hExistingPublishedHeap = InterlockedCompareExchangePointer(&s_hPublishedHeap, hNewHeap, NULL);
-    if (hExistingPublishedHeap == NULL)
-    {
-        // We successfully published our heap handle - use it.
-        return hNewHeap;
-    }
-    else
-    {
-        // Another thread already created the heap handle and published it.
-        // We should destroy any custom heap we created and fall back to the existing published handle.
-        if (!fDefaultedToProcessHeap) { HeapDestroy(hNewHeap); }
-        return hExistingPublishedHeap;
-    }
+    // Some thread - perhaps us, perhaps somebody else - published the heap. Return it.
+    // We don't need a volatile read here since the publish is performed with release semantics.
+    _ASSERTE(s_hPublishedHeap != NULL);
+    return s_hPublishedHeap;
 #else
     // We don't want to create a new heap in a 32-bit process because it could end up
     // reserving too much of the address space. Instead, fall back to the normal process heap.
