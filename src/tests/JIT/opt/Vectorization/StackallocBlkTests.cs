@@ -48,7 +48,7 @@ public unsafe class StackallocTests
     }
     
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void Consume(byte* ptr) { } // to avoid dead-code elimination
+    static void Consume(byte* ptr) {} // to avoid dead-code elimination
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static T ToVar<T>(T o) => o; // convert a constant to a variable

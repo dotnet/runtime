@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -18,7 +19,7 @@ namespace System.Net
     ///     Provides an Internet Protocol (IP) address.
     ///   </para>
     /// </devdoc>
-    public class IPAddress : ISpanFormattable, ISpanParsable<IPAddress>
+    public class IPAddress : ISpanFormattable, ISpanParsable<IPAddress>, IUtf8SpanFormattable
     {
         public static readonly IPAddress Any = new ReadOnlyIPAddress(new byte[] { 0, 0, 0, 0 });
         public static readonly IPAddress Loopback = new ReadOnlyIPAddress(new byte[] { 127, 0, 0, 1 });
@@ -375,7 +376,7 @@ namespace System.Net
                 // Not valid for IPv4 addresses
                 if (IsIPv4)
                 {
-                    throw new SocketException(SocketError.OperationNotSupported);
+                    ThrowSocketOperationNotSupported();
                 }
 
                 return PrivateScopeId;
@@ -385,7 +386,7 @@ namespace System.Net
                 // Not valid for IPv4 addresses
                 if (IsIPv4)
                 {
-                    throw new SocketException(SocketError.OperationNotSupported);
+                    ThrowSocketOperationNotSupported();
                 }
 
                 // Consider: Since scope is only valid for link-local and site-local
@@ -403,27 +404,74 @@ namespace System.Net
         ///     or standard IPv6 representation.
         ///   </para>
         /// </devdoc>
-        public override string ToString() =>
-            _toString ??= IsIPv4 ?
-                IPAddressParser.IPv4AddressToString(PrivateAddress) :
-                IPAddressParser.IPv6AddressToString(_numbers, PrivateScopeId);
+        public override string ToString()
+        {
+            string? toString = _toString;
+            if (toString is null)
+            {
+                Span<char> span = stackalloc char[IPAddressParser.MaxIPv6StringLength];
+                int length = IsIPv4 ?
+                    IPAddressParser.FormatIPv4Address(_addressOrScopeId, span) :
+                    IPAddressParser.FormatIPv6Address(_numbers, _addressOrScopeId, span);
+                _toString = toString = new string(span.Slice(0, length));
+            }
+
+            return toString;
+        }
 
         /// <inheritdoc/>
         string IFormattable.ToString(string? format, IFormatProvider? formatProvider) =>
             // format and provider are explicitly ignored
             ToString();
 
-        public bool TryFormat(Span<char> destination, out int charsWritten)
-        {
-            return IsIPv4 ?
-                IPAddressParser.IPv4AddressToString(PrivateAddress, destination, out charsWritten) :
-                IPAddressParser.IPv6AddressToString(_numbers, PrivateScopeId, destination, out charsWritten);
-        }
+        public bool TryFormat(Span<char> destination, out int charsWritten) =>
+            TryFormatCore(destination, out charsWritten);
 
         /// <inheritdoc/>
         bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
             // format and provider are explicitly ignored
-            TryFormat(destination, out charsWritten);
+            TryFormatCore(destination, out charsWritten);
+
+        /// <inheritdoc/>
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            // format and provider are explicitly ignored
+            TryFormatCore(utf8Destination, out bytesWritten);
+
+        private bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        {
+            if (IsIPv4)
+            {
+                if (destination.Length >= IPAddressParser.MaxIPv4StringLength)
+                {
+                    charsWritten = IPAddressParser.FormatIPv4Address(_addressOrScopeId, destination);
+                    return true;
+                }
+            }
+            else
+            {
+                if (destination.Length >= IPAddressParser.MaxIPv6StringLength)
+                {
+                    charsWritten = IPAddressParser.FormatIPv6Address(_numbers, _addressOrScopeId, destination);
+                    return true;
+                }
+            }
+
+            Span<TChar> tmpDestination = stackalloc TChar[IPAddressParser.MaxIPv6StringLength];
+            Debug.Assert(tmpDestination.Length >= IPAddressParser.MaxIPv4StringLength);
+
+            int written = IsIPv4 ?
+                IPAddressParser.FormatIPv4Address(PrivateAddress, tmpDestination) :
+                IPAddressParser.FormatIPv6Address(_numbers, PrivateScopeId, tmpDestination);
+
+            if (tmpDestination.Slice(0, written).TryCopyTo(destination))
+            {
+                charsWritten = written;
+                return true;
+            }
+
+            charsWritten = 0;
+            return false;
+        }
 
         public static long HostToNetworkOrder(long host)
         {
@@ -551,37 +599,28 @@ namespace System.Net
         {
             get
             {
-                //
-                // IPv6 Changes: Can't do this for IPv6, so throw an exception.
-                //
-                //
                 if (AddressFamily == AddressFamily.InterNetworkV6)
                 {
-                    throw new SocketException(SocketError.OperationNotSupported);
+                    ThrowSocketOperationNotSupported();
                 }
-                else
-                {
-                    return PrivateAddress;
-                }
+
+                return PrivateAddress;
             }
             set
             {
-                //
-                // IPv6 Changes: Can't do this for IPv6 addresses
                 if (AddressFamily == AddressFamily.InterNetworkV6)
                 {
-                    throw new SocketException(SocketError.OperationNotSupported);
+                    ThrowSocketOperationNotSupported();
                 }
-                else
+
+                if (PrivateAddress != value)
                 {
-                    if (PrivateAddress != value)
+                    if (this is ReadOnlyIPAddress)
                     {
-                        if (this is ReadOnlyIPAddress)
-                        {
-                            throw new SocketException(SocketError.OperationNotSupported);
-                        }
-                        PrivateAddress = unchecked((uint)value);
+                        ThrowSocketOperationNotSupported();
                     }
+
+                    PrivateAddress = unchecked((uint)value);
                 }
             }
         }
@@ -676,6 +715,9 @@ namespace System.Net
 
         [DoesNotReturn]
         private static byte[] ThrowAddressNullException() => throw new ArgumentNullException("address");
+
+        [DoesNotReturn]
+        private static void ThrowSocketOperationNotSupported() => throw new SocketException(SocketError.OperationNotSupported);
 
         private sealed class ReadOnlyIPAddress : IPAddress
         {

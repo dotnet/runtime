@@ -130,8 +130,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.G.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.L.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.O.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.R.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.E.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.F.cs" />
@@ -343,6 +341,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Invariant.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Nls.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.WebAssembly.cs" Condition="'$(TargetsBrowser)' == 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Icu.cs" />
@@ -400,7 +399,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Nls.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.WebAssembly.cs" Condition="'$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.WebAssembly.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ThaiBuddhistCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanFormat.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanParse.cs" />
@@ -517,6 +516,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IObserver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IProgress.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ISpanFormattable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IUtf8SpanFormattable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Lazy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\LazyOfTTMetadata.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\LoaderOptimization.cs" />
@@ -773,6 +773,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncValueTaskMethodBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncValueTaskMethodBuilderT.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncVoidMethodBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CastCache.cs" Condition="'$(FeatureCoreCLR)' == 'true' or '$(FeatureNativeAot)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerFilePathAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerLineNumberAttribute.cs" />
@@ -1259,6 +1260,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ComAwareWeakReference.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.CompareInfo.cs" Condition="'$(TargetsBrowser)' == 'true'">
+      <Link>Common\Interop\Interop.CompareInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.TextInfo.cs" Condition="'$(TargetsBrowser)' == 'true'">
+      <Link>Common\Interop\Interop.TextInfo.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Calendar.cs">
       <Link>Common\Interop\Interop.Calendar.cs</Link>
     </Compile>
@@ -1323,9 +1330,6 @@
     <Compile Include="$(CommonPath)SkipLocalsInit.cs">
       <Link>Common\SkipLocalsInit.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\ITimer.cs">
-      <Link>Common\System\ITimer.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)System\TimeProvider.cs">
       <Link>Common\System\TimeProvider.cs</Link>
     </Compile>
@@ -1385,6 +1389,9 @@
     </Compile>
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs">
       <Link>Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Threading\ITimer.cs">
+      <Link>Common\System\Threading\ITimer.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Threading\OpenExistingResult.cs">
       <Link>Common\System\Threading\OpenExistingResult.cs</Link>

@@ -51,6 +51,7 @@ export const enum BailoutReason {
     Debugging,
     Icall,
     UnexpectedRetIp,
+    LeaveCheck,
 }
 
 export const BailoutReasonNames = [
@@ -80,6 +81,7 @@ export const BailoutReasonNames = [
     "Debugging",
     "Icall",
     "UnexpectedRetIp",
+    "LeaveCheck",
 ];
 
 type FunctionType = [
@@ -1243,14 +1245,9 @@ class Cfg {
                             if (this.trace > 1)
                                 console.log(`backward br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)}: disp=${disp}`);
 
-                            // set the backward branch taken flag in the cinfo so that the monitoring phase
-                            //  knows we took a backward branch. this is unfortunate but unavoidable overhead
-                            // we just make it a flag instead of an increment to reduce the cost
-                            this.builder.local("cinfo");
-                            // TODO: Store the offset in opcodes instead? Probably not useful information
+                            // Set the back branch taken flag local so it will get flushed on monitoring exit
                             this.builder.i32_const(1);
-                            this.builder.appendU8(WasmOpcode.i32_store);
-                            this.builder.appendMemarg(0, 0); // JiterpreterCallInfo.backward_branch_taken
+                            this.builder.local("backbranched", WasmOpcode.set_local);
 
                             // set the dispatch index for the br_table
                             this.builder.i32_const(disp);
@@ -1363,6 +1360,13 @@ export function append_exit (builder: WasmBuilder, ip: MintOpcodePtr, opcodeCoun
         builder.i32_const(opcodeCounter);
         builder.appendU8(WasmOpcode.i32_store);
         builder.appendMemarg(4, 0); // bailout_opcode_count
+        // flush the backward branch taken flag into the cinfo so that the monitoring phase
+        //  knows we took a backward branch. this is unfortunate but unavoidable overhead
+        // we just make it a flag instead of an increment to reduce the cost
+        builder.local("cinfo");
+        builder.local("backbranched");
+        builder.appendU8(WasmOpcode.i32_store);
+        builder.appendMemarg(0, 0); // JiterpreterCallInfo.backward_branch_taken
     }
 
     builder.ip_const(ip);

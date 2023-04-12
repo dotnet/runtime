@@ -18,8 +18,13 @@
 
 #define INT_CONFIG(name, unused_private_key, unused_public_key, default, unused_doc)  \
   int64_t GCConfig::Get##name() { return s_##name; }                                  \
+  int64_t GCConfig::Get##name(int64_t defaultValue)                                   \
+  {                                                                                   \
+      return s_##name##Provided ? s_##name : defaultValue;                            \
+  }                                                                                   \
   void GCConfig::Set##name(int64_t value) { s_Updated##name = value; }                \
   int64_t GCConfig::s_##name = default;                                               \
+  bool GCConfig::s_##name##Provided = false;                                          \
   int64_t GCConfig::s_Updated##name = default;
 
 // String configs are not cached because 1) they are rare and
@@ -64,11 +69,13 @@ GC_CONFIGURATION_KEYS
 
 void GCConfig::Initialize()
 {
-#define BOOL_CONFIG(name, private_key, public_key, unused_default, unused_doc)  \
-    s_##name##Provided = GCToEEInterface::GetBooleanConfigValue(private_key, public_key, &s_##name);
-
-#define INT_CONFIG(name, private_key, public_key, unused_default, unused_doc)   \
-    GCToEEInterface::GetIntConfigValue(private_key, public_key, &s_##name);
+#define BOOL_CONFIG(name, private_key, public_key, unused_default, unused_doc)                       \
+    s_##name##Provided = GCToEEInterface::GetBooleanConfigValue(private_key, public_key, &s_##name); \
+    s_Updated##name = s_##name; 
+    
+#define INT_CONFIG(name, private_key, public_key, unused_default, unused_doc)                    \
+    s_##name##Provided = GCToEEInterface::GetIntConfigValue(private_key, public_key, &s_##name); \
+    s_Updated##name = s_##name;                                                                  \
 
 #define STRING_CONFIG(unused_name, unused_private_key, unused_public_key, unused_doc)
 

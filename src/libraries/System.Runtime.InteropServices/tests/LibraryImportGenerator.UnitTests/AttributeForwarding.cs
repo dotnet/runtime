@@ -24,35 +24,35 @@ namespace LibraryImportGenerator.UnitTests
         [InlineData("UnmanagedCallConv", "System.Runtime.InteropServices.UnmanagedCallConvAttribute")]
         public async Task KnownParameterlessAttribute(string attributeSourceName, string attributeMetadataName)
         {
-            string source = @$"
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-[assembly:DisableRuntimeMarshalling]
-partial class C
-{{
-    [{attributeSourceName}]
-    [LibraryImportAttribute(""DoesNotExist"")]
-    public static partial S Method1();
-}}
-
-[NativeMarshalling(typeof(Marshaller))]
-struct S
-{{
-}}
-
-struct Native
-{{
-}}
-
-[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
-static class Marshaller
-{{
-    public static Native ConvertToUnmanaged(S s) => default;
-
-    public static S ConvertToManaged(Native n) => default;
-}}
-";
+            string source = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                [assembly:DisableRuntimeMarshalling]
+                partial class C
+                {
+                    [{{attributeSourceName}}]
+                    [LibraryImportAttribute("DoesNotExist")]
+                    public static partial S Method1();
+                }
+                
+                [NativeMarshalling(typeof(Marshaller))]
+                struct S
+                {
+                }
+                
+                struct Native
+                {
+                }
+                
+                [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+                static class Marshaller
+                {
+                    public static Native ConvertToUnmanaged(S s) => default;
+                
+                    public static S ConvertToManaged(Native n) => default;
+                }
+                """;
             Compilation origComp = await TestUtils.CreateCompilation(source);
             Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(newComp.GetDiagnostics());
@@ -71,36 +71,36 @@ static class Marshaller
         [Fact]
         public async Task UnmanagedCallConvAttribute_EmptyCallConvArray()
         {
-            string source = @"
-using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-[assembly:DisableRuntimeMarshalling]
-partial class C
-{
-    [UnmanagedCallConv(CallConvs = new Type[0])]
-    [LibraryImportAttribute(""DoesNotExist"")]
-    public static partial S Method1();
-}
+            string source = """
+                using System;
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                [assembly:DisableRuntimeMarshalling]
+                partial class C
+                {
+                    [UnmanagedCallConv(CallConvs = new Type[0])]
+                    [LibraryImportAttribute("DoesNotExist")]
+                    public static partial S Method1();
+                }
 
-[NativeMarshalling(typeof(Marshaller))]
-struct S
-{
-}
+                [NativeMarshalling(typeof(Marshaller))]
+                struct S
+                {
+                }
 
-struct Native
-{
-}
+                struct Native
+                {
+                }
 
-[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
-static class Marshaller
-{
-    public static Native ConvertToUnmanaged(S s) => default;
+                [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+                static class Marshaller
+                {
+                    public static Native ConvertToUnmanaged(S s) => default;
 
-    public static S ConvertToManaged(Native n) => default;
-}
-";
+                    public static S ConvertToManaged(Native n) => default;
+                }
+                """;
             Compilation origComp = await TestUtils.CreateCompilation(source);
             Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(newComp.GetDiagnostics());
@@ -122,35 +122,35 @@ static class Marshaller
         [Fact]
         public async Task UnmanagedCallConvAttribute_SingleCallConvType()
         {
-            string source = @"
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-[assembly:DisableRuntimeMarshalling]
-partial class C
-{
-    [UnmanagedCallConv(CallConvs = new[]{typeof(CallConvStdcall)})]
-    [LibraryImportAttribute(""DoesNotExist"")]
-    public static partial S Method1();
-}
+            string source = """
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                [assembly:DisableRuntimeMarshalling]
+                partial class C
+                {
+                    [UnmanagedCallConv(CallConvs = new[]{typeof(CallConvStdcall)})]
+                    [LibraryImportAttribute("DoesNotExist")]
+                    public static partial S Method1();
+                }
 
-[NativeMarshalling(typeof(Marshaller))]
-struct S
-{
-}
+                [NativeMarshalling(typeof(Marshaller))]
+                struct S
+                {
+                }
 
-struct Native
-{
-}
+                struct Native
+                {
+                }
 
-[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
-static class Marshaller
-{
-    public static Native ConvertToUnmanaged(S s) => default;
+                [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+                static class Marshaller
+                {
+                    public static Native ConvertToUnmanaged(S s) => default;
 
-    public static S ConvertToManaged(Native n) => default;
-}
-";
+                    public static S ConvertToManaged(Native n) => default;
+                }
+                """;
             Compilation origComp = await TestUtils.CreateCompilation(source);
             Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(newComp.GetDiagnostics());
@@ -176,35 +176,35 @@ static class Marshaller
         [Fact]
         public async Task UnmanagedCallConvAttribute_MultipleCallConvTypes()
         {
-            string source = @"
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-[assembly:DisableRuntimeMarshalling]
-partial class C
-{
-    [UnmanagedCallConv(CallConvs = new[]{typeof(CallConvStdcall), typeof(CallConvSuppressGCTransition)})]
-    [LibraryImportAttribute(""DoesNotExist"")]
-    public static partial S Method1();
-}
+            string source = """
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                [assembly:DisableRuntimeMarshalling]
+                partial class C
+                {
+                    [UnmanagedCallConv(CallConvs = new[]{typeof(CallConvStdcall), typeof(CallConvSuppressGCTransition)})]
+                    [LibraryImportAttribute("DoesNotExist")]
+                    public static partial S Method1();
+                }
 
-[NativeMarshalling(typeof(Marshaller))]
-struct S
-{
-}
+                [NativeMarshalling(typeof(Marshaller))]
+                struct S
+                {
+                }
 
-struct Native
-{
-}
+                struct Native
+                {
+                }
 
-[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
-static class Marshaller
-{
-    public static Native ConvertToUnmanaged(S s) => default;
+                [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+                static class Marshaller
+                {
+                    public static Native ConvertToUnmanaged(S s) => default;
 
-    public static S ConvertToManaged(Native n) => default;
-}
-";
+                    public static S ConvertToManaged(Native n) => default;
+                }
+                """;
             Compilation origComp = await TestUtils.CreateCompilation(source);
             Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(newComp.GetDiagnostics());
@@ -234,35 +234,35 @@ static class Marshaller
         [Fact]
         public async Task DefaultDllImportSearchPathsAttribute()
         {
-            string source = @$"
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-[assembly:DisableRuntimeMarshalling]
-partial class C
-{{
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32 | DllImportSearchPath.UserDirectories)]
-    [LibraryImportAttribute(""DoesNotExist"")]
-    public static partial S Method1();
-}}
-
-[NativeMarshalling(typeof(Marshaller))]
-struct S
-{{
-}}
-
-struct Native
-{{
-}}
-
-[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
-static class Marshaller
-{{
-    public static Native ConvertToUnmanaged(S s) => default;
-
-    public static S ConvertToManaged(Native n) => default;
-}}
-";
+            string source = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                [assembly:DisableRuntimeMarshalling]
+                partial class C
+                {
+                    [DefaultDllImportSearchPaths(DllImportSearchPath.System32 | DllImportSearchPath.UserDirectories)]
+                    [LibraryImportAttribute("DoesNotExist")]
+                    public static partial S Method1();
+                }
+                
+                [NativeMarshalling(typeof(Marshaller))]
+                struct S
+                {
+                }
+                
+                struct Native
+                {
+                }
+                
+                [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+                static class Marshaller
+                {
+                    public static Native ConvertToUnmanaged(S s) => default;
+                
+                    public static S ConvertToManaged(Native n) => default;
+                }
+                """;
             Compilation origComp = await TestUtils.CreateCompilation(source);
             Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(newComp.GetDiagnostics());
@@ -285,39 +285,39 @@ static class Marshaller
         [Fact]
         public async Task OtherAttributeType()
         {
-            string source = @"
-using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-[assembly:DisableRuntimeMarshalling]
+            string source = """
+                using System;
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                [assembly:DisableRuntimeMarshalling]
 
-class OtherAttribute : Attribute {}
+                class OtherAttribute : Attribute {}
 
-partial class C
-{
-    [Other]
-    [LibraryImportAttribute(""DoesNotExist"")]
-    public static partial S Method1();
-}
+                partial class C
+                {
+                    [Other]
+                    [LibraryImportAttribute("DoesNotExist")]
+                    public static partial S Method1();
+                }
 
-[NativeMarshalling(typeof(Marshaller))]
-struct S
-{
-}
+                [NativeMarshalling(typeof(Marshaller))]
+                struct S
+                {
+                }
 
-struct Native
-{
-}
+                struct Native
+                {
+                }
 
-[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
-static class Marshaller
-{
-    public static Native ConvertToUnmanaged(S s) => default;
+                [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+                static class Marshaller
+                {
+                    public static Native ConvertToUnmanaged(S s) => default;
 
-    public static S ConvertToManaged(Native n) => default;
-}
-";
+                    public static S ConvertToManaged(Native n) => default;
+                }
+                """;
             Compilation origComp = await TestUtils.CreateCompilation(source);
             Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
@@ -340,16 +340,16 @@ static class Marshaller
         {
             // This code is invalid configuration from the source generator's perspective.
             // We just use it as validation for forwarding the In and Out attributes.
-            string source = @"
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-partial class C
-{
-    [LibraryImportAttribute(""DoesNotExist"")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool Method1([In, Out] int a);
-}
-" + CodeSnippets.LibraryImportAttributeDeclaration;
+            string source = """
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                partial class C
+                {
+                    [LibraryImportAttribute("DoesNotExist")]
+                    [return: MarshalAs(UnmanagedType.Bool)]
+                    public static partial bool Method1([In, Out] int a);
+                }
+                """ + CodeSnippets.LibraryImportAttributeDeclaration;
             Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
             Compilation newComp = TestUtils.RunGenerators(
                 origComp,
@@ -382,16 +382,16 @@ partial class C
         [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task MarshalAsAttribute_Forwarded_To_ForwardedParameter()
         {
-            string source = @"
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-partial class C
-{
-    [LibraryImportAttribute(""DoesNotExist"")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool Method1([MarshalAs(UnmanagedType.I2)] int a);
-}
-" + CodeSnippets.LibraryImportAttributeDeclaration;
+            string source = """
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                partial class C
+                {
+                    [LibraryImportAttribute("DoesNotExist")]
+                    [return: MarshalAs(UnmanagedType.Bool)]
+                    public static partial bool Method1([MarshalAs(UnmanagedType.I2)] int a);
+                }
+                """ + CodeSnippets.LibraryImportAttributeDeclaration;
             Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
             Compilation newComp = TestUtils.RunGenerators(
                 origComp,
