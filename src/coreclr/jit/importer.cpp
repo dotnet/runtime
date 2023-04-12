@@ -4181,9 +4181,9 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             }
 
             isHoistable = !s_helperCallProperties.MayRunCctor(pFieldInfo->helper) ||
-                (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT);
-            op1         = gtNewHelperCallNode(pFieldInfo->helper, type, op1);
-            op1         = gtNewOperNode(GT_ADD, type, op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
+                          (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT);
+            op1 = gtNewHelperCallNode(pFieldInfo->helper, type, op1);
+            op1 = gtNewOperNode(GT_ADD, type, op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
         }
         break;
 
@@ -4227,7 +4227,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             else
 #endif
             {
-                op1 = fgGetStaticsCCtorHelper(pResolvedToken->hClass, pFieldInfo->helper, typeIndex);
+                op1         = fgGetStaticsCCtorHelper(pResolvedToken->hClass, pFieldInfo->helper, typeIndex);
                 isHoistable = isHoistable || (op1->gtFlags & GTF_CALL_HOISTABLE);
             }
 
@@ -4271,7 +4271,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
             GenTree* ctxTree = getRuntimeContextTree(kind.runtimeLookupKind);
 
-            CorInfoHelpFunc helper = CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE;
+            CorInfoHelpFunc helper    = CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE;
             GenTreeFlags    callFlags = GTF_EMPTY;
 
             if (!s_helperCallProperties.MayRunCctor(helper) ||

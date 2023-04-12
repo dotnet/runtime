@@ -708,8 +708,8 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
 //    The call node corresponding to the helper
 GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper, uint32_t typeIndex)
 {
-    bool bNeedClassID      = true;
-    GenTreeFlags callFlags = GTF_EMPTY;
+    bool         bNeedClassID = true;
+    GenTreeFlags callFlags    = GTF_EMPTY;
 
     var_types type = TYP_BYREF;
 
