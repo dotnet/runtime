@@ -1723,6 +1723,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 
 	case OP_LADD_OVF_UN:
 	case OP_IMUL_OVF:
+	case OP_LMUL_OVF_UN:
 	case OP_LMUL_OVF_UN_OOM:
 
 	case OP_FDIV:
@@ -2001,8 +2002,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CHECK_THIS:
 		case OP_IAND:
 		case OP_LAND:
-		case OP_XOR_IMM:
-		case OP_IXOR_IMM:
 		case OP_IXOR:
 		case OP_LXOR:
 		case OP_IOR:
@@ -2500,7 +2499,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					NULLIFY_INS (ins);
 				} else if (ins->next->opcode == OP_IL_SEQ_POINT || ins->next->opcode == OP_MOVE ||
 				           ins->next->opcode == OP_LOAD_MEMBASE || ins->next->opcode == OP_NOP ||
-				           ins->next->opcode == OP_LOADI4_MEMBASE) {
+				           ins->next->opcode == OP_LOADI4_MEMBASE || ins->next->opcode == OP_BR ) {
 					/**
 					 * there is compare without branch OP followed
 					 *
@@ -2599,6 +2598,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LAND_IMM:
 		case OP_IOR_IMM:
 		case OP_LOR_IMM:
+		case OP_XOR_IMM:
+		case OP_IXOR_IMM:
 			if (!RISCV_VALID_I_IMM ((gint32)(gssize)(ins->inst_imm)))
 				mono_decompose_op_imm (cfg, bb, ins);
 			break;
@@ -2606,6 +2607,21 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LNOT:
 			ins->opcode = OP_XOR_IMM;
 			ins->inst_imm = -1;
+			break;
+		case OP_ICONV_TO_I1:
+		case OP_LCONV_TO_I1:
+			// slli    a0, a0, 56
+			// srai    a0, a0, 56
+			NEW_INS_BEFORE (cfg, ins, temp, OP_ICONST);
+			temp->opcode = OP_SHL_IMM;
+			temp->dreg = ins->dreg;
+			temp->sreg1 = ins->sreg1;
+			temp->inst_imm = 56;
+
+			ins->opcode = OP_SHR_IMM;
+			ins->dreg = ins->dreg;
+			ins->sreg1 = temp->dreg;
+			ins->inst_imm = 56;
 			break;
 		case OP_ICONV_TO_U1:
 		case OP_LCONV_TO_U1:
@@ -2720,17 +2736,16 @@ mono_riscv_emit_imm (guint8 *code, int rd, gsize imm)
 		gint32 Lo = RISCV_BITS (imm, 0, 12);
 
 		// Lo is in signed num
-		// if Lo > 0x800
+		// if Lo >= 0x800
 		// convert into ((Hi + 1) << 20) -  (0x1000 - Lo)
 		if (Lo >= 0x800) {
-			Hi += 1;
+			if (imm > 0)
+				Hi += 1;
 			Lo = Lo - 0x1000;
 		}
 
-		// if Hi is 0 or overflow, skip
-		if (Hi < 0xfffff) {
-			riscv_lui (code, rd, Hi);
-		}
+		g_assert(Hi <= 0xfffff);
+		riscv_lui (code, rd, Hi);
 		riscv_addiw (code, rd, rd, Lo);
 		return code;
 	}
@@ -3108,14 +3123,18 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 		if (ins->opcode == OP_REGVAR) {
 			switch (ainfo->storage) {
 			case ArgInIReg:
-				riscv_addi (code, ins->dreg, ainfo->reg, 0);
+				if(ins->dreg != ainfo->reg)
+					riscv_addi (code, ins->dreg, ainfo->reg, 0);
 				if (i == 0 && sig->hasthis) {
 					mono_add_var_location (cfg, ins, TRUE, ainfo->reg, 0, 0, code - cfg->native_code);
 					mono_add_var_location (cfg, ins, TRUE, ins->dreg, 0, code - cfg->native_code, 0);
 				}
 				break;
-
+			case ArgOnStack:
+				code = mono_riscv_emit_load(code, ins->dreg, RISCV_FP, ainfo->offset, ainfo->slot_size);
+				break;
 			default:
+				g_print("Can't handle arg type %d\n", ainfo->storage);
 				NOT_IMPLEMENTED;
 			}
 		} else {
@@ -3303,7 +3322,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 		// save fp value, here is T0
 		stack_size += sizeof (target_mgreg_t);
-		code = mono_riscv_emit_store (code, RISCV_T0, RISCV_FP, stack_size, 0);
+		code = mono_riscv_emit_store (code, RISCV_T0, RISCV_FP, -stack_size, 0);
 
 		// save stack size into T0
 		code = mono_riscv_emit_imm (code, RISCV_T0, cfg->stack_offset);
