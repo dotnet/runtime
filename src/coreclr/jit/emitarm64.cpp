@@ -4185,7 +4185,7 @@ void emitter::emitIns_Mov(
 
         case INS_sxtw:
         {
-            assert(size == EA_8BYTE);
+            assert((size == EA_8BYTE) || (size == EA_4BYTE));
             FALLTHROUGH;
         }
 

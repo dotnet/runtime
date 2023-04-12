@@ -2964,7 +2964,16 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         else // store into register (i.e move into register)
         {
             // Assign into targetReg when dataReg (from op1) is not the same register
-            inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
+            if (!data->isUsedFromReg())
+            {
+                inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
+            }
+            else
+            {
+                // We use 'emitActualTypeSize' as ARM64 instructions require 8BYTE or 4BYTE.
+                inst_Mov_Extend(targetType, true, targetReg, dataReg, /* canSkip */ true,
+                                emitActualTypeSize(targetType));
+            }
         }
         genUpdateLifeStore(lclNode, targetReg, varDsc);
     }
