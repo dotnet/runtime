@@ -1492,7 +1492,7 @@ namespace System.Net.Http.Functional.Tests
             public static IEnumerable<object[]> Send_InnerHandlerThrows_OuterExceptionIsCaptured_MemberData() =>
                 Enum.GetValues<ExceptionScenario>().Select(e => new object[] { e });
 
-            [Theory]
+            [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
             [MemberData(nameof(Send_InnerHandlerThrows_OuterExceptionIsCaptured_MemberData))]
             public async Task Send_InnerHandlerThrows_OriginalExceptionInformationIsCaptured(ExceptionScenario scenario)
             {
