@@ -1443,7 +1443,7 @@ emit_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMValueRef PointerVal,
  *   If vreg is volatile, emit a load from its address.
  */
 static LLVMValueRef
-emit_volatile_load (EmitContext *ctx, int vreg)
+emit_volatile_load (EmitContext *ctx, MonoInst *var, int vreg)
 {
 	MonoType *t;
 	LLVMValueRef v;
@@ -1451,7 +1451,8 @@ emit_volatile_load (EmitContext *ctx, int vreg)
 	// On arm64, we pass the rgctx in a callee saved
 	// register on arm64 (x15), and llvm might keep the value in that register
 	// even through the register is marked as 'reserved' inside llvm.
-	v = emit_load (ctx->builder, ctx->addresses [vreg]->type, ctx->addresses [vreg]->value, "", TRUE);
+	gboolean is_volatile = (var->flags & MONO_INST_VOLATILE) != 0;
+	v = emit_load (ctx->builder, ctx->addresses [vreg]->type, ctx->addresses [vreg]->value, "", is_volatile);
 	t = ctx->vreg_cli_types [vreg];
 	if (t && !m_type_is_byref (t)) {
 		/*
@@ -1482,8 +1483,9 @@ emit_volatile_store (EmitContext *ctx, int vreg)
 	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
 		g_assert (ctx->addresses [vreg]);
 #ifdef TARGET_WASM
+		gboolean is_volatile = (var->flags & MONO_INST_VOLATILE) != 0;
 		/* Need volatile stores otherwise the compiler might move them */
-		emit_store (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg]->value, TRUE);
+		emit_store (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg]->value, is_volatile);
 #else
 		LLVMBuildStore (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg]->value);
 #endif
@@ -3828,7 +3830,8 @@ emit_gc_pin (EmitContext *ctx, LLVMBuilderRef builder, int vreg)
 	if (ctx->values [vreg] == LLVMConstNull (IntPtrType ()))
 		return;
 	MonoInst *var = get_vreg_to_inst (ctx->cfg, vreg);
-	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))
+	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_IS_DEAD))
+		/* Volatile variables are stored to the stack already */
 		return;
 	g_assert (vreg < ctx->gc_var_indexes_len);
 	LLVMValueRef index0 = const_int32 (0);
@@ -3872,7 +3875,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	for (guint32 i = 0; i < cfg->next_vreg; ++i) {
 		if (vreg_is_ref (cfg, i)) {
 			MonoInst *var = get_vreg_to_inst (ctx->cfg, i);
-			if (!(var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))) {
+			if (!(var && var->flags & (MONO_INST_VOLATILE|MONO_INST_IS_DEAD))) {
 				ctx->gc_var_indexes [i] = ngc_vars + 1;
 				ngc_vars ++;
 				ctx->gc_var_indexes_len = i + 1;
@@ -5761,7 +5764,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			MonoInst *var = get_vreg_to_inst (cfg, ins->sreg1);
 
 			if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) && var->opcode != OP_GSHAREDVT_ARG_REGOFFSET) {
-				lhs = emit_volatile_load (ctx, ins->sreg1);
+				lhs = emit_volatile_load (ctx, var, ins->sreg1);
 			} else {
 				/* It is ok for SETRET to have an uninitialized argument */
 				if (!values [ins->sreg1] && ins->opcode != OP_SETRET) {
@@ -5777,7 +5780,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		if (spec [MONO_INST_SRC2] != ' ' && spec [MONO_INST_SRC2] != 'v') {
 			MonoInst *var = get_vreg_to_inst (cfg, ins->sreg2);
 			if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
-				rhs = emit_volatile_load (ctx, ins->sreg2);
+				rhs = emit_volatile_load (ctx, var, ins->sreg2);
 			} else {
 				if (!values [ins->sreg2]) {
 					set_failure (ctx, "sreg2");
@@ -5792,7 +5795,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		if (spec [MONO_INST_SRC3] != ' ' && spec [MONO_INST_SRC3] != 'v') {
 			MonoInst *var = get_vreg_to_inst (cfg, ins->sreg3);
 			if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
-				arg3 = emit_volatile_load (ctx, ins->sreg3);
+				arg3 = emit_volatile_load (ctx, var, ins->sreg3);
 			} else {
 				if (!values [ins->sreg3]) {
 					set_failure (ctx, "sreg3");
