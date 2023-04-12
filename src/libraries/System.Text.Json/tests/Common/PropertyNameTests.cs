@@ -36,6 +36,17 @@ namespace System.Text.Json.Serialization.Tests
             await DeserializeAndAssert(JsonNamingPolicy.KebabCaseUpper, @"{""MY-INT16"":1}", 1);            
         }
 
+        [Theory]
+        [MemberData(nameof(SuccessDeserialize_TestData))]
+        public async Task SuccessDeserialize(string valueForDeserialize, ClassWithEscapablePropertyName expectedValue)
+        {
+            ClassWithEscapablePropertyName actualValue;
+
+            actualValue = await Serializer.DeserializeWrapper<ClassWithEscapablePropertyName>(valueForDeserialize);
+
+            Assert.Equal(expectedValue.MyFunnyProperty, actualValue.MyFunnyProperty);
+        }
+
         private async Task DeserializeAndAssert(JsonNamingPolicy policy, string json, short expected)
         {
             var options = new JsonSerializerOptions { PropertyNamingPolicy = policy };
@@ -493,6 +504,32 @@ namespace System.Text.Json.Serialization.Tests
             [JsonPropertyOrder(6)]
             [JsonPropertyName("\uA000_2")] // Valid C# property name: \uA000_2
             public int YiIt_2 { get; set; }
+        }
+
+        public static IEnumerable<object[]> SuccessDeserialize_TestData()
+        {
+            yield return new object[]
+            {
+                "{\"abc[!@#№$;%:^&?*()-+~`|]'def'\":\"valueFromMyFunnyPropertyTestCase1\"}",
+                new ClassWithEscapablePropertyName
+                {
+                    MyFunnyProperty = "valueFromMyFunnyPropertyTestCase1"
+                },
+            };
+            yield return new object[]
+            {
+                "{\"abc[!@#\\u2116$;%:^\\u0026?*()-\\u002B~\\u0060|]\\u0027def\\u0027\":\"valueFromMyFunnyPropertyTestCase2\"}",
+                new ClassWithEscapablePropertyName
+                {
+                    MyFunnyProperty = "valueFromMyFunnyPropertyTestCase2"
+                },
+            };
+        }
+
+        public class ClassWithEscapablePropertyName
+        {
+            [JsonPropertyName("abc[!@#№$;%:^&?*()-+~`|]'def'")]
+            public string MyFunnyProperty { get; set; }
         }
     }
 }

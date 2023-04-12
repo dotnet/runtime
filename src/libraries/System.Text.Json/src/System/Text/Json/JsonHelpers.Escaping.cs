@@ -53,6 +53,43 @@ namespace System.Text.Json
             return escapedString;
         }
 
+        public static string GetPropertyName(
+            string rawPropertyName,
+            JavaScriptEncoder? encoder)
+        {
+            int indexOfFirstCharacterToEncode;
+            string returnValue;
+
+            indexOfFirstCharacterToEncode = JsonWriterHelper.NeedsEscaping(rawPropertyName.AsSpan(), encoder);
+
+            if (indexOfFirstCharacterToEncode != -1)
+            {
+                returnValue = GetEscapedPropertyName(rawPropertyName);
+            }
+            else
+            {
+                returnValue = rawPropertyName;
+            }
+
+            return returnValue;
+        }
+
+        private static string GetEscapedPropertyName(string rawPropertyName)
+        {
+            const string Quote = "\"";
+            const string EscapedQuote = "\\\"";
+            const string SingleQuote = "'";
+            const string EscapedSingleQuote = "\\'";
+
+            string returnValue;
+
+            returnValue = rawPropertyName
+                .Replace(Quote, EscapedQuote)
+                .Replace(SingleQuote, EscapedSingleQuote);
+
+            return returnValue;
+        }
+
         private static byte[] GetEscapedPropertyNameSection(
             ReadOnlySpan<byte> utf8Value,
             int firstEscapeIndexVal,

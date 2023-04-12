@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
@@ -74,6 +75,17 @@ namespace System.Text.Json.Nodes.Tests
 
             node = JsonValue.Parse(node.ToJsonString());
             Assert.Equal("$[0].Child", node[0]["Child"].GetPath());
+        }
+
+        [Theory]
+        [MemberData(nameof(GetPath_ShouldReturnExpectedValue_TestData))]
+        public static void GetPath_ShouldReturnExpectedValue(JsonNode jsonNode, string expectedValue)
+        {
+            string actualValue;
+
+            actualValue = jsonNode.GetPath();
+
+            Assert.Equal(expectedValue, actualValue);
         }
 
         [Fact]
@@ -179,6 +191,50 @@ namespace System.Text.Json.Nodes.Tests
             parent = new JsonObject(new JsonNodeOptions { PropertyNameCaseInsensitive = false });
             parent.Add("MyProp", child);
             Assert.True(child.Options.Value.PropertyNameCaseInsensitive);
+        }
+
+        public static IEnumerable<object[]> GetPath_ShouldReturnExpectedValue_TestData()
+        {
+            yield return new object[]
+            {
+                JsonNode.Parse("""{"$myRoot":{"foo['bar":"baz"}}""")["$myRoot"]["foo['bar"],
+                "$.$myRoot['foo[\\'bar']"
+            };
+            yield return new object[]
+            {
+                JsonNode.Parse("""{"$myRoot":{"foo[\"bar":"baz"}}""")["$myRoot"]["foo[\"bar"],
+                "$.$myRoot['foo[\\\"bar']"
+            };
+            yield return new object[]
+            {
+                JsonNode.Parse("""{"$myRoot":{"foo['b\"ar":"baz"}}""")["$myRoot"]["foo['b\"ar"],
+                "$.$myRoot['foo[\\'b\\\"ar']"
+            };
+            yield return new object[]
+            {
+                JsonNode.Parse("""{"$myRoot": {"myRoot'child": {"myRoot'child'secondLevelChild": "value1"}}}""")["$myRoot"]["myRoot'child"]["myRoot'child'secondLevelChild"],
+                "$.$myRoot['myRoot\\'child']['myRoot\\'child\\'secondLevelChild']"
+            };
+            yield return new object[]
+            {
+                JsonNode.Parse("""{"$myRoot": {"myRoot\"child": {"myRoot\"child\"secondLevelChild": "value1"}}}""")["$myRoot"]["myRoot\"child"]["myRoot\"child\"secondLevelChild"],
+                "$.$myRoot['myRoot\\\"child']['myRoot\\\"child\\\"secondLevelChild']"
+            };
+            yield return new object[]
+            {
+                JsonNode.Parse("""{"$myRoot": {"myRoot\"child": {"myRoot'child\"secondLevelChild": "value1"}}}""")["$myRoot"]["myRoot\"child"]["myRoot'child\"secondLevelChild"],
+                "$.$myRoot['myRoot\\\"child']['myRoot\\'child\\\"secondLevelChild']"
+            };
+            yield return new object[]
+            {
+                JsonNode.Parse("""{"$myRoot": {"myRoot'child": {"secondLevelChildWithoutEscaping": "value2"}}}""")["$myRoot"]["myRoot'child"]["secondLevelChildWithoutEscaping"],
+                "$.$myRoot['myRoot\\'child'].secondLevelChildWithoutEscaping"
+            };
+            yield return new object[]
+            {
+                JsonNode.Parse("""{"$myRoot": {"myRoot\"child": {"secondLevelChildWithoutEscaping": "value2"}}}""")["$myRoot"]["myRoot\"child"]["secondLevelChildWithoutEscaping"],
+                "$.$myRoot['myRoot\\\"child'].secondLevelChildWithoutEscaping"
+            };
         }
     }
 }
