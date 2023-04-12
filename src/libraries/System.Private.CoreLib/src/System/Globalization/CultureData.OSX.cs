@@ -17,7 +17,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             string realNameBuffer = _sRealName;
 
-            sWindowsName = _sName = _sRealName = GetLocaleNameNative(realNameBuffer);
+            _sWindowsName = _sName = _sRealName = GetLocaleNameNative(realNameBuffer);
             return true;
         }
 
