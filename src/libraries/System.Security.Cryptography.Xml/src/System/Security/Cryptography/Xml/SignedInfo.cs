@@ -8,6 +8,7 @@ using System.Xml;
 namespace System.Security.Cryptography.Xml
 {
     [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+    [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
     public class SignedInfo : ICollection
     {
         private string? _id;

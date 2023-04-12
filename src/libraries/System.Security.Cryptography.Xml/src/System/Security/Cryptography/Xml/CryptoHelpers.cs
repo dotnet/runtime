@@ -9,11 +9,13 @@ namespace System.Security.Cryptography.Xml
 {
     internal static class CryptoHelpers
     {
+        internal const string CreateFromNameUnreferencedCodeMessage = "The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.";
         internal const string XsltRequiresDynamicCodeMessage = "XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.";
 
         private static readonly char[] _invalidChars = new char[] { ',', '`', '[', '*', '&' };
 
         [RequiresDynamicCode(XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
         private static object? CreateFromKnownName(string name) =>
             name switch
             {
@@ -60,6 +62,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         [RequiresDynamicCode(XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
         public static T? CreateFromName<T>(string? name) where T : class
         {
             if (name == null || name.IndexOfAny(_invalidChars) >= 0)
@@ -76,6 +79,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
         [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCodeAttribute",
             Justification = "Only XmlDsigXsltTransform requires dynamic code. This method asserts that T is not a Transform.")]
         public static T? CreateNonTransformFromName<T>(string? name) where T : class
