@@ -2581,7 +2581,12 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
     regNumber src  = genConsumeReg(srcIndir->Addr());
     unsigned  size = tree->Size();
 
-    const unsigned simdSize = compiler->roundDownSIMDSize(size);
+    unsigned simdSize = compiler->roundDownSIMDSize(size);
+    if (size <= ZMM_RECOMMENDED_THRESHOLD)
+    {
+        // Only use ZMM for large data due to possible CPU throttle issues
+        simdSize = min(YMM_REGSIZE_BYTES, simdSize);
+    }
     if ((size >= simdSize) && (simdSize > 0))
     {
         // Number of SIMD regs needed to save the whole src to regs.
