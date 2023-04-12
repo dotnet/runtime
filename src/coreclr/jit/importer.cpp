@@ -4228,7 +4228,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 #endif
             {
                 op1 = fgGetStaticsCCtorHelper(pResolvedToken->hClass, pFieldInfo->helper, typeIndex);
-                isHoistable = isHoistable || (op1.AsCall()->gtFlags & GTF_CALL_HOISTABLE);
+                isHoistable = isHoistable || (op1->gtFlags & GTF_CALL_HOISTABLE);
             }
 
             op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
