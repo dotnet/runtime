@@ -558,13 +558,13 @@ bool Compiler::fgCheckRemoveStmt(BasicBlock* block, Statement* stmt)
     GenTree*   tree = stmt->GetRootNode();
     genTreeOps oper = tree->OperGet();
 
-    if (OperIsControlFlow(oper) || GenTree::OperIsHWIntrinsic(oper) || oper == GT_NO_OP)
+    if (OperIsControlFlow(oper) || oper == GT_NO_OP)
     {
         return false;
     }
 
     // TODO: Use a recursive version of gtNodeHasSideEffects()
-    if (tree->gtFlags & GTF_SIDE_EFFECT)
+    if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
     {
         return false;
     }

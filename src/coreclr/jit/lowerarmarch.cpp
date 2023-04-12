@@ -2017,6 +2017,10 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         // make this contained, it turns into a constant that goes into an addr mode
         MakeSrcContained(indirNode, addr);
     }
+    else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
+    {
+        MakeSrcContained(indirNode, addr);
+    }
 #endif // TARGET_ARM64
 }
 

@@ -13804,7 +13804,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
     if (addr->isContained())
     {
-        assert(addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_ADDR, GT_LEA));
+        assert(addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_ADDR, GT_LEA) || (addr->IsIconHandle(GTF_ICON_TLS_HDL)));
 
         int   offset = 0;
         DWORD lsl    = 0;
@@ -13926,6 +13926,11 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 {
                     emitIns_R_S(ins, attr, dataReg, lclNum, offset);
                 }
+            }
+            else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
+            {
+                // On Arm64, TEB is in r18, so load from the r18 as base.
+                emitIns_R_R_I(ins, attr, dataReg, REG_R18, addr->AsIntCon()->IconValue());
             }
             else if (emitIns_valid_imm_for_ldst_offset(offset, emitTypeSize(indir->TypeGet())))
             {

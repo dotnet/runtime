@@ -1906,8 +1906,20 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
         {
             GenTree* lArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
             GenTree* rArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
-            // TODO: Add SIMD path for [16..128] via GT_HWINTRINSIC nodes
-            if (cnsSize <= 16)
+
+            ssize_t MaxUnrollSize = 16;
+#ifdef FEATURE_SIMD
+            MaxUnrollSize = 32;
+#ifdef TARGET_XARCH
+            if (comp->compOpportunisticallyDependsOn(InstructionSet_Vector256))
+            {
+                MaxUnrollSize = 64;
+            }
+// TODO-XARCH-AVX512: Consider enabling this for AVX512
+#endif
+#endif
+
+            if (cnsSize <= MaxUnrollSize)
             {
                 unsigned  loadWidth = 1 << BitOperations::Log2((unsigned)cnsSize);
                 var_types loadType;
@@ -1923,11 +1935,25 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                 {
                     loadType = TYP_INT;
                 }
-                else if ((loadWidth == 8) || (loadWidth == 16))
+                else if ((loadWidth == 8) || (MaxUnrollSize == 16))
                 {
                     loadWidth = 8;
                     loadType  = TYP_LONG;
                 }
+#ifdef FEATURE_SIMD
+                else if ((loadWidth == 16) || (MaxUnrollSize == 32))
+                {
+                    loadWidth = 16;
+                    loadType  = TYP_SIMD16;
+                }
+#ifdef TARGET_XARCH
+                else if ((loadWidth == 32) || (MaxUnrollSize == 64))
+                {
+                    loadWidth = 32;
+                    loadType  = TYP_SIMD32;
+                }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
                 else
                 {
                     unreached();
@@ -1936,8 +1962,26 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
 
                 GenTree* result = nullptr;
 
+                auto newBinaryOp = [](Compiler* comp, genTreeOps oper, var_types type, GenTree* op1,
+                                      GenTree* op2) -> GenTree* {
+#ifdef FEATURE_SIMD
+                    if (varTypeIsSIMD(op1))
+                    {
+                        if (GenTree::OperIsCmpCompare(oper))
+                        {
+                            assert(type == TYP_INT);
+                            return comp->gtNewSimdCmpOpAllNode(oper, TYP_BOOL, op1, op2, CORINFO_TYPE_NATIVEUINT,
+                                                               genTypeSize(op1));
+                        }
+                        return comp->gtNewSimdBinOpNode(oper, op1->TypeGet(), op1, op2, CORINFO_TYPE_NATIVEUINT,
+                                                        genTypeSize(op1));
+                    }
+#endif
+                    return comp->gtNewOperNode(oper, type, op1, op2);
+                };
+
                 // loadWidth == cnsSize means a single load is enough for both args
-                if ((loadWidth == (unsigned)cnsSize) && (loadWidth <= 8))
+                if (loadWidth == (unsigned)cnsSize)
                 {
                     // We're going to emit something like the following:
                     //
@@ -1947,7 +1991,7 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                     //
                     GenTree* lIndir = comp->gtNewIndir(loadType, lArg);
                     GenTree* rIndir = comp->gtNewIndir(loadType, rArg);
-                    result          = comp->gtNewOperNode(GT_EQ, TYP_INT, lIndir, rIndir);
+                    result          = newBinaryOp(comp, GT_EQ, TYP_INT, lIndir, rIndir);
 
                     BlockRange().InsertAfter(lArg, lIndir);
                     BlockRange().InsertAfter(rArg, rIndir);
@@ -1994,17 +2038,17 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                     //
                     GenTree* l1Indir   = comp->gtNewIndir(loadType, lArgUse.Def());
                     GenTree* r1Indir   = comp->gtNewIndir(loadType, rArgUse.Def());
-                    GenTree* lXor      = comp->gtNewOperNode(GT_XOR, actualLoadType, l1Indir, r1Indir);
+                    GenTree* lXor      = newBinaryOp(comp, GT_XOR, actualLoadType, l1Indir, r1Indir);
                     GenTree* l2Offs    = comp->gtNewIconNode(cnsSize - loadWidth, TYP_I_IMPL);
-                    GenTree* l2AddOffs = comp->gtNewOperNode(GT_ADD, lArg->TypeGet(), lArgClone, l2Offs);
+                    GenTree* l2AddOffs = newBinaryOp(comp, GT_ADD, lArg->TypeGet(), lArgClone, l2Offs);
                     GenTree* l2Indir   = comp->gtNewIndir(loadType, l2AddOffs);
                     GenTree* r2Offs    = comp->gtCloneExpr(l2Offs); // offset is the same
-                    GenTree* r2AddOffs = comp->gtNewOperNode(GT_ADD, rArg->TypeGet(), rArgClone, r2Offs);
+                    GenTree* r2AddOffs = newBinaryOp(comp, GT_ADD, rArg->TypeGet(), rArgClone, r2Offs);
                     GenTree* r2Indir   = comp->gtNewIndir(loadType, r2AddOffs);
-                    GenTree* rXor      = comp->gtNewOperNode(GT_XOR, actualLoadType, l2Indir, r2Indir);
-                    GenTree* resultOr  = comp->gtNewOperNode(GT_OR, actualLoadType, lXor, rXor);
-                    GenTree* zeroCns   = comp->gtNewIconNode(0, actualLoadType);
-                    result             = comp->gtNewOperNode(GT_EQ, TYP_INT, resultOr, zeroCns);
+                    GenTree* rXor      = newBinaryOp(comp, GT_XOR, actualLoadType, l2Indir, r2Indir);
+                    GenTree* resultOr  = newBinaryOp(comp, GT_OR, actualLoadType, lXor, rXor);
+                    GenTree* zeroCns   = comp->gtNewZeroConNode(actualLoadType);
+                    result             = newBinaryOp(comp, GT_EQ, TYP_INT, resultOr, zeroCns);
 
                     BlockRange().InsertAfter(rArgClone, l1Indir, r1Indir, l2Offs, l2AddOffs);
                     BlockRange().InsertAfter(l2AddOffs, l2Indir, r2Offs, r2AddOffs, r2Indir);
