@@ -458,7 +458,7 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
         }
         else
         {
-            assert(newobjThis->OperIs(GT_LCL_VAR_ADDR));
+            assert(newobjThis->IsLclVarAddr());
             arg = newobjThis;
 
             // push newobj result on type stack

@@ -159,7 +159,7 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_MaybeCommutative = 0x80000,
 
     // The intrinsic has no EVEX compatible form
-    HW_Flag_NoEvexSemantics = 0x100000
+    HW_Flag_NoEvexSemantics = 0x100000,
 
 #elif defined(TARGET_ARM64)
     // The intrinsic has an immediate operand
@@ -176,9 +176,20 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic supports some sort of containment analysis
     HW_Flag_SupportsContainment = 0x2000,
+
+    // The intrinsic needs consecutive registers
+    HW_Flag_NeedsConsecutiveRegisters = 0x4000,
 #else
 #error Unsupported platform
 #endif
+
+    // The intrinsic has some barrier special side effect that should be tracked
+    HW_Flag_SpecialSideEffect_Barrier = 0x200000,
+
+    // The intrinsic has some other special side effect that should be tracked
+    HW_Flag_SpecialSideEffect_Other = 0x400000,
+
+    HW_Flag_SpecialSideEffectMask = (HW_Flag_SpecialSideEffect_Barrier | HW_Flag_SpecialSideEffect_Other),
 };
 
 #if defined(TARGET_XARCH)
@@ -751,6 +762,14 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_SpecialCodeGen) != 0;
     }
 
+#ifdef TARGET_ARM64
+    static bool NeedsConsecutiveRegisters(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_NeedsConsecutiveRegisters) != 0;
+    }
+#endif
+
     static bool HasRMWSemantics(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
@@ -832,6 +851,18 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_HasImmediateOperand) != 0;
     }
 #endif // TARGET_ARM64
+
+    static bool HasSpecialSideEffect(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_SpecialSideEffectMask) != 0;
+    }
+
+    static bool HasSpecialSideEffect_Barrier(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_SpecialSideEffect_Barrier) != 0;
+    }
 };
 
 #ifdef TARGET_ARM64

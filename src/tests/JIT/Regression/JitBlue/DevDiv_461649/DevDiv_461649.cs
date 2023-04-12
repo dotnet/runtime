@@ -6,6 +6,7 @@ using System.IO;
 using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Xsl;
+using Xunit;
 
 
 namespace XSLTest
@@ -18,7 +19,8 @@ namespace XSLTest
         // The jit performs an optimization transforming the tail call into a loop.
         // The bug was that the local was only zero-initialized for the first iteration of the loop.
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             string inputXml = "Input.xml";
             string inputXsl = "Transform.xsl";

@@ -1307,6 +1307,13 @@ MINI_OP(OP_GC_SAFE_POINT, "gc_safe_point", NONE, IREG, NONE)
  */
 MINI_OP(OP_GENERIC_CLASS_INIT, "generic_class_init", NONE, IREG, NONE)
 
+/*
+ * Call mini_init_method_rgctx () if needed.
+ * sreg1 is a MonoMethodRuntimeGenericContext.
+ * sreg2 is a MonoGSharedMethodInfo.
+ */
+MINI_OP(OP_INIT_MRGCTX, "init_mrgctx", NONE, IREG, IREG)
+
 /* Arch specific opcodes */
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null", NONE, IREG, NONE)
@@ -1755,19 +1762,27 @@ MINI_OP3(OP_ARM64_SQRDMLSH, "arm64_sqrdmlsh", XREG, XREG, XREG, XREG)
 MINI_OP3(OP_ARM64_SQRDMLSH_BYSCALAR, "arm64_sqrdmlsh_byscalar", XREG, XREG, XREG, XREG)
 MINI_OP3(OP_ARM64_SQRDMLSH_SCALAR, "arm64_sqrdmlsh_scalar", XREG, XREG, XREG, XREG)
 
+/*
+ * sreg1 points to a memory area with the input vectors.
+ * inst_c0 is the number of vectors.
+ * inst_p1 points to an int array with the offsets inside the memory area.
+ */
+MINI_OP(OP_ARM64_TBL_INDIRECT, "arm64_tbl_indirect", XREG, IREG, XREG)
+MINI_OP3(OP_ARM64_TBX_INDIRECT, "arm64_tbx_indirect", XREG, IREG, XREG, XREG)
+
 #endif // TARGET_ARM64
 
-MINI_OP(OP_FCVTL, "convert_to_higher_precision", XREG, XREG, NONE)
-MINI_OP(OP_FCVTL2, "convert_to_higher_precision_2", XREG, XREG, NONE)
-MINI_OP(OP_USHLL, "unsigned_shift_left_long", XREG, XREG, IREG)
-MINI_OP(OP_USHLL2, "unsigned_shift_left_long_2", XREG, XREG, IREG)
-MINI_OP(OP_SSHLL, "signed_shift_left_long", XREG, XREG, IREG)
-MINI_OP(OP_SSHLL2, "signed_shift_left_long_2", XREG, XREG, IREG)
-MINI_OP(OP_SHL, "shl", XREG, XREG, IREG)
-MINI_OP(OP_SSHR, "sshr", XREG, XREG, IREG)
-MINI_OP(OP_USHR, "ushr", XREG, XREG, IREG)
-MINI_OP3(OP_USRA, "usra", XREG, XREG, XREG, IREG)
-MINI_OP3(OP_SSRA, "ssra", XREG, XREG, XREG, IREG)
+MINI_OP(OP_SIMD_FCVTL, "simd_convert_to_higher_precision", XREG, XREG, NONE)
+MINI_OP(OP_SIMD_FCVTL2, "simd_convert_to_higher_precision_2", XREG, XREG, NONE)
+MINI_OP(OP_SIMD_USHLL, "simd_unsigned_shift_left_long", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_USHLL2, "simd_unsigned_shift_left_long_2", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_SSHLL, "simd_signed_shift_left_long", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_SSHLL2, "simd_signed_shift_left_long_2", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_SHL, "simd_shl", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_SSHR, "simd_sshr", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_USHR, "simd_ushr", XREG, XREG, IREG)
+MINI_OP3(OP_SIMD_USRA, "simd_usra", XREG, XREG, XREG, IREG)
+MINI_OP3(OP_SIMD_SSRA, "simd_ssra", XREG, XREG, XREG, IREG)
 
 #if defined(TARGET_WASM)
 MINI_OP(OP_WASM_ONESCOMPLEMENT, "wasm_onescomplement", XREG, XREG, NONE)
@@ -1792,3 +1807,32 @@ MINI_OP(OP_CVT_SI_FP_SCALAR, "convert_si_to_fp_scalar", XREG, XREG, NONE)
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)
 #endif // TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM
+
+#if defined(TARGET_RISCV64) || defined(TARGET_RISCV32)
+MINI_OP(OP_RISCV_EXC_BEQ, "riscv_exc_beq", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_EXC_BNE, "riscv_exc_bne", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_EXC_BGEU, "riscv_exc_bgeu", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_EXC_BLT, "riscv_exc_blt", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_EXC_BLTU, "riscv_exc_bltu", NONE, IREG, IREG)
+
+MINI_OP(OP_RISCV_BEQ, "riscv_beq", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_BNE, "riscv_bne", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_BGE, "riscv_bge", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_BGEU, "riscv_bgeu", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_BLT, "riscv_blt", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_BLTU, "riscv_bltu", NONE, IREG, IREG)
+
+MINI_OP(OP_RISCV_ADDIW, "riscv_addiw", IREG, IREG, NONE)
+
+MINI_OP(OP_RISCV_SLT, "riscv_slt", IREG, IREG, IREG)
+MINI_OP(OP_RISCV_SLTU, "riscv_sltu", IREG, IREG, IREG)
+MINI_OP(OP_RISCV_SLTI, "riscv_slti", IREG, IREG, NONE)
+MINI_OP(OP_RISCV_SLTIU, "riscv_sltiu", IREG, IREG, NONE)
+
+// used for cfg->r4fp == FALSE
+MINI_OP(OP_RISCV_SETFREG_R4,"riscv_setfreg_r4", FREG, FREG, NONE)
+#endif
+
+#if defined(TARGET_RISCV64)
+MINI_OP(OP_RISCV_ADDUW, "riscv_adduw", IREG, IREG, IREG)
+#endif
