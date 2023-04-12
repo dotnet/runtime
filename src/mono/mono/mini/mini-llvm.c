@@ -1912,6 +1912,15 @@ create_builder (EmitContext *ctx)
 
 	return builder;
 }
+static char*
+ji_type_to_string_lower (MonoJumpInfoType type)
+{
+	char *name = g_strdup (mono_ji_type_to_string (type));
+	size_t len = strlen (name);
+	for (size_t i = 0; i < len; ++i)
+		name [i] = GINT_TO_CHAR (tolower (name [i]));
+	return name;
+}
 
 static char*
 get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
@@ -1937,17 +1946,29 @@ get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
 	case MONO_PATCH_INFO_GC_NURSERY_START:
 	case MONO_PATCH_INFO_GC_NURSERY_BITS:
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
-		name = g_strdup_printf ("%s", mono_ji_type_to_string (type));
-		len = strlen (name);
-		for (size_t i = 0; i < len; ++i)
-			name [i] = GINT_TO_CHAR (tolower (name [i]));
+		name = ji_type_to_string_lower (type);
 		break;
-	default:
-		name = g_strdup_printf ("%s_%d", mono_ji_type_to_string (type), got_offset);
-		len = strlen (name);
-		for (size_t i = 0; i < len; ++i)
-			name [i] = GINT_TO_CHAR (tolower (name [i]));
+	case MONO_PATCH_INFO_METHOD:
+	case MONO_PATCH_INFO_METHOD_RGCTX: {
+		MonoMethod *method = (MonoMethod*)data;
+		char *typestr = ji_type_to_string_lower (type);
+		char *n = g_strdup (method->name);
+		len = strlen (n);
+		for (size_t i = 0; i < len; ++i) {
+			if (!isalnum (n [i]))
+				n [i] = '_';
+		}
+		name = g_strdup_printf ("%s_%s_%d", typestr, n, got_offset);
+		g_free (typestr);
+		g_free (n);
 		break;
+	}
+	default: {
+		char *typestr = ji_type_to_string_lower (type);
+		name = g_strdup_printf ("%s_%d", typestr, got_offset);
+		g_free (typestr);
+		break;
+	}
 	}
 
 	return name;
