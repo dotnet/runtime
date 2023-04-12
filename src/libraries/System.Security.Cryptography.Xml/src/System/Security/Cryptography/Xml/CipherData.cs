@@ -94,6 +94,7 @@ namespace System.Security.Cryptography.Xml
             return cipherDataElement;
         }
 
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
         public void LoadXml(XmlElement value)
         {
             if (value is null)

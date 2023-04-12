@@ -1111,8 +1111,8 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 /* NEON :: extract */
 #define arm_neon_extr_opcode(p, q, op2, imm4, rd, rn, rm) arm_neon_opcode_3reg ((p), (q), 0b00101110000000000000000000000000 | (op2) << 22 | (imm4) << 11, (rd), (rn), (rm))
 
-#define arm_neon_ext_8b(p, rd, rn, rm, index) arm_neon_extr_opcode ((p), VREG_LOW, 0b00, (index), (rd), (rn), (rd))
-#define arm_neon_ext_16b(p, rd, rn, rm, index) arm_neon_extr_opcode ((p), VREG_FULL, 0b00, (index), (rd), (rn), (rd))
+#define arm_neon_ext_8b(p, rd, rn, rm, index) arm_neon_extr_opcode ((p), VREG_LOW, 0b00, (index), (rd), (rn), (rm))
+#define arm_neon_ext_16b(p, rd, rn, rm, index) arm_neon_extr_opcode ((p), VREG_FULL, 0b00, (index), (rd), (rn), (rm))
 
 /* NEON :: copy */
 #define arm_neon_cpy_opcode(p, q, op, imm5, imm4, rd, rn) arm_neon_opcode_2reg ((p), (q), 0b00001110000000000000010000000000 | (op) << 29 | (imm5) << 16 | (imm4) << 11, (rd), (rn))

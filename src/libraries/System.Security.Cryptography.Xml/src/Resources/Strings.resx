@@ -396,4 +396,7 @@
   <data name="Cryptography_Xml_EntityResolutionNotSupported" xml:space="preserve">
     <value>External entity resolution is not supported.</value>
   </data>
+  <data name="Cryptography_Xml_XsltRequiresDynamicCode" xml:space="preserve">
+    <value>Xslts are only supported when dynamic code is supported.</value>
+  </data>
 </root>

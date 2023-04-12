@@ -144,7 +144,9 @@ GenTree* MorphInitBlockHelper::Morph()
     assert(m_result != nullptr);
 
 #ifdef DEBUG
-    if (m_result != m_asg)
+    // If we are going to return a different node than the input then morph
+    // expects us to have set GTF_DEBUG_NODE_MORPHED.
+    if ((m_result != m_asg) || (sideEffects != nullptr))
     {
         m_result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
     }
@@ -158,6 +160,7 @@ GenTree* MorphInitBlockHelper::Morph()
             commaPool      = commaPool->gtNext;
 
             assert(comma->OperIs(GT_COMMA));
+            comma->gtType        = m_result->TypeGet();
             comma->AsOp()->gtOp1 = sideEffects;
             comma->AsOp()->gtOp2 = m_result;
             comma->gtFlags       = (sideEffects->gtFlags | m_result->gtFlags) & GTF_ALL_EFFECT;
@@ -215,7 +218,7 @@ void MorphInitBlockHelper::PrepareDst()
     else
     {
         assert(m_dst == m_dst->gtEffectiveVal() && "the commas were skipped in MorphBlock");
-        assert(m_dst->OperIs(GT_IND, GT_BLK, GT_OBJ) && (!m_dst->OperIs(GT_IND) || !m_dst->TypeIs(TYP_STRUCT)));
+        assert(m_dst->OperIs(GT_IND, GT_BLK) && (!m_dst->OperIs(GT_IND) || !m_dst->TypeIs(TYP_STRUCT)));
     }
 
     if (m_dst->TypeIs(TYP_STRUCT))

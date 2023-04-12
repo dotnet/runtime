@@ -487,6 +487,10 @@ namespace System.Globalization
         private unsafe int CompareStringCore(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsCompareString(string1, string2, options) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                JsCompareString(string1, string2, options) :
+#endif
                 IcuCompareString(string1, string2, options);
 
         /// <summary>

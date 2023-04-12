@@ -458,7 +458,7 @@ namespace System.Text.RegularExpressions.Generator
             // characters _not_ contained in the set, and then do a search for the inverse of that, which will be
             // all of the target ASCII characters and all of non-ASCII.
             var asciiChars = new List<char>();
-            for (int i = 0; i <= 0x7f; i++)
+            for (int i = 0; i < 128; i++)
             {
                 if (!RegexCharClass.CharInClass((char)i, set))
                 {
@@ -466,6 +466,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
+            // If this is a known set, use a predetermined simple name for the helper.
             string? helperName = set switch
             {
                 RegexCharClass.DigitClass => "IndexOfAnyDigit",
@@ -496,6 +497,18 @@ namespace System.Text.RegularExpressions.Generator
 
                 _ => null,
             };
+
+            // If this set is just from a few Unicode categories, derive a name from the categories.
+            if (helperName is null)
+            {
+                Span<UnicodeCategory> categories = stackalloc UnicodeCategory[5]; // arbitrary limit to keep names from being too unwieldy
+                if (RegexCharClass.TryGetOnlyCategories(set, categories, out int numCategories, out bool negatedCategory))
+                {
+                    helperName = $"IndexOfAny{(negatedCategory ? "Except" : "")}{string.Concat(categories.Slice(0, numCategories).ToArray().Select(c => c.ToString()))}";
+                }
+            }
+
+            // As a final fallback, manufacture a name unique to the full set description.
             if (helperName is null)
             {
                 using (SHA256 sha = SHA256.Create())
@@ -522,7 +535,7 @@ namespace System.Text.RegularExpressions.Generator
                           $"    int i = span.IndexOfAnyExcept({EmitIndexOfAnyValues(asciiChars.ToArray(), requiredHelpers)});");
                 lines.Add($"    if ((uint)i < (uint)span.Length)");
                 lines.Add($"    {{");
-                lines.Add($"        if (span[i] <= 0x7f)");
+                lines.Add($"        if (char.IsAscii(span[i]))");
                 lines.Add($"        {{");
                 lines.Add($"            return i;");
                 lines.Add($"        }}");
@@ -1004,9 +1017,13 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Use IndexOf{Any} to accelerate the skip loop via vectorization to match the first prefix.
                 // But we avoid using it for the relatively common case of the starting set being '.', aka anything other than
-                // a newline, as it's very rare to have long, uninterrupted sequences of newlines.
+                // a newline, as it's very rare to have long, uninterrupted sequences of newlines. And we avoid using it
+                // for the case of the starting set being anything (e.g. '.' with SingleLine), as in that case it'll always match
+                // the first char.
                 int setIndex = 0;
-                bool canUseIndexOf = primarySet.Set != RegexCharClass.NotNewLineClass;
+                bool canUseIndexOf =
+                    primarySet.Set != RegexCharClass.NotNewLineClass &&
+                    primarySet.Set != RegexCharClass.AnyClass;
                 bool needLoop = !canUseIndexOf || setsToUse > 1;
 
                 FinishEmitBlock loopBlock = default;

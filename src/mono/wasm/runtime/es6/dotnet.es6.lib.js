@@ -97,7 +97,10 @@ let linked_functions = [
     "mono_wasm_invoke_import",
     "mono_wasm_bind_cs_function",
     "mono_wasm_marshal_promise",
-    
+    "mono_wasm_change_case_invariant",
+    "mono_wasm_change_case",
+    "mono_wasm_compare_string",
+
     "icudt68_dat",
 ];
 

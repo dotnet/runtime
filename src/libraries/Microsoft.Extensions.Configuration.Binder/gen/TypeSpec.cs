@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal record TypeSpec
+    internal abstract record TypeSpec
     {
         private static readonly SymbolDisplayFormat s_minimalDisplayFormat = new SymbolDisplayFormat(
             globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
@@ -18,7 +18,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             FullyQualifiedDisplayString = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             MinimalDisplayString = type.ToDisplayString(s_minimalDisplayFormat);
             Namespace = type.ContainingNamespace?.ToDisplayString();
-            SpecialType = type.SpecialType;
             IsValueType = type.IsValueType;
         }
 
@@ -28,13 +27,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public string? Namespace { get; }
 
-        public SpecialType SpecialType { get; }
-
         public bool IsValueType { get; }
 
-        public bool PassToBindCoreByRef => IsValueType || SpecKind == TypeSpecKind.Array;
-
-        public virtual TypeSpecKind SpecKind { get; init; }
+        public abstract TypeSpecKind SpecKind { get; }
 
         public virtual ConstructionStrategy ConstructionStrategy { get; init; }
 

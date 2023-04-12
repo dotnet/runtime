@@ -365,7 +365,8 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     return false;
                 }
 
-                Logger::SetLogLevel(Logger::ParseLogLevelString(argv[i]));
+                o->verbosity = argv[i];
+                Logger::SetLogLevel(Logger::ParseLogLevelString(o->verbosity));
             }
             else if ((_strnicmp(&argv[i][1], "writeLogFile", argLen) == 0))
             {
