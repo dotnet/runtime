@@ -92,73 +92,73 @@
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
-    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.GenAPI" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.GenAPI" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.GenFacades" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.GenFacades" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XUnitExtensions" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.XUnitExtensions" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XUnitConsoleRunner" Version="2.5.1-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.XUnitConsoleRunner" Version="2.5.1-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Archives" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Archives" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Templating" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Templating" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Workloads" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Workloads" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.CodeAnalysis" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.CodeAnalysis" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.RemoteExecutor" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.RemoteExecutor" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Feed" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Feed" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.VersionTools.Tasks" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.VersionTools.Tasks" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.SharedFramework.Sdk" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.SharedFramework.Sdk" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
     <Dependency Name="System.ComponentModel.TypeConverter.TestData" Version="8.0.0-beta.23179.4">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
@@ -288,9 +288,9 @@
       <Uri>https://github.com/dotnet/xharness</Uri>
       <Sha>389c851b0dc1d2c50d03e4aad000b7802d0ebed6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.PackageTesting" Version="8.0.0-beta.23177.4">
+    <Dependency Name="Microsoft.DotNet.PackageTesting" Version="8.0.0-beta.23210.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>747f53d751983dd062f39f4654bff074536e0012</Sha>
+      <Sha>e5c569253a4cecd110830acbf1ffae96d5a37cc6</Sha>
     </Dependency>
     <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.23175.4">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
@@ -316,25 +316,25 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>a18b8d48387a7980ba9e484ec7169c58731175e1</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.7.0-1.23179.16">
+    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.7.0-1.23205.4">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>8a3cbd512f46606e4039044137d53dfe3a468095</Sha>
+      <Sha>d7a4cad21c39e18f3d5e1f7fa7dd3f93668066b4</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis" Version="4.7.0-1.23179.16">
+    <Dependency Name="Microsoft.CodeAnalysis" Version="4.7.0-1.23205.4">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>8a3cbd512f46606e4039044137d53dfe3a468095</Sha>
+      <Sha>d7a4cad21c39e18f3d5e1f7fa7dd3f93668066b4</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.7.0-1.23179.16">
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.7.0-1.23205.4">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>8a3cbd512f46606e4039044137d53dfe3a468095</Sha>
+      <Sha>d7a4cad21c39e18f3d5e1f7fa7dd3f93668066b4</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.3.5-beta1.23172.1">
+    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.3.5-beta1.23207.2">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>b0fe62cfa2476ecb0b0222aeff81d71fdd10eb9a</Sha>
+      <Sha>80eb21fba86dd2ac2522a052d0243136a3d2324c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0-preview.23172.1">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0-preview.23207.2">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>b0fe62cfa2476ecb0b0222aeff81d71fdd10eb9a</Sha>
+      <Sha>80eb21fba86dd2ac2522a052d0243136a3d2324c</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="8.0.100-preview.2.23107.1">
       <Uri>https://github.com/dotnet/sdk</Uri>

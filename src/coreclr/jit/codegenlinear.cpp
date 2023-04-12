@@ -1746,7 +1746,7 @@ void CodeGen::genConsumeMultiOpOperands(GenTreeMultiOp* tree)
 // Notes:
 //    sizeReg can be REG_NA when this function is used to consume the dstReg and srcReg
 //    for copying on the stack a struct with references.
-//    The source address/offset is determined from the address on the GT_OBJ node, while
+//    The source address/offset is determined from the address on the GT_BLK node, while
 //    the destination address is the address contained in 'm_stkArgVarNum' plus the offset
 //    provided in the 'putArgNode'.
 //    m_stkArgVarNum must be set to  the varnum for the local used for placing the "by-value" args on the stack.
@@ -1763,7 +1763,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
     GenTree*  src        = putArgNode->Data();
     regNumber srcAddrReg = REG_NA;
     assert(varTypeIsStruct(src));
-    assert(src->OperIs(GT_OBJ) || src->OperIsLocalRead() || (src->OperIs(GT_IND) && varTypeIsSIMD(src)));
+    assert(src->OperIs(GT_BLK) || src->OperIsLocalRead() || (src->OperIs(GT_IND) && varTypeIsSIMD(src)));
 
     assert(dstReg != REG_NA);
     assert(srcReg != REG_NA);

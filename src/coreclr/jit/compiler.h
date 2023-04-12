@@ -661,6 +661,8 @@ public:
 
     unsigned char lvIsOSRExposedLocal : 1; // OSR local that was address exposed in Tier0
 
+    unsigned char lvRedefinedInEmbeddedStatement : 1; // Local has redefinitions inside embedded statements that
+                                                      // disqualify it from local copy prop.
 private:
     unsigned char lvIsNeverNegative : 1; // The local is known to be never negative
 
@@ -2030,6 +2032,9 @@ class Compiler
     friend class CallArgs;
     friend class IndirectCallTransformer;
     friend class ProfileSynthesis;
+    friend class LocalsUseVisitor;
+    friend class Promotion;
+    friend class ReplaceVisitor;
 
 #ifdef FEATURE_HW_INTRINSICS
     friend struct HWIntrinsicInfo;
@@ -2449,7 +2454,7 @@ public:
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1);
 
     // For binary opers.
-    GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
+    GenTreeOp* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
 
     GenTreeCC* gtNewCC(genTreeOps oper, var_types type, GenCondition cond);
     GenTreeOpCC* gtNewOperCC(genTreeOps oper, var_types type, GenCondition cond, GenTree* op1, GenTree* op2);
@@ -2511,8 +2516,6 @@ public:
     GenTree* gtNewBitCastNode(var_types type, GenTree* arg);
 
 public:
-    GenTreeObj* gtNewObjNode(ClassLayout* layout, GenTree* addr);
-    GenTreeObj* gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr);
     GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
@@ -2825,6 +2828,8 @@ public:
     GenTreeMDArr* gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
 
     GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
+
+    GenTreeBlk* gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
@@ -4829,7 +4834,7 @@ public:
 
     GenTree* fgInitThisClass();
 
-    GenTreeCall* fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper);
+    GenTreeCall* fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper, uint32_t typeIndex = 0);
 
     GenTreeCall* fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls);
 
@@ -4844,6 +4849,10 @@ public:
 
     void fgPerNodeLocalVarLiveness(GenTree* node);
     void fgPerBlockLocalVarLiveness();
+
+#if defined(FEATURE_HW_INTRINSICS)
+    void fgPerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsic);
+#endif // FEATURE_HW_INTRINSICS
 
     VARSET_VALRET_TP fgGetHandlerLiveVars(BasicBlock* block);
 
@@ -5278,11 +5287,21 @@ public:
     PhaseStatus StressSplitTree();
     void SplitTreesRandomly();
     void SplitTreesRemoveCommas();
-    PhaseStatus fgExpandRuntimeLookups();
 
-    bool fgExpandStaticInitForBlock(BasicBlock* block);
-    bool fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+    template <bool (Compiler::*ExpansionFunction)(BasicBlock*, Statement*, GenTreeCall*)>
+    PhaseStatus fgExpandHelper(bool skipRarelyRunBlocks);
+
+    template <bool (Compiler::*ExpansionFunction)(BasicBlock*, Statement*, GenTreeCall*)>
+    bool fgExpandHelperForBlock(BasicBlock* block);
+
+    PhaseStatus fgExpandRuntimeLookups();
+    bool fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+
+    PhaseStatus fgExpandThreadLocalAccess();
+    bool fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+
     PhaseStatus fgExpandStaticInit();
+    bool fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
@@ -5740,9 +5759,9 @@ public:
 private:
     void fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt);
     void fgInsertStmtAtBeg(BasicBlock* block, Statement* stmt);
-    void fgInsertStmtAfter(BasicBlock* block, Statement* insertionPoint, Statement* stmt);
 
 public:
+    void fgInsertStmtAfter(BasicBlock* block, Statement* insertionPoint, Statement* stmt);
     void fgInsertStmtBefore(BasicBlock* block, Statement* insertionPoint, Statement* stmt);
 
 private:
@@ -5932,6 +5951,7 @@ private:
     void fgTryReplaceStructLocalWithField(GenTree* tree);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnAssignment(GenTreeOp* asg);
+    GenTree* fgOptimizeBitCast(GenTreeUnOp* bitCast);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* cmp);
@@ -6077,6 +6097,8 @@ private:
 
     PhaseStatus fgMarkAddressExposedLocals();
     void fgSequenceLocals(Statement* stmt);
+
+    PhaseStatus PhysicalPromotion();
 
     PhaseStatus fgForwardSub();
     bool fgForwardSubBlock(BasicBlock* block);
@@ -7006,6 +7028,7 @@ public:
 #define OMF_HAS_MDNEWARRAY                     0x00002000 // Method contains 'new' of an MD array
 #define OMF_HAS_MDARRAYREF                     0x00004000 // Method contains multi-dimensional intrinsic array element loads or stores.
 #define OMF_HAS_STATIC_INIT                    0x00008000 // Method has static initializations we might want to partially inline
+#define OMF_HAS_TLS_FIELD                      0x00010000 // Method contains TLS field access
 
     // clang-format on
 
@@ -7054,6 +7077,16 @@ public:
     void setMethodHasGuardedDevirtualization()
     {
         optMethodFlags |= OMF_HAS_GUARDEDDEVIRT;
+    }
+
+    bool doesMethodHasTlsFieldAccess()
+    {
+        return (optMethodFlags & OMF_HAS_TLS_FIELD) != 0;
+    }
+
+    void setMethodHasTlsFieldAccess()
+    {
+        optMethodFlags |= OMF_HAS_TLS_FIELD;
     }
 
     void pickGDV(GenTreeCall*           call,
@@ -7757,6 +7790,7 @@ public:
     void eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         CORINFO_ACCESS_FLAGS    flags,
                         CORINFO_FIELD_INFO*     pResult);
+    uint32_t eeGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
 
     // Get the flags
 
@@ -9720,6 +9754,9 @@ public:
         STRESS_MODE(SSA_INFO) /* Select lower thresholds for "complex" SSA num encoding */      \
         STRESS_MODE(SPLIT_TREES_RANDOMLY) /* Split all statements at a random tree */           \
         STRESS_MODE(SPLIT_TREES_REMOVE_COMMAS) /* Remove all GT_COMMA nodes */                  \
+        STRESS_MODE(NO_OLD_PROMOTION) /* Do not use old promotion */                            \
+        STRESS_MODE(PHYSICAL_PROMOTION) /* Use physical promotion */                            \
+        STRESS_MODE(PHYSICAL_PROMOTION_COST)                                                    \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
@@ -11013,7 +11050,6 @@ public:
             case GT_CKFINITE:
             case GT_LCLHEAP:
             case GT_IND:
-            case GT_OBJ:
             case GT_BLK:
             case GT_BOX:
             case GT_ALLOCOBJ:

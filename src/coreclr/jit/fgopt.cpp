@@ -6774,45 +6774,52 @@ PhaseStatus Compiler::fgTailMerge()
         //
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            if ((predBlock->GetUniqueSucc() == block) && BasicBlock::sameEHRegion(block, predBlock))
+            if (predBlock->GetUniqueSucc() != block)
             {
-                Statement* lastStmt = predBlock->lastStmt();
-
-                // Block might be empty.
-                //
-                if (lastStmt == nullptr)
-                {
-                    continue;
-                }
-
-                // Walk back past any GT_NOPs.
-                //
-                Statement* const firstStmt = predBlock->firstStmt();
-                while (lastStmt->GetRootNode()->OperIs(GT_NOP))
-                {
-                    if (lastStmt == firstStmt)
-                    {
-                        // predBlock is evidently all GT_NOP.
-                        //
-                        lastStmt = nullptr;
-                        break;
-                    }
-
-                    lastStmt = lastStmt->GetPrevStmt();
-                }
-
-                // Block might be effectively empty.
-                //
-                if (lastStmt == nullptr)
-                {
-                    continue;
-                }
-
-                // We don't expect to see PHIs but watch for them anyways.
-                //
-                assert(!lastStmt->IsPhiDefnStmt());
-                predInfo.Emplace(predBlock, lastStmt);
+                continue;
             }
+
+            if (!BasicBlock::sameEHRegion(block, predBlock))
+            {
+                continue;
+            }
+
+            Statement* lastStmt = predBlock->lastStmt();
+
+            // Block might be empty.
+            //
+            if (lastStmt == nullptr)
+            {
+                continue;
+            }
+
+            // Walk back past any GT_NOPs.
+            //
+            Statement* const firstStmt = predBlock->firstStmt();
+            while (lastStmt->GetRootNode()->OperIs(GT_NOP))
+            {
+                if (lastStmt == firstStmt)
+                {
+                    // predBlock is evidently all GT_NOP.
+                    //
+                    lastStmt = nullptr;
+                    break;
+                }
+
+                lastStmt = lastStmt->GetPrevStmt();
+            }
+
+            // Block might be effectively empty.
+            //
+            if (lastStmt == nullptr)
+            {
+                continue;
+            }
+
+            // We don't expect to see PHIs but watch for them anyways.
+            //
+            assert(!lastStmt->IsPhiDefnStmt());
+            predInfo.Emplace(predBlock, lastStmt);
         }
 
         // Are there enough preds to make it interesting?
