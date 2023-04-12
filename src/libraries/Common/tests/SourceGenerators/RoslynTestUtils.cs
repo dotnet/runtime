@@ -271,7 +271,7 @@ namespace SourceGenerators.Tests
                 for (int i = 0; i < count; i++)
                 {
                     SourceText s = await proj.FindDocument(l[i]).GetTextAsync().ConfigureAwait(false);
-                    results.Add(Replace(s.ToString(), "\r\n", "\n"));
+                    results.Add(ReplaceLineEndings(s.ToString()));
                 }
             }
             else
@@ -279,14 +279,14 @@ namespace SourceGenerators.Tests
                 for (int i = 0; i < count; i++)
                 {
                     SourceText s = await proj.FindDocument($"src-{i}.cs").GetTextAsync().ConfigureAwait(false);
-                    results.Add(Replace(s.ToString(), "\r\n", "\n"));
+                    results.Add(ReplaceLineEndings(s.ToString()));
                 }
             }
 
             if (extraFile != null)
             {
                 SourceText s = await proj.FindDocument(extraFile).GetTextAsync().ConfigureAwait(false);
-                results.Add(Replace(s.ToString(), "\r\n", "\n"));
+                results.Add(ReplaceLineEndings(s.ToString()));
             }
 
             return results;
@@ -334,12 +334,11 @@ namespace SourceGenerators.Tests
             return document.WithText(SourceText.From(newText.ToString(), newText.Encoding, newText.ChecksumAlgorithm));
         }
 
-        private static string Replace(string text, string oldText, string newText) =>
-            text.Replace(
-                oldText, newText
+        private static string ReplaceLineEndings(string text) =>
 #if NETCOREAPP
-                , StringComparison.Ordinal
+            text.ReplaceLineEndings("\n");
+#else
+            text.Replace("\r\n", "\n");
 #endif
-                );
     }
 }

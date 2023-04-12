@@ -102,7 +102,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _writer.WriteBlankLine();
                 }
 
-                Emit_NotSupportedException_UnableToBindType(NotSupportedReason.TypeNotDetectedAsInput);
+                Emit_NotSupportedException_TypeNotDetectedAsInput();
                 _writer.WriteBlockEnd();
             }
 
@@ -135,7 +135,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _writer.WriteBlankLine();
                 }
 
-                Emit_NotSupportedException_UnableToBindType(NotSupportedReason.TypeNotDetectedAsInput);
+                Emit_NotSupportedException_TypeNotDetectedAsInput();
                 _writer.WriteBlockEnd();
             }
 
@@ -833,8 +833,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     """);
             }
 
-            private void Emit_NotSupportedException_UnableToBindType(string reason, string typeDisplayString = "{typeof(T)}") =>
-                _writer.WriteLine(@$"throw new global::System.NotSupportedException($""{string.Format(ExceptionMessages.TypeNotSupported, typeDisplayString, reason)}"");");
+            private void Emit_NotSupportedException_TypeNotDetectedAsInput() =>
+                _writer.WriteLine(@$"throw new global::System.NotSupportedException($""{string.Format(ExceptionMessages.TypeNotDetectedAsInput, "{typeof(T)}")}"");");
 
             private void EmitCheckForNullArgument_WithBlankLine_IfRequired(bool isValueType)
             {

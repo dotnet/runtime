@@ -18,6 +18,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     [Generator]
     public sealed partial class ConfigurationBindingSourceGenerator : IIncrementalGenerator
     {
+        private const string GeneratorProjectName = "Microsoft.Extensions.Configuration.Binder.SourceGeneration";
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             IncrementalValueProvider<CompilationData?> compilationData =
