@@ -9637,6 +9637,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Nothing now - handled later
                         break;
 
+                    case CORINFO_FIELD_STATIC_TLS_MANAGED:
                     case CORINFO_FIELD_STATIC_ADDRESS:
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
