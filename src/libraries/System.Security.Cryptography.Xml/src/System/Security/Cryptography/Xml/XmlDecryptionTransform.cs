@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Xml;
 
@@ -10,6 +11,7 @@ namespace System.Security.Cryptography.Xml
     // XML Decryption Transform is used to specify the order of XML Digital Signature
     // and XML Encryption when performed on the same document.
 
+    [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
     public class XmlDecryptionTransform : Transform
     {
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlDocument) };

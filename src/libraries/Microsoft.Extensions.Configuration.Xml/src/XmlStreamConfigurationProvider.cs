@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -13,6 +14,7 @@ namespace Microsoft.Extensions.Configuration.Xml
     /// <summary>
     /// An XML file based <see cref="IConfigurationProvider"/>.
     /// </summary>
+    [RequiresDynamicCode(XmlDocumentDecryptor.RequiresDynamicCodeMessage)]
     public class XmlStreamConfigurationProvider : StreamConfigurationProvider
     {
         private const string NameAttributeKey = "Name";
