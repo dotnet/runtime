@@ -1535,7 +1535,13 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     // Lowering was expected to get rid of memmove in case of zero
                     assert(size > 0);
 
-                    const unsigned simdSize = compiler->roundDownSIMDSize(size);
+                    unsigned simdSize = compiler->roundDownSIMDSize(size);
+                    if (size <= ZMM_RECOMMENDED_THRESHOLD)
+                    {
+                        // Only use ZMM for large data due to possible CPU throttle issues
+                        simdSize = min(YMM_REGSIZE_BYTES, compiler->roundDownSIMDSize(size));
+                    }
+
                     if ((size >= simdSize) && (simdSize > 0))
                     {
                         unsigned simdRegs = size / simdSize;

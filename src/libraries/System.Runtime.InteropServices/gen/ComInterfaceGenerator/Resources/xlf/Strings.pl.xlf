@@ -149,17 +149,17 @@
       </trans-unit>
       <trans-unit id="MultipleComInterfaceBaseTypesDescription">
         <source>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</source>
-        <target state="new">A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</target>
+        <target state="translated">Interfejs z atrybutem „GeneratedComInterfaceAttribute” może pochodzić tylko z co najwyżej jednego interfejsu z atrybutem „GeneratedComInterfaceAttribute”.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleComInterfaceBaseTypesMessage">
         <source>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</source>
-        <target state="new">Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</target>
+        <target state="translated">Interfejs „{0}” pochodzi z co najmniej dwóch interfejsów z atrybutem „GeneratedComInterfaceAttribute”.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleComInterfaceBaseTypesTitle">
         <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
-        <target state="new">Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</target>
+        <target state="translated">Określony interfejs pochodzi z co najmniej dwóch interfejsów z atrybutem „GeneratedComInterfaceAttribute”.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">

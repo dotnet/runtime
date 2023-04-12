@@ -202,6 +202,7 @@ namespace System.Security.Cryptography.Xml
             return referenceElement;
         }
 
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
         public void LoadXml(XmlElement value)
         {
             if (value is null)
@@ -343,7 +344,7 @@ namespace System.Security.Cryptography.Xml
         {
             // refList is a list of elements that might be targets of references
             // Now's the time to create our hashing algorithm
-            _hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(_digestMethod);
+            _hashAlgorithm = CryptoHelpers.CreateNonTransformFromName<HashAlgorithm>(_digestMethod);
             if (_hashAlgorithm == null)
                 throw new CryptographicException(SR.Cryptography_Xml_CreateHashAlgorithmFailed);
 

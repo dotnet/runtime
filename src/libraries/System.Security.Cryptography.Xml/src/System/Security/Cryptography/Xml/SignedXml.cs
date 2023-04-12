@@ -87,11 +87,13 @@ namespace System.Security.Cryptography.Xml
         // public constructors
         //
 
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
         public SignedXml()
         {
             Initialize(null);
         }
 
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
         public SignedXml(XmlDocument document)
         {
             if (document is null)
@@ -102,6 +104,7 @@ namespace System.Security.Cryptography.Xml
             Initialize(document.DocumentElement);
         }
 
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
         public SignedXml(XmlElement elem)
         {
             if (elem is null)
@@ -114,6 +117,7 @@ namespace System.Security.Cryptography.Xml
 
         [MemberNotNull(nameof(m_signature))]
         [MemberNotNull(nameof(_safeCanonicalizationMethods))]
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
         private void Initialize(XmlElement? element)
         {
             _containingDocument = element?.OwnerDocument;
@@ -173,6 +177,7 @@ namespace System.Security.Cryptography.Xml
         [AllowNull]
         public EncryptedXml EncryptedXml
         {
+            [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
             get => _exml ??= new EncryptedXml(_containingDocument!); // default processing rules
             set => _exml = value;
         }
@@ -217,6 +222,7 @@ namespace System.Security.Cryptography.Xml
                 return m_signature.GetXml();
         }
 
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
         public void LoadXml(XmlElement value)
         {
             if (value is null)
@@ -405,7 +411,7 @@ namespace System.Security.Cryptography.Xml
             }
 
             // See if there is a signature description class defined in the Config file
-            SignatureDescription? signatureDescription = CryptoHelpers.CreateFromName<SignatureDescription>(SignedInfo.SignatureMethod);
+            SignatureDescription? signatureDescription = CryptoHelpers.CreateNonTransformFromName<SignatureDescription>(SignedInfo.SignatureMethod);
             if (signatureDescription == null)
                 throw new CryptographicException(SR.Cryptography_Xml_SignatureDescriptionNotCreated);
             HashAlgorithm? hashAlg = signatureDescription.CreateDigest();
@@ -639,7 +645,7 @@ namespace System.Security.Cryptography.Xml
             }
 
             // See if we're signed witn an HMAC algorithm
-            HMAC? hmac = CryptoHelpers.CreateFromName<HMAC>(SignatureMethod!);
+            HMAC? hmac = CryptoHelpers.CreateNonTransformFromName<HMAC>(SignatureMethod!);
             if (hmac == null)
             {
                 // We aren't signed with an HMAC algorithm, so we cannot have a truncated HMAC
@@ -1007,7 +1013,7 @@ namespace System.Security.Cryptography.Xml
 
             SignedXmlDebugLog.LogBeginCheckSignedInfo(this, m_signature.SignedInfo!);
 
-            SignatureDescription? signatureDescription = CryptoHelpers.CreateFromName<SignatureDescription>(SignatureMethod);
+            SignatureDescription? signatureDescription = CryptoHelpers.CreateNonTransformFromName<SignatureDescription>(SignatureMethod);
             if (signatureDescription == null)
                 throw new CryptographicException(SR.Cryptography_Xml_SignatureDescriptionNotCreated);
 

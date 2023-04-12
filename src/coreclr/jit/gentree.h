@@ -1691,7 +1691,7 @@ public:
         }
 #endif
 #if defined(TARGET_ARM64)
-        if (OperIs(GT_CCMP))
+        if (OperIs(GT_CCMP, GT_CINCCC))
         {
             return true;
         }
