@@ -8,7 +8,7 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
-        private unsafe int JsCompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
+        private unsafe int JsCompareString(ReadOnlySpan<char> span1, ReadOnlySpan<char> span2, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
@@ -25,12 +25,7 @@ namespace System.Globalization
                 throw new PlatformNotSupportedException(GetPNSEForCulture(options, cultureName));
 
             string exceptionMessage;
-            int cmpResult;
-            fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
-            fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
-            {
-                cmpResult = Interop.JsGlobalization.CompareString(out exceptionMessage, cultureName, pString1, string1.Length, pString2, string2.Length, options);
-            }
+            int cmpResult = Interop.JsGlobalization.CompareString(out exceptionMessage, cultureName, span1.ToString(), span2.ToString(), options);
 
             if (!string.IsNullOrEmpty(exceptionMessage))
                 throw new Exception(exceptionMessage);

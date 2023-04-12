@@ -47,14 +47,18 @@ export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoS
     }
 }
 
-export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number) : number{
+export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: MonoStringRef, str2: MonoStringRef, options: number) : number{
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+    const str1Root = mono_wasm_new_external_root<MonoString>(str1);
+    const str2Root = mono_wasm_new_external_root<MonoString>(str2);
     try{
+        const string1 = conv_string_root(str1Root);
+        const string2 = conv_string_root(str2Root);
+        if (string1 === null || string2 === null)
+            throw new Error("$String conversion failed.");
         const cultureName = conv_string_root(cultureRoot);
-        const string1  = get_utf16_string(str1, str1Length);
-        const string2 = get_utf16_string(str2, str2Length);
-        const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
+        const casePicker = (options & 0x1f);
         const result = compare_strings(string1, string2, locale, casePicker);
         if (result == -2)
             throw new Error("$Invalid comparison option.");
@@ -66,6 +70,8 @@ export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: Mo
     }
     finally {
         cultureRoot.release();
+        str1Root.release();
+        str2Root.release();
     }
 }
 
