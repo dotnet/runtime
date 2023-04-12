@@ -9,7 +9,7 @@ namespace System.Globalization
     {
         private bool InitCultureDataCore() =>
 #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-        InitNativeCultureDataCore();
+        GlobalizationMode.Hybrid ? InitAppleCultureDataCore() : InitIcuCultureDataCore();
 #else
         InitIcuCultureDataCore();
 #endif

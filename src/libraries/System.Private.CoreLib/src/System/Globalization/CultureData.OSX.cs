@@ -7,11 +7,13 @@ namespace System.Globalization
 {
     internal sealed partial class CultureData
     {
+        private const int LOC_FULLNAME_CAPACITY = 157;           // max size of locale name
+
         /// <summary>
         /// This method uses the sRealName field (which is initialized by the constructor before this is called) to
         /// initialize the rest of the state of CultureData based on the underlying OS globalization library.
         /// </summary>
-        private bool InitNativeCultureDataCore()
+        private bool InitAppleCultureDataCore()
         {
             Debug.Assert(_sRealName != null);
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -77,12 +79,12 @@ namespace System.Globalization
 
             string result = Interop.Globalization.GetLocaleTimeFormatNative(_sWindowsName, shortFormat);
 
-            return ConvertIcuTimeFormatString(result);
+            return ConvertNativeTimeFormatString(result);
         }
 
         private static string ConvertNativeTimeFormatString(string nativeFormatString)
         {
-            Span<char> result = stackalloc char[ICU_ULOC_FULLNAME_CAPACITY];
+            Span<char> result = stackalloc char[LOC_FULLNAME_CAPACITY];
 
             bool amPmAdded = false;
             int resultPos = 0;
