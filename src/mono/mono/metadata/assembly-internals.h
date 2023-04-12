@@ -138,32 +138,11 @@ mono_assembly_get_name_internal (MonoAssembly *assembly);
 MONO_PROFILER_API MonoImage*
 mono_assembly_get_image_internal (MonoAssembly *assembly);
 
+MonoBundledAssembly *
+mono_create_new_bundled_assembly (const char *name, const unsigned char *data, unsigned int size);
+
 void
 mono_set_assemblies_path_direct (char **path);
-
-typedef enum {
-	MONO_BUNDLED_DATA,
-	MONO_BUNDLED_ASSEMBLY,
-	MONO_BUNDLED_SATELLITE_ASSEMBLY,
-	MONO_BUNDLED_PDB,
-	MONO_BUNDLED_RESOURCE_COUNT,
-} MonoBundledResourceType;
-
-typedef struct BundledResource {
-	const char *culture; // Satellite assemblies
-	const unsigned char *data;
-	unsigned int size;
-	MonoBundledResourceType type;
-} BundledResource;
-
-void
-mono_add_bundled_resource (const char *name, const char *culture, const unsigned char *data, unsigned int size, MonoBundledResourceType type);
-
-void
-mono_get_bundled_resource_data (const char *name, const unsigned char **out_data, unsigned int *out_size);
-
-void
-mono_register_bundled_resources (void);
 
 MONO_COMPONENT_API
 gboolean
