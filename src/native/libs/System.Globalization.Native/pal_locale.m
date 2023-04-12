@@ -203,8 +203,7 @@ static char* NormalizeNumericPattern(const char* srcPattern, int isNegative)
 
     for (int i = iStart; i <= iEnd; i++)
     {
-        char ch = srcPattern[i];
-        switch (ch)
+        switch (srcPattern[i])
         {
             case CHAR_MINUS:
             case CHAR_OPENPAREN:
@@ -337,6 +336,63 @@ static int GetNumericPatternNative(const char* pNumberFormat,
     return INVALID_FORMAT;
 }
 
+static int32_t GetValueForNumberFormat(NSLocale *currentLocale, LocaleNumberData localeNumberData)
+{
+    NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
+    numberFormatter.locale = currentLocale;
+    const char *pFormat;
+    int32_t value;
+
+    switch(localeNumberData)
+    {
+        case LocaleNumber_PositiveMonetaryNumberFormat:
+        {
+            numberFormatter.numberStyle = NSNumberFormatterCurrencyStyle;
+            static const char* Patterns[] = {"Cn", "nC", "C n", "n C"};
+            pFormat = [[numberFormatter positiveFormat] UTF8String];
+            value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), false);
+            break;
+        }
+        case LocaleNumber_NegativeMonetaryNumberFormat:
+        {
+            numberFormatter.numberStyle = NSNumberFormatterCurrencyStyle;
+            static const char* Patterns[] = {"(Cn)", "-Cn", "C-n", "Cn-", "(nC)", "-nC", "n-C", "nC-", "-n C",
+                        "-C n", "n C-", "C n-", "C -n", "n- C", "(C n)", "(n C)", "C- n" };
+            pFormat = [[numberFormatter negativeFormat] UTF8String];
+            value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), true);
+            break;
+        }
+        case LocaleNumber_NegativeNumberFormat:
+        {
+            numberFormatter.numberStyle = NSNumberFormatterDecimalStyle;
+            static const char* Patterns[] = {"(n)", "-n", "- n", "n-", "n -"};
+            pFormat = [[numberFormatter negativeFormat] UTF8String];
+            value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), true);
+            break;
+        }
+        case LocaleNumber_NegativePercentFormat:
+        {
+            numberFormatter.numberStyle = NSNumberFormatterPercentStyle;
+            static const char* Patterns[] = {"-n %", "-n%", "-%n", "%-n", "%n-", "n-%", "n%-", "-% n", "n %-", "% n-", "% -n", "n- %"};
+            pFormat = [[numberFormatter negativeFormat] UTF8String];
+            value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), true);
+            break;
+        }
+        case LocaleNumber_PositivePercentFormat:
+        {
+            numberFormatter.numberStyle = NSNumberFormatterPercentStyle;
+            static const char* Patterns[] = {"n %", "n%", "%n", "% n"};
+            pFormat = [[numberFormatter positiveFormat] UTF8String];
+            value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), false);
+            break;
+        }
+        default:
+            return -1;
+    }
+   
+    return value;
+}
+
 int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, LocaleNumberData localeNumberData)
 {
     bool isSuccess = true;
@@ -362,20 +418,6 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
             value = (int32_t)numberFormatter.maximumFractionDigits;
             break;
         }
-        case LocaleNumber_NegativeNumberFormat:
-        {
-            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
-            numberFormatter.locale = currentLocale;
-            numberFormatter.numberStyle = NSNumberFormatterDecimalStyle;
-            static const char* Patterns[] = {"(n)", "-n", "- n", "n-", "n -"};
-            const char *pFormat = [[numberFormatter negativeFormat] UTF8String];
-            value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), true);
-            if (value < 0)
-            {
-                isSuccess = false;
-            }
-            break;
-        }
         case LocaleNumber_MonetaryFractionalDigitsCount:
         {
             NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
@@ -385,43 +427,12 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
             break;
         }        
         case LocaleNumber_PositiveMonetaryNumberFormat:
-        {
-            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
-            numberFormatter.locale = currentLocale;
-            numberFormatter.numberStyle = NSNumberFormatterCurrencyStyle;
-            static const char* Patterns[] = {"Cn", "nC", "C n", "n C"};
-            const char *pFormat = [[numberFormatter positiveFormat] UTF8String];
-            value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), false);
-            if (value < 0)
-            {
-                isSuccess = false;
-            }
-            break;
-        }
         case LocaleNumber_NegativeMonetaryNumberFormat:
+        case LocaleNumber_NegativeNumberFormat:
+        case LocaleNumber_NegativePercentFormat:
+        case LocaleNumber_PositivePercentFormat:
         {
-            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
-            numberFormatter.locale = currentLocale;
-            numberFormatter.numberStyle = NSNumberFormatterCurrencyStyle;
-            static const char* Patterns[] = {"(Cn)",
-                                             "-Cn",
-                                             "C-n",
-                                             "Cn-",
-                                             "(nC)",
-                                             "-nC",
-                                             "n-C",
-                                             "nC-",
-                                             "-n C",
-                                             "-C n",
-                                             "n C-",
-                                             "C n-",
-                                             "C -n",
-                                             "n- C",
-                                             "(C n)",
-                                             "(n C)",
-                                             "C- n" };
-            const char *pFormat = [[numberFormatter negativeFormat] UTF8String];
-            value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), true);
+            value = GetValueForNumberFormat(currentLocale, localeNumberData);
             if (value < 0)
             {
                 isSuccess = false;
@@ -463,34 +474,6 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
         {
             NSCalendar *calendar = [currentLocale objectForKey:NSLocaleCalendar];
             value = [calendar firstWeekday] - 1; // .NET is 0-based and in Apple is 1-based;
-            break;
-        }       
-        case LocaleNumber_NegativePercentFormat:
-        {
-            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
-            numberFormatter.locale = currentLocale;
-            numberFormatter.numberStyle = NSNumberFormatterPercentStyle;
-            static const char* Patterns[] = {"-n %", "-n%", "-%n", "%-n", "%n-", "n-%", "n%-", "-% n", "n %-", "% n-", "% -n", "n- %"};
-            const char *pFormat = [[numberFormatter negativeFormat] UTF8String];
-            value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), true);
-            if (value < 0)
-            {
-                isSuccess = false;
-            }
-            break;
-        }
-        case LocaleNumber_PositivePercentFormat:
-        {
-            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
-            numberFormatter.locale = currentLocale;
-            numberFormatter.numberStyle = NSNumberFormatterPercentStyle;
-            static const char* Patterns[] = {"n %", "n%", "%n", "% n"};
-            const char *pFormat = [[numberFormatter positiveFormat] UTF8String];
-            value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), false);
-            if (value < 0)
-            {
-                isSuccess = false;
-            }
             break;
         }
         default:
