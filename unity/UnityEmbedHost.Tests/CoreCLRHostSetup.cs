@@ -6,16 +6,17 @@ using Unity.CoreCLRHelpers;
 
 namespace UnityEmbedHost.Tests;
 
-#if TESTING_UNITY_CORECLR
 [SetUpFixture]
-#endif
-public class NativeSetup
+public class CoreCLRHostSetup
 {
-#if TESTING_UNITY_CORECLR
+
     [OneTimeSetUp]
-#endif
     public void Initialize()
     {
+#if TESTING_UNITY_CORECLR
         CoreCLRHostNative.InitializeNative();
+#else
+        CoreCLRHost.InitState();
+#endif
     }
 }
