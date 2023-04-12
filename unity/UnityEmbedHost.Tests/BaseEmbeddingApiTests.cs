@@ -45,6 +45,15 @@ public abstract class BaseEmbeddingApiTests
     // }
 
     [Test]
+    public unsafe void ValueBoxWorks()
+    {
+        int b = 16;
+        var val = ClrHost.value_box(b.GetType(), (IntPtr)(&b));
+        Assert.That(val.GetType(), Is.EqualTo(b.GetType()));
+        Assert.That((int)val, Is.EqualTo(b));
+    }
+
+    [Test]
     public void GCHandleNewAndGetTarget()
     {
         var obj = new object();

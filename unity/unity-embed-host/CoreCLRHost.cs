@@ -135,6 +135,14 @@ static unsafe partial class CoreCLRHost
         => ((Array)array.ToManagedRepresentation()).Length;
 
     [return: NativeCallbackType("MonoObject*")]
+    public static IntPtr value_box(
+        [NoManagedWrapper] [NativeCallbackType("MonoDomain*")]
+        IntPtr domain,
+        [NativeCallbackType("MonoClass*")] IntPtr klass,
+        [NativeCallbackType("gpointer")] IntPtr val) =>
+        Marshal.PtrToStructure(val, klass.TypeFromHandleIntPtr()).ToNativeRepresentation();
+
+    [return: NativeCallbackType("MonoObject*")]
     public static IntPtr object_new(
         [NoManagedWrapper]
         [NativeCallbackType("MonoDomain*")] IntPtr domain,
