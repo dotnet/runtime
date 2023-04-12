@@ -7,8 +7,6 @@ import { WebAssemblyBootResourceType } from "./WebAssemblyStartOptions";
 import { hasDebuggingEnabled } from "./_Polyfill";
 
 export async function loadBootConfig(config: MonoConfigInternal,) {
-    // TODO MF: Init WebAssemblyResourceLoader
-
     const candidateOptions = config.startupOptions ?? {};
     const environment = candidateOptions.environment;
     const bootConfigPromise = BootConfigResult.initAsync(candidateOptions.loadBootResource, environment);
@@ -23,30 +21,6 @@ export async function loadBootConfig(config: MonoConfigInternal,) {
         WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, candidateOptions || {}),
         WebAssemblyConfigLoader.initAsync(bootConfigResult, candidateOptions || {}),
     ]);
-
-    const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
-        "assembly": "assembly",
-        "pdb": "pdb",
-        "icu": "globalization",
-        "vfs": "globalization",
-        "dotnetwasm": "dotnetwasm",
-    };
-
-    Module.downloadResource = (asset: AssetEntry): LoadingResource | undefined => {
-        // GOTCHA: the mapping to blazor asset type may not cover all mono owned asset types in the future in which case:
-        // A) we may need to add such asset types to the mapping and to WebAssemblyBootResourceType
-        // B) or we could add generic "runtime" type to WebAssemblyBootResourceType as fallback
-        // C) or we could return `undefined` and let the runtime to load the asset. In which case the progress will not be reported on it and blazor will not be able to cache it.
-        const type = monoToBlazorAssetTypeMap[asset.behavior];
-        if (type !== undefined) {
-            const res = resourceLoader.loadResource(asset.name, asset.resolvedUrl!, asset.hash!, type);
-            asset.pendingDownload = res;
-
-            // TODO MF: Hook setProgress
-            return res;
-        }
-        return undefined;
-    };
 
     mapBootConfigToMonoConfig(Module.config as MonoConfigInternal, resourceLoader);
 
