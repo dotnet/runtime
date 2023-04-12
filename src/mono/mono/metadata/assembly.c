@@ -3210,6 +3210,24 @@ static int *resources_bundled_counts = NULL;
 
 //---------------------------------------------------------------------------------------
 //
+// mono_free_bundled_resources frees all memory allocated for bundled resources.
+// It should only be called when the runtime no longer needs access to the data,
+// most likely to happen during runtime shutdown.
+//
+
+void
+mono_free_bundled_resources ()
+{
+    if (bundled_resources)
+        g_hash_table_destroy (bundled_resources);
+    bundled_resources = NULL;
+
+    g_free (resources_bundled_counts);
+    resources_bundled_counts = NULL;
+}
+
+//---------------------------------------------------------------------------------------
+//
 // mono_add_bundled_resource handles bundling of many types of resources to circumvent
 // needing to find or have those resources on disk. The BundledResource struct models
 // the union of information carried by all supported types of resources which are
