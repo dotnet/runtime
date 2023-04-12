@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { WebAssemblyStartOptions } from "./blazor/WebAssemblyStartOptions";
 import { DotnetHostBuilder } from "./run-outer";
 import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr, EmscriptenModuleInternal } from "./types/emscripten";
 
@@ -139,6 +140,7 @@ export type MonoConfigInternal = MonoConfig & {
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
     exitAfterSnapshot?: number,
+    startupOptions?: Partial<WebAssemblyStartOptions>
 };
 
 export type RunArguments = {
