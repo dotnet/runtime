@@ -448,11 +448,11 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
 
             assert(src->isContained());
 
-            if (src->OperIs(GT_OBJ))
+            if (src->OperIs(GT_BLK))
             {
                 // Build uses for the address to load from.
                 //
-                srcCount = BuildOperandUses(src->AsObj()->Addr());
+                srcCount = BuildOperandUses(src->AsBlk()->Addr());
             }
             else
             {
@@ -558,7 +558,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     {
         assert(src->TypeIs(TYP_STRUCT) && src->isContained());
 
-        if (src->OperIs(GT_OBJ))
+        if (src->OperIs(GT_BLK))
         {
             // If the PUTARG_SPLIT clobbers only one register we may need an
             // extra internal register in case there is a conflict between the
@@ -570,7 +570,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
             }
 
             // We will generate code that loads from the OBJ's address, which must be in a register.
-            srcCount = BuildOperandUses(src->AsObj()->Addr());
+            srcCount = BuildOperandUses(src->AsBlk()->Addr());
         }
         else
         {

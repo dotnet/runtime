@@ -1641,8 +1641,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) && argIsSingleDef)
                 {
                     // Change the temp in-place to the actual argument.
-                    // We currently do not support this for struct arguments, so it must not be a GT_OBJ.
-                    assert(argNode->gtOper != GT_OBJ);
+                    // We currently do not support this for struct arguments, so it must not be a GT_BLK.
+                    assert(argNode->gtOper != GT_BLK);
                     argSingleUseNode->ReplaceWith(argNode, this);
                     continue;
                 }
@@ -1698,9 +1698,9 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     newStmt     = nullptr;
                     bool append = true;
 
-                    if (argNode->gtOper == GT_OBJ || argNode->gtOper == GT_MKREFANY)
+                    if (argNode->gtOper == GT_BLK || argNode->gtOper == GT_MKREFANY)
                     {
-                        // Don't put GT_OBJ node under a GT_COMMA.
+                        // Don't put GT_BLK node under a GT_COMMA.
                         // Codegen can't deal with it.
                         // Just hang the address here in case there are side-effect.
                         newStmt = gtNewStmt(gtUnusedValNode(argNode->AsOp()->gtOp1), callDI);

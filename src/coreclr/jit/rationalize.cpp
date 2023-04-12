@@ -36,11 +36,11 @@ void copyFlags(GenTree* dst, GenTree* src, GenTreeFlags mask)
 void Rationalizer::RewriteIndir(LIR::Use& use)
 {
     GenTreeIndir* indir = use.Def()->AsIndir();
-    assert(indir->OperIs(GT_IND, GT_BLK, GT_OBJ));
+    assert(indir->OperIs(GT_IND, GT_BLK));
 
     if (varTypeIsSIMD(indir))
     {
-        if (indir->OperIs(GT_BLK, GT_OBJ))
+        if (indir->OperIs(GT_BLK))
         {
             indir->SetOper(GT_IND);
         }
@@ -413,22 +413,11 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
         break;
 
         case GT_BLK:
-        case GT_OBJ:
         {
             assert(varTypeIsStruct(location));
-            GenTreeBlk* storeBlk = location->AsBlk();
-            genTreeOps  storeOper;
-            switch (location->gtOper)
-            {
-                case GT_BLK:
-                    storeOper = GT_STORE_BLK;
-                    break;
-                case GT_OBJ:
-                    storeOper = GT_STORE_OBJ;
-                    break;
-                default:
-                    unreached();
-            }
+            GenTreeBlk* storeBlk  = location->AsBlk();
+            genTreeOps  storeOper = location->AsBlk()->GetLayout()->HasGCPtr() ? GT_STORE_OBJ : GT_STORE_BLK;
+
             JITDUMP("Rewriting GT_ASG(%s(X), Y) to %s(X,Y):\n", GenTree::OpName(location->gtOper),
                     GenTree::OpName(storeOper));
             storeBlk->SetOperRaw(storeOper);
@@ -482,7 +471,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 
         case GT_IND:
         case GT_BLK:
-        case GT_OBJ:
             RewriteIndir(use);
             break;
 

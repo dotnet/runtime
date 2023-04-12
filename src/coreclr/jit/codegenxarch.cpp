@@ -2991,8 +2991,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
         assert(!storeBlkNode->gtBlkOpGcUnsafe);
 #endif
         assert(storeBlkNode->OperIsCopyBlkOp());
-        assert(storeBlkNode->AsObj()->GetLayout()->HasGCPtr());
-        genCodeForCpObj(storeBlkNode->AsObj());
+        assert(storeBlkNode->AsBlk()->GetLayout()->HasGCPtr());
+        genCodeForCpObj(storeBlkNode->AsBlk());
         return;
     }
 
@@ -3787,15 +3787,15 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
 {
     GenTree* src = putArgNode->Data();
     // We will never call this method for SIMD types, which are stored directly in genPutStructArgStk().
-    assert(src->isContained() && src->TypeIs(TYP_STRUCT) && (src->OperIs(GT_OBJ) || src->OperIsLocalRead()));
+    assert(src->isContained() && src->TypeIs(TYP_STRUCT) && (src->OperIs(GT_BLK) || src->OperIsLocalRead()));
 
 #ifdef TARGET_X86
     assert(!m_pushStkArg);
 #endif
 
-    if (src->OperIs(GT_OBJ))
+    if (src->OperIs(GT_BLK))
     {
-        genConsumeReg(src->AsObj()->Addr());
+        genConsumeReg(src->AsBlk()->Addr());
     }
 
     unsigned loadSize = putArgNode->GetArgLoadSize();
@@ -3911,7 +3911,7 @@ void CodeGen::genStructPutArgPush(GenTreePutArgStk* putArgNode)
     }
     else
     {
-        srcAddrReg = genConsumeReg(src->AsObj()->Addr());
+        srcAddrReg = genConsumeReg(src->AsBlk()->Addr());
     }
 
     ClassLayout*   layout   = src->GetLayout(compiler);
@@ -4098,7 +4098,7 @@ void CodeGen::genClearStackVec3ArgUpperBits()
 //    The register assignments have been set appropriately.
 //    This is validated by genConsumeBlockOp().
 //
-void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
+void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
     // Make sure we got the arguments of the cpobj operation in the right registers
     GenTree*  dstAddr     = cpObjNode->Addr();
@@ -5425,8 +5425,13 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
     {
         noway_assert(EA_ATTR(genTypeSize(targetType)) == EA_PTRSIZE);
+#if TARGET_64BIT
+        emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_GS,
+                          (int)addr->AsIntCon()->gtIconVal);
+#else
         emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_FS,
                           (int)addr->AsIntCon()->gtIconVal);
+#endif
     }
     else
     {

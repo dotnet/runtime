@@ -898,6 +898,9 @@
 
     <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeInitialization/CctorsWithSideEffects/CctorForWrite/*">
+            <Issue>https://github.com/dotnet/runtime/issues/84007</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/NegativeTestCases/**">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Compatible TypeLoadException for invalid inputs</Issue>
         </ExcludeList>
