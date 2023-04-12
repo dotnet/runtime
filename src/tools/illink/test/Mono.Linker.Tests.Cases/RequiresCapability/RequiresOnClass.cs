@@ -1243,11 +1243,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static void Method () { }
 			}
 
-			// https://github.com/dotnet/runtime/issues/84433
-			[ExpectedWarning ("IL2026", "--ConstClassWithRequires--", nameof (ConstClassWithRequires.Message), ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "--ConstClassWithRequires--", nameof (ConstClassWithRequires.Message), ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL2026", "--ConstClassWithRequires--", nameof (ConstClassWithRequires.Number), ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "--ConstClassWithRequires--", nameof (ConstClassWithRequires.Number), ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL2026", "--ConstClassWithRequires--", nameof (ConstClassWithRequires.Method))]
 			[ExpectedWarning ("IL3050", "--ConstClassWithRequires--", nameof (ConstClassWithRequires.Method), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void TestClassWithRequires ()
@@ -1258,12 +1253,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				ConstClassWithRequires.Method ();
 			}
 
-			// https://github.com/dotnet/runtime/issues/84433
-			[ExpectedWarning ("IL2026", "--ConstClassWithRequiresUsingField--", nameof (ConstClassWithRequiresUsingField.Message), ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "--ConstClassWithRequiresUsingField--", nameof (ConstClassWithRequiresUsingField.Message), ProducedBy = Tool.Analyzer)]
 			[RequiresUnreferencedCode (ConstClassWithRequiresUsingField.Message)]
-			[ExpectedWarning ("IL2026", "--ConstClassWithRequiresUsingField--", nameof (ConstClassWithRequiresUsingField.Message), ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "--ConstClassWithRequiresUsingField--", nameof (ConstClassWithRequiresUsingField.Message), ProducedBy = Tool.Analyzer)]
 			[RequiresDynamicCode (ConstClassWithRequiresUsingField.Message)]
 			class ConstClassWithRequiresUsingField
 			{
