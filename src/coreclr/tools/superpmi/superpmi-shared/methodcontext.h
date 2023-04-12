@@ -485,6 +485,14 @@ public:
                          CORINFO_ACCESS_FLAGS    flags,
                          CORINFO_FIELD_INFO*     pResult);
 
+    void recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result);
+    void     dmpGetThreadLocalFieldInfo(DWORDLONG key, DWORD value);
+    uint32_t repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
+
+    void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
+    void dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value);
+    void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
+
     void recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection, CORINFO_METHOD_HANDLE result);
     void dmpEmbedMethodHandle(DWORDLONG key, DLDL value);
     CORINFO_METHOD_HANDLE repEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection);
@@ -1176,7 +1184,9 @@ enum mcPackets
     Packet_GetStringChar = 204,
     Packet_GetIsClassInitedFlagAddress = 205,
     Packet_GetStaticBaseAddress = 206,
-    Packet_GetRISCV64PassStructInRegisterFlags = 207,
+    Packet_GetThreadLocalFieldInfo = 207,
+    Packet_GetThreadLocalStaticBlocksInfo = 208,
+    Packet_GetRISCV64PassStructInRegisterFlags = 209,
 };
 
 void SetDebugDumpVariables();

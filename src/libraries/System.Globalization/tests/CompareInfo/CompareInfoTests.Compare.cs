@@ -241,12 +241,12 @@ namespace System.Globalization.Tests
 
             yield return new object[] { s_invariantCompare, "\uFF66", "\u30F2", CompareOptions.IgnoreSymbols, s_expectedHalfToFullFormsComparison };
             yield return new object[] { s_invariantCompare, "\uFF66", "\u30F2", CompareOptions.IgnoreCase, s_expectedHalfToFullFormsComparison };
-            // in HybridGlobalization on WASM IgnoreNonSpace is not supported and comparison of katakana/hiragana equivalents with supportedIgnoreNonSpaceOption gives 0
+            // in HybridGlobalization on Browser IgnoreNonSpace is not supported and comparison of katakana/hiragana equivalents with supportedIgnoreNonSpaceOption gives 0
             if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
                 yield return new object[] { s_invariantCompare, "\uFF66", "\u30F2", CompareOptions.IgnoreNonSpace, s_expectedHalfToFullFormsComparison };
             yield return new object[] { s_invariantCompare, "\uFF66", "\u30F2", CompareOptions.None, s_expectedHalfToFullFormsComparison };
 
-            // in HybridGlobalization on WASM IgnoreKanaType is supported only for "ja"
+            // in HybridGlobalization on Browser IgnoreKanaType is supported only for "ja"
             var kanaComparison = PlatformDetection.IsHybridGlobalizationOnBrowser ? s_japaneseCompare : s_invariantCompare;
             yield return new object[] { kanaComparison, "\u3060", "\u30C0", CompareOptions.IgnoreKanaType, 0 };
             yield return new object[] { kanaComparison, "c", "C", CompareOptions.IgnoreKanaType, -1 };
@@ -516,7 +516,7 @@ namespace System.Globalization.Tests
             const char hiraganaEnd = '\u3096';
             const int hiraganaToKatakanaOffset = 0x30a1 - 0x3041;
 
-            // in HybridGlobalization on WASM IgnoreKanaType is supported only for "ja-JP"
+            // in HybridGlobalization on Browser IgnoreKanaType is supported only for "ja-JP"
             CultureInfo ignoreKanaTypeTestedCulture = PlatformDetection.IsHybridGlobalizationOnBrowser ? new CultureInfo("ja-JP") : CultureInfo.InvariantCulture;
 
             for (Char hiraganaChar = hiraganaStart; hiraganaChar <= hiraganaEnd; hiraganaChar++)
