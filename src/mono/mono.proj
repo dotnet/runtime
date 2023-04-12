@@ -566,9 +566,9 @@
     </ItemGroup>
     <ItemGroup Condition="'$(RealTargetOS)' == 'linux'">
       <_MonoAOTCFLAGS Include="-Wl,--build-id=sha1" />
-      <_MonoAOTCFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
+      <_MonoAOTCFLAGS Condition="'$(RealTargetArchitecture)' == 'arm'" Include="-march=armv7-a" />
       <_MonoAOTCXXFLAGS Include="-Wl,--build-id=sha1" />
-      <_MonoAOTCXXFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
+      <_MonoAOTCXXFLAGS Condition="'$(RealTargetArchitecture)' == 'arm'" Include="-march=armv7-a" />
     </ItemGroup>
 
     <!-- Devloop features -->
