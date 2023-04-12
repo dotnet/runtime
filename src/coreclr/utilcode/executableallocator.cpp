@@ -4,10 +4,6 @@
 #include "pedecoder.h"
 #include "executableallocator.h"
 
-#ifdef VARIABLE_SIZED_CACHEDMAPPING_SIZE
-static int ExecutableAllocator_CachedMappingSize = 1;
-#endif
-
 #if USE_LAZY_PREFERRED_RANGE
 // Preferred region to allocate the code in.
 BYTE * ExecutableAllocator::g_lazyPreferredRangeStart;
@@ -245,7 +241,7 @@ HRESULT ExecutableAllocator::StaticInitialize(FatalErrorHandler fatalErrorHandle
     LIMITED_METHOD_CONTRACT;
 
 #ifdef VARIABLE_SIZED_CACHEDMAPPING_SIZE
-    ExecutableAllocator_CachedMappingSize = ARRAY_SIZE(m_cachedMapping);
+    g_cachedMappingSize = ARRAY_SIZE(m_cachedMapping);
     auto envString = getenv("EXECUTABLE_ALLOCATOR_CACHE_SIZE");
     if (envString != NULL)
     {
@@ -258,7 +254,7 @@ HRESULT ExecutableAllocator::StaticInitialize(FatalErrorHandler fatalErrorHandle
                 return E_FAIL;
             }
             
-            ExecutableAllocator_CachedMappingSize = customCacheSize;
+            g_cachedMappingSize = customCacheSize;
         }
     }
 #endif
