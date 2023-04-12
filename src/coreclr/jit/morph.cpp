@@ -9843,6 +9843,8 @@ DONE_MORPHING_CHILDREN:
                 }
             }
 
+            // Fold obj->pMT to a constant type handle if we know the exact type of the IND target.
+            // These are typically produced by GDV.
             if (tree->TypeIs(TYP_I_IMPL) && op1->TypeIs(TYP_REF) && !gtIsActiveCSE_Candidate(tree) &&
                 !gtIsActiveCSE_Candidate(op1))
             {
