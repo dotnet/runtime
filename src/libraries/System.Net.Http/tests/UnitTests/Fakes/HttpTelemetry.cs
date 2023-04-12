@@ -13,7 +13,7 @@ namespace System.Net.Http
 
         public void RequestStop(HttpResponseMessage response) { }
 
-        public void RequestFailed(string exception) { }
+        public void RequestFailed(Exception exception) { }
 
         public void ResponseContentStart() { }
 
