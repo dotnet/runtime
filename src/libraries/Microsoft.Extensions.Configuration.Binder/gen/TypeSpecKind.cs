@@ -5,15 +5,27 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     internal enum TypeSpecKind
     {
-        StringBasedParse = 0,
-        Enum = 1,
+        Unknown = 0,
+        ParsableFromString = 1,
         Object = 2,
         Array = 3,
         Enumerable = 4,
         Dictionary = 5,
         IConfigurationSection = 6,
-        System_Object = 7,
-        ByteArray = 8,
-        Nullable = 9,
+        Nullable = 7,
+    }
+
+    internal enum StringParsableTypeKind
+    {
+        None = 0,
+        ConfigValue = 1,
+        Enum = 2,
+        ByteArray = 3,
+        Integer = 4,
+        Float = 5,
+        Parse = 6,
+        ParseInvariant = 7,
+        CultureInfo = 8,
+        Uri = 9,
     }
 }
