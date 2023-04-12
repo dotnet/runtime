@@ -1153,7 +1153,7 @@ private void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {val
 /// </summary>
 public {typeInfoPropertyTypeRef} {typeFriendlyName}
 {{
-    get => _{typeFriendlyName} ??= ({typeInfoPropertyTypeRef}){OptionsInstanceVariableName}.GetTypeInfo(typeof({typeCompilableName}))!;
+    get => _{typeFriendlyName} ??= ({typeInfoPropertyTypeRef}){OptionsInstanceVariableName}.GetTypeInfo(typeof({typeCompilableName}));
 }}
 
 private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
@@ -1326,7 +1326,10 @@ private static {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({JsonS
                 sb.Append(
 @$"/// <inheritdoc/>
 public override {JsonTypeInfoTypeRef}? GetTypeInfo({TypeTypeRef} type)
-    => {OptionsInstanceVariableName}.GetTypeInfo(type);
+{{
+    {OptionsInstanceVariableName}.TryGetTypeInfo(type, out {JsonTypeInfoTypeRef}? typeInfo);
+    return typeInfo;
+}}
 ");
                 // Explicit IJsonTypeInfoResolver implementation -- the source of truth for metadata resolution
                 sb.AppendLine();

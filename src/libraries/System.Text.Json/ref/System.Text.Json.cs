@@ -395,7 +395,8 @@ namespace System.Text.Json
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Getting a converter for a type may require reflection which depends on runtime code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Getting a converter for a type may require reflection which depends on unreferenced code.")]
         public System.Text.Json.Serialization.JsonConverter GetConverter(System.Type typeToConvert) { throw null; }
-        public System.Text.Json.Serialization.Metadata.JsonTypeInfo? GetTypeInfo(System.Type type) { throw null; }
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfo GetTypeInfo(System.Type type) { throw null; }
+        public bool TryGetTypeInfo(System.Type type, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.Json.Serialization.Metadata.JsonTypeInfo typeInfo) { throw null; }
         public void MakeReadOnly() { }
     }
     public enum JsonTokenType : byte

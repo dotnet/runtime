@@ -44,7 +44,7 @@ namespace System.Text.Json
         ///
         /// If the <see cref="JsonSerializerOptions"/> instance is locked for modification, the method will return a cached instance for the metadata.
         /// </remarks>
-        public JsonTypeInfo? GetTypeInfo(Type type)
+        public JsonTypeInfo GetTypeInfo(Type type)
         {
             if (type is null)
             {
@@ -56,7 +56,36 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(type), type, null, null);
             }
 
-            return GetTypeInfoInternal(type, ensureNotNull: null, resolveIfMutable: true);
+            return GetTypeInfoInternal(type, resolveIfMutable: true);
+        }
+
+        /// <summary>
+        /// Tries to get the <see cref="JsonTypeInfo"/> contract metadata resolved by the current <see cref="JsonSerializerOptions"/> instance.
+        /// </summary>
+        /// <param name="type">The type to resolve contract metadata for.</param>
+        /// <param name="typeInfo">The resolved contract metadata, or <see langword="null" /> if not contract could be resolved.</param>
+        /// <returns><see langword="true"/> if a contract for <paramref name="type"/> was found, or <see langword="false"/> otherwise.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="type"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="type"/> is not valid for serialization.</exception>
+        /// <remarks>
+        /// Returned metadata can be downcast to <see cref="JsonTypeInfo{T}"/> and used with the relevant <see cref="JsonSerializer"/> overloads.
+        ///
+        /// If the <see cref="JsonSerializerOptions"/> instance is locked for modification, the method will return a cached instance for the metadata.
+        /// </remarks>
+        public bool TryGetTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
+        {
+            if (type is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(type));
+            }
+
+            if (JsonTypeInfo.IsInvalidForSerialization(type))
+            {
+                ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(type), type, null, null);
+            }
+
+            typeInfo = GetTypeInfoInternal(type, ensureNotNull: null, resolveIfMutable: true);
+            return typeInfo is not null;
         }
 
         /// <summary>

@@ -27,7 +27,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             // Context returns a JsonTypeInfo for the declared type
             Assert.NotNull(options.GetTypeInfo(typeof(T)));
             // But fails when resolving one for the runtime type
-            Assert.Null(options.GetTypeInfo(envelope.Value.GetType()));
+            Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(envelope.Value.GetType()));
 
             // Serializing using the declared type works as expected
             string json = await Serializer.SerializeWrapper(envelope.Value, options);
