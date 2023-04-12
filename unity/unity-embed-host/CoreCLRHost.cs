@@ -20,14 +20,19 @@ static unsafe partial class CoreCLRHost
         if (Marshal.SizeOf<HostStruct>() != structSize)
             throw new Exception("Invalid struct size");
 
-        alcWrapper = new ALCWrapper();
-        assemblyHandleField = typeof(Assembly).Assembly.GetType("System.Reflection.RuntimeAssembly").GetField("m_assembly", BindingFlags.Instance | BindingFlags.NonPublic);
-        if (assemblyHandleField == null)
-            throw new Exception("Failed to find RuntimeAssembly.m_assembly field.");
+        InitState();
 
         InitHostStruct(functionStruct);
 
         return 0;
+    }
+
+    internal static void InitState()
+    {
+        alcWrapper = new ALCWrapper();
+        assemblyHandleField = typeof(Assembly).Assembly.GetType("System.Reflection.RuntimeAssembly").GetField("m_assembly", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (assemblyHandleField == null)
+            throw new Exception("Failed to find RuntimeAssembly.m_assembly field.");
     }
 
     static partial void InitHostStruct(HostStruct* functionStruct);
