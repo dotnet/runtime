@@ -698,18 +698,18 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
 // fgGetStaticsCCtorHelper: Creates a BasicBlock from the `tree` node.
 //
 // Arguments:
-//    cls          - The class handle
-//    helper       - The helper function
-//    typeIndex    - The static block type index. Used only for
-//                   CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED to cache
-//                   the static block in an array at index typeIndex.
+//    cls       - The class handle
+//    helper    - The helper function
+//    typeIndex - The static block type index. Used only for
+//                CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED to cache
+//                the static block in an array at index typeIndex.
 //
 // Return Value:
 //    The call node corresponding to the helper
 GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper, uint32_t typeIndex)
 {
-    bool bNeedClassID = true;
-    bool isHoistable  = false;
+    bool bNeedClassID      = true;
+    GenTreeFlags callFlags = GTF_EMPTY;
 
     var_types type = TYP_BYREF;
 
@@ -722,7 +722,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
-            isHoistable = true;
+            callFlags |= GTF_CALL_HOISTABLE;
             FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
@@ -740,7 +740,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
-            isHoistable = true;
+            callFlags |= GTF_CALL_HOISTABLE;
             FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
@@ -767,8 +767,13 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
     moduleID = info.compCompHnd->getClassModuleIdForStatics(cls, nullptr, &pmoduleID);
 
-    isHoistable = isHoistable ||
-        (info.compCompHnd->getClassAttribs(cls) & CORINFO_FLG_BEFOREFIELDINIT);
+    if (!(callFlags & GTF_CALL_HOISTABLE))
+    {
+        if (info.compCompHnd->getClassAttribs(cls) & CORINFO_FLG_BEFOREFIELDINIT)
+        {
+            callFlags |= GTF_CALL_HOISTABLE;
+        }
+    }
 
     if (pmoduleID)
     {
@@ -803,16 +808,12 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         result = gtNewHelperCallNode(helper, type, opModuleIDArg);
     }
 
-    if (isHoistable)
-    {
-        result->gtFlags |= GTF_CALL_HOISTABLE;
-    }
-
     if (IsStaticHelperEligibleForExpansion(result))
     {
         // Keep class handle attached to the helper call since it's difficult to restore it.
         result->gtInitClsHnd = cls;
     }
+    result->gtFlags |= callFlags;
 
     // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
     // intrinsics, flag the helper call. Later during inlining, we can
