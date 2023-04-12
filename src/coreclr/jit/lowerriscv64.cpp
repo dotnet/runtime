@@ -335,7 +335,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
         if (blkNode->OperIs(GT_STORE_OBJ))
         {
-            if (!blkNode->AsObj()->GetLayout()->HasGCPtr())
+            if (!blkNode->AsBlk()->GetLayout()->HasGCPtr())
             {
                 blkNode->SetOper(GT_STORE_BLK);
             }
@@ -461,20 +461,18 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
                 lclAddr = comp->gtNewLclAddrNode(lclNum, src->AsLclFld()->GetLclOffs());
             }
 
-            src->ChangeOper(GT_OBJ);
-            src->AsObj()->SetAddr(lclAddr);
-            src->AsObj()->SetLayout(layout);
-            src->AsObj()->gtBlkOpKind     = GenTreeBlk::BlkOpKindInvalid;
-            src->AsObj()->gtBlkOpGcUnsafe = false;
+            src->ChangeOper(GT_BLK);
+            src->AsBlk()->SetAddr(lclAddr);
+            src->AsBlk()->Initialize(layout);
 
             BlockRange().InsertBefore(src, lclAddr);
         }
 
         // Codegen supports containment of local addresses under OBJs.
-        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIs(GT_LCL_ADDR))
+        if (src->OperIs(GT_BLK) && src->AsBlk()->Addr()->IsLclVarAddr())
         {
-            // TODO-RISCV64-CQ: support containment of LCL_FLD_ADDR too.
-            MakeSrcContained(src, src->AsObj()->Addr());
+            // TODO-RISCV64-CQ: support containment of LCL_ADDR with non-zero offset too.
+            MakeSrcContained(src, src->AsBlk()->Addr());
         }
     }
 }

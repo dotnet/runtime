@@ -133,6 +133,8 @@ System.Security.Cryptography.Xml.XmlLicenseTransform</PackageDescription>
     <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SHA384SignatureDescription.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">

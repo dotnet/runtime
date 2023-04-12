@@ -3626,6 +3626,73 @@ void MethodContext::repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 }
 
+void MethodContext::recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result)
+{
+    if (GetThreadLocalFieldInfo == nullptr)
+        GetThreadLocalFieldInfo = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = 0;
+
+    key = CastHandle(field);
+    GetThreadLocalFieldInfo->Add(key, result);
+    DEBUG_REC(dmpGetThreadLocalFieldInfo(key, result));
+}
+
+void MethodContext::dmpGetThreadLocalFieldInfo(DWORDLONG key, DWORD value)
+{
+    printf("GetThreadLocalFieldInfo key hnd-%016" PRIX64 ", result-%u", key, value);
+}
+
+uint32_t MethodContext::repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+{
+    DWORDLONG key   = CastHandle(field);
+    DWORD     value = LookupByKeyOrMiss(GetThreadLocalFieldInfo, key, ": key %016" PRIX64 "", key);
+
+    DEBUG_REP(dmpGetThreadLocalFieldInfo(key, value));
+
+    return value;
+}
+
+void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+{
+    if (GetThreadLocalStaticBlocksInfo == nullptr)
+        GetThreadLocalStaticBlocksInfo = new LightWeightMap<DWORD, Agnostic_GetThreadLocalStaticBlocksInfo>();
+
+    Agnostic_GetThreadLocalStaticBlocksInfo value;
+    ZeroMemory(&value, sizeof(value));
+
+    value.tlsIndex.handle                   = CastHandle(pInfo->tlsIndex.addr);
+    value.tlsIndex.accessType               = pInfo->tlsIndex.accessType;
+    value.offsetOfMaxThreadStaticBlocks     = pInfo->offsetOfMaxThreadStaticBlocks;
+    value.offsetOfThreadLocalStoragePointer = pInfo->offsetOfThreadLocalStoragePointer;
+    value.offsetOfThreadStaticBlocks        = pInfo->offsetOfThreadStaticBlocks;
+
+    // This data is same for entire process, so just add it against key '0'.
+    GetThreadLocalStaticBlocksInfo->Add(0, value);
+    DEBUG_REC(dmpGetThreadLocalStaticBlocksInfo(0, value));
+}
+
+void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value)
+{
+    printf("GetThreadLocalStaticBlocksInfo key 0, value tlsIndex-%016" PRIX64
+           ", offsetOfMaxThreadStaticBlocks-%u, offsetOfThreadLocalStoragePointer-%u, offsetOfThreadStaticBlocks-%u",
+           value.tlsIndex.handle, value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadLocalStoragePointer,
+           value.offsetOfThreadStaticBlocks);
+}
+
+void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+{
+    Agnostic_GetThreadLocalStaticBlocksInfo value = LookupByKeyOrMiss(GetThreadLocalStaticBlocksInfo, 0, ": key %u", 0);
+
+    DEBUG_REP(dmpGetThreadLocalStaticBlocksInfo(0, value));
+
+    pInfo->tlsIndex.accessType = (InfoAccessType)value.tlsIndex.accessType;
+    pInfo->tlsIndex.addr = (void*)value.tlsIndex.handle;
+    pInfo->offsetOfMaxThreadStaticBlocks = value.offsetOfMaxThreadStaticBlocks;
+    pInfo->offsetOfThreadLocalStoragePointer = value.offsetOfThreadLocalStoragePointer;
+    pInfo->offsetOfThreadStaticBlocks = value.offsetOfThreadStaticBlocks;
+}
+
 void MethodContext::recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle,
                                          void**                ppIndirection,
                                          CORINFO_METHOD_HANDLE result)
