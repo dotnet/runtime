@@ -167,6 +167,7 @@ namespace System.Security.Cryptography.Xml
             return transformsElement;
         }
 
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         internal void LoadXml(XmlElement value)
         {

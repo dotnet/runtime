@@ -1912,6 +1912,15 @@ create_builder (EmitContext *ctx)
 
 	return builder;
 }
+static char*
+ji_type_to_string_lower (MonoJumpInfoType type)
+{
+	char *name = g_strdup (mono_ji_type_to_string (type));
+	size_t len = strlen (name);
+	for (size_t i = 0; i < len; ++i)
+		name [i] = GINT_TO_CHAR (tolower (name [i]));
+	return name;
+}
 
 static char*
 get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
@@ -1937,17 +1946,29 @@ get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
 	case MONO_PATCH_INFO_GC_NURSERY_START:
 	case MONO_PATCH_INFO_GC_NURSERY_BITS:
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
-		name = g_strdup_printf ("%s", mono_ji_type_to_string (type));
-		len = strlen (name);
-		for (size_t i = 0; i < len; ++i)
-			name [i] = GINT_TO_CHAR (tolower (name [i]));
+		name = ji_type_to_string_lower (type);
 		break;
-	default:
-		name = g_strdup_printf ("%s_%d", mono_ji_type_to_string (type), got_offset);
-		len = strlen (name);
-		for (size_t i = 0; i < len; ++i)
-			name [i] = GINT_TO_CHAR (tolower (name [i]));
+	case MONO_PATCH_INFO_METHOD:
+	case MONO_PATCH_INFO_METHOD_RGCTX: {
+		MonoMethod *method = (MonoMethod*)data;
+		char *typestr = ji_type_to_string_lower (type);
+		char *n = g_strdup (method->name);
+		len = strlen (n);
+		for (size_t i = 0; i < len; ++i) {
+			if (!isalnum (n [i]))
+				n [i] = '_';
+		}
+		name = g_strdup_printf ("%s_%s_%d", typestr, n, got_offset);
+		g_free (typestr);
+		g_free (n);
 		break;
+	}
+	default: {
+		char *typestr = ji_type_to_string_lower (type);
+		name = g_strdup_printf ("%s_%d", typestr, got_offset);
+		g_free (typestr);
+		break;
+	}
 	}
 
 	return name;
@@ -7671,10 +7692,10 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #if defined(TARGET_ARM64) || defined(TARGET_WASM)
-		case OP_FCVTL:
-		case OP_FCVTL2: {
+		case OP_SIMD_FCVTL:
+		case OP_SIMD_FCVTL2: {
 			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
-			gboolean high = ins->opcode == OP_FCVTL2;
+			gboolean high = ins->opcode == OP_SIMD_FCVTL2;
 			LLVMValueRef result = lhs;
 			if (high)
 				result = extract_high_elements (ctx, result);
@@ -7682,19 +7703,19 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
-		case OP_SHL:
-		case OP_SSHR:
-		case OP_SSRA:
-		case OP_USHR:
-		case OP_USRA: {
+		case OP_SIMD_SHL:
+		case OP_SIMD_SSHR:
+		case OP_SIMD_SSRA:
+		case OP_SIMD_USHR:
+		case OP_SIMD_USRA: {
 			gboolean right = FALSE;
 			gboolean add = FALSE;
 			gboolean arith = FALSE;
 			switch (ins->opcode) {
-			case OP_USHR: right = TRUE; break;
-			case OP_USRA: right = TRUE; add = TRUE; break;
-			case OP_SSHR: arith = TRUE; break;
-			case OP_SSRA: arith = TRUE; add = TRUE; break;
+			case OP_SIMD_USHR: right = TRUE; break;
+			case OP_SIMD_USRA: right = TRUE; add = TRUE; break;
+			case OP_SIMD_SSHR: arith = TRUE; break;
+			case OP_SIMD_SSRA: arith = TRUE; add = TRUE; break;
 			}
 			LLVMValueRef shiftarg = lhs;
 			LLVMValueRef shift = rhs;
@@ -7715,16 +7736,16 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
-		case OP_SSHLL:
-		case OP_SSHLL2:
-		case OP_USHLL:
-		case OP_USHLL2: {
+		case OP_SIMD_SSHLL:
+		case OP_SIMD_SSHLL2:
+		case OP_SIMD_USHLL:
+		case OP_SIMD_USHLL2: {
 			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
 			gboolean high = FALSE;
 			gboolean is_unsigned = FALSE;
 			switch (ins->opcode) {
-			case OP_SSHLL2: high = TRUE; break;
-			case OP_USHLL2: high = TRUE; case OP_USHLL: is_unsigned = TRUE; break;
+			case OP_SIMD_SSHLL2: high = TRUE; break;
+			case OP_SIMD_USHLL2: high = TRUE; case OP_SIMD_USHLL: is_unsigned = TRUE; break;
 			}
 			LLVMValueRef result = lhs;
 			if (high)

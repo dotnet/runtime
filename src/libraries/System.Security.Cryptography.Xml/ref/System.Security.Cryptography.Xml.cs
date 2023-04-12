@@ -16,6 +16,7 @@ namespace System.Security.Cryptography.Xml
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public byte[]? CipherValue { get { throw null; } set { } }
         public System.Xml.XmlElement GetXml() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
         public void LoadXml(System.Xml.XmlElement value) { }
     }
@@ -25,6 +26,7 @@ namespace System.Security.Cryptography.Xml
         public CipherReference(string uri) { }
         public CipherReference(string uri, System.Security.Cryptography.Xml.TransformChain transformChain) { }
         public override System.Xml.XmlElement GetXml() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
         public override void LoadXml(System.Xml.XmlElement value) { }
     }
@@ -59,6 +61,7 @@ namespace System.Security.Cryptography.Xml
     {
         public EncryptedData() { }
         public override System.Xml.XmlElement GetXml() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
         public override void LoadXml(System.Xml.XmlElement value) { }
     }
@@ -72,6 +75,7 @@ namespace System.Security.Cryptography.Xml
         public void AddReference(System.Security.Cryptography.Xml.DataReference dataReference) { }
         public void AddReference(System.Security.Cryptography.Xml.KeyReference keyReference) { }
         public override System.Xml.XmlElement GetXml() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
         public override void LoadXml(System.Xml.XmlElement value) { }
     }
@@ -86,6 +90,7 @@ namespace System.Security.Cryptography.Xml
         public string Uri { get { throw null; } set { } }
         public void AddTransform(System.Security.Cryptography.Xml.Transform transform) { }
         public virtual System.Xml.XmlElement GetXml() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
         public virtual void LoadXml(System.Xml.XmlElement value) { }
     }
@@ -103,6 +108,7 @@ namespace System.Security.Cryptography.Xml
         public virtual string? Type { get { throw null; } set { } }
         public void AddProperty(System.Security.Cryptography.Xml.EncryptionProperty ep) { }
         public abstract System.Xml.XmlElement GetXml();
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
         public abstract void LoadXml(System.Xml.XmlElement value);
     }
@@ -125,10 +131,13 @@ namespace System.Security.Cryptography.Xml
         public const string XmlEncSHA512Url = "http://www.w3.org/2001/04/xmlenc#sha512";
         public const string XmlEncTripleDESKeyWrapUrl = "http://www.w3.org/2001/04/xmlenc#kw-tripledes";
         public const string XmlEncTripleDESUrl = "http://www.w3.org/2001/04/xmlenc#tripledes-cbc";
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
         public EncryptedXml() { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
         public EncryptedXml(System.Xml.XmlDocument document) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
         public EncryptedXml(System.Xml.XmlDocument document, System.Security.Policy.Evidence? evidence) { }
         public System.Security.Policy.Evidence? DocumentEvidence { get { throw null; } set { } }
@@ -228,6 +237,7 @@ namespace System.Security.Cryptography.Xml
         public abstract System.Xml.XmlElement GetXml();
         public abstract void LoadXml(System.Xml.XmlElement element);
     }
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
     [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
     public partial class KeyInfoEncryptedKey : System.Security.Cryptography.Xml.KeyInfoClause
     {
@@ -301,6 +311,7 @@ namespace System.Security.Cryptography.Xml
         public string? Uri { get { throw null; } set { } }
         public void AddTransform(System.Security.Cryptography.Xml.Transform transform) { }
         public System.Xml.XmlElement GetXml() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
         public void LoadXml(System.Xml.XmlElement value) { }
     }
@@ -344,9 +355,11 @@ namespace System.Security.Cryptography.Xml
         public System.Security.Cryptography.Xml.SignedInfo? SignedInfo { get { throw null; } set { } }
         public void AddObject(System.Security.Cryptography.Xml.DataObject dataObject) { }
         public System.Xml.XmlElement GetXml() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
         public void LoadXml(System.Xml.XmlElement value) { }
     }
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
     [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
     public partial class SignedInfo : System.Collections.ICollection, System.Collections.IEnumerable
     {
@@ -396,10 +409,13 @@ namespace System.Security.Cryptography.Xml
         public const string XmlDsigXPathTransformUrl = "http://www.w3.org/TR/1999/REC-xpath-19991116";
         public const string XmlDsigXsltTransformUrl = "http://www.w3.org/TR/1999/REC-xslt-19991116";
         public const string XmlLicenseTransformUrl = "urn:mpeg:mpeg21:2003:01-REL-R-NS:licenseTransform";
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
         public SignedXml() { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
         public SignedXml(System.Xml.XmlDocument document) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
         public SignedXml(System.Xml.XmlElement elem) { }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
@@ -454,6 +470,7 @@ namespace System.Security.Cryptography.Xml
         public void Add(System.Security.Cryptography.Xml.Transform transform) { }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
     }
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
     [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
     public partial class XmlDecryptionTransform : System.Security.Cryptography.Xml.Transform
     {
@@ -541,6 +558,7 @@ namespace System.Security.Cryptography.Xml
         public override void LoadInnerXml(System.Xml.XmlNodeList nodeList) { }
         public override void LoadInput(object obj) { }
     }
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
     public partial class XmlDsigXsltTransform : System.Security.Cryptography.Xml.Transform
     {
         public XmlDsigXsltTransform() { }
@@ -553,6 +571,7 @@ namespace System.Security.Cryptography.Xml
         public override void LoadInnerXml(System.Xml.XmlNodeList nodeList) { }
         public override void LoadInput(object obj) { }
     }
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
     [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.")]
     public partial class XmlLicenseTransform : System.Security.Cryptography.Xml.Transform
     {

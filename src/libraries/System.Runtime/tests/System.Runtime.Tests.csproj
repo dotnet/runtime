@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
-    <DefineConstants Condition="'$(TargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants> 
+    <DefineConstants Condition="'$(TargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn),1718,SYSLIB0013</NoWarn>
     <TestRuntime>true</TestRuntime>
@@ -41,8 +41,8 @@
     <Compile Include="$(CommonTestPath)System\Collections\TestBase.Generic.cs" Link="Common\System\Collections\TestBase.Generic.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs" Link="Common\System\Collections\TestBase.NonGeneric.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="$(CommonTestPath)System\TimeProviderTests.cs" Link="Common\System\TimeProviderTests.cs" />
     <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs" Link="Common\System\StringTests.cs" />
-    <Compile Include="$(CommonTestPath)Tests\System\TimeProviderTests.cs" Link="Common\System\TimeProviderTests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs" Link="Common\System\Collections\IDictionary.NonGeneric.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\IList.NonGeneric.Tests.cs" Link="Common\System\Collections\IList.NonGeneric.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs" Link="Common\System\Collections\ICollection.NonGeneric.Tests.cs" />
@@ -317,6 +317,7 @@
     <Compile Include="System\Text\RuneTests.TestData.cs" />
     <Compile Include="System\Text\Unicode\Utf16UtilityTests.ValidateChars.cs" />
     <Compile Include="System\Text\Unicode\Utf8Tests.cs" />
+    <Compile Include="System\Text\Unicode\Utf8Tests.TryWrite.cs" />
     <Compile Include="System\Text\Unicode\Utf8UtilityTests.ValidateBytes.cs" />
     <Compile Include="System\ArgIteratorTests.cs" />
     <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs" Link="System\RealFormatterTestsBase.cs" />

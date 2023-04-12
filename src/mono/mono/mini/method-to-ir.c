@@ -337,7 +337,7 @@ handle_enum:
 		return OP_LMOVE;
 #endif
 	case MONO_TYPE_R4:
-		return OP_RMOVE;
+		return cfg->r4fp ? OP_RMOVE : OP_FMOVE;
 	case MONO_TYPE_R8:
 		return OP_FMOVE;
 	case MONO_TYPE_VALUETYPE:
@@ -483,8 +483,9 @@ add_widen_op (MonoCompile *cfg, MonoInst *ins, MonoInst **arg1_ref, MonoInst **a
 	MonoInst *arg1 = *arg1_ref;
 	MonoInst *arg2 = *arg2_ref;
 
-	if ((arg1->type == STACK_R4 && arg2->type == STACK_R8) ||
-		(arg1->type == STACK_R8 && arg2->type == STACK_R4)) {
+	if (cfg->r4fp &&
+		((arg1->type == STACK_R4 && arg2->type == STACK_R8) ||
+		 (arg1->type == STACK_R8 && arg2->type == STACK_R4))) {
 		MonoInst *conv;
 
 		/* Mixing r4/r8 is allowed by the spec */
@@ -826,7 +827,7 @@ handle_enum:
 		inst->type = STACK_I8;
 		return;
 	case MONO_TYPE_R4:
-		inst->type = GINT_TO_UINT8 (STACK_R4);
+		inst->type = GINT_TO_UINT8 (cfg->r4_stack_type);
 		break;
 	case MONO_TYPE_R8:
 		inst->type = STACK_R8;
@@ -1160,7 +1161,7 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 		ins->opcode += ovf2ops_op_map [src1->type];
 		break;
 	case MONO_CEE_CONV_R4:
-		ins->type = GINT_TO_UINT8 (STACK_R4);
+		ins->type = GINT_TO_UINT8 (cfg->r4_stack_type);
 		ins->opcode += unops_op_map [src1->type];
 		break;
 	case MONO_CEE_CONV_R8:
@@ -1218,7 +1219,7 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 		ins->type = STACK_I8;
 		break;
 	case OP_LOADR4_MEMBASE:
-		ins->type = GINT_TO_UINT8 (STACK_R4);
+		ins->type = GINT_TO_UINT8 (cfg->r4_stack_type);
 		break;
 	case OP_LOADR8_MEMBASE:
 		ins->type = STACK_R8;
@@ -1433,7 +1434,7 @@ mini_type_to_stack_type (MonoCompile *cfg, MonoType *t)
 	case MONO_TYPE_U8:
 		return STACK_I8;
 	case MONO_TYPE_R4:
-		return (MonoStackType)STACK_R4;
+		return (MonoStackType)cfg->r4_stack_type;
 	case MONO_TYPE_R8:
 		return STACK_R8;
 	case MONO_TYPE_VALUETYPE:
@@ -1916,7 +1917,7 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 				return 1;
 		return 0;
 	case MONO_TYPE_R4:
-		if (arg->type != STACK_R4)
+		if (arg->type != cfg->r4_stack_type)
 			return 1;
 		return 0;
 	case MONO_TYPE_R8:
@@ -1979,6 +1980,8 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 static MonoInst*
 convert_value (MonoCompile *cfg, MonoType *type, MonoInst *ins)
 {
+	if (!cfg->r4fp)
+		return ins;
 	type = mini_get_underlying_type (type);
 	switch (type->type) {
 	case MONO_TYPE_R4:
@@ -2071,7 +2074,7 @@ handle_enum:
 				return TRUE;
 			continue;
 		case MONO_TYPE_R4:
-			if (args [i]->type != STACK_R4)
+			if (args [i]->type != cfg->r4_stack_type)
 				return TRUE;
 			continue;
 		case MONO_TYPE_R8:
@@ -4636,7 +4639,7 @@ mini_emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 		MONO_EMIT_NEW_ICONST (cfg, dreg, 0);
 	} else if (t == MONO_TYPE_I8 || t == MONO_TYPE_U8) {
 		MONO_EMIT_NEW_I8CONST (cfg, dreg, 0);
-	} else if (t == MONO_TYPE_R4) {
+	} else if (cfg->r4fp && t == MONO_TYPE_R4) {
 		MONO_INST_NEW (cfg, ins, OP_R4CONST);
 		ins->type = STACK_R4;
 		ins->inst_p0 = (void*)&r4_0;
@@ -4672,7 +4675,7 @@ emit_dummy_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_ICONST);
 	} else if (t == MONO_TYPE_I8 || t == MONO_TYPE_U8) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_I8CONST);
-	} else if (t == MONO_TYPE_R4) {
+	} else if (cfg->r4fp && t == MONO_TYPE_R4) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_R4CONST);
 	} else if (t == MONO_TYPE_R4 || t == MONO_TYPE_R8) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_R8CONST);
@@ -5847,7 +5850,8 @@ handle_ctor_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 
 	/* Avoid virtual calls to ctors if possible */
 	if (!context_used && !rgctx_arg) {
-		INLINE_FAILURE ("inline failure");
+		if (!m_method_is_aggressive_inlining (cfg->current_method) && !m_method_is_aggressive_inlining (cmethod))
+			INLINE_FAILURE ("ctor call");
 		// FIXME-VT: Clean this up
 		if (cfg->gsharedvt && mini_is_gsharedvt_signature (fsig))
 			GSHAREDVT_FAILURE(*ip);
@@ -7278,10 +7282,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				dreg = alloc_freg (cfg);
 				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADR4_MEMBASE, dreg, cons->dreg, 0);
-				ins->type = GINT_TO_UINT8 (STACK_R4);
+				ins->type = GINT_TO_UINT8 (cfg->r4_stack_type);
 			} else {
 				MONO_INST_NEW (cfg, ins, OP_R4CONST);
-				ins->type = GINT_TO_UINT8 (STACK_R4);
+				ins->type = GINT_TO_UINT8 (cfg->r4_stack_type);
 				ins->dreg = alloc_dreg (cfg, STACK_R8);
 				ins->inst_p0 = f;
 				MONO_ADD_INS (cfg->cbb, ins);
@@ -12156,21 +12160,21 @@ mono_ldptr:
 
 mono_error_exit:
 	if (cfg->verbose_level > 3)
-		g_print ("exiting due to error");
+		g_print ("exiting due to error\n");
 
 	g_assert (!is_ok (cfg->error));
 	goto cleanup;
 
  exception_exit:
 	if (cfg->verbose_level > 3)
-		g_print ("exiting due to exception");
+		g_print ("exiting due to exception\n");
 
 	g_assert (cfg->exception_type != MONO_EXCEPTION_NONE);
 	goto cleanup;
 
  unverified:
 	if (cfg->verbose_level > 3)
-		g_print ("exiting due to invalid il");
+		g_print ("exiting due to invalid il\n");
 
 	set_exception_type_from_invalid_il (cfg, method, ip);
 	goto cleanup;

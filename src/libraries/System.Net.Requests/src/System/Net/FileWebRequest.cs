@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.IO;
 using System.Threading;
 using System.Runtime.Serialization;
@@ -36,6 +37,7 @@ namespace System.Net
         }
 
         [Obsolete("Serialization has been deprecated for FileWebRequest.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected FileWebRequest(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
             throw new PlatformNotSupportedException();

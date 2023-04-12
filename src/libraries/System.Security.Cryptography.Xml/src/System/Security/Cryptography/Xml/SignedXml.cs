@@ -87,12 +87,14 @@ namespace System.Security.Cryptography.Xml
         // public constructors
         //
 
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public SignedXml()
         {
             Initialize(null);
         }
 
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public SignedXml(XmlDocument document)
         {
@@ -104,6 +106,7 @@ namespace System.Security.Cryptography.Xml
             Initialize(document.DocumentElement);
         }
 
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public SignedXml(XmlElement elem)
         {
@@ -117,6 +120,7 @@ namespace System.Security.Cryptography.Xml
 
         [MemberNotNull(nameof(m_signature))]
         [MemberNotNull(nameof(_safeCanonicalizationMethods))]
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         private void Initialize(XmlElement? element)
         {
@@ -177,7 +181,8 @@ namespace System.Security.Cryptography.Xml
         [AllowNull]
         public EncryptedXml EncryptedXml
         {
-            [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RDC")]
+            [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
+            [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
             get => _exml ??= new EncryptedXml(_containingDocument!); // default processing rules
             set => _exml = value;
         }
@@ -222,7 +227,8 @@ namespace System.Security.Cryptography.Xml
                 return m_signature.GetXml();
         }
 
-        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RDC")]
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
         public void LoadXml(XmlElement value)
         {
             if (value is null)
@@ -412,7 +418,7 @@ namespace System.Security.Cryptography.Xml
             }
 
             // See if there is a signature description class defined in the Config file
-            SignatureDescription? signatureDescription = CryptoHelpers.CreateFromName<SignatureDescription>(SignedInfo.SignatureMethod);
+            SignatureDescription? signatureDescription = CryptoHelpers.CreateNonTransformFromName<SignatureDescription>(SignedInfo.SignatureMethod);
             if (signatureDescription == null)
                 throw new CryptographicException(SR.Cryptography_Xml_SignatureDescriptionNotCreated);
             HashAlgorithm? hashAlg = signatureDescription.CreateDigest();
@@ -647,7 +653,7 @@ namespace System.Security.Cryptography.Xml
             }
 
             // See if we're signed witn an HMAC algorithm
-            HMAC? hmac = CryptoHelpers.CreateFromName<HMAC>(SignatureMethod!);
+            HMAC? hmac = CryptoHelpers.CreateNonTransformFromName<HMAC>(SignatureMethod!);
             if (hmac == null)
             {
                 // We aren't signed with an HMAC algorithm, so we cannot have a truncated HMAC
@@ -1020,7 +1026,7 @@ namespace System.Security.Cryptography.Xml
 
             SignedXmlDebugLog.LogBeginCheckSignedInfo(this, m_signature.SignedInfo!);
 
-            SignatureDescription? signatureDescription = CryptoHelpers.CreateFromName<SignatureDescription>(SignatureMethod);
+            SignatureDescription? signatureDescription = CryptoHelpers.CreateNonTransformFromName<SignatureDescription>(SignatureMethod);
             if (signatureDescription == null)
                 throw new CryptographicException(SR.Cryptography_Xml_SignatureDescriptionNotCreated);
 

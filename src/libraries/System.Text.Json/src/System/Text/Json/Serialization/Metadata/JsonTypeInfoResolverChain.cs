@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace System.Text.Json.Serialization.Metadata
 {
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
-    internal class JsonTypeInfoResolverChain : ConfigurationList<IJsonTypeInfoResolver>, IJsonTypeInfoResolver
+    internal class JsonTypeInfoResolverChain : ConfigurationList<IJsonTypeInfoResolver>, IJsonTypeInfoResolver, IBuiltInJsonTypeInfoResolver
     {
         public JsonTypeInfoResolverChain() : base(null) { }
         public override bool IsReadOnly => true;
@@ -42,6 +42,19 @@ namespace System.Text.Json.Serialization.Metadata
                     _list.Add(resolver);
                     break;
             }
+        }
+
+        bool IBuiltInJsonTypeInfoResolver.IsCompatibleWithOptions(JsonSerializerOptions options)
+        {
+            foreach (IJsonTypeInfoResolver component in _list)
+            {
+                if (!component.IsCompatibleWithOptions(options))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         internal string DebuggerDisplay

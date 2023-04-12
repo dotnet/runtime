@@ -47,6 +47,7 @@ namespace System.Security.Cryptography.Xml
             ReferenceList.Add(keyReference);
         }
 
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public override void LoadXml(XmlElement value)
         {

@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.Configuration.Xml
     /// <summary>
     /// An XML file based <see cref="IConfigurationProvider"/>.
     /// </summary>
+    [RequiresDynamicCode(XmlDocumentDecryptor.RequiresDynamicCodeMessage)]
     [RequiresUnreferencedCode(XmlDocumentDecryptor.RequiresUnreferencedCodeMessage)]
     public class XmlStreamConfigurationProvider : StreamConfigurationProvider
     {

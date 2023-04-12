@@ -15,6 +15,7 @@ namespace Microsoft.Extensions.Configuration.Xml
     /// </summary>
     public class XmlDocumentDecryptor
     {
+        internal const string RequiresDynamicCodeMessage = "Microsoft.Extensions.Configuration.Xml can use EncryptedXml which may contain XSLTs in the xml. XSLTs require dynamic code.";
         internal const string RequiresUnreferencedCodeMessage = "Microsoft.Extensions.Configuration.Xml can use EncryptedXml. The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.";
 
         /// <summary>
@@ -56,6 +57,7 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// <param name="input">The input <see cref="Stream"/> to read the XML configuration data from.</param>
         /// <param name="settings">The settings for the new <see cref="XmlReader"/> instance.</param>
         /// <returns>An <see cref="XmlReader"/> that decrypts data transparently.</returns>
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public XmlReader CreateDecryptingXmlReader(Stream input, XmlReaderSettings? settings)
         {
@@ -96,6 +98,7 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// <param name="document">The document.</param>
         /// <returns>An XmlReader which can read the document.</returns>
         [UnsupportedOSPlatform("browser")]
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         protected virtual XmlReader DecryptDocumentAndCreateXmlReader(XmlDocument document)
         {
