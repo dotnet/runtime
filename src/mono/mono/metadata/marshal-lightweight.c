@@ -2091,6 +2091,10 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 			for (i = 1; i <= sig->param_count; ++i)
 				mono_mb_emit_ldarg (mb, i);
 			mono_mb_emit_ldarg (mb, 1);
+			if (m_type_is_byref (sig->params [0])) {
+				mono_mb_emit_op (mb, CEE_LDOBJ, mono_class_from_mono_type_internal (sig->params [0]));
+				mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type_internal (sig->params [0]));
+			}
 			mono_mb_emit_ldarg (mb, 0);
 			mono_mb_emit_icall (mb, mono_get_addr_compiled_method);
 			mono_mb_emit_op (mb, CEE_CALLI, target_method_sig);
