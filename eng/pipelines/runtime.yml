@@ -1212,7 +1212,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - linux_x64_llvmaot
+            - linux_x64
             # Disabled pending outcome of https://github.com/dotnet/runtime/issues/60234 investigation
             #- linux_arm64
           variables:
