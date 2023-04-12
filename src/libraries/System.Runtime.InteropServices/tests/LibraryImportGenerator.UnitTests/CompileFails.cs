@@ -197,6 +197,7 @@ namespace LibraryImportGenerator.UnitTests
             // This test validates the Build-like experience. In the future, we should update this test to validate the
             // IDE-like experience once we fix that case
             // (If the IDE experience works, then the command-line experience will also work.)
+            // This bug is tracked in https://github.com/dotnet/runtime/issues/84739.
             string assemblySource = $$"""
                 using System.Runtime.InteropServices.Marshalling;
                 {{CodeSnippets.ValidateDisableRuntimeMarshalling.NonBlittableUserDefinedTypeWithNativeType}}
