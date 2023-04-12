@@ -142,7 +142,7 @@ namespace System.Globalization.Tests
             }
 
             // Inputs where matched length does not equal value string length
-            if (PlatformDetection.IsHybridGlobalizationOnWasm)
+            if (PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
                 yield return new object[] { s_invariantCompare, "abcdzxyz", "\u01F3", 7, 8, supportedIgnoreNonSpaceOption, -1, 0 };
                 yield return new object[] { s_invariantCompare, "abc\u01F3xyz", "dz", 6, 7, supportedIgnoreNonSpaceOption, -1, 0 };
