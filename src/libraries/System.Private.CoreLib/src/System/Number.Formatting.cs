@@ -319,30 +319,32 @@ namespace System
             "(#)", "-#", "- #", "#-", "# -",
         };
 
+#if !MONO
         // Optimizations using "TwoDigits" inspired by:
         // https://engineering.fb.com/2013/03/15/developer-tools/three-optimization-tips-for-c/
-        private const string TwoDigitsChars =
-            "00010203040506070809" +
-            "10111213141516171819" +
-            "20212223242526272829" +
-            "30313233343536373839" +
-            "40414243444546474849" +
-            "50515253545556575859" +
-            "60616263646566676869" +
-            "70717273747576777879" +
-            "80818283848586878889" +
-            "90919293949596979899";
-        private static ReadOnlySpan<byte> TwoDigitsBytes =>
-            "00010203040506070809"u8 +
-            "10111213141516171819"u8 +
-            "20212223242526272829"u8 +
-            "30313233343536373839"u8 +
-            "40414243444546474849"u8 +
-            "50515253545556575859"u8 +
-            "60616263646566676869"u8 +
-            "70717273747576777879"u8 +
-            "80818283848586878889"u8 +
-            "90919293949596979899"u8;
+        private static readonly byte[] TwoDigitsCharsAsBytes =
+            MemoryMarshal.AsBytes<char>("00010203040506070809" +
+                                        "10111213141516171819" +
+                                        "20212223242526272829" +
+                                        "30313233343536373839" +
+                                        "40414243444546474849" +
+                                        "50515253545556575859" +
+                                        "60616263646566676869" +
+                                        "70717273747576777879" +
+                                        "80818283848586878889" +
+                                        "90919293949596979899").ToArray();
+        private static readonly byte[] TwoDigitsBytes =
+                                       ("00010203040506070809"u8 +
+                                        "10111213141516171819"u8 +
+                                        "20212223242526272829"u8 +
+                                        "30313233343536373839"u8 +
+                                        "40414243444546474849"u8 +
+                                        "50515253545556575859"u8 +
+                                        "60616263646566676869"u8 +
+                                        "70717273747576777879"u8 +
+                                        "80818283848586878889"u8 +
+                                        "90919293949596979899"u8).ToArray();
+#endif
 
         public static unsafe string FormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
@@ -370,7 +372,7 @@ namespace System
             return result;
         }
 
-        public static unsafe bool TryFormatDecimal<TChar>(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        public static unsafe bool TryFormatDecimal<TChar>(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -434,7 +436,7 @@ namespace System
             return result;
         }
 
-        public static bool TryFormatDouble<TChar>(double value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        public static bool TryFormatDouble<TChar>(double value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             var vlb = new ValueListBuilder<TChar>(stackalloc TChar[CharStackBufferSize]);
             string? s = FormatDouble(ref vlb, value, format, info);
@@ -574,7 +576,7 @@ namespace System
         /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
         /// Null if no existing string was returned, in which case the formatted output is in the builder.
         /// </returns>
-        private static unsafe string? FormatDouble<TChar>(ref ValueListBuilder<TChar> vlb, double value, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe string? FormatDouble<TChar>(ref ValueListBuilder<TChar> vlb, double value, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
             if (!double.IsFinite(value))
             {
@@ -664,7 +666,7 @@ namespace System
             return result;
         }
 
-        public static bool TryFormatSingle<TChar>(float value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        public static bool TryFormatSingle<TChar>(float value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             var vlb = new ValueListBuilder<TChar>(stackalloc TChar[CharStackBufferSize]);
             string? s = FormatSingle(ref vlb, value, format, info);
@@ -683,7 +685,7 @@ namespace System
         /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
         /// Null if no existing string was returned, in which case the formatted output is in the builder.
         /// </returns>
-        private static unsafe string? FormatSingle<TChar>(ref ValueListBuilder<TChar> vlb, float value, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe string? FormatSingle<TChar>(ref ValueListBuilder<TChar> vlb, float value, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -780,7 +782,7 @@ namespace System
         /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
         /// Null if no existing string was returned, in which case the formatted output is in the builder.
         /// </returns>
-        private static unsafe string? FormatHalf<TChar>(ref ValueListBuilder<TChar> vlb, Half value, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe string? FormatHalf<TChar>(ref ValueListBuilder<TChar> vlb, Half value, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -862,7 +864,7 @@ namespace System
             return null;
         }
 
-        public static bool TryFormatHalf<TChar>(Half value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        public static bool TryFormatHalf<TChar>(Half value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -878,7 +880,7 @@ namespace System
             return success;
         }
 
-        private static bool TryCopyTo<TChar>(string source, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static bool TryCopyTo<TChar>(string source, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(source != null);
@@ -963,7 +965,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // expose to caller's likely-const format to trim away slow path
-        public static bool TryFormatInt32<TChar>(int value, int hexMask, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        public static bool TryFormatInt32<TChar>(int value, int hexMask, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             // Fast path for default format
             if (format.Length == 0)
@@ -1069,7 +1071,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // expose to caller's likely-const format to trim away slow path
-        public static bool TryFormatUInt32<TChar>(uint value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        public static bool TryFormatUInt32<TChar>(uint value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -1177,7 +1179,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // expose to caller's likely-const format to trim away slow path
-        public static bool TryFormatInt64<TChar>(long value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        public static bool TryFormatInt64<TChar>(long value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -1285,7 +1287,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // expose to caller's likely-const format to trim away slow path
-        public static bool TryFormatUInt64<TChar>(ulong value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        public static bool TryFormatUInt64<TChar>(ulong value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -1394,7 +1396,7 @@ namespace System
             }
         }
 
-        public static bool TryFormatInt128<TChar>(Int128 value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        public static bool TryFormatInt128<TChar>(Int128 value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -1504,7 +1506,7 @@ namespace System
             }
         }
 
-        public static bool TryFormatUInt128<TChar>(UInt128 value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        public static bool TryFormatUInt128<TChar>(UInt128 value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -1620,7 +1622,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryNegativeInt32ToDecStr<TChar>(int value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe bool TryNegativeInt32ToDecStr<TChar>(int value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(value < 0);
@@ -1669,7 +1671,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryInt32ToHexStr<TChar>(int value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe bool TryInt32ToHexStr<TChar>(int value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -1695,14 +1697,14 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe TChar* Int32ToHexChars<TChar>(TChar* buffer, uint value, int hexBase, int digits) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe TChar* Int32ToHexChars<TChar>(TChar* buffer, uint value, int hexBase, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
             while (--digits >= 0 || value != 0)
             {
                 byte digit = (byte)(value & 0xF);
-                *(--buffer) = TChar.CreateTruncating(digit + (digit < 10 ? (byte)'0' : hexBase));
+                *(--buffer) = TChar.CastFrom(digit + (digit < 10 ? (byte)'0' : hexBase));
                 value >>= 4;
             }
             return buffer;
@@ -1732,42 +1734,23 @@ namespace System
             number.CheckConsistency();
         }
 
-        /// <summary>
-        /// Writes a value [ 00 .. 99 ] to the buffer starting at the specified offset.
-        /// This method performs best when the starting index is a constant literal.
-        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void WriteTwoDigits<TChar>(uint value, Span<TChar> buffer, int startingIndex = 0) where TChar : unmanaged, IBinaryInteger<TChar>
-        {
-            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
-            Debug.Assert(value <= 99);
-            Debug.Assert(startingIndex <= buffer.Length - 2);
-
-            fixed (TChar* bufferPtr = &MemoryMarshal.GetReference(buffer))
-            {
-                WriteTwoDigits(bufferPtr + startingIndex, value);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void WriteTwoDigits<TChar>(TChar* ptr, uint value) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static unsafe void WriteTwoDigits<TChar>(uint value, TChar* ptr) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(value <= 99);
 
-            if (typeof(TChar) == typeof(char))
-            {
-                Unsafe.WriteUnaligned(ptr,
-                    Unsafe.ReadUnaligned<uint>(
-                        ref Unsafe.As<char, byte>(
-                            ref Unsafe.Add(ref TwoDigitsChars.GetRawStringData(), (nuint)value * 2))));
-            }
-            else
-            {
-                Unsafe.WriteUnaligned(ptr,
-                    Unsafe.ReadUnaligned<ushort>(
-                        ref Unsafe.Add(ref MemoryMarshal.GetReference(TwoDigitsBytes), (nuint)value * 2)));
-            }
+#if MONO // mono currently regresses in performance taking the CopyBlockUnaligned path
+            uint temp = '0' + value;
+            value /= 10;
+            ptr[1] = TChar.CastFrom(temp - (value * 10));
+            ptr[0] = TChar.CastFrom('0' + value);
+#else
+            Unsafe.CopyBlockUnaligned(
+                ref *(byte*)ptr,
+                ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(typeof(TChar) == typeof(char) ? TwoDigitsCharsAsBytes : TwoDigitsBytes), (uint)sizeof(TChar) * 2 * value),
+                (uint)sizeof(TChar) * 2);
+#endif
         }
 
         /// <summary>
@@ -1775,54 +1758,60 @@ namespace System
         /// This method performs best when the starting index is a constant literal.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void WriteFourDigits<TChar>(uint value, Span<TChar> buffer, int startingIndex = 0) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static unsafe void WriteFourDigits<TChar>(uint value, TChar* ptr) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(value <= 9999);
-            Debug.Assert(startingIndex <= buffer.Length - 4);
 
+#if MONO // mono currently regresses in performance taking the CopyBlockUnaligned path
+            uint temp = '0' + value;
+            value /= 10;
+            ptr[3] = TChar.CastFrom(temp - (value * 10));
+
+            temp = '0' + value;
+            value /= 10;
+            ptr[2] = TChar.CastFrom(temp - (value * 10));
+
+            temp = '0' + value;
+            value /= 10;
+            ptr[1] = TChar.CastFrom(temp - (value * 10));
+
+            ptr[0] = TChar.CastFrom('0' + value);
+#else
             (value, uint remainder) = Math.DivRem(value, 100);
-            fixed (TChar* bufferPtr = &MemoryMarshal.GetReference(buffer))
-            {
-                WriteTwoDigits(bufferPtr + startingIndex, value);
-                WriteTwoDigits(bufferPtr + startingIndex + 2, remainder);
-            }
+
+            ref byte charsArray = ref MemoryMarshal.GetArrayDataReference(typeof(TChar) == typeof(char) ? TwoDigitsCharsAsBytes : TwoDigitsBytes);
+
+            Unsafe.CopyBlockUnaligned(
+                ref *(byte*)ptr,
+                ref Unsafe.Add(ref charsArray, (uint)sizeof(TChar) * 2 * value),
+                (uint)sizeof(TChar) * 2);
+
+            Unsafe.CopyBlockUnaligned(
+                ref *(byte*)(ptr + 2),
+                ref Unsafe.Add(ref charsArray, (uint)sizeof(TChar) * 2 * remainder),
+                (uint)sizeof(TChar) * 2);
+#endif
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void CopyFour<TChar>(ReadOnlySpan<TChar> source, Span<TChar> destination) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static unsafe void WriteDigits<TChar>(uint value, TChar* ptr, int count) where TChar : unmanaged, IUtfChar<TChar>
         {
-            if (typeof(TChar) == typeof(byte))
-            {
-                Unsafe.WriteUnaligned(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(destination)),
-                    Unsafe.ReadUnaligned<uint>(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(source))));
-            }
-            else
-            {
-                Debug.Assert(typeof(TChar) == typeof(char));
-                Unsafe.WriteUnaligned(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(destination)),
-                    Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(source))));
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void WriteDigits<TChar>(uint value, Span<TChar> buffer) where TChar : unmanaged, IBinaryInteger<TChar>
-        {
-            Debug.Assert(buffer.Length > 0);
-
-            for (int i = buffer.Length - 1; i >= 1; i--)
+            TChar* cur;
+            for (cur = ptr + count - 1; cur > ptr; cur--)
             {
                 uint temp = '0' + value;
                 value /= 10;
-                buffer[i] = TChar.CreateTruncating(temp - (value * 10));
+                *cur = TChar.CastFrom(temp - (value * 10));
             }
 
             Debug.Assert(value < 10);
-            buffer[0] = TChar.CreateTruncating('0' + value);
+            Debug.Assert(cur == ptr);
+            *cur = TChar.CastFrom('0' + value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe TChar* UInt32ToDecChars<TChar>(TChar* bufferEnd, uint value) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static unsafe TChar* UInt32ToDecChars<TChar>(TChar* bufferEnd, uint value) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -1833,25 +1822,25 @@ namespace System
                 {
                     bufferEnd -= 2;
                     (value, uint remainder) = Math.DivRem(value, 100);
-                    WriteTwoDigits(bufferEnd, remainder);
+                    WriteTwoDigits(remainder, bufferEnd);
                 }
 
                 // If there are two digits remaining, store them.
                 if (value >= 10)
                 {
                     bufferEnd -= 2;
-                    WriteTwoDigits(bufferEnd, value);
+                    WriteTwoDigits(value, bufferEnd);
                     return bufferEnd;
                 }
             }
 
             // Otherwise, store the single digit remaining.
-            *(--bufferEnd) = TChar.CreateTruncating(value + '0');
+            *(--bufferEnd) = TChar.CastFrom(value + '0');
             return bufferEnd;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe TChar* UInt32ToDecChars<TChar>(TChar* bufferEnd, uint value, int digits) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static unsafe TChar* UInt32ToDecChars<TChar>(TChar* bufferEnd, uint value, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -1861,14 +1850,14 @@ namespace System
                 bufferEnd -= 2;
                 digits -= 2;
                 (value, remainder) = Math.DivRem(value, 100);
-                WriteTwoDigits(bufferEnd, remainder);
+                WriteTwoDigits(remainder, bufferEnd);
             }
 
             while (value != 0 || digits > 0)
             {
                 digits--;
                 (value, remainder) = Math.DivRem(value, 10);
-                *(--bufferEnd) = TChar.CreateTruncating(remainder + '0');
+                *(--bufferEnd) = TChar.CastFrom(remainder + '0');
             }
 
             return bufferEnd;
@@ -1925,7 +1914,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryUInt32ToDecStr<TChar>(uint value, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe bool TryUInt32ToDecStr<TChar>(uint value, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -1945,7 +1934,7 @@ namespace System
             return false;
         }
 
-        private static unsafe bool TryUInt32ToDecStr<TChar>(uint value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe bool TryUInt32ToDecStr<TChar>(uint value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -2034,7 +2023,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryNegativeInt64ToDecStr<TChar>(long value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe bool TryNegativeInt64ToDecStr<TChar>(long value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(value < 0);
@@ -2083,7 +2072,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryInt64ToHexStr<TChar>(long value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe bool TryInt64ToHexStr<TChar>(long value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -2111,7 +2100,7 @@ namespace System
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        private static unsafe TChar* Int64ToHexChars<TChar>(TChar* buffer, ulong value, int hexBase, int digits) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe TChar* Int64ToHexChars<TChar>(TChar* buffer, ulong value, int hexBase, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 #if TARGET_32BIT
@@ -2131,7 +2120,7 @@ namespace System
             while (--digits >= 0 || value != 0)
             {
                 byte digit = (byte)(value & 0xF);
-                *(--buffer) = TChar.CreateTruncating(digit + (digit < 10 ? (byte)'0' : hexBase));
+                *(--buffer) = TChar.CastFrom(digit + (digit < 10 ? (byte)'0' : hexBase));
                 value >>= 4;
             }
             return buffer;
@@ -2173,7 +2162,7 @@ namespace System
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        internal static unsafe TChar* UInt64ToDecChars<TChar>(TChar* bufferEnd, ulong value) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static unsafe TChar* UInt64ToDecChars<TChar>(TChar* bufferEnd, ulong value) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -2191,20 +2180,20 @@ namespace System
                 {
                     bufferEnd -= 2;
                     (value, ulong remainder) = Math.DivRem(value, 100);
-                    WriteTwoDigits(bufferEnd, (uint)remainder);
+                    WriteTwoDigits((uint)remainder, bufferEnd);
                 }
 
                 // If there are two digits remaining, store them.
                 if (value >= 10)
                 {
                     bufferEnd -= 2;
-                    WriteTwoDigits(bufferEnd, (uint)value);
+                    WriteTwoDigits((uint)value, bufferEnd);
                     return bufferEnd;
                 }
             }
 
             // Otherwise, store the single digit remaining.
-            *(--bufferEnd) = TChar.CreateTruncating(value + '0');
+            *(--bufferEnd) = TChar.CastFrom(value + '0');
             return bufferEnd;
 #endif
         }
@@ -2212,7 +2201,7 @@ namespace System
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        internal static unsafe TChar* UInt64ToDecChars<TChar>(TChar* bufferEnd, ulong value, int digits) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static unsafe TChar* UInt64ToDecChars<TChar>(TChar* bufferEnd, ulong value, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -2230,14 +2219,14 @@ namespace System
                 bufferEnd -= 2;
                 digits -= 2;
                 (value, remainder) = Math.DivRem(value, 100);
-                WriteTwoDigits(bufferEnd, (uint)remainder);
+                WriteTwoDigits((uint)remainder, bufferEnd);
             }
 
             while (value != 0 || digits > 0)
             {
                 digits--;
                 (value, remainder) = Math.DivRem(value, 10);
-                *(--bufferEnd) = TChar.CreateTruncating(remainder + '0');
+                *(--bufferEnd) = TChar.CastFrom(remainder + '0');
             }
 
             return bufferEnd;
@@ -2282,7 +2271,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryUInt64ToDecStr<TChar>(ulong value, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe bool TryUInt64ToDecStr<TChar>(ulong value, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -2303,7 +2292,7 @@ namespace System
             return false;
         }
 
-        private static unsafe bool TryUInt64ToDecStr<TChar>(ulong value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe bool TryUInt64ToDecStr<TChar>(ulong value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             int countedDigits = FormattingHelpers.CountDigits(value);
             int bufferLength = Math.Max(digits, countedDigits);
@@ -2391,7 +2380,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryNegativeInt128ToDecStr<TChar>(Int128 value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe bool TryNegativeInt128ToDecStr<TChar>(Int128 value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(Int128.IsNegative(value));
@@ -2444,7 +2433,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryInt128ToHexStr<TChar>(Int128 value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe bool TryInt128ToHexStr<TChar>(Int128 value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -2472,7 +2461,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe TChar* Int128ToHexChars<TChar>(TChar* buffer, UInt128 value, int hexBase, int digits) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe TChar* Int128ToHexChars<TChar>(TChar* buffer, UInt128 value, int hexBase, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             ulong lower = value.Lower;
             ulong upper = value.Upper;
@@ -2520,7 +2509,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe TChar* UInt128ToDecChars<TChar>(TChar* bufferEnd, UInt128 value) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static unsafe TChar* UInt128ToDecChars<TChar>(TChar* bufferEnd, UInt128 value) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -2532,7 +2521,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe TChar* UInt128ToDecChars<TChar>(TChar* bufferEnd, UInt128 value, int digits) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static unsafe TChar* UInt128ToDecChars<TChar>(TChar* bufferEnd, UInt128 value, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -2581,7 +2570,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryUInt128ToDecStr<TChar>(UInt128 value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe bool TryUInt128ToDecStr<TChar>(UInt128 value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             int countedDigits = FormattingHelpers.CountDigits(value);
             int bufferLength = Math.Max(digits, countedDigits);
@@ -2673,7 +2662,7 @@ namespace System
                 '\0';
         }
 
-        internal static unsafe void NumberToString<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static unsafe void NumberToString<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -2822,7 +2811,7 @@ namespace System
             }
         }
 
-        internal static unsafe void NumberToStringFormat<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static unsafe void NumberToStringFormat<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -3075,7 +3064,7 @@ namespace System
                                 {
                                     // digPos will be one greater than thousandsSepPos[thousandsSepCtr] since we are at
                                     // the character after which the groupSeparator needs to be appended.
-                                    vlb.Append(TChar.CreateTruncating(*cur != 0 ? (char)(*cur++) : '0'));
+                                    vlb.Append(TChar.CastFrom(*cur != 0 ? (char)(*cur++) : '0'));
                                     if (thousandSeps && digPos > 1 && thousandsSepCtr >= 0)
                                     {
                                         if (digPos == thousandsSepPos[thousandsSepCtr] + 1)
@@ -3108,7 +3097,7 @@ namespace System
 
                                 if (ch != 0)
                                 {
-                                    vlb.Append(TChar.CreateTruncating(ch));
+                                    vlb.Append(TChar.CastFrom(ch));
                                     if (thousandSeps && digPos > 1 && thousandsSepCtr >= 0)
                                     {
                                         if (digPos == thousandsSepPos[thousandsSepCtr] + 1)
@@ -3195,7 +3184,7 @@ namespace System
                                     }
                                     else
                                     {
-                                        vlb.Append(TChar.CreateTruncating(ch));
+                                        vlb.Append(TChar.CastFrom(ch));
                                         break;
                                     }
 
@@ -3215,7 +3204,7 @@ namespace System
                                 }
                                 else
                                 {
-                                    vlb.Append(TChar.CreateTruncating(ch));
+                                    vlb.Append(TChar.CastFrom(ch));
                                     if (src < format.Length)
                                     {
                                         if (pFormat[src] == '+' || pFormat[src] == '-')
@@ -3245,7 +3234,7 @@ namespace System
             }
         }
 
-        private static void FormatCurrency<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static void FormatCurrency<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -3270,7 +3259,7 @@ namespace System
                         break;
 
                     default:
-                        vlb.Append(TChar.CreateTruncating(ch));
+                        vlb.Append(TChar.CastFrom(ch));
                         break;
                 }
             }
@@ -3279,7 +3268,7 @@ namespace System
         private static unsafe void FormatFixed<TChar>(
             ref ValueListBuilder<TChar> vlb, ref NumberBuffer number,
             int nMaxDigits, int[]? groupDigits,
-            ReadOnlySpan<TChar> sDecimal, ReadOnlySpan<TChar> sGroup) where TChar : unmanaged, IBinaryInteger<TChar>
+            ReadOnlySpan<TChar> sDecimal, ReadOnlySpan<TChar> sGroup) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -3333,7 +3322,7 @@ namespace System
                         TChar* p = spanPtr + bufferSize - 1;
                         for (int i = digPos - 1; i >= 0; i--)
                         {
-                            *(p--) = TChar.CreateTruncating((i < digStart) ? (char)dig[i] : '0');
+                            *(p--) = TChar.CastFrom((i < digStart) ? (char)dig[i] : '0');
 
                             if (groupSize > 0)
                             {
@@ -3363,14 +3352,14 @@ namespace System
                 {
                     do
                     {
-                        vlb.Append(TChar.CreateTruncating(*dig != 0 ? (char)(*dig++) : '0'));
+                        vlb.Append(TChar.CastFrom(*dig != 0 ? (char)(*dig++) : '0'));
                     }
                     while (--digPos > 0);
                 }
             }
             else
             {
-                vlb.Append(TChar.CreateTruncating('0'));
+                vlb.Append(TChar.CastFrom('0'));
             }
 
             if (nMaxDigits > 0)
@@ -3382,7 +3371,7 @@ namespace System
                     int zeroes = Math.Min(-digPos, nMaxDigits);
                     for (int i = 0; i < zeroes; i++)
                     {
-                        vlb.Append(TChar.CreateTruncating('0'));
+                        vlb.Append(TChar.CastFrom('0'));
                     }
                     digPos += zeroes;
                     nMaxDigits -= zeroes;
@@ -3390,7 +3379,7 @@ namespace System
 
                 while (nMaxDigits > 0)
                 {
-                    vlb.Append(TChar.CreateTruncating((*dig != 0) ? (char)(*dig++) : '0'));
+                    vlb.Append(TChar.CastFrom((*dig != 0) ? (char)(*dig++) : '0'));
                     nMaxDigits--;
                 }
             }
@@ -3399,13 +3388,13 @@ namespace System
         /// <summary>Appends a char to the builder when the char is not known to be ASCII.</summary>
         /// <remarks>This requires a helper as if the character isn't ASCII, for UTF8 encoding it will result in multiple bytes added.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void AppendUnknownChar<TChar>(ref ValueListBuilder<TChar> vlb, char ch) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static void AppendUnknownChar<TChar>(ref ValueListBuilder<TChar> vlb, char ch) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
             if (typeof(TChar) == typeof(char) || char.IsAscii(ch))
             {
-                vlb.Append(TChar.CreateTruncating(ch));
+                vlb.Append(TChar.CastFrom(ch));
             }
             else
             {
@@ -3420,7 +3409,7 @@ namespace System
             }
         }
 
-        private static void FormatNumber<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static void FormatNumber<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -3441,19 +3430,19 @@ namespace System
                         break;
 
                     default:
-                        vlb.Append(TChar.CreateTruncating(ch));
+                        vlb.Append(TChar.CastFrom(ch));
                         break;
                 }
             }
         }
 
-        private static unsafe void FormatScientific<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe void FormatScientific<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
             byte* dig = number.GetDigitsPointer();
 
-            vlb.Append(TChar.CreateTruncating((*dig != 0) ? (char)(*dig++) : '0'));
+            vlb.Append(TChar.CastFrom((*dig != 0) ? (char)(*dig++) : '0'));
 
             if (nMaxDigits != 1) // For E0 we would like to suppress the decimal point
             {
@@ -3462,18 +3451,18 @@ namespace System
 
             while (--nMaxDigits > 0)
             {
-                vlb.Append(TChar.CreateTruncating((*dig != 0) ? (char)(*dig++) : '0'));
+                vlb.Append(TChar.CastFrom((*dig != 0) ? (char)(*dig++) : '0'));
             }
 
             int e = number.Digits[0] == 0 ? 0 : number.Scale - 1;
             FormatExponent(ref vlb, info, e, expChar, 3, true);
         }
 
-        private static unsafe void FormatExponent<TChar>(ref ValueListBuilder<TChar> vlb, NumberFormatInfo info, int value, char expChar, int minDigits, bool positiveSign) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe void FormatExponent<TChar>(ref ValueListBuilder<TChar> vlb, NumberFormatInfo info, int value, char expChar, int minDigits, bool positiveSign) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
-            vlb.Append(TChar.CreateTruncating(expChar));
+            vlb.Append(TChar.CastFrom(expChar));
 
             if (value < 0)
             {
@@ -3493,7 +3482,7 @@ namespace System
             vlb.Append(new ReadOnlySpan<TChar>(p, (int)(digits + MaxUInt32DecDigits - p)));
         }
 
-        private static unsafe void FormatGeneral<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar, bool suppressScientific) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static unsafe void FormatGeneral<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar, bool suppressScientific) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -3516,13 +3505,13 @@ namespace System
             {
                 do
                 {
-                    vlb.Append(TChar.CreateTruncating((*dig != 0) ? (char)(*dig++) : '0'));
+                    vlb.Append(TChar.CastFrom((*dig != 0) ? (char)(*dig++) : '0'));
                 }
                 while (--digPos > 0);
             }
             else
             {
-                vlb.Append(TChar.CreateTruncating('0'));
+                vlb.Append(TChar.CastFrom('0'));
             }
 
             if (*dig != 0 || digPos < 0)
@@ -3531,13 +3520,13 @@ namespace System
 
                 while (digPos < 0)
                 {
-                    vlb.Append(TChar.CreateTruncating('0'));
+                    vlb.Append(TChar.CastFrom('0'));
                     digPos++;
                 }
 
                 while (*dig != 0)
                 {
-                    vlb.Append(TChar.CreateTruncating(*dig++));
+                    vlb.Append(TChar.CastFrom(*dig++));
                 }
             }
 
@@ -3547,7 +3536,7 @@ namespace System
             }
         }
 
-        private static void FormatPercent<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static void FormatPercent<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -3572,7 +3561,7 @@ namespace System
                         break;
 
                     default:
-                        vlb.Append(TChar.CreateTruncating(ch));
+                        vlb.Append(TChar.CastFrom(ch));
                         break;
                 }
             }

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -23,7 +22,8 @@ namespace System
           IBinaryInteger<byte>,
           IMinMaxValue<byte>,
           IUnsignedNumber<byte>,
-          IUtf8SpanFormattable
+          IUtf8SpanFormattable,
+          IUtfChar<byte>
     {
         private readonly byte m_value; // Do not rename (binary serialization)
 
@@ -1203,5 +1203,15 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static byte IUnaryPlusOperators<byte, byte>.operator +(byte value) => (byte)(+value);
+
+        //
+        // IUtfChar
+        //
+
+        static byte IUtfChar<byte>.CastFrom(byte value) => value;
+        static byte IUtfChar<byte>.CastFrom(char value) => (byte)value;
+        static byte IUtfChar<byte>.CastFrom(int value) => (byte)value;
+        static byte IUtfChar<byte>.CastFrom(uint value) => (byte)value;
+        static byte IUtfChar<byte>.CastFrom(ulong value) => (byte)value;
     }
 }

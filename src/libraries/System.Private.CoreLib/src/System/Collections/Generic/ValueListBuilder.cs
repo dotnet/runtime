@@ -79,7 +79,7 @@ namespace System.Collections.Generic
         {
             if ((uint)(_pos + source.Length) > (uint)_span.Length)
             {
-                Grow(source.Length);
+                Grow(_span.Length - _pos + source.Length);
             }
 
             source.CopyTo(_span.Slice(_pos));
@@ -100,16 +100,29 @@ namespace System.Collections.Generic
             _pos += source.Length;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> AppendSpan(int length)
         {
             Debug.Assert(length >= 0);
 
             int pos = _pos;
-            if ((uint)(pos + length) > (uint)_span.Length)
+            Span<T> span = _span;
+            if ((ulong)(uint)pos + (ulong)(uint)length <= (ulong)(uint)span.Length) // same guard condition as in Span<T>.Slice on 64-bit
             {
-                Grow(length);
+                _pos = pos + length;
+                return span.Slice(pos, length);
             }
+            else
+            {
+                return AppendSpanWithGrow(length);
+            }
+        }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private Span<T> AppendSpanWithGrow(int length)
+        {
+            int pos = _pos;
+            Grow(_span.Length - pos + length);
             _pos += length;
             return _span.Slice(pos, length);
         }

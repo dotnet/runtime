@@ -185,7 +185,7 @@ namespace System
         public bool TryFormat(Span<char> destination, int fieldCount, out int charsWritten) =>
             TryFormatCore(destination, fieldCount, out charsWritten);
 
-        private bool TryFormatCore<TChar>(Span<TChar> destination, int fieldCount, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private bool TryFormatCore<TChar>(Span<TChar> destination, int fieldCount, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -219,7 +219,7 @@ namespace System
                         return false;
                     }
 
-                    destination[0] = TChar.CreateTruncating('.');
+                    destination[0] = TChar.CastFrom('.');
                     destination = destination.Slice(1);
                     totalCharsWritten++;
                 }
