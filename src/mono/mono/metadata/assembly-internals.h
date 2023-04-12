@@ -142,10 +142,9 @@ void
 mono_set_assemblies_path_direct (char **path);
 
 typedef enum {
-	BUNDLED_BLOB,
+	BUNDLED_DATA,
 	BUNDLED_ASSEMBLY,
 	BUNDLED_SATELLITE_ASSEMBLY,
-	BUNDLED_BINARY,
 	BUNDLED_PDB,
 	BUNDLED_RESOURCE_COUNT,
 } BundledResourceType;
