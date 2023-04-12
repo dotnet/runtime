@@ -11,8 +11,15 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Testing;
+using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Xunit;
+
+using StringMarshalling = System.Runtime.InteropServices.StringMarshalling;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -161,72 +168,99 @@ namespace LibraryImportGenerator.UnitTests
 
         public static IEnumerable<object[]> CodeSnippetsToCompile_InvalidCode()
         {
-            yield return new object[] { ID(), CodeSnippets.RecursiveImplicitlyBlittableStruct, 0, 1 };
-            yield return new object[] { ID(), CodeSnippets.MutuallyRecursiveImplicitlyBlittableStruct, 0, 2 };
-            yield return new object[] { ID(), CodeSnippets.PartialPropertyName, 0, 2 };
-            yield return new object[] { ID(), CodeSnippets.InvalidConstantForModuleName, 0, 1 };
-            yield return new object[] { ID(), CodeSnippets.IncorrectAttributeFieldType, 0, 1 };
+            yield return new[] { ID(), CodeSnippets.RecursiveImplicitlyBlittableStruct };
+            yield return new[] { ID(), CodeSnippets.MutuallyRecursiveImplicitlyBlittableStruct };
+            yield return new[] { ID(), CodeSnippets.PartialPropertyName };
+            yield return new[] { ID(), CodeSnippets.InvalidConstantForModuleName };
+            yield return new[] { ID(), CodeSnippets.IncorrectAttributeFieldType };
         }
 
         [Theory]
         [MemberData(nameof(CodeSnippetsToCompile_InvalidCode))]
-        public async Task ValidateSnippets_InvalidCodeGracefulFailure(string id, string source, int expectedGeneratorErrors, int expectedCompilerErrors)
+        public async Task ValidateSnippets_InvalidCodeGracefulFailure(string id, string source)
         {
             TestUtils.Use(id);
-            // Do not validate that the compilation has no errors that the generator will not fix.
-            Compilation comp = await TestUtils.CreateCompilation(source);
-
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
-
-            // Verify the compilation failed with errors.
-            int generatorErrors = generatorDiags.Count(d => d.Severity == DiagnosticSeverity.Error);
-            Assert.Equal(expectedGeneratorErrors, generatorErrors);
-
-            int compilerErrors = newComp.GetDiagnostics().Count(d => d.Severity == DiagnosticSeverity.Error);
-            Assert.Equal(expectedCompilerErrors, compilerErrors);
+            // Each snippet will contain the expected diagnostic codes in their expected locations for the compile errors.
+            // We expect there to be no generator diagnostics or failures.
+            await VerifyCS.VerifySourceGeneratorAsync(source);
         }
 
         [Fact]
         public async Task ValidateDisableRuntimeMarshallingForBlittabilityCheckFromAssemblyReference()
         {
+            // Emit the referenced assembly to a stream so we reference it through a metadata reference.
+            // Our check for strict blittability doesn't work correctly when using source compilation references.
+            // (There are sometimes false-positives.)
+            // This causes any diagnostics that depend on strict blittability being correctly calculated to
+            // not show up in the IDE experience. However, since they correctly show up when doing builds,
+            // either by running the Build command in the IDE or a command line build, we aren't allowing invalid code.
+            // This test validates the Build-like experience. In the future, we should update this test to validate the
+            // IDE-like experience once we fix that case
+            // (If the IDE experience works, then the command-line experience will also work.)
             string assemblySource = $$"""
-                using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
                 {{CodeSnippets.ValidateDisableRuntimeMarshalling.NonBlittableUserDefinedTypeWithNativeType}}
                 """;
             Compilation assemblyComp = await TestUtils.CreateCompilation(assemblySource);
-            TestUtils.AssertPreSourceGeneratorCompilation(assemblyComp);
+            Assert.Empty(assemblyComp.GetDiagnostics());
 
             var ms = new MemoryStream();
             Assert.True(assemblyComp.Emit(ms).Success);
 
             string testSource = CodeSnippets.ValidateDisableRuntimeMarshalling.TypeUsage(string.Empty);
 
-            Compilation testComp = await TestUtils.CreateCompilation(testSource, refs: new[] { MetadataReference.CreateFromImage(ms.ToArray()) });
-            TestUtils.AssertPreSourceGeneratorCompilation(testComp);
+            VerifyCS.Test test = new(referenceAncillaryInterop: false)
+            {
+                TestCode = testSource,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
 
-            var newComp = TestUtils.RunGenerators(testComp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
+            test.TestState.AdditionalReferences.Add(MetadataReference.CreateFromImage(ms.ToArray()));
 
             // The errors should indicate the DisableRuntimeMarshalling is required.
-            Assert.True(generatorDiags.All(d => d.Id == "SYSLIB1051"));
+            test.ExpectedDiagnostics.Add(
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
+                .WithLocation(0)
+                .WithArguments("Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.", "Method"));
+            test.ExpectedDiagnostics.Add(VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                .WithLocation(1)
+                .WithArguments("Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.", "p"));
+            test.ExpectedDiagnostics.Add(VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                .WithLocation(2)
+                .WithArguments("Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.", "pIn"));
+            test.ExpectedDiagnostics.Add(VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                .WithLocation(3)
+                .WithArguments("Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.", "pRef"));
+            test.ExpectedDiagnostics.Add(VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                .WithLocation(4)
+                .WithArguments("Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.", "pOut"));
 
-            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
+            await test.RunAsync();
         }
 
         [Fact]
         public async Task ValidateRequireAllowUnsafeBlocksDiagnostic()
         {
-            string source = CodeSnippets.TrivialClassDeclarations;
-            Compilation comp = await TestUtils.CreateCompilation(new[] { source }, allowUnsafe: false);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+            var test = new AllowUnsafeBlocksTest()
+            {
+                TestCode = CodeSnippets.TrivialClassDeclarations,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
 
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
+            test.ExpectedDiagnostics.Add(VerifyCS.Diagnostic("SYSLIB1062"));
+            test.ExpectedDiagnostics.Add(DiagnosticResult.CompilerError("CS0227").WithLocation(0));
 
-            // The errors should indicate the AllowUnsafeBlocks is required.
-            Assert.True(generatorDiags.All(d => d.Id == "SYSLIB1062"));
+            await test.RunAsync();
+        }
 
-            // There should only be one SYSLIB1062, even if there are multiple LibraryImportAttribute uses.
-            Assert.Equal(1, generatorDiags.Count());
+        class AllowUnsafeBlocksTest : VerifyCS.Test
+        {
+            public AllowUnsafeBlocksTest()
+                    :base(referenceAncillaryInterop: false)
+            {
+            }
+
+            protected override CompilationOptions CreateCompilationOptions() => ((CSharpCompilationOptions)base.CreateCompilationOptions()).WithAllowUnsafe(false);
         }
     }
 }

@@ -72,7 +72,7 @@ namespace LibraryImportGenerator.UnitTests
         /// </summary>
         public static readonly string TrivialClassDeclarations = """
             using System.Runtime.InteropServices;
-            partial class Basic
+            partial class {|#0:Basic|}
             {
                 [LibraryImportAttribute("DoesNotExist")]
                 public static partial void Method1();
@@ -675,6 +675,21 @@ namespace LibraryImportGenerator.UnitTests
         /// <summary>
         /// Declaration with parameters with MarshalAs.
         /// </summary>
+        //public static string MarshalUsingParametersAndModifiers(string typeName, string nativeTypeName, string preDeclaration = "") => $$"""
+        //    using System.Runtime.InteropServices;
+        //    using System.Runtime.InteropServices.Marshalling;
+        //    {{preDeclaration}}
+        //    partial class Test
+        //    {
+        //        [LibraryImport("DoesNotExist")]
+        //        [return: MarshalUsing(typeof({{nativeTypeName}}))]
+        //        public static partial {{typeName}} Method(
+        //            [MarshalUsing(typeof({{nativeTypeName}}))] {{typeName}} p,
+        //            [MarshalUsing(typeof({{nativeTypeName}}))] in {{typeName}} pIn,
+        //            [MarshalUsing(typeof({{nativeTypeName}}))] ref {{typeName}} pRef,
+        //            [MarshalUsing(typeof({{nativeTypeName}}))] out {{typeName}} pOut);
+        //    }
+        //    """;
         public static string MarshalUsingParametersAndModifiers(string typeName, string nativeTypeName, string preDeclaration = "") => $$"""
             using System.Runtime.InteropServices;
             using System.Runtime.InteropServices.Marshalling;
@@ -683,11 +698,11 @@ namespace LibraryImportGenerator.UnitTests
             {
                 [LibraryImport("DoesNotExist")]
                 [return: MarshalUsing(typeof({{nativeTypeName}}))]
-                public static partial {{typeName}} Method(
-                    [MarshalUsing(typeof({{nativeTypeName}}))] {{typeName}} p,
-                    [MarshalUsing(typeof({{nativeTypeName}}))] in {{typeName}} pIn,
-                    [MarshalUsing(typeof({{nativeTypeName}}))] ref {{typeName}} pRef,
-                    [MarshalUsing(typeof({{nativeTypeName}}))] out {{typeName}} pOut);
+                public static partial {{typeName}} {|#0:Method|}(
+                    [MarshalUsing(typeof({{nativeTypeName}}))] {{typeName}} {|#1:p|},
+                    [MarshalUsing(typeof({{nativeTypeName}}))] in {{typeName}} {|#2:pIn|},
+                    [MarshalUsing(typeof({{nativeTypeName}}))] ref {{typeName}} {|#3:pRef|},
+                    [MarshalUsing(typeof({{nativeTypeName}}))] out {{typeName}} {|#4:pOut|});
             }
             """;
         public static string BasicParameterWithByRefModifier(string byRefKind, string typeName, string preDeclaration = "") => $$"""
@@ -832,20 +847,20 @@ namespace LibraryImportGenerator.UnitTests
         public static string RecursiveImplicitlyBlittableStruct => BasicParametersAndModifiers("RecursiveStruct", DisableRuntimeMarshalling) + """
             struct RecursiveStruct
             {
-                RecursiveStruct s;
+                RecursiveStruct {|CS0523:s|};
                 int i;
             }
             """;
         public static string MutuallyRecursiveImplicitlyBlittableStruct => BasicParametersAndModifiers("RecursiveStruct1", DisableRuntimeMarshalling) + """
             struct RecursiveStruct1
             {
-                RecursiveStruct2 s;
+                RecursiveStruct2 {|CS0523:s|};
                 int i;
             }
 
             struct RecursiveStruct2
             {
-                RecursiveStruct1 s;
+                RecursiveStruct1 {|CS0523:s|};
                 int i;
             }
             """;
@@ -1206,7 +1221,7 @@ namespace LibraryImportGenerator.UnitTests
 
             partial struct Basic
             {
-                [LibraryImport("DoesNotExist", SetLa)]
+                [{|CS1729:LibraryImport("DoesNotExist", {|CS0103:SetLa|})|}]
                 public static partial void Method();
             }
             """;
@@ -1215,7 +1230,7 @@ namespace LibraryImportGenerator.UnitTests
 
             partial struct Basic
             {
-                [LibraryImport(DoesNotExist)]
+                [LibraryImport({|CS0103:DoesNotExist|})]
                 public static partial void Method();
             }
             """;
@@ -1224,7 +1239,7 @@ namespace LibraryImportGenerator.UnitTests
 
             partial struct Basic
             {
-                [LibraryImport("DoesNotExist", SetLastError = "Foo")]
+                [LibraryImport("DoesNotExist", SetLastError = {|CS0029:"Foo"|})]
                 public static partial void Method();
             }
             """;
