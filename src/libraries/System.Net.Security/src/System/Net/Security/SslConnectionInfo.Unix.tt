@@ -1,0 +1,50 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ import namespace="System" #>
+<#@ assembly name="System.Core" #>
+<#@ assembly name="System.Net.Primitives" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+<#@ include file="TlsCipherSuiteNameParser.ttinclude" #><#@
+    include file="TlsCipherSuite.cs" #>
+<# Array enumValues = typeof(TlsCipherSuite).GetEnumValues(); #>
+
+
+using System.Diagnostics;
+using System.Security.Authentication;
+
+namespace System.Net.Security
+{
+    internal partial struct SslConnectionInfo
+    {
+        private void MapCipherSuite(TlsCipherSuite cipherSuite)
+        {
+            TlsCipherSuite = cipherSuite;
+            KeyExchKeySize = 0;
+
+            switch (cipherSuite)
+            {
+<#
+foreach (TlsCipherSuite val in enumValues)
+{
+    TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
+#>
+                case TlsCipherSuite.<#= val #>:
+                    KeyExchangeAlg = (int)ExchangeAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm) #>;
+                    DataCipherAlg = (int)CipherAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.CipherAlgorithm) #>;
+                    DataKeySize = <#= data.CipherAlgorithmStrength #>;
+                    DataHashAlg = (int)HashAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.MACAlgorithm) #>;
+                    DataHashKeySize = <#= EnumHelpers.GetHashSize(data.MACAlgorithm) #>;
+                    break;
+
+<#
+}
+#>
+                default:
+                    Debug.Fail($"No mapping found for cipherSuite {cipherSuite}");
+                    break;
+            }
+        }
+    }
+}
