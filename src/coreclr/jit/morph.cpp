@@ -9843,6 +9843,26 @@ DONE_MORPHING_CHILDREN:
                 }
             }
 
+            if (tree->TypeIs(TYP_I_IMPL) && op1->TypeIs(TYP_REF) && !gtIsActiveCSE_Candidate(tree) &&
+                !gtIsActiveCSE_Candidate(op1))
+            {
+                bool                 isExact   = false;
+                bool                 isNonNull = false;
+                CORINFO_CLASS_HANDLE handle    = gtGetClassHandle(op1, &isExact, &isNonNull);
+                if (isExact && (handle != NO_CLASS_HANDLE))
+                {
+                    GenTree* result      = gtNewIconNode((ssize_t)handle, TYP_I_IMPL);
+                    GenTree* sideEffects = nullptr;
+                    gtExtractSideEffList(tree, &sideEffects, GTF_ALL_EFFECT);
+                    if (sideEffects != nullptr)
+                    {
+                        result = gtNewOperNode(GT_COMMA, TYP_I_IMPL, sideEffects, result);
+                    }
+                    INDEBUG(result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                    return result;
+                }
+            }
+
 #ifdef TARGET_ARM
             GenTree* effOp1 = op1->gtEffectiveVal(true);
             // Check for a misalignment floating point indirection.
