@@ -61,42 +61,23 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> CurrencyNegativePatternTestLocales()
         {
-            yield return new object[] { "en-US" };
-            yield return new object[] { "en-CA" };
-            yield return new object[] { "fa-IR" };
-            yield return new object[] { "fr-CD" };
-            yield return new object[] { "fr-CA" };
+            yield return new object[] { "en-US", new int[] { 1, 0 } };
+            yield return new object[] { "en-CA", new int[] { 1, 0 } };
+            yield return new object[] { "fa-IR" , new int[] { 1, 0 } };
+            yield return new object[] { "fr-CD", new int[] { 8, 15 } };
+            yield return new object[] { "fr-CA", new int[] { 8, 15 } };
+            yield return new object[] { "as", new int[] { 9 } };
         }
 
         [Theory]
         [MemberData(nameof(CurrencyNegativePatternTestLocales))]
-        public void CurrencyNegativePattern_Get_ReturnsExpected_ByLocale(string locale)
+        public void CurrencyNegativePattern_Get_ReturnsExpected_ByLocale(string locale, int[] expectedNegativePattern)
         {
             CultureInfo culture = new CultureInfo(locale);
 
             NumberFormatInfo format = culture.NumberFormat;
-            Assert.Contains(format.CurrencyNegativePattern, GetCurrencyNegativePatterns(locale));
+            Assert.Contains(format.CurrencyNegativePattern, expectedNegativePattern);
         }
 
-        internal static int[] GetCurrencyNegativePatterns(string localeName)
-        {
-            switch (localeName)
-            {
-                case "en-US":
-                    return new int[] { 1, 0 };
-                case "en-CA":
-                    return new int[] { 1, 0 };
-                case "fa-IR":
-                        return new int[] { 1, 0 };
-                case "fr-CD":
-                        return new int[] { 8, 15 };
-                case "as":
-                    return new int[] { 9 };
-                case "fr-CA":
-                    return new int[] { 8, 15 };
-            }
-            
-            return new int[] { 0 };
-        }
     }
 }

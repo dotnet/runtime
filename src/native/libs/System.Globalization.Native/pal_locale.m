@@ -154,7 +154,7 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
 // invariant character definitions
 #define CHAR_CURRENCY ((char)0x00A4)   // international currency
 #define CHAR_SPACE ((char)0x0020)      // space
-#define CHAR_NBSPACE ((char)0x00A0)    // space
+#define CHAR_NBSPACE ((char)0x00A0)    // no-break space
 #define CHAR_DIGIT ((char)0x0023)      // '#'
 #define CHAR_MINUS ((char)0x002D)      // '-'
 #define CHAR_PERCENT ((char)0x0025)    // '%'
@@ -370,11 +370,7 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
             static const char* Patterns[] = {"(n)", "-n", "- n", "n-", "n -"};
             const char *pFormat = [[numberFormatter negativeFormat] UTF8String];
             value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), true);
-            if (value >= 0)
-            {
-                return value;
-            }
-            else
+            if (value < 0)
             {
                 isSuccess = false;
             }
@@ -396,11 +392,7 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
             static const char* Patterns[] = {"Cn", "nC", "C n", "n C"};
             const char *pFormat = [[numberFormatter positiveFormat] UTF8String];
             value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), false);
-            if (value >= 0)
-            {
-                return value;
-            }
-            else
+            if (value < 0)
             {
                 isSuccess = false;
             }
@@ -430,11 +422,7 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
                                              "C- n" };
             const char *pFormat = [[numberFormatter negativeFormat] UTF8String];
             value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), true);
-            if (value >= 0)
-            {
-                return value;
-            }
-            else
+            if (value < 0)
             {
                 isSuccess = false;
             }
@@ -485,11 +473,7 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
             static const char* Patterns[] = {"-n %", "-n%", "-%n", "%-n", "%n-", "n-%", "n%-", "-% n", "n %-", "% n-", "% -n", "n- %"};
             const char *pFormat = [[numberFormatter negativeFormat] UTF8String];
             value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), true);
-            if (value >= 0)
-            {
-                return value;
-            }
-            else
+            if (value < 0)
             {
                 isSuccess = false;
             }
@@ -503,11 +487,7 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
             static const char* Patterns[] = {"n %", "n%", "%n", "% n"};
             const char *pFormat = [[numberFormatter positiveFormat] UTF8String];
             value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), false);
-            if (value >= 0)
-            {
-                return value;
-            }
-            else
+            if (value < 0)
             {
                 isSuccess = false;
             }
@@ -515,9 +495,11 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
         }
         default:
             value = -1;
-            assert(isSuccess);
+            isSuccess = false;
             break;
     }
+
+    assert(isSuccess);
 
     return value;
 }

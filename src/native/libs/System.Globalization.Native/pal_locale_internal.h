@@ -63,44 +63,4 @@ Detects the default locale string for Apple platforms
 */
 char* DetectDefaultAppleLocaleName(void);
 
-/*
-Function:
-GlobalizationNative_GetLocaleNameNative
-
-Returns native locale name for Apple platforms
-*/
-const char* GlobalizationNative_GetLocaleNameNative(const char* localeName);
-
-/*
-Function:
-GlobalizationNative_GetLocaleInfoStringNative
-
-Returns string locale information if found for the specified locale name for Apple platforms.
-Returns empty string if not found.
-*/
-const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData);
-
-/*
-Function:
-GlobalizationNative_GetLocaleInfoIntNative
-
-Returns int locale information if found for the specified locale name for Apple platforms.
-*/
-int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, LocaleNumberData localeStringData);
-
-/*
-Function:
-GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative
-
-Returns primary grouping size for decimal and currency for the specified locale name for Apple platforms.
-*/
-int32_t GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative(const char* localeName, LocaleNumberData localeStringData);
-
-/*
-Function:
-GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative
-
-Returns secondary grouping size for decimal and currency for the specified locale name for Apple platforms.
-*/
-int32_t GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative(const char* localeName, LocaleNumberData localeStringData);
 #endif

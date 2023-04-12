@@ -17,9 +17,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             string realNameBuffer = _sRealName;
 
-            _sWindowsName = GetLocaleNameNative(realNameBuffer);
-            _sName = _sWindowsName;
-            _sRealName = _sName;
+            sWindowsName = _sName = _sRealName = GetLocaleNameNative(realNameBuffer);
             return true;
         }
 
@@ -49,12 +47,9 @@ namespace System.Globalization
         {
             Debug.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfoNative(LocaleNumberData)] Expected _sWindowsName to be populated already");
 
-            switch (type)
-            {
-                case LocaleNumberData.CalendarType:
-                    // returning 0 will cause the first supported calendar to be returned, which is the preferred calendar
-                    return 0;
-            }
+            // returning 0 will cause the first supported calendar to be returned, which is the preferred calendar
+            if (type == LocaleNumberData.CalendarType)
+                return 0;
 
             return Interop.Globalization.GetLocaleInfoIntNative(_sWindowsName, (uint)type);
         }
@@ -76,7 +71,7 @@ namespace System.Globalization
 
         private string GetTimeFormatStringNative() => GetTimeFormatStringNative(shortFormat: false);
 
-        private unsafe string GetTimeFormatStringNative(bool shortFormat)
+        private string GetTimeFormatStringNative(bool shortFormat)
         {
             Debug.Assert(_sWindowsName != null, "[CultureData.GetTimeFormatStringNative(bool shortFormat)] Expected _sWindowsName to be populated already");
 
