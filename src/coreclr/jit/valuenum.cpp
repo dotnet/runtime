@@ -55,7 +55,7 @@ struct FloatTraits
     {
 #if defined(TARGET_XARCH)
         unsigned bits = 0xFFC00000u;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         unsigned           bits = 0x7FC00000u;
 #else
 #error Unsupported or unset target architecture
@@ -81,7 +81,7 @@ struct DoubleTraits
     {
 #if defined(TARGET_XARCH)
         unsigned long long bits = 0xFFF8000000000000ull;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         unsigned long long bits = 0x7FF8000000000000ull;
 #else
 #error Unsupported or unset target architecture
@@ -8666,7 +8666,6 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
                                                  GT_ARR_ADDR, GT_BOUNDS_CHECK,
-                                                 GT_OBJ,      // May reference heap memory.
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
                                                  GT_MDARR_LENGTH,
@@ -9999,7 +9998,6 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
         }
         break;
 
-        case GT_OBJ:
         case GT_BLK:
         case GT_IND:
         {
@@ -10693,7 +10691,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, loadType));
                 }
-                else if (tree->OperIs(GT_IND, GT_BLK, GT_OBJ) && fgValueNumberConstLoad(tree->AsIndir()))
+                else if (tree->OperIs(GT_IND, GT_BLK) && fgValueNumberConstLoad(tree->AsIndir()))
                 {
                     // VN is assigned inside fgValueNumberConstLoad
                 }
@@ -11229,6 +11227,13 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
     {
         fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
     }
+#if defined(TARGET_XARCH)
+    else if (HWIntrinsicInfo::HasSpecialSideEffect_Barrier(intrinsicId))
+    {
+        // This is modeled the same as GT_MEMORYBARRIER
+        fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - Barrier"));
+    }
+#endif // TARGET_XARCH
 
     ValueNumPair excSetPair = ValueNumStore::VNPForEmptyExcSet();
     ValueNumPair normalPair = ValueNumPair();
@@ -12100,6 +12105,9 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
             vnf = VNF_GetsharedNongcthreadstaticBaseNoctor;
             break;
+        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            vnf = VNF_GetsharedNongcthreadstaticBaseNoctorOptimized;
+            break;
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
             vnf = VNF_GetsharedGcthreadstaticBaseDynamicclass;
             break;
@@ -12801,7 +12809,6 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
 
             case GT_IND:
             case GT_BLK:
-            case GT_OBJ:
             case GT_NULLCHECK:
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsIndir()->Addr());
                 break;

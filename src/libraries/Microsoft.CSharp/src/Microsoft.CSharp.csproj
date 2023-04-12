@@ -168,6 +168,8 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\TokenKind.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
              Link="Common\System\Collections\HashHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(EnableComBinder)'=='true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"

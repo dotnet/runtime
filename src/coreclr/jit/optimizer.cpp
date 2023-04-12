@@ -389,8 +389,6 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
     noway_assert(!opts.MinOpts());
 
-    bool removeLoop = false;
-
     // If an unreachable block is a loop entry or bottom then the loop is unreachable.
     // Special case: the block was the head of a loop - or pointing to a loop entry.
 
@@ -456,101 +454,37 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         // If `block` flows to the loop entry then the whole loop will become unreachable if it is the
         // only non-loop predecessor.
 
-        switch (block->bbJumpKind)
+        bool removeLoop = false;
+        if (!loop.lpContains(block))
         {
-            case BBJ_NONE:
-                if (block->bbNext == loop.lpEntry)
-                {
-                    removeLoop = true;
-                }
-                break;
-
-            case BBJ_COND:
-                if ((block->bbNext == loop.lpEntry) || (block->bbJumpDest == loop.lpEntry))
-                {
-                    removeLoop = true;
-                }
-                break;
-
-            case BBJ_ALWAYS:
-                if (block->bbJumpDest == loop.lpEntry)
-                {
-                    removeLoop = true;
-                }
-                break;
-
-            case BBJ_SWITCH:
-                for (BasicBlock* const bTarget : block->SwitchTargets())
-                {
-                    if (bTarget == loop.lpEntry)
-                    {
-                        removeLoop = true;
-                        break;
-                    }
-                }
-                break;
-
-            default:
-                break;
-        }
-
-        if (removeLoop)
-        {
-            // Check if the entry has other predecessors outside the loop.
-            // TODO: Replace this when predecessors are available.
-
-            for (BasicBlock* const auxBlock : Blocks())
+            for (BasicBlock* const succ : block->Succs())
             {
-                // Ignore blocks in the loop.
-                if (loop.lpContains(auxBlock))
+                if (loop.lpEntry == succ)
                 {
-                    continue;
-                }
-
-                switch (auxBlock->bbJumpKind)
-                {
-                    case BBJ_NONE:
-                        if (auxBlock->bbNext == loop.lpEntry)
-                        {
-                            removeLoop = false;
-                        }
-                        break;
-
-                    case BBJ_COND:
-                        if ((auxBlock->bbNext == loop.lpEntry) || (auxBlock->bbJumpDest == loop.lpEntry))
-                        {
-                            removeLoop = false;
-                        }
-                        break;
-
-                    case BBJ_ALWAYS:
-                        if (auxBlock->bbJumpDest == loop.lpEntry)
-                        {
-                            removeLoop = false;
-                        }
-                        break;
-
-                    case BBJ_SWITCH:
-                        for (BasicBlock* const bTarget : auxBlock->SwitchTargets())
-                        {
-                            if (bTarget == loop.lpEntry)
-                            {
-                                removeLoop = false;
-                                break;
-                            }
-                        }
-                        break;
-
-                    default:
-                        break;
+                    removeLoop = true;
+                    break;
                 }
             }
 
             if (removeLoop)
             {
-                reportBefore();
-                optMarkLoopRemoved(loopNum);
+                // If the entry has any non-loop block that is not the known 'block' predecessor of entry
+                // (found above), then don't remove the loop.
+                for (BasicBlock* const predBlock : loop.lpEntry->PredBlocks())
+                {
+                    if (!loop.lpContains(predBlock) && (predBlock != block))
+                    {
+                        removeLoop = false;
+                        break;
+                    }
+                }
             }
+        }
+
+        if (removeLoop)
+        {
+            reportBefore();
+            optMarkLoopRemoved(loopNum);
         }
         else if (loop.lpHead == block)
         {
@@ -1765,10 +1699,12 @@ public:
             return false;
         }
 
-        if (bottom->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, BBJ_CALLFINALLY, BBJ_SWITCH))
+        if (bottom->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, BBJ_CALLFINALLY,
+                           BBJ_SWITCH))
         {
             JITDUMP("    bottom odd jump kind\n");
-            // BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, and BBJ_CALLFINALLY can never form a loop.
+            // BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, and BBJ_CALLFINALLY can never form a
+            // loop.
             // BBJ_SWITCH that has a backward jump appears only for labeled break.
             return false;
         }
@@ -2088,7 +2024,7 @@ private:
                 continue;
             }
 
-            // This blocks is lexically between TOP and BOTTOM, but it does not
+            // This block is lexically between TOP and BOTTOM, but it does not
             // participate in the flow cycle.  Check for a run of consecutive
             // such blocks.
             //
@@ -2502,6 +2438,21 @@ private:
                 if (!loopBlocks.IsMember(exitPoint->bbNum))
                 {
                     // Exit from a block other than BOTTOM
+                    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if !defined(FEATURE_EH_FUNCLETS)
+                    // On non-funclet platforms (x86), the catch exit is a BBJ_ALWAYS, but we don't want that to
+                    // be considered a loop exit block, as catch handlers don't have predecessor lists and don't
+                    // show up as might be expected in the dominator tree.
+                    if (block->bbJumpKind == BBJ_ALWAYS)
+                    {
+                        if (!BasicBlock::sameHndRegion(block, exitPoint))
+                        {
+                            break;
+                        }
+                    }
+#endif // !defined(FEATURE_EH_FUNCLETS)
+
                     lastExit = block;
                     exitCount++;
                 }
@@ -2511,6 +2462,7 @@ private:
                 break;
 
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
             case BBJ_EHFILTERRET:
                 // The "try" associated with this "finally" must be in the same loop, so the
                 // finally block will return control inside the loop.
@@ -2820,6 +2772,7 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
         case BBJ_THROW:
         case BBJ_RETURN:
         case BBJ_EHFILTERRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFINALLYRET:
         case BBJ_EHCATCHRET:
             // These have no jump destination to update.
@@ -6986,7 +6939,6 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     // convenient). But note that it is arbitrary because there is not guaranteed execution order amongst
     // the child loops.
 
-    int childLoopPreHeaders = 0;
     for (BasicBlock::loopNumber childLoop = pLoopDsc->lpChild; //
          childLoop != BasicBlock::NOT_IN_LOOP;                 //
          childLoop = optLoopTable[childLoop].lpSibling)
@@ -7016,7 +6968,6 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
         }
         JITDUMP("  --  " FMT_BB " (child loop pre-header)\n", childPreHead->bbNum);
         defExec.Push(childPreHead);
-        ++childLoopPreHeaders;
     }
 
     if (pLoopDsc->lpExitCnt == 1)
@@ -7029,22 +6980,14 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
         // Push dominators, until we reach "entry" or exit the loop.
 
         BasicBlock* cur = pLoopDsc->lpExit;
-        while (cur != nullptr && pLoopDsc->lpContains(cur) && cur != pLoopDsc->lpEntry)
+        while ((cur != nullptr) && (cur != pLoopDsc->lpEntry))
         {
             JITDUMP("  --  " FMT_BB " (dominate exit block)\n", cur->bbNum);
+            assert(pLoopDsc->lpContains(cur));
             defExec.Push(cur);
             cur = cur->bbIDom;
         }
-
-        // If we didn't reach the entry block, give up and *just* push the entry block (and the pre-headers).
-        if (cur != pLoopDsc->lpEntry)
-        {
-            JITDUMP("  -- odd, we didn't reach entry from exit via dominators. Only considering hoisting in entry "
-                    "block " FMT_BB "\n",
-                    pLoopDsc->lpEntry->bbNum);
-            defExec.Pop(defExec.Height() - childLoopPreHeaders);
-            assert(defExec.Height() == childLoopPreHeaders);
-        }
+        noway_assert(cur == pLoopDsc->lpEntry);
     }
     else // More than one exit
     {
@@ -8779,11 +8722,17 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 
 #ifdef FEATURE_HW_INTRINSICS
                     case GT_HWINTRINSIC:
-                        if (tree->AsHWIntrinsic()->OperIsMemoryStore())
+                    {
+                        GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
+                        NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
+                        if (hwintrinsic->OperIsMemoryStoreOrBarrier())
                         {
+                            // For barriers, we model the behavior after GT_MEMORYBARRIER
                             memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                         }
                         break;
+                    }
 #endif // FEATURE_HW_INTRINSICS
 
                     case GT_LOCKADD:

@@ -86,6 +86,7 @@ CORINFO_TAILCALL_HELPERS*,ref CORINFO_TAILCALL_HELPERS
 CORINFO_GENERICHANDLE_RESULT*,ref CORINFO_GENERICHANDLE_RESULT
 CORINFO_METHOD_INFO*,CORINFO_METHOD_INFO*
 CORINFO_FIELD_INFO*,CORINFO_FIELD_INFO*
+CORINFO_THREAD_STATIC_BLOCKS_INFO*,CORINFO_THREAD_STATIC_BLOCKS_INFO*
 CORINFO_CALL_INFO*,CORINFO_CALL_INFO*
 CORINFO_DEVIRTUALIZATION_INFO*,CORINFO_DEVIRTUALIZATION_INFO*
 PatchpointInfo*
@@ -119,6 +120,7 @@ CorInfoHFAElemType
 CorInfoTypeWithMod
 CorInfoCallConvExtension
 InfoAccessType
+InfoAccessType*, ref InfoAccessType
 CORINFO_LOOKUP_KIND
 CORINFO_ACCESS_FLAGS
 CORINFO_CALLINFO_FLAGS
@@ -208,6 +210,8 @@ FUNCTIONS
     void* LongLifetimeMalloc(size_t sz)
     void LongLifetimeFree(void* obj)
     size_t getClassModuleIdForStatics(CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE* pModule, VOIDSTARSTAR ppIndirection)
+    bool getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset)
+    bool getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr)
     unsigned getClassSize(CORINFO_CLASS_HANDLE cls)
     unsigned getHeapClassSize(CORINFO_CLASS_HANDLE        cls)
     bool canAllocateOnStack(CORINFO_CLASS_HANDLE cls)
@@ -254,6 +258,8 @@ FUNCTIONS
     CorInfoType getFieldType(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType, CORINFO_CLASS_HANDLE memberParent)
     unsigned getFieldOffset(CORINFO_FIELD_HANDLE field)
     void getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
+    uint32_t getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
+    void getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
     bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
     int getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
     void getBoundaries(CORINFO_METHOD_HANDLE ftn, unsigned int* cILOffsets, uint32_t** pILOffsets, ICorDebugInfo::BoundaryTypes* implicitBoundaries)
@@ -284,6 +290,7 @@ FUNCTIONS
     size_t findNameOfToken(CORINFO_MODULE_HANDLE       moduleHandle,mdToken                     token, char * szFQName,size_t FQNameCapacity);
     bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_HANDLE  structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
     uint32_t getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
+    uint32_t getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
     uint32_t getThreadTLSIndex(void                  **ppIndirection);
     const void * getInlinedCallFrameVptr(void **ppIndirection);
     int32_t * getAddrOfCaptureThreadGlobal(void                  **ppIndirection);

@@ -99,6 +99,8 @@
     <Compile Include="System\Drawing\RectangleConverter.cs" />
     <Compile Include="System\Drawing\SizeConverter.cs" />
     <Compile Include="System\Drawing\SizeFConverter.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <!-- New code introduced for netcoreapp 2.0 -->
     <Compile Include="System\ComponentModel\AddingNewEventArgs.cs" />
     <Compile Include="System\ComponentModel\AddingNewEventHandler.cs" />

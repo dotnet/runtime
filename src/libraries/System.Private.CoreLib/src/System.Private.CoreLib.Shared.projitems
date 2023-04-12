@@ -130,8 +130,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.G.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.L.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.O.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.R.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.E.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.F.cs" />
@@ -343,6 +341,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Invariant.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Nls.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.WebAssembly.cs" Condition="'$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Icu.cs" />
@@ -400,7 +399,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Nls.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.WebAssembly.cs" Condition="'$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.WebAssembly.cs" Condition="'$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ThaiBuddhistCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanFormat.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanParse.cs" />
@@ -1261,6 +1260,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ComAwareWeakReference.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.CompareInfo.cs" Condition="'$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true'">
+      <Link>Common\Interop\Interop.CompareInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.TextInfo.cs" Condition="'$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true'">
+      <Link>Common\Interop\Interop.TextInfo.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Calendar.cs">
       <Link>Common\Interop\Interop.Calendar.cs</Link>
     </Compile>

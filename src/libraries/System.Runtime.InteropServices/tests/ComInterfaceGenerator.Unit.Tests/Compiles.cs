@@ -35,6 +35,10 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new[] { ID(), codeSnippets.SpecifiedMethodIndexNoExplicitParametersNoImplicitThis };
             yield return new[] { ID(), codeSnippets.SpecifiedMethodIndexNoExplicitParametersCallConvWithCallingConventions };
 
+            // Use different method modifiers
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers("int", "public") };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers("int", "internal") };
+
             // Basic marshalling validation
             yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<byte>() };
             yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<sbyte>() };
@@ -319,9 +323,16 @@ namespace ComInterfaceGenerator.Unit.Tests
             TestUtils.AssertPostSourceGeneratorCompilation(newComp, "CS0105");
         }
 
+        public static IEnumerable<object[]> ComInterfaceSnippetsToCompile()
+        {
+            CodeSnippets codeSnippets = new(new GeneratedComInterfaceAttributeProvider());
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceType };
+        }
+
         [Theory]
         [MemberData(nameof(CodeSnippetsToCompile), GeneratorKind.ComInterfaceGenerator)]
         [MemberData(nameof(CustomCollections), GeneratorKind.ComInterfaceGenerator)]
+        [MemberData(nameof(ComInterfaceSnippetsToCompile))]
         public async Task ValidateComInterfaceSnippets(string id, string source)
         {
             _ = id;

@@ -2387,6 +2387,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
         break;
 
+        case BBJ_EHFAULTRET:
         case BBJ_THROW:
         case BBJ_RETURN:
             /* no jumps or fall through blocks to set here */
@@ -2908,6 +2909,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
         case BBJ_RETURN:
         case BBJ_EHCATCHRET:
         case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
 
             /* leave them as is */
@@ -6605,6 +6607,7 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
             costSz = 1; // We place a int3 after the code for a throw block
             break;
         case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
             costSz = 1;
             break;
@@ -6771,45 +6774,52 @@ PhaseStatus Compiler::fgTailMerge()
         //
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            if ((predBlock->GetUniqueSucc() == block) && BasicBlock::sameEHRegion(block, predBlock))
+            if (predBlock->GetUniqueSucc() != block)
             {
-                Statement* lastStmt = predBlock->lastStmt();
-
-                // Block might be empty.
-                //
-                if (lastStmt == nullptr)
-                {
-                    continue;
-                }
-
-                // Walk back past any GT_NOPs.
-                //
-                Statement* const firstStmt = predBlock->firstStmt();
-                while (lastStmt->GetRootNode()->OperIs(GT_NOP))
-                {
-                    if (lastStmt == firstStmt)
-                    {
-                        // predBlock is evidently all GT_NOP.
-                        //
-                        lastStmt = nullptr;
-                        break;
-                    }
-
-                    lastStmt = lastStmt->GetPrevStmt();
-                }
-
-                // Block might be effectively empty.
-                //
-                if (lastStmt == nullptr)
-                {
-                    continue;
-                }
-
-                // We don't expect to see PHIs but watch for them anyways.
-                //
-                assert(!lastStmt->IsPhiDefnStmt());
-                predInfo.Emplace(predBlock, lastStmt);
+                continue;
             }
+
+            if (!BasicBlock::sameEHRegion(block, predBlock))
+            {
+                continue;
+            }
+
+            Statement* lastStmt = predBlock->lastStmt();
+
+            // Block might be empty.
+            //
+            if (lastStmt == nullptr)
+            {
+                continue;
+            }
+
+            // Walk back past any GT_NOPs.
+            //
+            Statement* const firstStmt = predBlock->firstStmt();
+            while (lastStmt->GetRootNode()->OperIs(GT_NOP))
+            {
+                if (lastStmt == firstStmt)
+                {
+                    // predBlock is evidently all GT_NOP.
+                    //
+                    lastStmt = nullptr;
+                    break;
+                }
+
+                lastStmt = lastStmt->GetPrevStmt();
+            }
+
+            // Block might be effectively empty.
+            //
+            if (lastStmt == nullptr)
+            {
+                continue;
+            }
+
+            // We don't expect to see PHIs but watch for them anyways.
+            //
+            assert(!lastStmt->IsPhiDefnStmt());
+            predInfo.Emplace(predBlock, lastStmt);
         }
 
         // Are there enough preds to make it interesting?
