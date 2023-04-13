@@ -5,13 +5,16 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <StrongNameKeyId>ECMA</StrongNameKeyId>
+    <SystemDataSqlClientTFM>netcoreapp2.1</SystemDataSqlClientTFM>
+    <!-- Keep in sync with TFM exposed in source-build-reference-packages/src/referencePackages/src/system.data.sqlclient/4.8.5 -->
+    <SystemDataSqlClientTFM Condition="'$(DotNetBuildFromSource)' == 'true'">net6.0</SystemDataSqlClientTFM>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- System.Data.SqlClient is not live built anymore, reference it manually to avoid tfm nuget selection fallback errors
          when the TargetOS i.e. is MacCatalyst. Set Private false so that it doesn't flow down to consuming projects. -->
     <PackageDownload Include="System.Data.SqlClient" Version="[$(SystemDataSqlClientVersion)]" />
-    <Reference Include="$([MSBuild]::NormalizePath('$(NuGetPackageRoot)', 'system.data.sqlclient', '$(SystemDataSqlClientVersion)', 'ref', 'netcoreapp2.1', 'System.Data.SqlClient.dll'))" Private="false" />
+    <Reference Include="$([MSBuild]::NormalizePath('$(NuGetPackageRoot)', 'system.data.sqlclient', '$(SystemDataSqlClientVersion)', 'ref', '$(SystemDataSqlClientTFM)', 'System.Data.SqlClient.dll'))" Private="false" />
   </ItemGroup>
 
 </Project>
