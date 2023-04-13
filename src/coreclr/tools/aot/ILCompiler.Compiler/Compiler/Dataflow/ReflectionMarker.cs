@@ -399,10 +399,7 @@ namespace ILCompiler.Dataflow
                 return false;
 
             // Warn only if it has potential dataflow issues, as approximated by our check to see if it requires
-            // the reflection scanner. Checking this will also mark direct dependencies of the method body, if it
-            // hasn't been marked already. A cache ensures this only happens once for the method, whether or not
-            // it is accessed via reflection.
-
+            // the data flow analysis.
             return Annotations.CompilerGeneratedState.CompilerGeneratedMethodRequiresDataflow(method);
         }
 
