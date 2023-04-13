@@ -235,15 +235,7 @@ namespace ILCompiler.Dataflow
         {
             Debug.Assert(entity is MethodDesc or FieldDesc);
 
-            bool skipWarningsForOverride = false;
             bool isReflectionAccessCoveredByRUC = false;
-            if (entity is MethodDesc methodForOverrideCheck)
-            {
-                // All override methods should have the same annotations as their base methods
-                // (else we will produce warning IL2046 or IL2092 or some other warning).
-                // When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
-                skipWarningsForOverride = (accessKind == AccessKind.DynamicallyAccessedMembersMark) && IsOverrideMethod(methodForOverrideCheck);
-            }
 
             // Note that we're using `ShouldSuppressAnalysisWarningsForRequires` instead of `DoesMemberRequire`.
             // This is because reflection access is actually problematic on all members which are in a "requires" scope
@@ -252,19 +244,19 @@ namespace ILCompiler.Dataflow
             if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute))
             {
                 isReflectionAccessCoveredByRUC = true;
-                if (!skipWarningsForOverride)
+                if (!ShouldSkipWarningsForOverride(entity, accessKind))
                     ReportRequires(origin, entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, requiresAttribute.Value);
             }
 
             if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out requiresAttribute))
             {
-                if (!skipWarningsForOverride)
+                if (!ShouldSkipWarningsForOverride(entity, accessKind))
                     ReportRequires(origin, entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, requiresAttribute.Value);
             }
 
             if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, out requiresAttribute))
             {
-                if (!skipWarningsForOverride)
+                if (!ShouldSkipWarningsForOverride(entity, accessKind))
                     ReportRequires(origin, entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, requiresAttribute.Value);
             }
 
@@ -273,7 +265,7 @@ namespace ILCompiler.Dataflow
                 return;
 
             bool isReflectionAccessCoveredByDAM = Annotations.ShouldWarnWhenAccessedForReflection(entity);
-            if (isReflectionAccessCoveredByDAM && !skipWarningsForOverride)
+            if (isReflectionAccessCoveredByDAM && !ShouldSkipWarningsForOverride(entity, accessKind))
             {
                 if (entity is MethodDesc)
                     _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, entity.GetDisplayName());
@@ -302,6 +294,18 @@ namespace ILCompiler.Dataflow
                     if (ShouldWarnForReflectionAccessToCompilerGeneratedCode(field, isCoveredByAnnotations))
                         _logger.LogWarning(origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, field.GetDisplayName());
                 }
+            }
+
+            // All override methods should have the same annotations as their base methods
+            // (else we will produce warning IL2046 or IL2092 or some other warning).
+            // When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
+            // PERF: Avoid precomputing this as this method is relatively expensive. Only call it once we're about to produce a warning.
+            static bool ShouldSkipWarningsForOverride(TypeSystemEntity entity, AccessKind accessKind)
+            {
+                if (accessKind != AccessKind.DynamicallyAccessedMembersMark || entity is not MethodDesc method || !method.IsVirtual)
+                    return false;
+
+                return MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method) != method;
             }
         }
 
@@ -333,17 +337,12 @@ namespace ILCompiler.Dataflow
             if (reportOnMember)
                 origin = new MessageOrigin(entity);
 
-            // All override methods should have the same annotations as their base methods
-            // (else we will produce warning IL2046 or IL2092 or some other warning).
-            // When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
-            bool skipWarningsForOverride = entity is MethodDesc m && IsOverrideMethod(m);
-
             // For now we decided to not report single-file or dynamic-code warnings due to type hierarchy marking.
             // It is considered too complex to figure out for the user and the likelihood of this
             // causing problems is pretty low.
 
             bool isReflectionAccessCoveredByRUC = _logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresUnreferencedCodeAttribute);
-            if (isReflectionAccessCoveredByRUC && !skipWarningsForOverride)
+            if (isReflectionAccessCoveredByRUC && !ShouldSkipWarningsForOverride(entity))
             {
                 var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithRequiresUnreferencedCode : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode;
                 _logger.LogWarning(origin, id, _typeHierarchyDataFlowOrigin.GetDisplayName(),
@@ -353,7 +352,7 @@ namespace ILCompiler.Dataflow
             }
 
             bool isReflectionAccessCoveredByDAM = Annotations.ShouldWarnWhenAccessedForReflection(entity);
-            if (isReflectionAccessCoveredByDAM && !skipWarningsForOverride)
+            if (isReflectionAccessCoveredByDAM && !ShouldSkipWarningsForOverride(entity))
             {
                 var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
                 _logger.LogWarning(origin, id, _typeHierarchyDataFlowOrigin.GetDisplayName(), entity.GetDisplayName());
@@ -377,23 +376,17 @@ namespace ILCompiler.Dataflow
                 var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase;
                 _logger.LogWarning(origin, id, _typeHierarchyDataFlowOrigin.GetDisplayName(), field.GetDisplayName());
             }
-        }
 
-        private static bool IsOverrideMethod(MethodDesc method)
-        {
-            if (!method.IsVirtual)
-                return false;
-
-            // TODO: This feels very expensive - can we do better?
-            // At the very least - move this such that it's only computed if we do find some annotation
-            // currently we compute it on every virtual method.
-            foreach (MethodDesc virtualSlotMethod in method.OwningType.EnumAllVirtualSlots())
+            // All override methods should have the same annotations as their base methods
+            // (else we will produce warning IL2046 or IL2092 or some other warning).
+            // When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
+            static bool ShouldSkipWarningsForOverride(TypeSystemEntity entity)
             {
-                if (method == virtualSlotMethod)
+                if (entity is not MethodDesc method || !method.IsVirtual)
                     return false;
-            }
 
-            return true;
+                return MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method) != method;
+            }
         }
 
         private bool ShouldWarnForReflectionAccessToCompilerGeneratedCode(MethodDesc method, bool isCoveredByAnnotations)
