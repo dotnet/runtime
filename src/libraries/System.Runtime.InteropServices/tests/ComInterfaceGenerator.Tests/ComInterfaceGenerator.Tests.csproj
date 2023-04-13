@@ -20,9 +20,5 @@
     <ProjectReference Include="..\TestAssets\NativeExports\NativeExports.csproj" />
     <ProjectReference Include="..\TestAssets\SharedTypes\SharedTypes.csproj" />
   </ItemGroup>
-  <!-- Expose unmanaged entry points from NativeExports -->
-  <ItemGroup>
-    <UnmanagedEntryPointsAssembly Include="Microsoft.Interop.Tests.NativeExports" />
-    <DirectPInvoke Include="Microsoft.Interop.Tests.NativeExportsNE" />
-  </ItemGroup>
+
 </Project>
