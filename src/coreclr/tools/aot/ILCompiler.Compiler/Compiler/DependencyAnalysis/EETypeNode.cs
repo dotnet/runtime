@@ -755,11 +755,6 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeFlags.OptionalFieldsFlag;
             }
 
-            if (this is ClonedConstructedEETypeNode)
-            {
-                flags |= (uint)EETypeKind.ClonedEEType;
-            }
-
             if (_type.IsArray || _type.IsString)
             {
                 flags |= (uint)EETypeFlags.HasComponentSizeFlag;
