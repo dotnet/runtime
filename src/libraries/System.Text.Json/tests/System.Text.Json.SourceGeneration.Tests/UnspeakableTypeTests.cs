@@ -37,9 +37,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             json = await Serializer.SerializeWrapper<object>(envelope.Value, options);
             Assert.Equal(expectedJson, json);
 
-            // or if you pass in its runtime type 
-            json = await Serializer.SerializeWrapper(envelope.Value, envelope.Value.GetType(), options);
-            Assert.Equal(expectedJson, json);
+            // But fails if you pass in its runtime type 
+            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(envelope.Value, envelope.Value.GetType(), options));
 
             if (isBaseTypeDeserializable)
             {
