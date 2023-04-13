@@ -6,7 +6,12 @@
 #include <intsafe.h>
 #include <winnt.h>
 #include <crtdbg.h> /* _ASSERTE */
-#include "zutil.h"
+
+#ifdef INTERNAL_ZLIB_INTEL
+#include <external/zlib-intel/zutil.h>
+#else
+#include <external/zlib/zutil.h>
+#endif
 
 /* A custom allocator for zlib that provides some defense-in-depth over standard malloc / free.
  * (Windows-specific version)
