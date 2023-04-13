@@ -3531,11 +3531,19 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
     }
     else if (tree->OperIs(GT_JCMP))
     {
+#if defined(TARGET_RISCV64)
+        unsigned code = ((unsigned)tree->gtFlags >> 25) & 0xf;
+        assert((((unsigned)tree->gtFlags >> 25) & GenCondition::Float) == 0);
+        GenCondition cond = GenCondition::Reverse(GenCondition(static_cast<GenCondition::Code>(code)));
+        tree->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ | GTF_JCMP_MASK);
+        tree->gtFlags |= (GenTreeFlags)(cond.GetCode() << 25);
+#else
         // Flip the GTF_JCMP_EQ
         // On ARM64, this causes switching
         //     cbz <=> cbnz
         //     tbz <=> tbnz
         tree->gtFlags ^= GTF_JCMP_EQ;
+#endif
     }
     else
     {
