@@ -2839,6 +2839,11 @@ public:
         return gtNewLoadValueNode(layout->GetType(), layout, addr, indirFlags);
     }
 
+    GenTree* gtNewLoadValueNode(var_types type, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        return gtNewLoadValueNode(type, nullptr, addr, indirFlags);
+    }
+
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 
     var_types gtTypeForNullCheck(GenTree* tree);
@@ -2857,7 +2862,6 @@ public:
                               CORINFO_ACCESS_FLAGS    access,
                               CORINFO_FIELD_INFO*     pFieldInfo,
                               var_types               lclTyp,
-                              CORINFO_CLASS_HANDLE    structType,
                               GenTree*                assg);
 
     GenTree* gtNewNothingNode();
@@ -10117,6 +10121,9 @@ public:
     ClassLayout* typGetObjLayout(CORINFO_CLASS_HANDLE classHandle);
     // Get the number of a layout for the specified class handle.
     unsigned typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle);
+
+    var_types TypeHandleToVarType(CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
+    var_types TypeHandleToVarType(CorInfoType jitType, CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
 
 //-------------------------- Global Compiler Data ------------------------------------
 

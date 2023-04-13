@@ -15895,7 +15895,6 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
                                     CORINFO_ACCESS_FLAGS    access,
                                     CORINFO_FIELD_INFO*     pFieldInfo,
                                     var_types               lclTyp,
-                                    CORINFO_CLASS_HANDLE    structType,
                                     GenTree*                assg)
 {
     assert(pFieldInfo->fieldAccessor == CORINFO_FIELD_INSTANCE_HELPER ||
@@ -15906,7 +15905,8 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
     GenTree* args[4];
     size_t   nArgs = 0;
     /* If we can't access it directly, we need to call a helper function */
-    var_types helperType = TYP_BYREF;
+    var_types            helperType = TYP_BYREF;
+    CORINFO_CLASS_HANDLE structType = pFieldInfo->structType;
 
     if (pFieldInfo->fieldAccessor == CORINFO_FIELD_INSTANCE_HELPER)
     {
@@ -15916,7 +15916,6 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
             // helper needs pointer to struct, not struct itself
             if (pFieldInfo->helper == CORINFO_HELP_SETFIELDSTRUCT)
             {
-                assert(structType != nullptr);
                 assg = impGetStructAddr(assg, structType, CHECK_SPILL_ALL, true);
             }
             else if (lclTyp == TYP_DOUBLE && assg->TypeGet() == TYP_FLOAT)
@@ -16009,9 +16008,11 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
         // OK, now do the indirection
         if (access & CORINFO_ACCESS_GET)
         {
-            if (varTypeIsStruct(lclTyp))
+            ClassLayout* layout;
+            lclTyp = TypeHandleToVarType(pFieldInfo->fieldType, structType, &layout);
+            if (lclTyp == TYP_STRUCT)
             {
-                result = gtNewBlkIndir(typGetObjLayout(structType), result);
+                result = gtNewBlkIndir(layout, result);
             }
             else
             {

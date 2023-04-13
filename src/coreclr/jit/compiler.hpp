@@ -1074,7 +1074,7 @@ inline GenTreeIndexAddr* Compiler::gtNewArrayIndexAddr(GenTree*             arra
 inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
 {
     GenTreeIndir* index;
-    if (varTypeIsStruct(indexAddr->gtElemType))
+    if (indexAddr->gtElemType == TYP_STRUCT)
     {
         index = gtNewBlkIndir(typGetObjLayout(indexAddr->gtStructElemClass), indexAddr);
     }
