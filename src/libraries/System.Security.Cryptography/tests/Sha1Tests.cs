@@ -137,5 +137,12 @@ namespace System.Security.Cryptography.Tests
         {
             await VerifyRepeatingAsync("0123456701234567012345670123456701234567012345670123456701234567", 10, "DEA356A2CDDD90C7A7ECEDC5EBB563934F460452");
         }
+
+        [Fact]
+        public void Sha1_HashSizes()
+        {
+            Assert.Equal(160, SHA1.HashSizeInBits);
+            Assert.Equal(20, SHA1.HashSizeInBytes);
+        }
     }
 }

@@ -154,5 +154,12 @@ namespace System.Security.Cryptography.Tests
         {
             await VerifyRepeatingAsync("1234567890", 8, "57edf4a22be3c955ac49da2e2107b67a");
         }
+
+        [Fact]
+        public void Sha512_HashSizes()
+        {
+            Assert.Equal(128, MD5.HashSizeInBits);
+            Assert.Equal(16, MD5.HashSizeInBytes);
+        }
     }
 }

@@ -212,5 +212,12 @@ namespace System.Security.Cryptography.Tests
                 hexKey: "000102030405060708090A0B0C0D0E0F",
                 output: "07EFF8B326B7798C9CCFCBDBE579489AC785A7995A04618B1A2813C26744777D");
         }
+
+        [Fact]
+        public void HmacSha256_HashSizes()
+        {
+            Assert.Equal(256, HMACSHA256.HashSizeInBits);
+            Assert.Equal(32, HMACSHA256.HashSizeInBytes);
+        }
     }
 }

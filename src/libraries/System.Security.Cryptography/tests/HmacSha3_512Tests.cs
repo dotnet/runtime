@@ -230,5 +230,12 @@ namespace System.Security.Cryptography.Tests
                 output: "908D1BE1A2CC5CC4B8C62E98D09AB6E967529FCB24F4177CB94CB072F5968D01" +
                         "CA58633748DC80D4615E3D21228BB3A5F535FA1CB963DF463CC28ABAF1A9B2D1");
         }
+
+        [Fact]
+        public void HmacSha3_256_HashSizes()
+        {
+            Assert.Equal(512, HMACSHA3_512.HashSizeInBits);
+            Assert.Equal(64, HMACSHA3_512.HashSizeInBytes);
+        }
     }
 }

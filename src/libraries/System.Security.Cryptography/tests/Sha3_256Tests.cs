@@ -110,6 +110,13 @@ namespace System.Security.Cryptography.Tests
                 "5e80dd4330d9124adce40a043f166d7e0f6853050fd99919c7b1436ee0a538e9");
         }
 
+        [Fact]
+        public void SHA3_256_HashSizes()
+        {
+            Assert.Equal(256, SHA3_256.HashSizeInBits);
+            Assert.Equal(32, SHA3_256.HashSizeInBytes);
+        }
+
         private static IEnumerable<(string Msg, string MD)> Fips202Kats
         {
             get

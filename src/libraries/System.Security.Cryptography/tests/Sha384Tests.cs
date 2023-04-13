@@ -140,5 +140,12 @@ namespace System.Security.Cryptography.Tests
                 "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
                 "09330C33F71147E83D192FC782CD1B4753111B173B3B05D22FA08086E3B0F712FCC7C71A557E2DB966C3E9FA91746039");
         }
+
+        [Fact]
+        public void Sha384_HashSizes()
+        {
+            Assert.Equal(384, SHA384.HashSizeInBits);
+            Assert.Equal(48, SHA384.HashSizeInBytes);
+        }
     }
 }

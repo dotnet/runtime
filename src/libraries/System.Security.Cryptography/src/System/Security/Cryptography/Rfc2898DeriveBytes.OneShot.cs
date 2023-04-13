@@ -331,29 +331,13 @@ namespace System.Security.Cryptography
                 return;
             }
 
-            if (hashAlgorithmName == HashAlgorithmName.SHA3_256.Name)
+            if (hashAlgorithmName == HashAlgorithmName.SHA3_256.Name ||
+                hashAlgorithmName == HashAlgorithmName.SHA3_384.Name ||
+                hashAlgorithmName == HashAlgorithmName.SHA3_512.Name)
             {
+                // All current platforms support HMAC-SHA3-256, 384, and 512 together, so we can simplify the check
+                // to just checking HMAC-SHA3-256 for the availability of 384 and 512, too.
                 if (HMACSHA3_256.IsSupported)
-                {
-                    return;
-                }
-
-                throw new PlatformNotSupportedException();
-            }
-
-            if (hashAlgorithmName == HashAlgorithmName.SHA3_384.Name)
-            {
-                if (HMACSHA3_384.IsSupported)
-                {
-                    return;
-                }
-
-                throw new PlatformNotSupportedException();
-            }
-
-            if (hashAlgorithmName == HashAlgorithmName.SHA3_512.Name)
-            {
-                if (HMACSHA3_512.IsSupported)
                 {
                     return;
                 }

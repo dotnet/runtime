@@ -158,5 +158,12 @@ namespace System.Security.Cryptography.Tests
                 1000000,
                 "e718483d0ce769644e2e42c7bc15b4638e1f98b13b2044285632a803afa973ebde0ff244877ea60a4cb0432ce577c31beb009c5c2c49aa2e4eadb217ad8cc09b");
         }
+
+        [Fact]
+        public void Sha512_HashSizes()
+        {
+            Assert.Equal(512, SHA512.HashSizeInBits);
+            Assert.Equal(64, SHA512.HashSizeInBytes);
+        }
     }
 }
