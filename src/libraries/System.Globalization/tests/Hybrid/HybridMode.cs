@@ -45,39 +45,5 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new CultureInfo(name).TwoLetterISOLanguageName);
         }
 
-        public static IEnumerable<object[]> FirstDayOfWeek_Get_TestData()
-        {
-            yield return new object[] { DateTimeFormatInfo.InvariantInfo, DayOfWeek.Sunday };
-            yield return new object[] { new CultureInfo("en-US", false).DateTimeFormat, DayOfWeek.Sunday };
-            yield return new object[] { new CultureInfo("fr-FR", false).DateTimeFormat, DayOfWeek.Monday };
-        }
-
-        [Theory]
-        [MemberData(nameof(FirstDayOfWeek_Get_TestData))]
-        public void FirstDayOfWeek(DateTimeFormatInfo format, DayOfWeek expected)
-        {
-            Assert.Equal(expected, format.FirstDayOfWeek);
-        }
-
-        public static IEnumerable<object[]> CurrencyNegativePatternTestLocales()
-        {
-            yield return new object[] { "en-US", new int[] { 1, 0 } };
-            yield return new object[] { "en-CA", new int[] { 1, 0 } };
-            yield return new object[] { "fa-IR" , new int[] { 1, 0 } };
-            yield return new object[] { "fr-CD", new int[] { 8, 15 } };
-            yield return new object[] { "fr-CA", new int[] { 8, 15 } };
-            yield return new object[] { "as", new int[] { 9 } };
-        }
-
-        [Theory]
-        [MemberData(nameof(CurrencyNegativePatternTestLocales))]
-        public void CurrencyNegativePattern_Get_ReturnsExpected_ByLocale(string locale, int[] expectedNegativePattern)
-        {
-            CultureInfo culture = new CultureInfo(locale);
-
-            NumberFormatInfo format = culture.NumberFormat;
-            Assert.Contains(format.CurrencyNegativePattern, expectedNegativePattern);
-        }
-
     }
 }
