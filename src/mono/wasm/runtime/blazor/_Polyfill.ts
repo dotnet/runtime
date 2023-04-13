@@ -8,7 +8,7 @@ export function toAbsoluteUri(relativeUri: string): string {
 }
 
 export function hasDebuggingEnabled(bootConfig: BootJsonData): boolean {
-    // TODO MF: Copied from MonoDebugger.ts/attachDebuggerHotkey
+    // Copied from blazor MonoDebugger.ts/attachDebuggerHotkey
 
     const hasReferencedPdbs = !!bootConfig.resources.pdb;
     const debugBuild = bootConfig.debugBuild;
