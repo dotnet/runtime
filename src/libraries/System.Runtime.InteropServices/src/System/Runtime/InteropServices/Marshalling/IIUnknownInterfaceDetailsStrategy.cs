@@ -9,6 +9,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <summary>
     /// Strategy for acquiring interface details.
     /// </summary>
+    [CLSCompliant(false)]
     public interface IIUnknownInterfaceDetailsStrategy
     {
         /// <summary>

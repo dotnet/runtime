@@ -9,6 +9,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <summary>
     /// IUnknown interaction strategy.
     /// </summary>
+    [CLSCompliant(false)]
     public unsafe interface IIUnknownStrategy
     {
         /// <summary>

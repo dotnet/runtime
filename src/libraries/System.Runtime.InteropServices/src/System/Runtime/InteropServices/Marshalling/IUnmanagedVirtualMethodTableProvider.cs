@@ -7,6 +7,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <summary>
     /// This interface allows an object to provide information about a virtual method table for a managed interface to enable invoking methods in the virtual method table.
     /// </summary>
+    [CLSCompliant(false)]
     public unsafe interface IUnmanagedVirtualMethodTableProvider
     {
         /// <summary>

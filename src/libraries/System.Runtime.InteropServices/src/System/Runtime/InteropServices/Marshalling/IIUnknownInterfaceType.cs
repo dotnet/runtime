@@ -9,16 +9,17 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <summary>
     /// Type level information for an IUnknown-derived interface.
     /// </summary>
+    [CLSCompliant(false)]
     public unsafe interface IIUnknownInterfaceType
     {
         /// <summary>
         /// The Interface ID (IID) for the interface.
         /// </summary>
-        public abstract static Guid Iid { get; }
+        static abstract Guid Iid { get; }
 
         /// <summary>
         /// A pointer to the virtual method table to enable unmanaged callers to call a managed implementation of the interface.
         /// </summary>
-        public abstract static void** ManagedVirtualMethodTable { get; }
+        static abstract void** ManagedVirtualMethodTable { get; }
     }
 }

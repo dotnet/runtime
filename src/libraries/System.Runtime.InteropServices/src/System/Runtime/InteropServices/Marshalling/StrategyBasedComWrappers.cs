@@ -6,6 +6,7 @@ using System.Reflection;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
+    [CLSCompliant(false)]
     public class StrategyBasedComWrappers : ComWrappers
     {
         public static IIUnknownInterfaceDetailsStrategy DefaultIUnknownInterfaceDetailsStrategy { get; } = Marshalling.DefaultIUnknownInterfaceDetailsStrategy.Instance;
@@ -20,7 +21,7 @@ namespace System.Runtime.InteropServices.Marshalling
 
         protected virtual IIUnknownCacheStrategy CreateCacheStrategy() => CreateDefaultCacheStrategy();
 
-        protected override sealed unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
+        protected sealed override unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
         {
             if (obj.GetType().GetCustomAttribute(typeof(ComExposedClassAttribute<>)) is IComExposedDetails details)
             {
@@ -30,7 +31,7 @@ namespace System.Runtime.InteropServices.Marshalling
             return null;
         }
 
-        protected override sealed unsafe object CreateObject(nint externalComObject, CreateObjectFlags flags)
+        protected sealed override unsafe object CreateObject(nint externalComObject, CreateObjectFlags flags)
         {
             if (flags.HasFlag(CreateObjectFlags.TrackerObject)
                 || flags.HasFlag(CreateObjectFlags.Aggregation))
@@ -38,17 +39,15 @@ namespace System.Runtime.InteropServices.Marshalling
                 throw new NotSupportedException();
             }
 
-            var rcw = new ComObject(GetOrCreateInterfaceDetailsStrategy(), GetOrCreateIUnknownStrategy(), CreateCacheStrategy(), (void*)externalComObject);
-            if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
+            var rcw = new ComObject(GetOrCreateInterfaceDetailsStrategy(), GetOrCreateIUnknownStrategy(), CreateCacheStrategy(), (void*)externalComObject)
             {
-                // Set value on MyComObject to enable the FinalRelease option.
-                // This could also be achieved through an internal factory
-                // function on ComObject type.
-            }
+                UniqueInstance = flags.HasFlag(CreateObjectFlags.UniqueInstance)
+            };
+
             return rcw;
         }
 
-        protected override sealed void ReleaseObjects(IEnumerable objects)
+        protected sealed override void ReleaseObjects(IEnumerable objects)
         {
             throw new NotImplementedException();
         }

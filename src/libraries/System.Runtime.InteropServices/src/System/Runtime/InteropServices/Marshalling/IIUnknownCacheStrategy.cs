@@ -9,6 +9,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <summary>
     /// Unmanaged virtual method table look up strategy.
     /// </summary>
+    [CLSCompliant(false)]
     public unsafe interface IIUnknownCacheStrategy
     {
         public readonly struct TableInfo
@@ -22,9 +23,9 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Construct a <see cref="TableInfo"/> instance.
         /// </summary>
         /// <param name="handle">RuntimeTypeHandle instance</param>
+        /// <param name="interfaceDetails">An <see cref="IIUnknownDerivedDetails"/> instance</param>
         /// <param name="ptr">Pointer to the instance to query</param>
-        /// <param name="info">A <see cref="TableInfo"/> instance</param>
-        /// <returns>True if success, otherwise false.</returns>
+        /// <returns>The constructed <see cref="TableInfo"/> instance for the provided information.</returns>
         TableInfo ConstructTableInfo(RuntimeTypeHandle handle, IIUnknownDerivedDetails interfaceDetails, void* ptr);
 
         /// <summary>

@@ -1,34 +1,29 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
-    /// Converts the exception to the default value of the unmanaged type.
+    /// Converts all exceptions to <see cref="IFloatingPointIeee754{T}.NaN"/>.
     /// </summary>
-    /// <typeparam name="T">The unmanaged type</typeparam>
-    [CustomMarshaller(typeof(Exception), MarshalMode.UnmanagedToManagedOut, typeof(ExceptionAsDefaultMarshaller<>))]
-    public static class ExceptionAsDefaultMarshaller<T>
-        where T : unmanaged
+    /// <typeparam name="T">The unmanaged type to return the <c>NaN</c> value for.</typeparam>
+    [CustomMarshaller(typeof(Exception), MarshalMode.UnmanagedToManagedOut, typeof(ExceptionAsNaNMarshaller<>))]
+    public static class ExceptionAsNaNMarshaller<T>
+        where T : unmanaged, IFloatingPointIeee754<T>
     {
         /// <summary>
-        /// Converts the exception to the default value of the unmanaged type.
+        /// Convert the exception to <see cref="IFloatingPointIeee754{T}.NaN"/>.
         /// </summary>
         /// <param name="e">The exception</param>
-        /// <returns>The default value of <typeparamref name="T"/>.</returns>
+        /// <returns><see cref="IFloatingPointIeee754{T}.NaN"/>.</returns>
         public static T ConvertToUnmanaged(Exception e)
         {
             // Use GetHRForException to ensure the runtime sets up the IErrorInfo object
             // and calls SetErrorInfo if the platform supports it.
             _ = Marshal.GetHRForException(e);
-            return default;
+            return T.NaN;
         }
     }
 }
