@@ -1241,8 +1241,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_Shuffle:
 		case SN_ToVector128:
 		case SN_ToVector128Unsafe:
-		case SN_WidenLower:
-		case SN_WidenUpper:
 		case SN_WithElement:
 			return NULL;
 		default:
@@ -1851,15 +1849,31 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 
-		int op = id == SN_WidenLower ? OP_XLOWER : OP_XUPPER;
-		MonoInst *lower_or_upper_half = emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
-		if (type_enum_is_float (arg0_type)) {
-			return emit_simd_ins (cfg, klass, OP_SIMD_FCVTL, lower_or_upper_half->dreg, -1);
+		if (COMPILE_LLVM (cfg)) {
+			int op = id == SN_WidenLower ? OP_XLOWER : OP_XUPPER;
+			MonoInst *lower_or_upper_half = emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
+			if (type_enum_is_float (arg0_type)) {
+				return emit_simd_ins (cfg, klass, OP_SIMD_FCVTL, lower_or_upper_half->dreg, -1);
+			} else {
+				int zero = alloc_ireg (cfg);
+				MONO_EMIT_NEW_ICONST (cfg, zero, 0);
+				op = type_enum_is_unsigned (arg0_type) ? OP_SIMD_USHLL : OP_SIMD_SSHLL;
+				return emit_simd_ins (cfg, klass, op, lower_or_upper_half->dreg, zero);
+			}
 		} else {
-			int zero = alloc_ireg (cfg);
-			MONO_EMIT_NEW_ICONST (cfg, zero, 0);
-			op = type_enum_is_unsigned (arg0_type) ? OP_SIMD_USHLL : OP_SIMD_SSHLL;
-			return emit_simd_ins (cfg, klass, op, lower_or_upper_half->dreg, zero);
+			int op = 0;
+			gboolean is_upper = (id == SN_WidenUpper);
+			if (type_enum_is_float (arg0_type))
+				op = is_upper ? OP_SIMD_FCVTL2 : OP_SIMD_FCVTL;
+			else if (type_enum_is_unsigned (arg0_type))
+				op = is_upper ? OP_ARM64_UXTL2 : OP_ARM64_UXTL;
+			else
+				op = is_upper ? OP_ARM64_SXTL2 : OP_ARM64_SXTL;
+			
+			MonoInst* ins = emit_simd_ins (cfg, klass, OP_XUNOP, args [0]->dreg, -1);
+			ins->inst_c0 = op;
+			ins->inst_c1 = arg0_type;
+			return ins;
 		}
 #else
 		return NULL;
