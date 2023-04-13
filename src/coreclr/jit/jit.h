@@ -21,6 +21,9 @@
 // ifdef. This macro allows us to anchor the comments to the regular flow of code.
 #define CLANG_FORMAT_COMMENT_ANCHOR ;
 
+
+////////////// test 2
+
 // Clang-tidy replaces 0 with nullptr in some templated functions, causing a build
 // break. Replacing those instances with ZERO avoids this change
 #define ZERO 0
