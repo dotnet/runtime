@@ -38,12 +38,12 @@ internal static partial class Interop
                     _ = TryGetFieldValue(lineSpan, "PRETTY_NAME=", ref prettyName) ||
                         TryGetFieldValue(lineSpan, "NAME=", ref name) ||
                         TryGetFieldValue(lineSpan, "VERSION=", ref version);
-                }
 
-                // Prefer "PRETTY_NAME".
-                if (!prettyName.IsEmpty)
-                {
-                    return new string(prettyName);
+                    // Prefer "PRETTY_NAME".
+                    if (!prettyName.IsEmpty)
+                    {
+                        return new string(prettyName);
+                    }
                 }
 
                 // Fall back to "NAME[ VERSION]".
@@ -69,7 +69,7 @@ internal static partial class Interop
                         fieldValue[0] is '"' or '\'' &&
                         fieldValue[0] == fieldValue[^1])
                     {
-                        fieldValue = fieldValue[1, ^1];
+                        fieldValue = fieldValue[1..^1];
                     }
 
                     value = fieldValue;
