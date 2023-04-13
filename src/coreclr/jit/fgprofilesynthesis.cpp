@@ -528,14 +528,28 @@ void ProfileSynthesis::RepairLikelihoods()
             case BBJ_COND:
             case BBJ_SWITCH:
             {
-                weight_t sum = SumOutgoingLikelihoods(block);
+                // Repair if either likelihoods are inconsistent or block weight is zero.
+                //
+                weight_t const sum        = SumOutgoingLikelihoods(block);
+                bool const     consistent = Compiler::fgProfileWeightsEqual(sum, 1.0, epsilon);
+                bool const     zero       = Compiler::fgProfileWeightsEqual(block->bbWeight, 0.0, epsilon);
 
-                if (Compiler::fgProfileWeightsEqual(sum, 1.0, epsilon))
+                if (consistent && !zero)
                 {
+                    // Leave as is.
                     break;
                 }
 
-                JITDUMP("Repairing likelihoods in " FMT_BB ", existing likelihood sum " FMT_WT "\n", block->bbNum, sum);
+                JITDUMP("Repairing likelihoods in " FMT_BB, block->bbNum);
+                if (!consistent)
+                {
+                    JITDUMP("; existing likelihood sum: " FMT_WT, sum);
+                }
+                if (zero)
+                {
+                    JITDUMP("; zero weight block");
+                }
+                JITDUMP("\n");
 
                 if (block->bbJumpKind == BBJ_COND)
                 {
@@ -1137,6 +1151,55 @@ void ProfileSynthesis::ComputeCyclicProbabilities(SimpleLoop* loop)
             loop->m_head->bbNum, cyclicWeight, cyclicProbability, capped ? " [capped]" : "");
 
     loop->m_cyclicProbability = cyclicProbability;
+
+    // Try and adjust loop exit likelihood to reflect capping.
+    // If there are multiple exits we just adjust the first one we can. This is somewhat arbitrary.
+    //
+    if (capped)
+    {
+        bool adjustedExit = false;
+
+        for (FlowEdge* const exitEdge : loop->m_exitEdges)
+        {
+            BasicBlock* const exitBlock = exitEdge->getSourceBlock();
+
+            if ((exitBlock->bbJumpKind == BBJ_COND) &&
+                !Compiler::fgProfileWeightsEqual(exitBlock->bbWeight, 0.0, epsilon))
+            {
+                JITDUMP("Will adjust likelihood of the exit edge from loop exit block " FMT_BB
+                        " to reflect capping; current likelihood is " FMT_WT "\n",
+                        exitBlock->bbNum, exitEdge->getLikelihood());
+
+                BasicBlock* const jump               = exitBlock->bbJumpDest;
+                BasicBlock* const next               = exitBlock->bbNext;
+                FlowEdge* const   jumpEdge           = m_comp->fgGetPredForBlock(jump, exitBlock);
+                FlowEdge* const   nextEdge           = m_comp->fgGetPredForBlock(next, exitBlock);
+                weight_t const    continueLikelihood = cappedLikelihood / exitBlock->bbWeight;
+                weight_t const    breakLikelihood    = 1 - continueLikelihood;
+
+                if (jumpEdge == exitEdge)
+                {
+                    jumpEdge->setLikelihood(breakLikelihood);
+                    nextEdge->setLikelihood(continueLikelihood);
+                }
+                else
+                {
+                    assert(nextEdge == exitEdge);
+                    jumpEdge->setLikelihood(continueLikelihood);
+                    nextEdge->setLikelihood(breakLikelihood);
+                }
+                adjustedExit = true;
+
+                JITDUMP("New likelihood is  " FMT_WT "\n", exitEdge->getLikelihood());
+                break;
+            }
+        }
+
+        if (!adjustedExit)
+        {
+            JITDUMP("Unable to find suitable exit to carry off capped flow\n");
+        }
+    }
 }
 
 //------------------------------------------------------------------------
