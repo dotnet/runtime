@@ -37,6 +37,8 @@ namespace ILCompiler
             new(new[] { "--optimize-space", "--Os" }, SR.OptimizeSpaceOption);
         public Option<bool> OptimizeTime { get; } =
             new(new[] { "--optimize-time", "--Ot" }, SR.OptimizeSpeedOption);
+        public Option<bool> SkipTypeValidation { get; } =
+            new(new[] { "--skip-type-validation"}, () => true, SR.SkipTypeValidation);
         public Option<bool> InputBubble { get; } =
             new(new[] { "--inputbubble" }, SR.InputBubbleOption);
         public Option<Dictionary<string, string>> InputBubbleReferenceFilePaths { get; } =
@@ -200,6 +202,7 @@ namespace ILCompiler
             AddOption(OptimizeDisabled);
             AddOption(OptimizeSpace);
             AddOption(OptimizeTime);
+            AddOption(SkipTypeValidation);
             AddOption(InputBubble);
             AddOption(InputBubbleReferenceFilePaths);
             AddOption(Composite);

@@ -47,6 +47,7 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class NodeFactoryOptimizationFlags
     {
         public bool OptimizeAsyncMethods;
+        public bool SkipTypeValidation;
     }
 
     // To make the code future compatible to the composite R2R story

@@ -407,6 +407,10 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }
+            if (_nodeFactory.OptimizationFlags.SkipTypeValidation)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
+            }
 
             flags |= _nodeFactory.CompilationModuleGroup.GetReadyToRunFlags() & ReadyToRunFlags.READYTORUN_FLAG_MultiModuleVersionBubble;
 

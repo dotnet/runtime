@@ -242,6 +242,10 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }
+            if (_nodeFactoryOptimizationFlags.SkipTypeValidation)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
+            }
             flags |= _compilationGroup.GetReadyToRunFlags();
 
             NodeFactory factory = new NodeFactory(
