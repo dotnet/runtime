@@ -1,4 +1,4 @@
-import { Module } from "../imports";
+import { INTERNAL, Module } from "../imports";
 import { AssetEntry, LoadingResource, MonoConfigInternal } from "../types";
 import { BootConfigResult, BootJsonData, ICUDataMode } from "./BootConfig";
 import { WebAssemblyConfigLoader } from "./WebAssemblyConfigLoader";
@@ -11,21 +11,20 @@ export async function loadBootConfig(config: MonoConfigInternal,) {
     const environment = candidateOptions.environment;
     const bootConfigPromise = BootConfigResult.initAsync(candidateOptions.loadBootResource, environment);
 
-    // TODO MF: Hook WebAssemblyComponentAttacher
-
     const bootConfigResult: BootConfigResult = await bootConfigPromise;
-
-    // TODO MF: Hook fetchAndInvokeInitializers
 
     const [resourceLoader] = await Promise.all([
         WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, candidateOptions || {}),
         WebAssemblyConfigLoader.initAsync(bootConfigResult, candidateOptions || {}),
     ]);
 
-    mapBootConfigToMonoConfig(Module.config as MonoConfigInternal, resourceLoader);
+    INTERNAL.resourceLoader = resourceLoader;
 
-    // TODO MF: Publish resourceLoader
+    mapBootConfigToMonoConfig(Module.config as MonoConfigInternal, resourceLoader);
 }
+
+let resourcesLoaded = 0;
+let totalResources = 0;
 
 export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, resourceLoader: WebAssemblyResourceLoader) {
     const resources = resourceLoader.bootConfig.resources;
@@ -69,7 +68,12 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, reso
             const res = resourceLoader.loadResource(asset.name, asset.resolvedUrl!, asset.hash!, type);
             asset.pendingDownload = res;
 
-            // TODO MF: Hook setProgress
+            totalResources++;
+            res.response.then(() => {
+                resourcesLoaded++;
+                if (Module.onDownloadResourceProgress)
+                    Module.onDownloadResourceProgress(resourcesLoaded, totalResources);
+            });
 
             return res;
         }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { Module } from "../imports";
 import { WebAssemblyBootResourceType } from "./WebAssemblyStartOptions";
 
 type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
@@ -24,11 +25,7 @@ export class BootConfigResult {
             bootConfigResponse = await loaderResponse;
         }
 
-        // While we can expect an ASP.NET Core hosted application to include the environment, other
-        // hosts may not. Assume 'Production' in the absence of any specified value.
-
-        // TODO MF: Hook applicationEnvironment
-        const applicationEnvironment = environment || bootConfigResponse.headers.get("Blazor-Environment") || "Production";
+        const applicationEnvironment = environment || Module?.getApplicationEnvironment(bootConfigResponse) || "Production";
         const bootConfig: BootJsonData = await bootConfigResponse.json();
         bootConfig.modifiableAssemblies = bootConfigResponse.headers.get("DOTNET-MODIFIABLE-ASSEMBLIES");
         bootConfig.aspnetCoreBrowserTools = bootConfigResponse.headers.get("ASPNETCORE-BROWSER-TOOLS");
