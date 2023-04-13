@@ -1226,8 +1226,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!(!strcmp (m_class_get_name (cmethod->klass), "Vector128") || !strcmp (m_class_get_name (cmethod->klass), "Vector")))
 			return NULL;
 		switch (id) {
-		case SN_AndNot:
-		case SN_ConditionalSelect:
 		case SN_ConvertToDouble:
 		case SN_ConvertToInt32:
 		case SN_ConvertToInt64:
