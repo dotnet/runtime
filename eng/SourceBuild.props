@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <GitHubRepositoryName>runtime</GitHubRepositoryName>
+    <NoTargetFrameworkFiltering>true</NoTargetFrameworkFiltering>
   </PropertyGroup>
 
   <!-- Set up the dotnet/runtime source-build command. -->
