@@ -8,7 +8,6 @@
     <ProjectReference Include="Microsoft.NETCore.BrowserDebugHost.Transport\Microsoft.NETCore.BrowserDebugHost.Transport.pkgproj" />
     <ProjectReference Include="Microsoft.NET.Runtime.WebAssembly.Sdk\Microsoft.NET.Runtime.WebAssembly.Sdk.pkgproj" />
     <ProjectReference Include="..\wasm\templates\Microsoft.NET.Runtime.WebAssembly.Templates.csproj" />
-    <ProjectReference Include="Microsoft.NET.Sdk.WebAssembly.Pack\Microsoft.NET.Sdk.WebAssembly.Pack.pkgproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsWasi)' == 'true'">

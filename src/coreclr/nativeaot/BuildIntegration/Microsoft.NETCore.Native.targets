@@ -318,8 +318,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
     <ItemGroup Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'">
       <CustomLinkerArg Include="-Wl,--discard-all" />
-      <CustomLinkerArg Include="-Wl,--gc-sections" Condition="'$(LinkerFlavor)' == '' or '$(LinkerFlavor)' == 'bfd' or '$(LinkerFlavor)' == 'lld'" />
-      <CustomLinkerArg Include="-Wl,-T,&quot;$(NativeIntermediateOutputPath)sections.ld&quot;" Condition="'$(LinkerFlavor)' == 'lld'" />
+      <CustomLinkerArg Include="-Wl,--gc-sections" Condition="'$(LinkerFlavor)' == '' or '$(LinkerFlavor)' == 'bfd'" />
     </ItemGroup>
     <ItemGroup>
       <CustomLibArg Include="-crs &quot;$(NativeBinary)&quot;" Condition="'$(_targetOS)' != 'win'" />
@@ -335,9 +334,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_IgnoreLinkerWarnings Condition="'$(_IsApplePlatform)' == 'true'">true</_IgnoreLinkerWarnings>
       <StripFlag Condition="'$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'">-x</StripFlag> <!-- keep global symbols in dylib -->
     </PropertyGroup>
-
-    <!-- write linker script for lld to retain the __modules section -->
-    <WriteLinesToFile File="$(NativeIntermediateOutputPath)sections.ld" Lines="OVERWRITE_SECTIONS { __modules : { KEEP(*(__modules)) } }" Overwrite="true" Condition="'$(LinkerFlavor)' == 'lld'" />
 
     <Exec Command="&quot;$(CppLinker)&quot; @(CustomLinkerArg, ' ')" Condition="'$(_targetOS)' != 'win' and '$(NativeLib)' != 'Static'" IgnoreStandardErrorWarningFormat="$(_IgnoreLinkerWarnings)" />
     <Exec Command="&quot;$(CppLibCreator)&quot; @(CustomLibArg, ' ')" Condition="'$(_targetOS)' != 'win' and '$(NativeLib)' == 'Static'" />
