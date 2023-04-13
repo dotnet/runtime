@@ -3341,7 +3341,8 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             BlockRange().InsertBefore(node, idx);
             LowerNode(idx);
 
-            tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, idx, NI_AVX512F_ExtractVector128, simdBaseJitType, simdSize);
+            tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, idx, NI_AVX512F_ExtractVector128, simdBaseJitType,
+                                                  simdSize);
             BlockRange().InsertBefore(node, tmp1);
             LowerNode(tmp1);
         }
@@ -3626,7 +3627,8 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
             BlockRange().InsertAfter(op1, idx);
             LowerNode(idx);
 
-            tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, idx, NI_AVX512F_ExtractVector128, simdBaseJitType, simdSize);
+            tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, idx, NI_AVX512F_ExtractVector128, simdBaseJitType,
+                                                  simdSize);
             BlockRange().InsertAfter(idx, tmp1);
             LowerNode(tmp1);
         }
@@ -4619,8 +4621,7 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
     unsigned       simdSize        = node->GetSimdSize();
     var_types      simdType        = Compiler::getSIMDTypeForSize(simdSize);
 
-    assert((intrinsicId == NI_Vector128_ToScalar) ||
-           (intrinsicId == NI_Vector256_ToScalar) ||
+    assert((intrinsicId == NI_Vector128_ToScalar) || (intrinsicId == NI_Vector256_ToScalar) ||
            (intrinsicId == NI_Vector512_ToScalar));
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(simdBaseType));
@@ -5740,6 +5741,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                 case NI_SSE41_X64_Extract:
                 case NI_AVX_ExtractVector128:
                 case NI_AVX2_ExtractVector128:
+                case NI_AVX512F_ExtractVector128:
                 case NI_AVX512F_ExtractVector256:
                 {
                     // These intrinsics are "ins reg/mem, xmm, imm8"
@@ -7169,6 +7171,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_Vector128_GetElement:
         case NI_AVX_ExtractVector128:
         case NI_AVX2_ExtractVector128:
+        case NI_AVX512F_ExtractVector128:
         case NI_AVX512F_ExtractVector256:
         case NI_AVX512F_ConvertToVector128Int16:
         case NI_AVX512F_ConvertToVector128Int32:
@@ -7254,8 +7257,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     if ((node->GetSimdSize() == 8) || (node->GetSimdSize() == 12))
     {
         // We want to handle GetElement still for Vector2/3
-        if ((intrinsicId != NI_Vector128_GetElement) &&
-            (intrinsicId != NI_Vector256_GetElement) &&
+        if ((intrinsicId != NI_Vector128_GetElement) && (intrinsicId != NI_Vector256_GetElement) &&
             (intrinsicId != NI_Vector512_GetElement))
         {
             // TODO-XArch-CQ: Ideally we would key this off of the size the containing node
@@ -7493,6 +7495,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_SSE2_Extract:
                         case NI_AVX_ExtractVector128:
                         case NI_AVX2_ExtractVector128:
+                        case NI_AVX512F_ExtractVector128:
                         case NI_AVX512F_ExtractVector256:
                         {
                             // These intrinsics are "ins reg/mem, xmm, imm8" and get

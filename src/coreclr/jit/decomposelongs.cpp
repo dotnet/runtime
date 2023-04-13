@@ -1780,7 +1780,9 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
     // Create:
     //      loResult = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index_times_two)
 
-    GenTreeHWIntrinsic* loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, indexTimesTwo, node->GetHWIntrinsicId(), CORINFO_TYPE_INT, simdSize);
+    GenTreeHWIntrinsic* loResult =
+        m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, indexTimesTwo, node->GetHWIntrinsicId(),
+                                             CORINFO_TYPE_INT, simdSize);
     Range().InsertBefore(node, loResult);
 
     simdTmpVar = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTmpVar->TypeGet());
@@ -1798,18 +1800,20 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
     }
     else
     {
-        indexTimesTwo = RepresentOpAsLocalVar(indexTimesTwo, loResult, &loResult->Op(2));
+        indexTimesTwo                = RepresentOpAsLocalVar(indexTimesTwo, loResult, &loResult->Op(2));
         unsigned indexTimesTwoVarNum = indexTimesTwo->AsLclVarCommon()->GetLclNum();
         JITDUMP("[DecomposeHWIntrinsicWithElement]: Saving indexTimesTwo tree to a temp var:\n");
         DISPTREERANGE(Range(), indexTimesTwo);
-        Range().Remove(indexTimesTwo);
 
-        GenTree* one = m_compiler->gtNewIconNode(1, TYP_INT);
+        indexTimesTwo        = m_compiler->gtNewLclLNode(indexTimesTwoVarNum, indexTimesTwo->TypeGet());
+        GenTree* one         = m_compiler->gtNewIconNode(1, TYP_INT);
         indexTimesTwoPlusOne = m_compiler->gtNewOperNode(GT_ADD, TYP_INT, indexTimesTwo, one);
         Range().InsertBefore(node, indexTimesTwo, one, indexTimesTwoPlusOne);
     }
 
-    GenTreeHWIntrinsic* hiResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, indexTimesTwoPlusOne, node->GetHWIntrinsicId(), CORINFO_TYPE_INT, simdSize);
+    GenTreeHWIntrinsic* hiResult =
+        m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, indexTimesTwoPlusOne, node->GetHWIntrinsicId(),
+                                             CORINFO_TYPE_INT, simdSize);
     Range().InsertBefore(node, hiResult);
 
     // Done with the original tree; remove it.

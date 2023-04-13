@@ -19001,6 +19001,7 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX2_ConvertToInt32:
         case NI_AVX2_ConvertToUInt32:
         case NI_AVX2_ExtractVector128:
+        case NI_AVX512F_ExtractVector128:
         case NI_AVX512F_ExtractVector256:
         case NI_AVX512F_ConvertToVector128Int16:
         case NI_AVX512F_ConvertToVector128Int32:
