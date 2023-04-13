@@ -1,7 +1,6 @@
 import { INTERNAL, Module } from "../imports";
 import { AssetEntry, LoadingResource, MonoConfigInternal } from "../types";
 import { BootConfigResult, BootJsonData, ICUDataMode } from "./BootConfig";
-import { WebAssemblyConfigLoader } from "./WebAssemblyConfigLoader";
 import { WebAssemblyResourceLoader } from "./WebAssemblyResourceLoader";
 import { WebAssemblyBootResourceType } from "./WebAssemblyStartOptions";
 import { hasDebuggingEnabled } from "./_Polyfill";
@@ -13,10 +12,7 @@ export async function loadBootConfig(config: MonoConfigInternal,) {
 
     const bootConfigResult: BootConfigResult = await bootConfigPromise;
 
-    const [resourceLoader] = await Promise.all([
-        WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, candidateOptions || {}),
-        WebAssemblyConfigLoader.initAsync(bootConfigResult, candidateOptions || {}),
-    ]);
+    const resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, candidateOptions || {});
 
     INTERNAL.resourceLoader = resourceLoader;
 
