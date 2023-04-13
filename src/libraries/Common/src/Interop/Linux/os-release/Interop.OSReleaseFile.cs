@@ -31,7 +31,7 @@ internal static partial class Interop
                 // Parse the NAME, PRETTY_NAME, and VERSION fields.
                 // These fields are suitable for presentation to the user.
                 ReadOnlySpan<char> prettyName = default, name = default, version = default;
-                foreach (var line in lines)
+                foreach (string line in lines)
                 {
                     ReadOnlySpan<char> lineSpan = line.AsSpan();
 
@@ -65,10 +65,11 @@ internal static partial class Interop
                     ReadOnlySpan<char> fieldValue = line.Slice(prefix.Length);
 
                     // Remove enclosing quotes.
-                    if ((fieldValue.StartsWith("\"") && fieldValue.EndsWith("\"")) ||
-                        (fieldValue.StartsWith("'") && fieldValue.EndsWith("'")))
+                    if (fieldValue.Length >= 2 &&
+                        fieldValue[0] is '"' or '\'' &&
+                        fieldValue[0] == fieldValue[^1])
                     {
-                        fieldValue = fieldValue.Slice(1, fieldValue.Length - 2);
+                        fieldValue = fieldValue[1, ^1];
                     }
 
                     value = fieldValue;
