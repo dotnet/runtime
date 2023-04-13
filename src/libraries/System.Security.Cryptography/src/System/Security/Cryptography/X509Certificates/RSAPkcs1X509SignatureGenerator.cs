@@ -62,15 +62,15 @@ namespace System.Security.Cryptography.X509Certificates
             }
             else if (hashAlgorithm == HashAlgorithmName.SHA3_256)
             {
-                oid = Oids.RsaPkcs1Sha3_Sha256;
+                oid = Oids.RsaPkcs1Sha3_256;
             }
             else if (hashAlgorithm == HashAlgorithmName.SHA3_384)
             {
-                oid = Oids.RsaPkcs1Sha3_Sha384;
+                oid = Oids.RsaPkcs1Sha3_384;
             }
             else if (hashAlgorithm == HashAlgorithmName.SHA3_512)
             {
-                oid = Oids.RsaPkcs1Sha3_Sha512;
+                oid = Oids.RsaPkcs1Sha3_512;
             }
             else
             {

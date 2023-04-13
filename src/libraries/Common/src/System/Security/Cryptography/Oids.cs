@@ -24,9 +24,9 @@ namespace System.Security.Cryptography
         internal const string RsaPkcs1Sha256 = "1.2.840.113549.1.1.11";
         internal const string RsaPkcs1Sha384 = "1.2.840.113549.1.1.12";
         internal const string RsaPkcs1Sha512 = "1.2.840.113549.1.1.13";
-        internal const string RsaPkcs1Sha3_Sha256 = "2.16.840.1.101.3.4.3.14";
-        internal const string RsaPkcs1Sha3_Sha384 = "2.16.840.1.101.3.4.3.15";
-        internal const string RsaPkcs1Sha3_Sha512 = "2.16.840.1.101.3.4.3.16";
+        internal const string RsaPkcs1Sha3_256 = "2.16.840.1.101.3.4.3.14";
+        internal const string RsaPkcs1Sha3_384 = "2.16.840.1.101.3.4.3.15";
+        internal const string RsaPkcs1Sha3_512 = "2.16.840.1.101.3.4.3.16";
         internal const string Esdh = "1.2.840.113549.1.9.16.3.5";
         internal const string EcDiffieHellman = "1.3.132.1.12";
         internal const string DiffieHellman = "1.2.840.10046.2.1";

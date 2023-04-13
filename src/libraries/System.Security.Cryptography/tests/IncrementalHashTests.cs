@@ -313,6 +313,22 @@ namespace System.Security.Cryptography.Tests
                 () => IncrementalHash.CreateHMAC(new HashAlgorithmName("SHA0"), Array.Empty<byte>()));
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.DoesNotSupportSha3))]
+        [InlineData("SHA3-256")]
+        [InlineData("SHA3-384")]
+        [InlineData("SHA3-512")]
+        public static void UnsupportedAlgorithms(string algorithmName)
+        {
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                IncrementalHash.CreateHMAC(new HashAlgorithmName(algorithmName), ReadOnlySpan<byte>.Empty));
+
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                IncrementalHash.CreateHMAC(new HashAlgorithmName(algorithmName), Array.Empty<byte>()));
+
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                IncrementalHash.CreateHash(new HashAlgorithmName(algorithmName)));
+        }
+
         [Theory]
         [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyIncrementalHash_Span(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
