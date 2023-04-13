@@ -4203,12 +4203,6 @@ void emitter::emitIns_Mov(
             assert(insOptsNone(opt));
             assert(isValidGeneralDatasize(size));
             assert(isGeneralRegister(dstReg));
-            if (!isGeneralRegister(srcReg))
-            {
-                printf("\n");
-                printf("%i\n", srcReg);
-                assert(isGeneralRegister(srcReg));
-            }
             assert(isGeneralRegister(srcReg));
             fmt = IF_DR_2H;
             break;
