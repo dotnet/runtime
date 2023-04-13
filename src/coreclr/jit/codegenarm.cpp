@@ -1120,9 +1120,16 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
             else // store into register (i.e move into register)
             {
                 // Assign into targetReg when dataReg (from op1) is not the same register
-                // We use 'emitActualTypeSize' as the instructions require 4BYTE.
-                inst_Mov_Extend(targetType, /* srcInReg */ true, targetReg, dataReg, /* canSkip */ true,
-                                emitActualTypeSize(targetType));
+                if (varTypeIsIntegral(targetType))
+                {
+                    // We use 'emitActualTypeSize' as the instructions require 4BYTE.
+                    inst_Mov_Extend(targetType, /* srcInReg */ true, targetReg, dataReg, /* canSkip */ true,
+                                    emitActualTypeSize(targetType));
+                }
+                else
+                {
+                    inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
+                }
             }
 
             genUpdateLifeStore(tree, targetReg, varDsc);
