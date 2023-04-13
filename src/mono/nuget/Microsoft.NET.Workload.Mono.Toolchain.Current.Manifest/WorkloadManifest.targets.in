@@ -20,8 +20,6 @@
     <_BrowserWorkloadNotSupportedForTFM Condition="$([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '6.0'))">true</_BrowserWorkloadNotSupportedForTFM>
     <_BrowserWorkloadDisabled>$(_BrowserWorkloadNotSupportedForTFM)</_BrowserWorkloadDisabled>
 
-    <_UsingBlazorOrWasmSdk Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true' or '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'">true</_UsingBlazorOrWasmSdk>
-
     <!-- Is the workload for the target framework available -->
     <!--<WasmNativeWorkloadAvailable />-->
     <!--<WasmNativeWorkloadAvailable Condition="'$(TargetsNet8)' == 'true' and $(WasmNativeWorkloadAvailableList.Contains('+net8.0+'))">true</WasmNativeWorkloadAvailable>-->
@@ -41,7 +39,7 @@
     <!-- $(WasmBuildNative)==true is needed to enable workloads, when using native references, without AOT -->
     <!-- FIXME: is the blazor condition here correct? -->
     <_WasmNativeWorkloadNeeded Condition="'$(RunAOTCompilation)' == 'true' or '$(WasmEnableSIMD)' == 'true' or '$(WasmBuildNative)' == 'true' or
-      '$(WasmGenerateAppBundle)' == 'true' or '$(_UsingBlazorOrWasmSdk)' != 'true'" >true</_WasmNativeWorkloadNeeded>
+      '$(WasmGenerateAppBundle)' == 'true' or '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'" >true</_WasmNativeWorkloadNeeded>
 
     <UsingBrowserRuntimeWorkload Condition="'$(_BrowserWorkloadNotSupportedForTFM)' == 'true'">false</UsingBrowserRuntimeWorkload>
     <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == '' and '$(_WasmNativeWorkloadNeeded)' == 'true'">true</UsingBrowserRuntimeWorkload>
@@ -61,7 +59,7 @@
     <UsingMobileWorkload>true</UsingMobileWorkload>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(_UsingBlazorOrWasmSdk)' == 'true' and '$(UsingBrowserRuntimeWorkload)' == 'true'">
+  <PropertyGroup Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true' and '$(UsingBrowserRuntimeWorkload)' == 'true'">
     <WasmGenerateAppBundle>false</WasmGenerateAppBundle>
     <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
   </PropertyGroup>
