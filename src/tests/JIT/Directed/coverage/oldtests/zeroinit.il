@@ -32,7 +32,7 @@
   .field public int32 'nop'
 } // end of class VT
 
-.class private auto ZeroInit
+.class public auto ZeroInit
 {
   .method public hidebysig static int32 Main() cil managed
   {

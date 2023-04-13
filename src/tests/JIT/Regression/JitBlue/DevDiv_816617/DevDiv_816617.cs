@@ -3,12 +3,14 @@
 //
 
 using System;
+using Xunit;
 
 public static class Repro
 {
     static double NegativeZero = -0.0;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // This testcase ensures that we explicitly add Negative zero
         // and Positive Zero producing Positive Zero(0x00000000 000000000)

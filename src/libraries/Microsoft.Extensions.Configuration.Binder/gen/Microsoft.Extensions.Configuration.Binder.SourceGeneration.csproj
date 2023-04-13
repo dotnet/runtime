@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <CLSCompliant>false</CLSCompliant>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <UsingToolXliff>true</UsingToolXliff>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants Condition="'$(LaunchDebugger)' == 'true'">$(DefineConstants);LAUNCH_DEBUGGER</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" Link="System.Private.CoreLib\System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" Link="Common\System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" Link="Common\System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+    <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+    <Compile Include="CollectionSpec.cs" />
+    <Compile Include="ConfigurationBindingSourceGenerator.cs" />
+    <Compile Include="ConfigurationBindingSourceGenerator.Emitter.cs" />
+    <Compile Include="ConfigurationBindingSourceGenerator.Helpers.cs" />
+    <Compile Include="ConfigurationBindingSourceGenerator.Parser.cs" />
+    <Compile Include="ConstructionStrategy.cs" />
+    <Compile Include="ConfigurationSectionTypeSpec.cs" />
+    <Compile Include="ExceptionMessages.cs" />
+    <Compile Include="MethodSpecifier.cs" />
+    <Compile Include="NullableSpec.cs" />
+    <Compile Include="ObjectSpec.cs" />
+    <Compile Include="ParsableFromStringTypeSpec.cs" />
+    <Compile Include="PopulationStrategy.cs" />
+    <Compile Include="PropertySpec.cs" />
+    <Compile Include="SourceGenerationSpec.cs" />
+    <Compile Include="SourceWriter.cs" />
+    <Compile Include="TypeSpecKind.cs" />
+    <Compile Include="TypeSpec.cs" />
+  </ItemGroup>
+</Project>

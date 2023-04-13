@@ -439,17 +439,11 @@ namespace ILCompiler.DependencyAnalysis
                 }
             });
 
-            _typeGenericDictionaries = new NodeCache<TypeDesc, ISortableSymbolNode>(type =>
+            _typeGenericDictionaries = new NodeCache<TypeDesc, TypeGenericDictionaryNode>(type =>
             {
-                if (CompilationModuleGroup.ContainsTypeDictionary(type))
-                {
-                    Debug.Assert(!this.LazyGenericsPolicy.UsesLazyGenerics(type));
-                    return new TypeGenericDictionaryNode(type, this);
-                }
-                else
-                {
-                    return _importedNodeProvider.ImportedTypeDictionaryNode(this, type);
-                }
+                Debug.Assert(CompilationModuleGroup.ContainsTypeDictionary(type));
+                Debug.Assert(!this.LazyGenericsPolicy.UsesLazyGenerics(type));
+                return new TypeGenericDictionaryNode(type, this);
             });
 
             _typesWithMetadata = new NodeCache<MetadataType, TypeMetadataNode>(type =>
@@ -847,8 +841,8 @@ namespace ILCompiler.DependencyAnalysis
             return _methodGenericDictionaries.GetOrAdd(method);
         }
 
-        private NodeCache<TypeDesc, ISortableSymbolNode> _typeGenericDictionaries;
-        public ISortableSymbolNode TypeGenericDictionary(TypeDesc type)
+        private NodeCache<TypeDesc, TypeGenericDictionaryNode> _typeGenericDictionaries;
+        public TypeGenericDictionaryNode TypeGenericDictionary(TypeDesc type)
         {
             return _typeGenericDictionaries.GetOrAdd(type);
         }
@@ -963,6 +957,9 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;
         public ReflectedMethodNode ReflectedMethod(MethodDesc method)
         {
+            // We track reflectability at canonical method body level
+            method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
             return _reflectedMethods.GetOrAdd(method);
         }
 

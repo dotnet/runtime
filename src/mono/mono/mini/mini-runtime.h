@@ -27,12 +27,11 @@ typedef struct {
 	/* Maps methods/klasses to the address of the given type of trampoline */
 	GHashTable *jump_trampoline_hash;
 	GHashTable *jit_trampoline_hash;
-	GHashTable *delegate_trampoline_hash;
+	GHashTable *delegate_info_hash;
 	/* Maps ClassMethodPair -> MonoDelegateTrampInfo */
 	GHashTable *static_rgctx_trampoline_hash;
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
 	GHashTable *dynamic_code_hash;
-	GHashTable *method_code_hash;
 	/* Maps methods to a RuntimeInvokeInfo structure, protected by the associated MonoDomain lock */
 	MonoConcurrentHashTable *runtime_invoke_hash;
 	/* Maps MonoMethod to a GPtrArray containing sequence point locations */

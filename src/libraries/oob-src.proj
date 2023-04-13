@@ -25,10 +25,9 @@
 
     <!-- Don't build meta-projects in the NetCoreAppCurrent vertical. -->
     <ProjectReference Remove="Microsoft.Internal.Runtime.AspNetCore.Transport\src\Microsoft.Internal.Runtime.AspNetCore.Transport.proj;
-                              Microsoft.Internal.Runtime.WindowsDesktop.Transport\src\Microsoft.Internal.Runtime.WindowsDesktop.Transport.proj;
-                              Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj" />
+                              Microsoft.Internal.Runtime.WindowsDesktop.Transport\src\Microsoft.Internal.Runtime.WindowsDesktop.Transport.proj" />
 
-    <!-- Filter out projects which aren't source-buildable. -->
+    <!-- Skip these projects during source-build as they rely on external prebuilts. -->
     <ProjectReference Remove="Microsoft.Extensions.DependencyInjection.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj"
                       Condition="'$(DotNetBuildFromSource)' == 'true'" />
   </ItemGroup>

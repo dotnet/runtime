@@ -660,6 +660,8 @@ protected:
         insFormat _idInsFmt : 7;
 #elif defined(TARGET_LOONGARCH64)
         unsigned    _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
+#elif defined(TARGET_RISCV64)
+        unsigned    _idCodeSize : 6; // the instruction(s) size of this instrDesc described.
 #else
         static_assert_no_msg(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;
@@ -695,6 +697,16 @@ protected:
         void idInsFmt(insFormat insFmt)
         {
         }
+#elif defined(TARGET_RISCV64)
+        insFormat   idInsFmt() const
+        {
+            NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
+            return (insFormat)0;
+        }
+        void idInsFmt(insFormat insFmt)
+        {
+            NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
+        }
 #else
         insFormat   idInsFmt() const
         {
@@ -724,11 +736,11 @@ protected:
         opSize   _idOpSize : 3;   // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16, 5=32
                                   // At this point we have fully consumed first DWORD so that next field
                                   // doesn't cross a byte boundary.
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 /* _idOpSize defined below. */
 #else
-        opSize    _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
-#endif // ARM || TARGET_LOONGARCH64
+        opSize _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
         // On Amd64, this is where the second DWORD begins
         // On System V a call could return a struct in 2 registers. The instrDescCGCA struct below has  member that
@@ -783,6 +795,13 @@ protected:
         unsigned _idLclVar : 1; // access a local on stack.
 #endif
 
+#ifdef TARGET_RISCV64
+        // TODO-RISCV64: maybe delete on future
+        opSize   _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts  _idInsOpt : 6; // options for instructions
+        unsigned _idLclVar : 1; // access a local on stack
+#endif
+
 #ifdef TARGET_ARM
         insSize  _idInsSize : 2;   // size of instruction: 16, 32 or 48 bits
         insFlags _idInsFlags : 1;  // will this instruction set the flags
@@ -809,7 +828,7 @@ protected:
 #define ID_EXTRA_BITFIELD_BITS (16)
 #elif defined(TARGET_ARM64)
 #define ID_EXTRA_BITFIELD_BITS (17)
-#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #else
 #error Unsupported or unset target architecture
@@ -909,7 +928,7 @@ protected:
 // TODO-Cleanup: We should really add a DEBUG-only tag to this union so we can add asserts
 // about reading what we think is here, to avoid unexpected corruption issues.
 
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
             emitLclVarAddr iiaLclVar;
 #endif
             BasicBlock* iiaBBlabel;
@@ -963,7 +982,7 @@ protected:
                 regNumber _idReg3 : REGNUM_BITS;
                 regNumber _idReg4 : REGNUM_BITS;
             };
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             struct
             {
                 unsigned int iiaEncodedInstr; // instruction's binary encoding.
@@ -994,7 +1013,7 @@ protected:
             {
                 return iiaJmpOffset;
             }
-#endif // defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
         } _idAddrUnion;
 
@@ -1096,7 +1115,7 @@ protected:
         }
 
 #elif defined(TARGET_LOONGARCH64)
-        unsigned    idCodeSize() const
+        unsigned  idCodeSize() const
         {
             return _idCodeSize;
         }
@@ -1107,9 +1126,21 @@ protected:
             assert(sz <= 16);
             _idCodeSize = sz;
         }
-#endif // TARGET_LOONGARCH64
+#elif defined(TARGET_RISCV64)
+        unsigned idCodeSize() const
+        {
+            return _idCodeSize;
+        }
+        void idCodeSize(unsigned sz)
+        {
+            // RISCV64's instrDesc is not always meaning only one instruction.
+            // e.g. the `emitter::emitIns_I_la` for emitting the immediates.
+            assert(sz <= 32);
+            _idCodeSize = sz;
+        }
+#endif
 
-        emitAttr idOpSize()
+        emitAttr idOpSize() const
         {
             return emitDecodeSize(_idOpSize);
         }
@@ -1290,6 +1321,42 @@ protected:
 
 #endif // TARGET_LOONGARCH64
 
+#ifdef TARGET_RISCV64
+        insOpts idInsOpt() const
+        {
+            return (insOpts)_idInsOpt;
+        }
+        void idInsOpt(insOpts opt)
+        {
+            _idInsOpt = opt;
+            assert(opt == _idInsOpt);
+        }
+
+        regNumber idReg3() const
+        {
+            assert(!idIsSmallDsc());
+            return idAddr()->_idReg3;
+        }
+        void idReg3(regNumber reg)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idReg3 = reg;
+            assert(reg == idAddr()->_idReg3);
+        }
+        regNumber idReg4() const
+        {
+            assert(!idIsSmallDsc());
+            return idAddr()->_idReg4;
+        }
+        void idReg4(regNumber reg)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idReg4 = reg;
+            assert(reg == idAddr()->_idReg4);
+        }
+
+#endif // TARGET_RISCV64
+
         inline static bool fitsInSmallCns(ssize_t val)
         {
             return ((val >= ID_MIN_SMALL_CNS) && (val <= ID_MAX_SMALL_CNS));
@@ -1388,6 +1455,17 @@ protected:
             _idLclVar = 1;
         }
 #endif // TARGET_LOONGARCH64
+
+#ifdef TARGET_RISCV64
+        bool idIsLclVar() const
+        {
+            return _idLclVar != 0;
+        }
+        void idSetIsLclVar()
+        {
+            _idLclVar = 1;
+        }
+#endif // TARGET_RISCV64
 
         bool idIsCnsReloc() const
         {
@@ -1564,6 +1642,23 @@ protected:
 #define PERFSCORE_LATENCY_RD_WR_GENERAL PERFSCORE_LATENCY_4C
 
 #elif defined(TARGET_LOONGARCH64)
+// a read,write or modify from stack location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_STACK PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_STACK PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_STACK PERFSCORE_LATENCY_3C
+
+// a read, write or modify from constant location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_CONST_ADDR PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_CONST_ADDR PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_CONST_ADDR PERFSCORE_LATENCY_3C
+
+// a read, write or modify from memory location, possible def to use latency from L0 or L1 cache
+// plus an extra cost  (of 1.0) for a increased chance  of a cache miss
+#define PERFSCORE_LATENCY_RD_GENERAL PERFSCORE_LATENCY_4C
+#define PERFSCORE_LATENCY_WR_GENERAL PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_GENERAL PERFSCORE_LATENCY_4C
+
+#elif defined(TARGET_RISCV64)
 // a read,write or modify from stack location, possible def to use latency from L0 cache
 #define PERFSCORE_LATENCY_RD_STACK PERFSCORE_LATENCY_3C
 #define PERFSCORE_LATENCY_WR_STACK PERFSCORE_LATENCY_1C
@@ -2030,9 +2125,9 @@ public:
 #endif // defined(TARGET_X86)
 #endif // !defined(HOST_64BIT)
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     unsigned int emitCounts_INS_OPTS_J;
-#endif // TARGET_LOONGARCH64
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     instrDesc* emitFirstInstrDesc(BYTE* idData);
     void emitAdvanceInstrDesc(instrDesc** id, size_t idSize);
@@ -2088,6 +2183,7 @@ private:
 
 #ifdef TARGET_XARCH
     bool emitIsInstrWritingToReg(instrDesc* id, regNumber reg);
+    bool emitDoesInsModifyFlags(instruction ins);
 #endif // TARGET_XARCH
 
     /************************************************************************/
@@ -2171,12 +2267,16 @@ private:
     instrDescAlign* emitAlignLastGroup;
 
     unsigned getLoopSize(insGroup* igLoopHeader,
-                         unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)); // Get the smallest loop size
+                         unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted) DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
+                             DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum)); // Get the smallest loop size
     void emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
     bool emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
     void emitSetLoopBackEdge(BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
-    unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool isAlignAdjusted));
+    unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig,
+                                                  size_t offset DEBUG_ARG(bool isAlignAdjusted)
+                                                      DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
+                                                          DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum));
 
     void emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp));
     void emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));
@@ -2440,7 +2540,7 @@ private:
     void emitPrintLabel(insGroup* ig);
     const char* emitLabelString(insGroup* ig);
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     void emitGetInstrDescs(insGroup* ig, instrDesc** id, int* insCnt);
 
@@ -2658,6 +2758,9 @@ public:
     // Returns "true" if instruction "id->idIns()" writes to a LclVar stack slot pair.
     bool emitInsWritesToLclVarStackLocPair(instrDesc* id);
 #elif defined(TARGET_LOONGARCH64)
+    bool emitInsMayWriteToGCReg(instruction ins);
+    bool emitInsWritesToLclVarStackLoc(instrDesc* id);
+#elif defined(TARGET_RISCV64)
     bool emitInsMayWriteToGCReg(instruction ins);
     bool emitInsWritesToLclVarStackLoc(instrDesc* id);
 #endif // TARGET_LOONGARCH64
@@ -3346,6 +3449,7 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 // Note: vextractf128 has a 128-bit output (register or memory) but a 256-bit input (register).
 // vinsertf128 is the inverse with a 256-bit output (register), a 256-bit input(register),
 // and a 128-bit input (register or memory).
+// Similarly, vextractf64x4 has a 256-bit output and 128-bit input and vinsertf64x4 the inverse
 // This method is mainly used for such instructions to return the appropriate memory operand
 // size, otherwise returns the regular operand size of the instruction.
 
@@ -3466,8 +3570,15 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 
         case INS_cvtdq2pd:
         case INS_cvtps2pd:
+        case INS_vpmovdw:
+        case INS_vpmovqd:
+        case INS_vpmovwb:
         {
-            if (defaultSize == 32)
+            if (defaultSize == 64)
+            {
+                return EA_32BYTE;
+            }
+            else if (defaultSize == 32)
             {
                 return EA_16BYTE;
             }
@@ -3486,6 +3597,18 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
         case INS_vinserti128:
         {
             return EA_16BYTE;
+        }
+
+        case INS_vextractf32x8:
+        case INS_vextracti32x8:
+        case INS_vextractf64x4:
+        case INS_vextracti64x4:
+        case INS_vinsertf32x8:
+        case INS_vinserti32x8:
+        case INS_vinsertf64x4:
+        case INS_vinserti64x4:
+        {
+            return EA_32BYTE;
         }
 
         case INS_movddup:

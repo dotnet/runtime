@@ -424,6 +424,24 @@ size_t interceptor_ICJI::getClassModuleIdForStatics(
     return original_ICorJitInfo->getClassModuleIdForStatics(cls, pModule, ppIndirection);
 }
 
+bool interceptor_ICJI::getIsClassInitedFlagAddress(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CONST_LOOKUP* addr,
+          int* offset)
+{
+    mcs->AddCall("getIsClassInitedFlagAddress");
+    return original_ICorJitInfo->getIsClassInitedFlagAddress(cls, addr, offset);
+}
+
+bool interceptor_ICJI::getStaticBaseAddress(
+          CORINFO_CLASS_HANDLE cls,
+          bool isGc,
+          CORINFO_CONST_LOOKUP* addr)
+{
+    mcs->AddCall("getStaticBaseAddress");
+    return original_ICorJitInfo->getStaticBaseAddress(cls, isGc, addr);
+}
+
 unsigned interceptor_ICJI::getClassSize(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -783,6 +801,20 @@ void interceptor_ICJI::getFieldInfo(
     original_ICorJitInfo->getFieldInfo(pResolvedToken, callerHandle, flags, pResult);
 }
 
+uint32_t interceptor_ICJI::getThreadLocalFieldInfo(
+          CORINFO_FIELD_HANDLE field)
+{
+    mcs->AddCall("getThreadLocalFieldInfo");
+    return original_ICorJitInfo->getThreadLocalFieldInfo(field);
+}
+
+void interceptor_ICJI::getThreadLocalStaticBlocksInfo(
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+{
+    mcs->AddCall("getThreadLocalStaticBlocksInfo");
+    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo);
+}
+
 bool interceptor_ICJI::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {
@@ -1021,6 +1053,13 @@ uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(
 {
     mcs->AddCall("getLoongArch64PassStructInRegisterFlags");
     return original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(structHnd);
+}
+
+uint32_t interceptor_ICJI::getRISCV64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    mcs->AddCall("getRISCV64PassStructInRegisterFlags");
+    return original_ICorJitInfo->getRISCV64PassStructInRegisterFlags(structHnd);
 }
 
 uint32_t interceptor_ICJI::getThreadTLSIndex(

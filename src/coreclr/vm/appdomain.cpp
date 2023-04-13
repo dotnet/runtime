@@ -665,6 +665,14 @@ void BaseDomain::InitVSD()
     GetLoaderAllocator()->InitVirtualCallStubManager(this);
 }
 
+#ifdef HOST_WINDOWS
+void BaseDomain::InitThreadStaticBlockTypeMap()
+{
+    STANDARD_VM_CONTRACT;
+
+    m_threadStaticBlockTypeIDMap.Init();
+}
+#endif // HOST_WINDOWS
 
 void BaseDomain::ClearBinderContext()
 {
@@ -1589,6 +1597,9 @@ Module* SystemDomain::GetCallersModule(StackCrawlMark* stackMark)
     }
     CONTRACTL_END;
 
+    if (stackMark == NULL)
+        return NULL;
+
     GCX_COOP();
 
     CallersDataWithStackMark cdata;
@@ -1758,6 +1769,11 @@ void AppDomain::Create()
 
     // allocate a Virtual Call Stub Manager for the default domain
     pDomain->InitVSD();
+
+#ifdef HOST_WINDOWS
+    // allocate a thread static block to index map
+    pDomain->InitThreadStaticBlockTypeMap();
+#endif
 
     pDomain->SetStage(AppDomain::STAGE_OPEN);
     pDomain->CreateDefaultBinder();
@@ -4631,7 +4647,7 @@ UINT32 BaseDomain::GetTypeID(PTR_MethodTable pMT) {
         PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
 
-    return m_typeIDMap.GetTypeID(pMT);
+    return m_typeIDMap.GetTypeID(pMT, true);
 }
 
 //------------------------------------------------------------------------
@@ -4661,6 +4677,34 @@ PTR_MethodTable BaseDomain::LookupType(UINT32 id) {
     CONSISTENCY_CHECK(pMT->IsInterface());
     return pMT;
 }
+
+#ifdef HOST_WINDOWS
+//------------------------------------------------------------------------
+UINT32 BaseDomain::GetThreadStaticTypeIndex(PTR_MethodTable pMT)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        PRECONDITION(pMT->GetDomain() == this);
+    } CONTRACTL_END;
+
+    return m_threadStaticBlockTypeIDMap.GetTypeID(pMT, false);
+}
+
+//------------------------------------------------------------------------
+PTR_MethodTable BaseDomain::LookupThreadStaticBlockType(UINT32 id) {
+        CONTRACTL {
+        NOTHROW;
+        WRAPPER(GC_TRIGGERS);
+        CONSISTENCY_CHECK(id != TYPE_ID_THIS_CLASS);
+    } CONTRACTL_END;
+
+    PTR_MethodTable pMT = m_threadStaticBlockTypeIDMap.LookupType(id);
+
+    CONSISTENCY_CHECK(CheckPointer(pMT));
+    return pMT;
+}
+#endif // HOST_WINDOWS
 
 #ifndef DACCESS_COMPILE
 //---------------------------------------------------------------------------------------

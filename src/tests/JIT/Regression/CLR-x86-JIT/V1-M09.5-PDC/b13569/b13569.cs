@@ -3,11 +3,13 @@
 //
 
 using System;
+using Xunit;
 
 public class Foo
 {
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         const int a = 0x7fffffff; // highest positive int

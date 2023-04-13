@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="pt-BR" original="../Strings.resx">
+    <body>
+      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
+        <source>The project's language version has to be at least 'C# 11'.</source>
+        <target state="translated">A versão do idioma do projeto deve ser no mínimo 'C# 11'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LanguageVersionIsNotSupportedTitle">
+        <source>Language version is required to be at least C# 11</source>
+        <target state="translated">A versão do idioma deve ser pelo menos C# 11</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyNotSupportedMessageFormat">
+        <source>Property '{0}' on type '{1}' is not supported.</source>
+        <target state="translated">Não há suporte para a propriedade '{0}' no tipo '{1}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyNotSupportedTitle">
+        <source>Did not generate binding logic for a property on a type</source>
+        <target state="translated">Não gerou lógica de ligação para uma propriedade em um tipo</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageFormat">
+        <source>Type '{0}' is not supported: {1}.</source>
+        <target state="translated">Não há suporte para o tipo '{0}': {1}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedTitle">
+        <source>Did not generate binding logic for a type</source>
+        <target state="translated">Não gerou lógica de ligação para um tipo</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

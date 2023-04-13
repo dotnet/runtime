@@ -105,7 +105,7 @@ By default the `build` script only builds the product libraries and none of the 
 
 For Windows, replace `./build.sh` with `build.cmd`.
 
-### How to building native components only
+### How to build native components only
 
 The libraries build contains some native code. This includes shims over libc, openssl, gssapi, and zlib. The build system uses CMake to generate Makefiles using clang. The build also uses git for generating some version information.
 
@@ -238,11 +238,11 @@ To build a library's package, simply invoke `dotnet pack` on the src project aft
 
 ```cmd
 build libs
-dotnet pack src\libraries\System.Text.Json\src\
+dotnet.cmd pack src\libraries\System.Text.Json\src\
 ```
 
 Same as for `dotnet build` or `dotnet publish`, you can specify the desired configuration via the `-c` flag:
 
 ```cmd
-dotnet pack src\libraries\System.Text.Json\src\ -c Release
+dotnet.cmd pack src\libraries\System.Text.Json\src\ -c Release
 ```

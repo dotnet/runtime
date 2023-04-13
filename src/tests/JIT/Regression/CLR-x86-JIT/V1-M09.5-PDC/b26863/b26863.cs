@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 /*
 JE1 JR1 C(null) I1 S(null) G0
 ..\regalloc.cpp, Line 8037 : Assertion failed 'passes <= 4' in 'DefaultNamespace.Obj.Static3():ref'
@@ -66,7 +67,8 @@ namespace Test
             return new float[4];
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

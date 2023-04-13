@@ -58,13 +58,38 @@ namespace System.Collections.Generic
             }
         }
 
+        public void Append(scoped ReadOnlySpan<T> source)
+        {
+            if ((uint)(_pos + source.Length) > (uint)_span.Length)
+            {
+                Grow(source.Length);
+            }
+
+            source.CopyTo(_span.Slice(_pos));
+            _pos += source.Length;
+        }
+
+        public Span<T> AppendSpan(int length)
+        {
+            Debug.Assert(length >= 0);
+
+            int pos = _pos;
+            if ((uint)(pos + length) > (uint)_span.Length)
+            {
+                Grow(length);
+            }
+
+            _pos += length;
+            return _span.Slice(pos, length);
+        }
+
         // Hide uncommon path
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void AddWithResize(T item)
         {
             Debug.Assert(_pos == _span.Length);
             int pos = _pos;
-            Grow();
+            Grow(1);
             _span[pos] = item;
             _pos = pos + 1;
         }
@@ -72,6 +97,18 @@ namespace System.Collections.Generic
         public ReadOnlySpan<T> AsSpan()
         {
             return _span.Slice(0, _pos);
+        }
+
+        public bool TryCopyTo(Span<T> destination, out int itemsWritten)
+        {
+            if (_span.Slice(0, _pos).TryCopyTo(destination))
+            {
+                itemsWritten = _pos;
+                return true;
+            }
+
+            itemsWritten = 0;
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -85,13 +122,13 @@ namespace System.Collections.Generic
             }
         }
 
-        private void Grow()
+        private void Grow(int additionalCapacityRequired = 1)
         {
             const int ArrayMaxLength = 0x7FFFFFC7; // same as Array.MaxLength
 
             // Double the size of the span.  If it's currently empty, default to size 4,
             // although it'll be increased in Rent to the pool's minimum bucket size.
-            int nextCapacity = _span.Length != 0 ? _span.Length * 2 : 4;
+            int nextCapacity = Math.Max(_span.Length != 0 ? _span.Length * 2 : 4, _span.Length + additionalCapacityRequired);
 
             // If the computed doubled capacity exceeds the possible length of an array, then we
             // want to downgrade to either the maximum array length if that's large enough to hold
