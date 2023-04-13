@@ -13,6 +13,8 @@ using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using System.Net;
 using HttpStress;
+using System.Net.Quic;
+using Microsoft.Quic;
 
 [assembly:SupportedOSPlatform("windows")]
 [assembly:SupportedOSPlatform("linux")]
@@ -25,6 +27,8 @@ namespace HttpStress
     public static class Program
     {
         public enum ExitCode { Success = 0, StressError = 1, CliError = 2 };
+
+        public static readonly bool IsQuicSupported = QuicListener.IsSupported && QuicConnection.IsSupported;
 
         public static async Task<int> Main(string[] args)
         {
@@ -169,6 +173,8 @@ namespace HttpStress
             Console.WriteLine("     Concurrency: " + config.ConcurrentRequests);
             Console.WriteLine("  Content Length: " + config.MaxContentLength);
             Console.WriteLine("    HTTP Version: " + config.HttpVersion);
+            Console.WriteLine("  QUIC supported: " + (IsQuicSupported ? "yes" : "no"));
+            Console.WriteLine("  MsQuic Version: " + MsQuicApi.MsQuicLibraryVersion);
             Console.WriteLine("        Lifetime: " + (config.ConnectionLifetime.HasValue ? $"{config.ConnectionLifetime.Value.TotalMilliseconds}ms" : "(infinite)"));
             Console.WriteLine("      Operations: " + string.Join(", ", usedClientOperations.Select(o => o.name)));
             Console.WriteLine("     Random Seed: " + config.RandomSeed);
@@ -176,7 +182,19 @@ namespace HttpStress
             Console.WriteLine("Max Content Size: " + config.MaxContentLength);
             Console.WriteLine("Query Parameters: " + config.MaxParameters);
             Console.WriteLine();
-
+            if (config.HttpVersion == HttpVersion.Version30 && IsQuicSupported)
+            {
+                unsafe
+                {
+                    QUIC_SETTINGS settings = default(QUIC_SETTINGS);
+                    settings.IsSet.MaxWorkerQueueDelayUs = 1;
+                    settings.MaxWorkerQueueDelayUs = 2_500_000u; // 2.5s, 10x the default
+                    if (MsQuic.StatusFailed(MsQuicApi.Api.ApiTable->SetParam(null, MsQuic.QUIC_PARAM_GLOBAL_SETTINGS, (uint)sizeof(QUIC_SETTINGS), (byte*)&settings)))
+                    {
+                        Console.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
+                    }
+                }
+            }
 
             StressServer? server = null;
             if (config.RunMode.HasFlag(RunMode.server))

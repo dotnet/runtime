@@ -4,7 +4,18 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
     <EnablePreviewFeatures>True</EnablePreviewFeatures>
+    <NoWarn>CA2252</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <!-- Shared production code -->
+  <ItemGroup>
+    <Compile Include="..\..\..\..\Common\src\System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="..\..\..\..\System.Net.Quic\src\System\Net\Quic\Internal\MsQuicApi.cs" Link="ProductionCode\System\Net\Quic\Internal\MsQuicApi.cs" />
+    <Compile Include="..\..\..\..\System.Net.Quic\src\System\Net\Quic\Internal\MsQuicSafeHandle.cs" Link="ProductionCode\System\Net\Quic\Internal\MsQuicSafeHandle.cs" />
+    <Compile Include="..\..\..\..\System.Net.Quic\src\System\Net\Quic\Interop\*.cs" Link="ProductionCode\System\Net\Quic\Interop\*.cs" />
+    <Compile Include="..\..\..\..\System.Net.Quic\src\System\Net\Quic\NetEventSource.Quic.cs" Link="ProductionCode\System\Net\Quic\NetEventSource.Quic.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="5.0.9" />
