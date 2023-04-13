@@ -157,7 +157,7 @@ internal static class EnumHelpers
         {
             case HashAlgorithmType.Aead:
             case HashAlgorithmType.None:
-                    return 0;
+                return 0;
             case HashAlgorithmType.Md5:
                 return 128;
             case HashAlgorithmType.Sha1:
