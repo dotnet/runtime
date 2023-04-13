@@ -2270,7 +2270,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
     if (CheckImmedAndMakeContained(cmp, op2))
         return;
 
-    if (CheckImmedAndMakeContained(cmp, op1))
+    if (cmp->OperIsCompare() && CheckImmedAndMakeContained(cmp, op1))
     {
         std::swap(cmp->gtOp1, cmp->gtOp2);
         cmp->ChangeOper(cmp->SwapRelop(cmp->gtOper));
