@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -71,6 +72,10 @@ namespace System.Reflection.TypeLoading
         public abstract override MethodInfo[] GetMethods(BindingFlags bindingFlags);
         protected abstract override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers);
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public sealed override void GetObjectData(SerializationInfo info, StreamingContext context) => throw new NotSupportedException();
         public abstract override void GetPEKind(out PortableExecutableKinds peKind, out ImageFileMachine machine);
 

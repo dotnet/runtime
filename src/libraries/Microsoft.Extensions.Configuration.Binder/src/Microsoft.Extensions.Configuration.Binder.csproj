@@ -28,4 +28,19 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.netcoreapp.cs" Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.netcoreapp.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj"
+                      ReferenceOutputAssembly="false"
+                      PackAsAnalyzer="true" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <IncludeMultiTargetRoslynComponentTargets>false</IncludeMultiTargetRoslynComponentTargets>
+    <DisableNETStandardCompatErrors>true</DisableNETStandardCompatErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="buildTransitive\$(PackageId).targets" PackagePath="buildTransitive\netstandard2.0\" />
+  </ItemGroup>
 </Project>

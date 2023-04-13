@@ -52,8 +52,8 @@ BOOL IsStructMarshalable(TypeHandle th);
 bool IsFieldBlittable(
     Module* pModule,
     mdFieldDef fd,
-    SigPointer fieldSig,
-    const SigTypeContext* pTypeContext,
+    CorElementType corElemType,
+    TypeHandle valueTypeHandle,
     ParseNativeTypeFlags flags
 );
 

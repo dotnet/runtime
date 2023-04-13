@@ -12,7 +12,7 @@
 static guint32
 rotate_left (guint32 value, int offset)
 {
-        return (value << offset) | (value >> (32 - offset));
+	return (value << offset) | (value >> (32 - offset));
 }
 
 void
@@ -72,28 +72,6 @@ interp_intrins_64ordinal_ignore_case_ascii (guint64 valueA, guint64 valueB)
 	indicator += 0x001A001A001A001Al;
 	indicator |= 0xFF7FFF7FFF7FFF7Fl;
 	return (differentBits & indicator) == 0;
-}
-
-static int
-interp_intrins_count_digits (guint32 value)
-{
-	int digits = 1;
-	if (value >= 100000) {
-		value /= 100000;
-		digits += 5;
-	}
-	if (value < 10) {
-		// no-op
-	} else if (value < 100) {
-		digits++;
-	} else if (value < 1000) {
-		digits += 2;
-	} else if (value < 10000) {
-		digits += 3;
-	} else {
-		digits += 4;
-	}
-	return digits;
 }
 
 static guint32

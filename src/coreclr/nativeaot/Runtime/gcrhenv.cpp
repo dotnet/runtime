@@ -207,6 +207,7 @@ bool RedhawkGCInterface::InitializeSubsystems()
 Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, Thread* pThread)
 {
     ASSERT(!pThread->IsDoNotTriggerGcSet());
+    ASSERT(pThread->IsCurrentThreadInCooperativeMode());
 
     size_t cbSize = pEEType->get_BaseSize();
 
@@ -292,12 +293,38 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
 //  pEEType         -  type of the object
 //  uFlags          -  GC type flags (see gc.h GC_ALLOC_*)
 //  numElements     -  number of array elements
-//  pTransitionFrame-  transition frame to make stack crawable
+//  pTransitionFrame-  transition frame to make stack crawlable
 // Returns a pointer to the object allocated or NULL on failure.
 
 COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame))
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
+
+    // The allocation fast path is an asm helper that runs in coop mode and handles most allocation cases.
+    // The helper can also be tail-called. That is desirable for the fast path.
+    //
+    // Here we are on the slow(er) path when we need to call into GC. The fast path pushes a frame and calls here.
+    // In extremely rare cases the caller of the asm helper is hijacked and the helper is tail-called.
+    // As a result the asm helper may capture a hijacked return address into the transition frame.
+    // We do not want to put the burden of preventing such scenario on the fast path. Instead we will
+    // check for "hijacked frame" here and un-hijack m_RIP.
+    // We do not need to re-hijack when we are done, since m_RIP is discarded in POP_COOP_PINVOKE_FRAME
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    if (Thread::IsHijackTarget(pTransitionFrame->m_RIP))
+    {
+        ASSERT(pThread->IsHijacked());
+        pTransitionFrame->m_RIP = pThread->GetHijackedReturnAddress();
+    }
+#else
+
+    // NOTE: The x64 fixup above would not be sufficient on ARM64 and similar architectures since
+    //       m_RIP is used to restore LR in POP_COOP_PINVOKE_FRAME.
+    //       However, this entire scenario is not a problem on architectures where the return address is
+    //       in a register as that makes tail-calling methods not hijackable.
+    //       (see:GetReturnAddressHijackInfo for detailed reasons in the context of ARM64)
+    ASSERT(!Thread::IsHijackTarget(pTransitionFrame->m_RIP));
+
+#endif
 
     pThread->SetDeferredTransitionFrame(pTransitionFrame);
 

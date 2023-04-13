@@ -1160,6 +1160,108 @@ void MethodContext::recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DW
     GetJitFlags->Add(0, value);
     DEBUG_REC(dmpGetJitFlags(0, value));
 }
+
+// TODO: we need a widely-available utility function that can print a CORJIT_FLAGS::CorJitFlag.
+// Maybe something in corjitflags.h itself.
+const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
+{
+    switch (flag)
+    {
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SPEED_OPT:
+        return "CORJIT_FLAG_SPEED_OPT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SIZE_OPT:
+        return "CORJIT_FLAG_SIZE_OPT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_DEBUG_CODE:
+        return "CORJIT_FLAG_DEBUG_CODE";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_DEBUG_EnC:
+        return "CORJIT_FLAG_DEBUG_EnC";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_DEBUG_INFO:
+        return "CORJIT_FLAG_DEBUG_INFO";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_MIN_OPT:
+        return "CORJIT_FLAG_MIN_OPT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_ENABLE_CFG:
+        return "CORJIT_FLAG_ENABLE_CFG";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_MCJIT_BACKGROUND:
+        return "CORJIT_FLAG_MCJIT_BACKGROUND";
+
+#if defined(TARGET_X86)
+
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PINVOKE_RESTORE_ESP:
+        return "CORJIT_FLAG_PINVOKE_RESTORE_ESP";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_TARGET_P4:
+        return "CORJIT_FLAG_TARGET_P4";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_USE_FCOMI:
+        return "CORJIT_FLAG_USE_FCOMI";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_USE_CMOV:
+        return "CORJIT_FLAG_USE_CMOV";
+
+#endif // defined(TARGET_X86)
+
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_OSR:
+        return "CORJIT_FLAG_OSR";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_ALT_JIT:
+        return "CORJIT_FLAG_ALT_JIT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_MAKEFINALCODE:
+        return "CORJIT_FLAG_MAKEFINALCODE";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_READYTORUN:
+        return "CORJIT_FLAG_READYTORUN";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROF_ENTERLEAVE:
+        return "CORJIT_FLAG_PROF_ENTERLEAVE";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE:
+        return "CORJIT_FLAG_PROF_NO_PINVOKE_INLINE";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SKIP_VERIFICATION:
+        return "CORJIT_FLAG_SKIP_VERIFICATION";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PREJIT:
+        return "CORJIT_FLAG_PREJIT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_RELOC:
+        return "CORJIT_FLAG_RELOC";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_IMPORT_ONLY:
+        return "CORJIT_FLAG_IMPORT_ONLY";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_IL_STUB:
+        return "CORJIT_FLAG_IL_STUB";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROCSPLIT:
+        return "CORJIT_FLAG_PROCSPLIT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_BBINSTR:
+        return "CORJIT_FLAG_BBINSTR";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_BBOPT:
+        return "CORJIT_FLAG_BBOPT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_FRAMED:
+        return "CORJIT_FLAG_FRAMED";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_BBINSTR_IF_LOOPS:
+        return "CORJIT_FLAG_BBINSTR_IF_LOOPS";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PUBLISH_SECRET_PARAM:
+        return "CORJIT_FLAG_PUBLISH_SECRET_PARAM";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND:
+        return "CORJIT_FLAG_SAMPLING_JIT_BACKGROUND";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_USE_PINVOKE_HELPERS:
+        return "CORJIT_FLAG_USE_PINVOKE_HELPERS";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_REVERSE_PINVOKE:
+        return "CORJIT_FLAG_REVERSE_PINVOKE";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_TRACK_TRANSITIONS:
+        return "CORJIT_FLAG_TRACK_TRANSITIONS";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_TIER0:
+        return "CORJIT_FLAG_TIER0";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_TIER1:
+        return "CORJIT_FLAG_TIER1";
+
+#if defined(TARGET_ARM)
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_RELATIVE_CODE_RELOCS:
+        return "CORJIT_FLAG_RELATIVE_CODE_RELOCS";
+#endif // defined(TARGET_ARM)
+
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_NO_INLINING:
+        return "CORJIT_FLAG_NO_INLINING";
+
+#if defined(TARGET_ARM)
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SOFTFP_ABI:
+        return "CORJIT_FLAG_SOFTFP_ABI";
+#endif // defined(TARGET_ARM)
+
+    default:
+        return "<unknown>";
+    }
+}
+
 void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 {
     CORJIT_FLAGS* jitflags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
@@ -1171,6 +1273,29 @@ void MethodContext::dmpGetJitFlags(DWORD key, DD value)
     {
         printf("%016" PRIX64 "", raw[i]);
     }
+
+    // Print text string for the flags
+    printf(" (");
+
+    unsigned maxCorJitFlag = sizeof(uint64_t) * 8; // There's no API to determine the largest possible `corJitFlags`.
+    for (CORJIT_FLAGS::CorJitFlag flag = (CORJIT_FLAGS::CorJitFlag)0; (unsigned)flag < maxCorJitFlag; flag = (CORJIT_FLAGS::CorJitFlag)((unsigned)flag + 1))
+    {
+        if (jitflags->IsSet(flag))
+        {
+            printf(" %s", CorJitFlagToString(flag));
+        }
+    }
+
+    unsigned maxInstructionSetFlagCount = sizeof(uint64_t) * 8 * flagsFieldCount;
+    for (CORINFO_InstructionSet isa = (CORINFO_InstructionSet)0; (unsigned)isa < maxInstructionSetFlagCount; isa = (CORINFO_InstructionSet)((unsigned)isa + 1))
+    {
+        if (jitflags->IsSet(isa))
+        {
+            printf(" %s", InstructionSetToString(isa));
+        }
+    }
+
+    printf(" )");
     GetJitFlags->Unlock();
 }
 DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
@@ -3501,6 +3626,73 @@ void MethodContext::repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 }
 
+void MethodContext::recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result)
+{
+    if (GetThreadLocalFieldInfo == nullptr)
+        GetThreadLocalFieldInfo = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = 0;
+
+    key = CastHandle(field);
+    GetThreadLocalFieldInfo->Add(key, result);
+    DEBUG_REC(dmpGetThreadLocalFieldInfo(key, result));
+}
+
+void MethodContext::dmpGetThreadLocalFieldInfo(DWORDLONG key, DWORD value)
+{
+    printf("GetThreadLocalFieldInfo key hnd-%016" PRIX64 ", result-%u", key, value);
+}
+
+uint32_t MethodContext::repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+{
+    DWORDLONG key   = CastHandle(field);
+    DWORD     value = LookupByKeyOrMiss(GetThreadLocalFieldInfo, key, ": key %016" PRIX64 "", key);
+
+    DEBUG_REP(dmpGetThreadLocalFieldInfo(key, value));
+
+    return value;
+}
+
+void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+{
+    if (GetThreadLocalStaticBlocksInfo == nullptr)
+        GetThreadLocalStaticBlocksInfo = new LightWeightMap<DWORD, Agnostic_GetThreadLocalStaticBlocksInfo>();
+
+    Agnostic_GetThreadLocalStaticBlocksInfo value;
+    ZeroMemory(&value, sizeof(value));
+
+    value.tlsIndex.handle                   = CastHandle(pInfo->tlsIndex.addr);
+    value.tlsIndex.accessType               = pInfo->tlsIndex.accessType;
+    value.offsetOfMaxThreadStaticBlocks     = pInfo->offsetOfMaxThreadStaticBlocks;
+    value.offsetOfThreadLocalStoragePointer = pInfo->offsetOfThreadLocalStoragePointer;
+    value.offsetOfThreadStaticBlocks        = pInfo->offsetOfThreadStaticBlocks;
+
+    // This data is same for entire process, so just add it against key '0'.
+    GetThreadLocalStaticBlocksInfo->Add(0, value);
+    DEBUG_REC(dmpGetThreadLocalStaticBlocksInfo(0, value));
+}
+
+void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value)
+{
+    printf("GetThreadLocalStaticBlocksInfo key 0, value tlsIndex-%016" PRIX64
+           ", offsetOfMaxThreadStaticBlocks-%u, offsetOfThreadLocalStoragePointer-%u, offsetOfThreadStaticBlocks-%u",
+           value.tlsIndex.handle, value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadLocalStoragePointer,
+           value.offsetOfThreadStaticBlocks);
+}
+
+void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+{
+    Agnostic_GetThreadLocalStaticBlocksInfo value = LookupByKeyOrMiss(GetThreadLocalStaticBlocksInfo, 0, ": key %u", 0);
+
+    DEBUG_REP(dmpGetThreadLocalStaticBlocksInfo(0, value));
+
+    pInfo->tlsIndex.accessType = (InfoAccessType)value.tlsIndex.accessType;
+    pInfo->tlsIndex.addr = (void*)value.tlsIndex.handle;
+    pInfo->offsetOfMaxThreadStaticBlocks = value.offsetOfMaxThreadStaticBlocks;
+    pInfo->offsetOfThreadLocalStoragePointer = value.offsetOfThreadLocalStoragePointer;
+    pInfo->offsetOfThreadStaticBlocks = value.offsetOfThreadStaticBlocks;
+}
+
 void MethodContext::recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle,
                                          void**                ppIndirection,
                                          CORINFO_METHOD_HANDLE result)
@@ -3585,29 +3777,36 @@ bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, u
 }
 
 void MethodContext::recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field,
-                                                  bool                 isSpeculative,
+                                                  bool*                pIsSpeculative,
                                                   CORINFO_CLASS_HANDLE result)
 {
     if (GetStaticFieldCurrentClass == nullptr)
-        GetStaticFieldCurrentClass = new LightWeightMap<DWORDLONG, Agnostic_GetStaticFieldCurrentClass>();
+        GetStaticFieldCurrentClass = new LightWeightMap<DLD, Agnostic_GetStaticFieldCurrentClass>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(field);
+    key.B = pIsSpeculative != nullptr ? 1 : 0;
 
     Agnostic_GetStaticFieldCurrentClass value;
-
     value.classHandle   = CastHandle(result);
-    value.isSpeculative = isSpeculative;
+    value.isSpeculative = pIsSpeculative != nullptr ? *pIsSpeculative : false;
 
-    DWORDLONG key = CastHandle(field);
     GetStaticFieldCurrentClass->Add(key, value);
     DEBUG_REC(dmpGetStaticFieldCurrentClass(key, value));
 }
-void MethodContext::dmpGetStaticFieldCurrentClass(DWORDLONG key, const Agnostic_GetStaticFieldCurrentClass& value)
+void MethodContext::dmpGetStaticFieldCurrentClass(DLD key, const Agnostic_GetStaticFieldCurrentClass& value)
 {
-    printf("GetStaticFieldCurrentClass key fld-%016" PRIX64 ", value clsHnd-%016" PRIX64 " isSpeculative-%u", key, value.classHandle,
+    printf("GetStaticFieldCurrentClass key fld-%016" PRIX64 ", value clsHnd-%016" PRIX64 " isSpeculative-%u", key.A, value.classHandle,
            value.isSpeculative);
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative)
 {
-    DWORDLONG key = CastHandle(field);
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(field);
+    key.B = pIsSpeculative != nullptr ? 1 : 0;
+
     Agnostic_GetStaticFieldCurrentClass value = LookupByKeyOrMiss(GetStaticFieldCurrentClass, key, ": key %016" PRIX64 "", key);
 
     DEBUG_REP(dmpGetStaticFieldCurrentClass(key, value));
@@ -4261,6 +4460,74 @@ size_t MethodContext::repGetClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
     if (ppIndirection != nullptr)
         *ppIndirection = (void*)value.pIndirection;
     return (size_t)value.result;
+}
+
+void MethodContext::recGetIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset, bool result)
+{
+    if (GetIsClassInitedFlagAddress == nullptr)
+        GetIsClassInitedFlagAddress = new LightWeightMap<DWORDLONG, Agnostic_GetIsClassInitedFlagAddress>();
+
+    Agnostic_GetIsClassInitedFlagAddress value;
+    value.addr.handle = CastHandle(addr->addr);
+    value.addr.accessType = (DWORD)addr->accessType;
+    value.offset = (DWORD)*offset;
+    value.result = (DWORD)result;
+
+    DWORDLONG key = CastHandle(cls);
+    GetIsClassInitedFlagAddress->Add(key, value);
+    DEBUG_REC(dmpGetIsClassInitedFlagAddress(key, value));
+}
+void MethodContext::dmpGetIsClassInitedFlagAddress(DWORDLONG key, const Agnostic_GetIsClassInitedFlagAddress& value)
+{
+    printf("GetIsClassInitedFlagAddress key hnd-%016" PRIX64 ", value addr-%016" PRIX64 ", result-%u", key, value.addr.handle, value.result);
+}
+bool MethodContext::repGetIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset)
+{
+    DWORDLONG key = CastHandle(cls);
+    Agnostic_GetIsClassInitedFlagAddress value = LookupByKeyOrMiss(GetIsClassInitedFlagAddress, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetIsClassInitedFlagAddress(key, value));
+
+    *offset = (int)value.offset;
+    addr->accessType = (InfoAccessType)value.addr.accessType;
+    addr->addr = (void*)value.addr.handle;
+    return (bool)value.result;
+}
+
+void MethodContext::recGetStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr, bool result)
+{
+    if (GetStaticBaseAddress == nullptr)
+        GetStaticBaseAddress = new LightWeightMap<DLD, Agnostic_GetStaticBaseAddress>();
+
+    Agnostic_GetStaticBaseAddress value;
+    value.addr.handle = CastHandle(addr->addr);
+    value.addr.accessType = (DWORD)addr->accessType;
+    value.result = (DWORDLONG)result;
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(cls);
+    key.B = (DWORD)isGc;
+
+    GetStaticBaseAddress->Add(key, value);
+    DEBUG_REC(dmpGetStaticBaseAddress(key, value));
+}
+void MethodContext::dmpGetStaticBaseAddress(DLD key, const Agnostic_GetStaticBaseAddress& value)
+{
+    printf("GetStaticBaseAddress key hnd-%016" PRIX64 ", value addr-%016" PRIX64 ", result-%u", key.A, value.addr.handle, value.result);
+}
+bool MethodContext::repGetStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr)
+{
+    DLD key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(cls);
+    key.B = (DWORD)isGc;
+
+    Agnostic_GetStaticBaseAddress value = LookupByKeyOrMiss(GetStaticBaseAddress, key, ": key %016" PRIX64 "", key.A);
+    DEBUG_REP(dmpGetStaticBaseAddress(key, value));
+
+    addr->accessType = (InfoAccessType)value.addr.accessType;
+    addr->addr = (void*)value.addr.handle;
+    return (bool)value.result;
 }
 
 void MethodContext::recGetThreadTLSIndex(void** ppIndirection, DWORD result)
@@ -6115,6 +6382,31 @@ DWORD MethodContext::repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HA
 
     DWORD value = LookupByKeyOrMissNoMessage(GetLoongArch64PassStructInRegisterFlags, key);
     DEBUG_REP(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
+    return value;
+}
+
+void MethodContext::recGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value)
+{
+    if (GetRISCV64PassStructInRegisterFlags == nullptr)
+        GetRISCV64PassStructInRegisterFlags = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(structHnd);
+
+    GetRISCV64PassStructInRegisterFlags->Add(key, value);
+    DEBUG_REC(dmpGetRISCV64PassStructInRegisterFlags(key, value));
+}
+
+void MethodContext::dmpGetRISCV64PassStructInRegisterFlags(DWORDLONG key, DWORD value)
+{
+    printf("GetRISCV64PassStructInRegisterFlags key %016" PRIX64 " value-%08X", key, value);
+}
+
+DWORD MethodContext::repGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    DWORDLONG key = CastHandle(structHnd);
+
+    DWORD value = LookupByKeyOrMissNoMessage(GetRISCV64PassStructInRegisterFlags, key);
+    DEBUG_REP(dmpGetRISCV64PassStructInRegisterFlags(key, value));
     return value;
 }
 

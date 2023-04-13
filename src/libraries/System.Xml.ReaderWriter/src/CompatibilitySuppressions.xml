@@ -1,8 +1,0 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <!-- ObsoleteAttribute applied on IApplicationResourceStreamResolver doesn't match becaues of tooling. -->
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>T:System.Xml.IApplicationResourceStreamResolver:[T:System.ObsoleteAttribute]</Target>
-  </Suppression>
-</Suppressions>

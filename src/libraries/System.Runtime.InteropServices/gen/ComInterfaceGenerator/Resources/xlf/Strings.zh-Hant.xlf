@@ -94,17 +94,17 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <target state="translated">屬性為 'GeneratedComInterfaceAttribute' 的介面必須是部分介面，而且必須指定具有 'System.Runtime.InteropServices.GuidAttribute' 的 GUID。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
         <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <target state="translated">介面 '{0}' 的屬性為 'GeneratedComInterfaceAttribute'，但遺漏 'System.Runtime.InteropServices.GuidAttribute'。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageTitle">
         <source>Invalid 'GeneratedComInterfaceAttribute' usage.</source>
-        <target state="new">Invalid 'GeneratedComInterfaceAttribute' usage.</target>
+        <target state="translated">無效的 'GeneratedComInterfaceAttribute' 使用方式。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
@@ -145,6 +145,21 @@
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceTitle">
         <source>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</source>
         <target state="translated">方法是在不同於 'GeneratedComInterface' 屬性的部分宣告中宣告。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesDescription">
+        <source>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</source>
+        <target state="translated">'GeneratedComInterfaceAttribute'-屬性介面最多只能衍生自另一個 'GeneratedComInterfaceAttribute'-屬性介面。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesMessage">
+        <source>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</source>
+        <target state="translated">介面 '{0}' 衍生自具有 'GeneratedComInterfaceAttribute' 的兩個或多個介面。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesTitle">
+        <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
+        <target state="translated">指定的介面衍生自兩個或兩個以上的 'GeneratedComInterfaceAttribute'-屬性介面。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">

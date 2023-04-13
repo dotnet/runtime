@@ -317,8 +317,8 @@ private:
     }
 };
 
-// StructFloadFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` API
-// to convey struct argument passing information.
+// StructFloadFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` and
+// `getRISCV64PassStructInRegisterFlags` API to convey struct argument passing information.
 //
 // `STRUCT_NO_FLOAT_FIELD` means structs are not passed using the float register(s).
 //
@@ -409,7 +409,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEWSFAST_ALIGN8,   // allocator for small, non-finalizer, non-array object, 8 byte aligned
     CORINFO_HELP_NEWSFAST_ALIGN8_VC,// allocator for small, value class, 8 byte aligned
     CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE, // allocator for small, finalizable, non-array object, 8 byte aligned
-    CORINFO_HELP_NEW_MDARR,// multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
+    CORINFO_HELP_NEW_MDARR,// multi-dim array helper for arrays Rank != 1 (with or without lower bounds - dimensions passed in as unmanaged array)
+    CORINFO_HELP_NEW_MDARR_RARE,// rare multi-dim array helper (Rank == 1)
     CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
     CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
     CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
@@ -545,6 +546,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR,
     CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS,
     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS,
+    CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
 
     /* Debugger */
 
@@ -652,6 +654,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_DELEGATEPROFILE64,         // Update 64-bit method profile for a delegate call site
     CORINFO_HELP_VTABLEPROFILE32,           // Update 32-bit method profile for a vtable call site
     CORINFO_HELP_VTABLEPROFILE64,           // Update 64-bit method profile for a vtable call site
+    CORINFO_HELP_COUNTPROFILE32,            // Update 32-bit block or edge count profile
+    CORINFO_HELP_COUNTPROFILE64,            // Update 64-bit block or edge count profile
 
     CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
@@ -852,11 +856,11 @@ enum CorInfoFlag
     CORINFO_FLG_ARRAY                 = 0x00080000, // class is an array class (initialized differently)
     CORINFO_FLG_OVERLAPPING_FIELDS    = 0x00100000, // struct or class has fields that overlap (aka union)
     CORINFO_FLG_INTERFACE             = 0x00200000, // it is an interface
-    CORINFO_FLG_DONT_DIG_FIELDS       = 0x00400000, // don't ask field info, AOT can't rely on it (used for types outside of AOT compilation version bubble)
+    CORINFO_FLG_DONT_DIG_FIELDS       = 0x00400000, // don't ask field info (used for types outside of AOT compilation version bubble)
     CORINFO_FLG_CUSTOMLAYOUT          = 0x00800000, // does this struct have custom layout?
     CORINFO_FLG_CONTAINS_GC_PTR       = 0x01000000, // does the class contain a gc ptr ?
     CORINFO_FLG_DELEGATE              = 0x02000000, // is this a subclass of delegate or multicast delegate ?
-    // CORINFO_FLG_UNUSED             = 0x04000000,
+    CORINFO_FLG_INDEXABLE_FIELDS      = 0x04000000, // struct fields may be accessed via indexing (used for inline arrays)
     CORINFO_FLG_BYREF_LIKE            = 0x08000000, // it is byref-like value type
     CORINFO_FLG_VARIANCE              = 0x10000000, // MethodTable::HasVariance (sealed does *not* mean uncast-able)
     CORINFO_FLG_BEFOREFIELDINIT       = 0x20000000, // Additional flexibility for when to run .cctor (see code:#ClassConstructionFlags)
@@ -1267,9 +1271,6 @@ struct CORINFO_RUNTIME_LOOKUP
 
     // If set, test for null and branch to helper if null
     bool                    testForNull;
-
-    // If set, test the lowest bit and dereference if set (see code:FixupPointer)
-    bool                    testForFixup;
 
     uint16_t                sizeOffset;
     size_t                  offsets[CORINFO_MAXINDIRECTIONS];
@@ -1686,6 +1687,7 @@ enum CORINFO_FIELD_ACCESSOR
     CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER, // static field access using the "generic static" helper (argument is MethodTable *)
     CORINFO_FIELD_STATIC_ADDR_HELPER,       // static field accessed using address-of helper (argument is FieldDesc *)
     CORINFO_FIELD_STATIC_TLS,               // unmanaged TLS access
+    CORINFO_FIELD_STATIC_TLS_MANAGED,       // managed TLS access
     CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
     CORINFO_FIELD_STATIC_RELOCATABLE,       // static field access using relocation (used in AOT)
     CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
@@ -1723,6 +1725,17 @@ struct CORINFO_FIELD_INFO
     CORINFO_HELPER_DESC     accessCalloutHelper;
 
     CORINFO_CONST_LOOKUP    fieldLookup;        // Used by Ready-to-Run
+};
+
+//----------------------------------------------------------------------------
+// getThreadLocalStaticBlocksInfo and CORINFO_THREAD_STATIC_BLOCKS_INFO: The EE instructs the JIT about how to access a thread local field
+
+struct CORINFO_THREAD_STATIC_BLOCKS_INFO
+{
+    CORINFO_CONST_LOOKUP tlsIndex;
+    uint32_t offsetOfThreadLocalStoragePointer;
+    uint32_t offsetOfMaxThreadStaticBlocks;
+    uint32_t offsetOfThreadStaticBlocks;
 };
 
 //----------------------------------------------------------------------------
@@ -2379,6 +2392,18 @@ public:
             void **ppIndirection
             ) = 0;
 
+    virtual bool getIsClassInitedFlagAddress(
+            CORINFO_CLASS_HANDLE  cls,
+            CORINFO_CONST_LOOKUP* addr,
+            int*                  offset
+            ) = 0;
+
+    virtual bool getStaticBaseAddress(
+            CORINFO_CLASS_HANDLE  cls,
+            bool                  isGc,
+            CORINFO_CONST_LOOKUP* addr
+            ) = 0;
+
     // return the number of bytes needed by an instance of the class
     virtual unsigned getClassSize (
             CORINFO_CLASS_HANDLE        cls
@@ -2731,6 +2756,12 @@ public:
                                CORINFO_FIELD_INFO    *pResult
                               ) = 0;
 
+    virtual uint32_t getThreadLocalFieldInfo (
+                        CORINFO_FIELD_HANDLE  field) = 0;
+
+    virtual void getThreadLocalStaticBlocksInfo (
+                        CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo) = 0;
+
     // Returns true iff "fldHnd" represents a static field.
     virtual bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) = 0;
 
@@ -3000,6 +3031,7 @@ public:
         ) = 0;
 
     virtual uint32_t getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls) = 0;
+    virtual uint32_t getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls) = 0;
 };
 
 /*****************************************************************************

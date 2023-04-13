@@ -131,6 +131,11 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchMaxVal, W("JitPitchMaxVal"), (DWORD)0x
 CONFIG_DWORD_INFO(INTERNAL_GetAssemblyIfLoadedIgnoreRidMap, W("GetAssemblyIfLoadedIgnoreRidMap"), 0, "Used to force loader to ignore assemblies cached in the rid-map")
 
 ///
+/// PE Loader
+///
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_PELoader_DisableMapping, W("PELoader_DisableMapping"), 0, "Disable file mapping when performing non-OS layout.")
+
+///
 /// Conditional breakpoints
 ///
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_BreakOnBadExit, W("BreakOnBadExit"), 0, "")

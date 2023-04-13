@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Profiler.Tests
@@ -79,13 +80,7 @@ namespace Profiler.Tests
         {
             Objects objects = parameter as Objects;
 
-            AllocateInstances(objects);
-            Console.WriteLine($"weak = {objects._weak.Tag}");
-            objects._weak = null;
-            Console.WriteLine($"strong = {objects._strong.Tag}");
-            objects._strong = null;
-            Console.WriteLine($"weak = {objects._pinned.Tag}");
-            objects._pinned = null;
+            AllocateInstancesAndNullThemOut(objects);
 
             Console.WriteLine("Collection #1");
             GC.Collect(2);
@@ -111,6 +106,18 @@ namespace Profiler.Tests
             objects._afterWeak = "after weak-" + Environment.ProcessId;
             objects._aferStrong = "after strong-" + Environment.ProcessId;
             objects._afterPinned = "after pinned-" + Environment.ProcessId;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void AllocateInstancesAndNullThemOut(Objects objects)
+        {
+            AllocateInstances(objects);
+            Console.WriteLine($"weak = {objects._weak.Tag}");
+            objects._weak = null;
+            Console.WriteLine($"strong = {objects._strong.Tag}");
+            objects._strong = null;
+            Console.WriteLine($"weak = {objects._pinned.Tag}");
+            objects._pinned = null;
         }
 
         public static int RunTest(String[] args) 

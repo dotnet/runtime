@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace bug
 {
@@ -15,7 +16,8 @@ namespace bug
         // 'test' instruction incorrectly, because shift
         // operations on xarch don't modify flags if the
         // shift count is zero.
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // Absolute bits
             int bitCount = 0;

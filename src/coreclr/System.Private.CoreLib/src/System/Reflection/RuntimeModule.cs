@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -410,6 +411,8 @@ namespace System.Reflection
         #endregion
 
         #region Public Virtuals
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -420,14 +423,10 @@ namespace System.Reflection
             string className, // throw on null strings regardless of the value of "throwOnError"
             bool throwOnError, bool ignoreCase)
         {
-            ArgumentNullException.ThrowIfNull(className);
+            ArgumentException.ThrowIfNullOrEmpty(className);
 
-            RuntimeType? retType = null;
-            object? keepAlive = null;
-            RuntimeModule thisAsLocal = this;
-            GetType(new QCallModule(ref thisAsLocal), className, throwOnError, ignoreCase, ObjectHandleOnStack.Create(ref retType), ObjectHandleOnStack.Create(ref keepAlive));
-            GC.KeepAlive(keepAlive);
-            return retType;
+            return TypeNameParser.GetType(className, topLevelAssembly: Assembly,
+                throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]

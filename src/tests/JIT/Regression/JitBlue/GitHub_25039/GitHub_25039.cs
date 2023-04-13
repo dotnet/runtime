@@ -8,6 +8,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using static System.Runtime.Intrinsics.X86.Avx;
 using static System.Runtime.Intrinsics.X86.Avx2;
+using Xunit;
 
 public class GitHub_25039
 {
@@ -32,7 +33,8 @@ public class GitHub_25039
         return ConvertToVector256Int32(pBase + pvbyte * 8);
     }
 
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         if (System.Runtime.Intrinsics.X86.Avx2.IsSupported)
         {

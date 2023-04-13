@@ -96,20 +96,6 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Gets a value indicating whether this type has any generic virtual methods.
-        /// </summary>
-        public static bool HasGenericVirtualMethods(this TypeDesc type)
-        {
-            foreach (var method in type.GetAllVirtualMethods())
-            {
-                if (method.HasInstantiation)
-                    return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
         /// Wrapper helper function around the IsCanonicalDefinitionType API on the TypeSystemContext
         /// </summary>
         public static bool IsCanonicalDefinitionType(this TypeDesc type, CanonicalFormKind kind)
@@ -232,6 +218,47 @@ namespace ILCompiler
             var arrayType = (ArrayType)type;
             TypeDesc elementType = arrayType.ElementType;
             return type.IsMdArray || elementType.IsPointer || elementType.IsFunctionPointer;
+        }
+
+        public static bool? CompareTypesForEquality(TypeDesc type1, TypeDesc type2)
+        {
+            bool? result = null;
+
+            // If neither type is a canonical subtype, type handle comparison suffices
+            if (!type1.IsCanonicalSubtype(CanonicalFormKind.Any) && !type2.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                result = type1 == type2;
+            }
+            // If either or both types are canonical subtypes, we can sometimes prove inequality.
+            else
+            {
+                // If either is a value type then the types cannot
+                // be equal unless the type defs are the same.
+                if (type1.IsValueType || type2.IsValueType)
+                {
+                    if (!type1.IsCanonicalDefinitionType(CanonicalFormKind.Universal) && !type2.IsCanonicalDefinitionType(CanonicalFormKind.Universal))
+                    {
+                        if (!type1.HasSameTypeDefinition(type2))
+                        {
+                            result = false;
+                        }
+                    }
+                }
+                // If we have two ref types that are not __Canon, then the
+                // types cannot be equal unless the type defs are the same.
+                else
+                {
+                    if (!type1.IsCanonicalDefinitionType(CanonicalFormKind.Any) && !type2.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                    {
+                        if (!type1.HasSameTypeDefinition(type2))
+                        {
+                            result = false;
+                        }
+                    }
+                }
+            }
+
+            return result;
         }
 
         public static TypeDesc MergeTypesToCommonParent(TypeDesc ta, TypeDesc tb)

@@ -407,7 +407,6 @@ extern "C"
 };
 
 
-
 /*********************************************************************/
 /*********************************************************************/
 class CEEInfo : public ICorJitInfo
@@ -438,6 +437,10 @@ public:
 
     static size_t findNameOfToken (Module* module, mdToken metaTOK,
                             _Out_writes_ (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
+
+#ifdef HOST_WINDOWS
+    static uint32_t ThreadLocalOffset(void* p);
+#endif // HOST_WINDOWS
 
     DWORD getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftnHnd);
 
