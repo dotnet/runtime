@@ -94,6 +94,11 @@ public class Program
         deployToPlayer.Validators.Add(result =>
         {
             string? val = result.GetValue(deployToPlayer);
+
+            // Default value, nothing to validate
+            if (val == string.Empty)
+                return;
+
             if (val == null)
                 result.AddError($"Must specify a value for {deployToPlayer.Name}");
             else
