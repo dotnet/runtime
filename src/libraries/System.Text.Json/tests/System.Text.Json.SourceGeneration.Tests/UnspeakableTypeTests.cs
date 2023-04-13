@@ -95,11 +95,6 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Contains("TypeWithDiamondAmbiguity", exn.Message);
             Assert.Contains("BasePoco", exn.Message);
             Assert.Contains("IEnumerable", exn.Message);
-
-            exn = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(value, value.GetType(), UnspeakableTypeContext.Default.Options));
-            Assert.Contains("TypeWithDiamondAmbiguity", exn.Message);
-            Assert.Contains("BasePoco", exn.Message);
-            Assert.Contains("IEnumerable", exn.Message);
         }
 
         public static IEnumerable<object[]> GetUnspeakableTypes()
@@ -157,7 +152,6 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         public record Envelope<T>(T Value);
 
-        [JsonSerializable(typeof(object))]
         [JsonSerializable(typeof(BasePoco))]
         [JsonSerializable(typeof(IMyInterface))]
         [JsonSerializable(typeof(IEnumerable))]

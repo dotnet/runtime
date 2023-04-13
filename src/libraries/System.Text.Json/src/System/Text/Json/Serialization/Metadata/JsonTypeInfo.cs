@@ -1272,7 +1272,7 @@ namespace System.Text.Json.Serialization.Metadata
             if (type == typeof(object) && converter.CanBePolymorphic)
             {
                 // System.Object is polymorphic and will not respect Properties
-                Debug.Assert(converter is ObjectConverter);
+                Debug.Assert(converter is ObjectConverter or ObjectConverterSlim);
                 return JsonTypeInfoKind.None;
             }
 
