@@ -50,18 +50,34 @@ namespace System.Net.Http
                 request.VersionPolicy);
         }
 
-        [Event(2, Level = EventLevel.Informational)]
-        public void RequestStop()
+        [NonEvent]
+        public void RequestStop(HttpResponseMessage? response)
         {
-            Interlocked.Increment(ref _stoppedRequests);
-            WriteEvent(eventId: 2);
+            RequestStop(response is null ? -1 : (int)response.StatusCode);
         }
 
-        [Event(3, Level = EventLevel.Error)]
-        public void RequestFailed()
+        [Event(2, Level = EventLevel.Informational, Version = 1)]
+        private void RequestStop(int statusCode)
+        {
+            Interlocked.Increment(ref _stoppedRequests);
+            WriteEvent(eventId: 2, statusCode);
+        }
+
+        [NonEvent]
+        public void RequestFailed(Exception exception)
         {
             Interlocked.Increment(ref _failedRequests);
-            WriteEvent(eventId: 3);
+
+            if (IsEnabled(EventLevel.Error, EventKeywords.None))
+            {
+                RequestFailed(exceptionMessage: exception.Message);
+            }
+        }
+
+        [Event(3, Level = EventLevel.Error, Version = 1)]
+        private void RequestFailed(string exceptionMessage)
+        {
+            WriteEvent(eventId: 3, exceptionMessage);
         }
 
         [Event(4, Level = EventLevel.Informational)]
@@ -112,10 +128,10 @@ namespace System.Net.Http
             WriteEvent(eventId: 11);
         }
 
-        [Event(12, Level = EventLevel.Informational)]
-        public void ResponseHeadersStop()
+        [Event(12, Level = EventLevel.Informational, Version = 1)]
+        public void ResponseHeadersStop(int statusCode)
         {
-            WriteEvent(eventId: 12);
+            WriteEvent(eventId: 12, statusCode);
         }
 
         [Event(13, Level = EventLevel.Informational)]
