@@ -1479,9 +1479,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 #if defined(TARGET_ARM64) || defined(TARGET_WASM)
+		if (arg0_type == MONO_TYPE_I8 || arg0_type == MONO_TYPE_U8)
+			return NULL;
+
 		int instc0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
 		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, args[0]->klass, OP_XBINOP, instc0, arg0_type, fsig, args);
-
 		return emit_sum_vector (cfg, fsig->params [0], arg0_type, pairwise_multiply);
 #elif defined(TARGET_AMD64)
 		int instc =-1;
