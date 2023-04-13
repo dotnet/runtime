@@ -4416,7 +4416,7 @@ add_extra_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean prefer
 		mono_error_assert_ok (error);
 	}
 
-	if (collect_dedup_method (method))
+	if (collect_dedup_method (acfg, method))
 		return;
 
 	if (acfg->aot_opts.log_generics)
