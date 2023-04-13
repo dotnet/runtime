@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include <stdbool.h>
 #include <stdint.h>
-#include "zutil.h"
+#include <external/zlib/zutil.h>
 
 /* A custom allocator for zlib that provides some defense-in-depth over standard malloc / free.
  * (non-Windows version)
@@ -33,32 +34,22 @@
 #endif
 #endif
 
-#ifndef BOOL
-#define BOOL int
-#define TRUE 1
-#define FALSE 0
-#endif
-
-#ifndef BYTE
-#define BYTE unsigned char
-#endif
-
 typedef struct _DOTNET_ALLOC_COOKIE
 {
     void* Address;
     size_t Size;
 } DOTNET_ALLOC_COOKIE;
 
-static BOOL SafeAdd(size_t a, size_t b, size_t* sum)
+static bool SafeAdd(size_t a, size_t b, size_t* sum)
 {
-    if (SIZE_MAX - a >= b) { *sum = a + b; return TRUE; }
-    else { *sum = 0; return FALSE; }
+    if (SIZE_MAX - a >= b) { *sum = a + b; return true; }
+    else { *sum = 0; return false; }
 }
 
-static BOOL SafeMult(size_t a, size_t b, size_t* product)
+static bool SafeMult(size_t a, size_t b, size_t* product)
 {
-    if (SIZE_MAX / a >= b) { *product = a * b; return TRUE; }
-    else { *product = 0; return FALSE; }
+    if (SIZE_MAX / a >= b) { *product = a * b; return true; }
+    else { *product = 0; return false; }
 }
 
 static DOTNET_ALLOC_COOKIE ReadAllocCookieUnaligned(const void* pSrc)
@@ -87,7 +78,7 @@ voidpf ZLIB_INTERNAL zcalloc(opaque, items, size)
     (void)opaque; // unreferenced formal parameter
 
     // If initializing a fixed-size structure, zero the memory.
-    BOOL fZeroMemory = (items == 1);
+    bool fZeroMemory = (items == 1);
     
     size_t cbRequested;
     if (sizeof(items) + sizeof(size) <= sizeof(cbRequested))
@@ -109,8 +100,8 @@ voidpf ZLIB_INTERNAL zcalloc(opaque, items, size)
     if (pAlloced == NULL) { return NULL; } // OOM
 
     DOTNET_ALLOC_COOKIE* pHeaderCookie = (DOTNET_ALLOC_COOKIE*)pAlloced;
-    BYTE* pReturnToCaller = (BYTE*)pAlloced + DOTNET_ALLOC_HEADER_COOKIE_SIZE_WITH_PADDING;
-    BYTE* pTrailerCookie = pReturnToCaller + cbRequested;
+    uint8_t* pReturnToCaller = (uint8_t*)pAlloced + DOTNET_ALLOC_HEADER_COOKIE_SIZE_WITH_PADDING;
+    uint8_t* pTrailerCookie = pReturnToCaller + cbRequested;
 
     // Write out the same cookie for the header & the trailer, then we're done.
 
@@ -138,13 +129,13 @@ void ZLIB_INTERNAL zcfree(opaque, ptr)
 
     // Check cookie at beginning
 
-    DOTNET_ALLOC_COOKIE* pHeaderCookie = (DOTNET_ALLOC_COOKIE*)((BYTE*)ptr - DOTNET_ALLOC_HEADER_COOKIE_SIZE_WITH_PADDING);
+    DOTNET_ALLOC_COOKIE* pHeaderCookie = (DOTNET_ALLOC_COOKIE*)((uint8_t*)ptr - DOTNET_ALLOC_HEADER_COOKIE_SIZE_WITH_PADDING);
     if (pHeaderCookie->Address != ptr) { goto Fail; }
     size_t cbRequested = pHeaderCookie->Size;
 
     // Check cookie at end
 
-    BYTE* pTrailerCookie = (BYTE*)ptr + cbRequested;
+    uint8_t* pTrailerCookie = (uint8_t*)ptr + cbRequested;
     DOTNET_ALLOC_COOKIE vTrailerCookie = ReadAllocCookieUnaligned(pTrailerCookie);
     if (vTrailerCookie.Address != ptr) { goto Fail; }
     if (vTrailerCookie.Size != cbRequested) { goto Fail; }

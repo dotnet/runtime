@@ -20,7 +20,7 @@ set(ZLIB_SOURCES_BASE
     trees.c
     x86.c
     zutil.c
-    ../zlib/dotnet_allocator_win.c
+    ../../libs/System.IO.Compression.Native/zlib_allocator_win.c
 )
 
 # enable custom zlib allocator
