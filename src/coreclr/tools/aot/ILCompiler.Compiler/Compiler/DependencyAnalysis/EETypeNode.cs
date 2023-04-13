@@ -775,7 +775,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     int elementSize = elementType.GetElementSize().AsInt;
                     // We validated that this will fit the short when the node was constructed. No need for nice messages.
-                    flags |= (uint)elementSize;
+                    flags |= (uint)checked((ushort)elementSize);
                 }
             }
             else if (_type.IsString)
