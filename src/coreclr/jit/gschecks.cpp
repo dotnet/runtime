@@ -162,7 +162,6 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
         // Indirections - look for *p uses and defs
         case GT_IND:
         case GT_BLK:
-        case GT_OBJ:
         case GT_ARR_ELEM:
         case GT_ARR_INDEX:
         case GT_ARR_OFFSET:

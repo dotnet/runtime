@@ -100,11 +100,9 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: checked
           platforms:
-          - linux_x64
-          container: debian-11-gcc12-amd64
+          - gcc_linux_x64
           jobParameters:
             testGroup: innerloop
-            compilerName: gcc
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -703,7 +701,9 @@ extends:
           - osx_x64
           - osx_arm64
           - linux_x64
-          - linux_arm64
+          # - linux_arm64
+          # Remove once we can use linux_arm64: https://github.com/dotnet/runtime/issues/84503
+          - mono_linux_arm64
           # - linux_musl_arm64
           - windows_x64
           - windows_x86
@@ -1212,7 +1212,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - linux_x64
+            - linux_x64_llvmaot
             # Disabled pending outcome of https://github.com/dotnet/runtime/issues/60234 investigation
             #- linux_arm64
           variables:

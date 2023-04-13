@@ -53,17 +53,6 @@ jobs:
 
     - name: compilerArg
       value: ''
-    - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - name: compilerArg
-        value: '-clang9'
-      # We need to use the stable version available on Alpine Linux
-      - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, '_musl')) }}:
-        - name: compilerArg
-          value: ''
-      # AppleClang has different version scheme, so we let compiler introspection pick up the available clang from PATH
-      - ${{ if eq(parameters.osGroup, 'osx') }}:
-        - name: compilerArg
-          value: ''
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: PythonScript

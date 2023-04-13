@@ -1,7 +1,8 @@
 <Project>
   <PropertyGroup>
     <NativeOptimizationDataSupported Condition="'$(TargetOS)' == 'windows' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'x86' Or '$(TargetArchitecture)' == 'arm64')">true</NativeOptimizationDataSupported>
-    <NativeOptimizationDataSupported Condition="'$(TargetOS)' == 'linux' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'arm64')">true</NativeOptimizationDataSupported>
+    <!-- Disable PGO until we get profile data collected with a new clang -->
+    <NativeOptimizationDataSupported Condition="'$(TargetOS)' == 'linux' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'arm64')">false</NativeOptimizationDataSupported>
     <NativeOptimizationDataSupported Condition="'$(NoPgoOptimize)' == 'true'">false</NativeOptimizationDataSupported>
     <NativeOptimizationDataSupported Condition="'$(Configuration)' != 'Release'">false</NativeOptimizationDataSupported>
 

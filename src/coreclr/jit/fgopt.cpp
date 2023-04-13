@@ -26,7 +26,7 @@
 // Assumptions:
 //    -- Dominators have been calculated (`fgDomsComputed` is true).
 //
-bool Compiler::fgDominate(BasicBlock* b1, BasicBlock* b2)
+bool Compiler::fgDominate(const BasicBlock* b1, const BasicBlock* b2)
 {
     noway_assert(fgDomsComputed);
 
@@ -60,17 +60,6 @@ bool Compiler::fgDominate(BasicBlock* b1, BasicBlock* b2)
 
     if (b1->bbNum > fgDomBBcount)
     {
-        // If b1 is a loop preheader (that was created after the dominators were calculated),
-        // then it has a single successor that is the loop entry, and it is the only non-loop
-        // predecessor of the loop entry. Thus, b1 dominates the loop entry and also dominates
-        // what the loop entry dominates.
-        if (b1->bbFlags & BBF_LOOP_PREHEADER)
-        {
-            BasicBlock* loopEntry = b1->GetUniqueSucc();
-            assert(loopEntry != nullptr);
-            return fgDominate(loopEntry, b2);
-        }
-
         // unknown dominators; err on the safe side and return false
         return false;
     }
@@ -1947,6 +1936,17 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         return false;
     }
 
+    // Don't allow removing an empty loop pre-header.
+    // We can compact a pre-header `bNext` into an empty `block` since BBF_COMPACT_UPD propagates
+    // BBF_LOOP_PREHEADER to `block`.
+    if (optLoopsRequirePreHeaders)
+    {
+        if (((block->bbFlags & BBF_LOOP_PREHEADER) != 0) && (bNext->countOfInEdges() != 1))
+        {
+            return false;
+        }
+    }
+
     // Don't compact the first block if it was specially created as a scratch block.
     if (fgBBisScratch(block))
     {
@@ -1983,16 +1983,14 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
     }
 
-    // We cannot compact a block that participates in loop
-    // alignment.
+    // We cannot compact a block that participates in loop alignment.
     //
     if ((bNext->countOfInEdges() > 1) && bNext->isLoopAlign())
     {
         return false;
     }
 
-    // If we are trying to compact blocks from different loops
-    // that don't do it.
+    // Don't compact blocks from different loops.
     //
     if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (bNext->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) &&
         (block->bbNatLoopNum != bNext->bbNatLoopNum))
@@ -2058,8 +2056,13 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         JITDUMP("Second block has %u other incoming edges\n", bNext->countOfInEdges());
         assert(block->isEmpty());
 
-        // `block` can no longer be a loop pre-header (if it was before).
+        // When loops require pre-headers, `block` cannot be a pre-header.
+        // We should have screened this out in fgCanCompactBlocks().
         //
+        // When pre-headers are not required, then if `block` was a pre-header,
+        // it no longer is.
+        //
+        assert(!optLoopsRequirePreHeaders || ((block->bbFlags & BBF_LOOP_PREHEADER) == 0));
         block->bbFlags &= ~BBF_LOOP_PREHEADER;
 
         // Retarget all the other edges incident on bNext. Do this
@@ -2384,6 +2387,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
         break;
 
+        case BBJ_EHFAULTRET:
         case BBJ_THROW:
         case BBJ_RETURN:
             /* no jumps or fall through blocks to set here */
@@ -2905,6 +2909,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
         case BBJ_RETURN:
         case BBJ_EHCATCHRET:
         case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
 
             /* leave them as is */
@@ -3051,6 +3056,15 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             {
                 // We're not allowed to remove this block due to reasons related to the EH table.
                 break;
+            }
+
+            // Don't delete empty loop pre-headers.
+            if (optLoopsRequirePreHeaders)
+            {
+                if ((block->bbFlags & BBF_LOOP_PREHEADER) != 0)
+                {
+                    break;
+                }
             }
 
             /* special case if this is the last BB */
@@ -6027,8 +6041,9 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 
     // Dominator and reachability sets are no longer valid.
     // The loop table is no longer valid.
-    fgDomsComputed    = false;
-    optLoopTableValid = false;
+    fgDomsComputed            = false;
+    optLoopTableValid         = false;
+    optLoopsRequirePreHeaders = false;
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -6592,6 +6607,7 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
             costSz = 1; // We place a int3 after the code for a throw block
             break;
         case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
             costSz = 1;
             break;
@@ -6758,45 +6774,52 @@ PhaseStatus Compiler::fgTailMerge()
         //
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            if ((predBlock->GetUniqueSucc() == block) && BasicBlock::sameEHRegion(block, predBlock))
+            if (predBlock->GetUniqueSucc() != block)
             {
-                Statement* lastStmt = predBlock->lastStmt();
-
-                // Block might be empty.
-                //
-                if (lastStmt == nullptr)
-                {
-                    continue;
-                }
-
-                // Walk back past any GT_NOPs.
-                //
-                Statement* const firstStmt = predBlock->firstStmt();
-                while (lastStmt->GetRootNode()->OperIs(GT_NOP))
-                {
-                    if (lastStmt == firstStmt)
-                    {
-                        // predBlock is evidently all GT_NOP.
-                        //
-                        lastStmt = nullptr;
-                        break;
-                    }
-
-                    lastStmt = lastStmt->GetPrevStmt();
-                }
-
-                // Block might be effectively empty.
-                //
-                if (lastStmt == nullptr)
-                {
-                    continue;
-                }
-
-                // We don't expect to see PHIs but watch for them anyways.
-                //
-                assert(!lastStmt->IsPhiDefnStmt());
-                predInfo.Emplace(predBlock, lastStmt);
+                continue;
             }
+
+            if (!BasicBlock::sameEHRegion(block, predBlock))
+            {
+                continue;
+            }
+
+            Statement* lastStmt = predBlock->lastStmt();
+
+            // Block might be empty.
+            //
+            if (lastStmt == nullptr)
+            {
+                continue;
+            }
+
+            // Walk back past any GT_NOPs.
+            //
+            Statement* const firstStmt = predBlock->firstStmt();
+            while (lastStmt->GetRootNode()->OperIs(GT_NOP))
+            {
+                if (lastStmt == firstStmt)
+                {
+                    // predBlock is evidently all GT_NOP.
+                    //
+                    lastStmt = nullptr;
+                    break;
+                }
+
+                lastStmt = lastStmt->GetPrevStmt();
+            }
+
+            // Block might be effectively empty.
+            //
+            if (lastStmt == nullptr)
+            {
+                continue;
+            }
+
+            // We don't expect to see PHIs but watch for them anyways.
+            //
+            assert(!lastStmt->IsPhiDefnStmt());
+            predInfo.Emplace(predBlock, lastStmt);
         }
 
         // Are there enough preds to make it interesting?
@@ -6886,8 +6909,8 @@ PhaseStatus Compiler::fgTailMerge()
             JITDUMP("A set of %d preds of " FMT_BB " end with the same tree\n", matchedPredInfo.Height(), block->bbNum);
             JITDUMPEXEC(gtDispStmt(matchedPredInfo.TopRef(0).m_stmt));
 
-            BasicBlock* crossJumpVictim       = matchedPredInfo.TopRef(0).m_block;
-            Statement*  crossJumpStmt         = matchedPredInfo.TopRef(0).m_stmt;
+            BasicBlock* crossJumpVictim       = nullptr;
+            Statement*  crossJumpStmt         = nullptr;
             bool        haveNoSplitVictim     = false;
             bool        haveFallThroughVictim = false;
 
@@ -6897,6 +6920,13 @@ PhaseStatus Compiler::fgTailMerge()
                 Statement* const  stmt      = info.m_stmt;
                 BasicBlock* const predBlock = info.m_block;
 
+                // Never pick the scratch block as the victim as that would
+                // cause us to add a predecessor to it, which is invalid.
+                if (fgBBisScratch(predBlock))
+                {
+                    continue;
+                }
+
                 bool const isNoSplit     = stmt == predBlock->firstStmt();
                 bool const isFallThrough = (predBlock->bbJumpKind == BBJ_NONE);
 
@@ -6904,7 +6934,12 @@ PhaseStatus Compiler::fgTailMerge()
                 //
                 bool useBlock = false;
 
-                if (isNoSplit && isFallThrough)
+                if (crossJumpVictim == nullptr)
+                {
+                    // Pick an initial candidate.
+                    useBlock = true;
+                }
+                else if (isNoSplit && isFallThrough)
                 {
                     // This is the ideal choice.
                     //
