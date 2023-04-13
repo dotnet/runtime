@@ -5302,7 +5302,6 @@ void CEEInfo::getCallInfo(
                 VirtualCallStubManager *pMgr = pLoaderAllocator->GetVirtualCallStubManager();
 
                 PCODE addr = pMgr->GetCallStub(exactType, pTargetMD);
-                _ASSERTE(pMgr->isStub(addr));
 
                 // Now we want to indirect through a cell so that updates can take place atomically.
                 if (m_pMethodBeingCompiled->IsLCGMethod())
