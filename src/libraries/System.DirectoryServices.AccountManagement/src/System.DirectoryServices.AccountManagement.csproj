@@ -168,8 +168,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentThread.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.LocalFree.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Logoncli\Interop.DsGetDcName.cs"
              Link="Common\Interop\Windows\Logoncli\Interop.DsGetDcName.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Netutils\Interop.NetApiBufferFree.cs"
@@ -188,6 +188,8 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeLsaPolicyHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeTokenHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeTokenHandle.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">

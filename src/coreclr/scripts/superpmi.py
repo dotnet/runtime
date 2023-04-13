@@ -295,6 +295,7 @@ collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merg
 collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="Pass a sequence of MCH files which will be merged. Required by --merge_mch_files.")
 collect_parser.add_argument("--use_zapdisable", action="store_true", help="Sets DOTNET_ZapDisable=1 and DOTNET_ReadyToRun=0 when doing collection to cause NGEN/ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
 collect_parser.add_argument("--tiered_compilation", action="store_true", help="Sets DOTNET_TieredCompilation=1 when doing collections.")
+collect_parser.add_argument("--tiered_pgo", action="store_true", help="Sets DOTNET_TieredCompilation=1 and DOTNET_TieredPGO=1 when doing collections.")
 collect_parser.add_argument("--ci", action="store_true", help="Special collection mode for handling zero-sized files in Azure DevOps + Helix pipelines collections.")
 
 # Allow for continuing a collection in progress
@@ -663,6 +664,11 @@ class SuperPMICollect:
         if coreclr_args.pmi or coreclr_args.crossgen2:
             self.assemblies = coreclr_args.assemblies
             self.exclude = coreclr_args.exclude
+            if coreclr_args.tiered_compilation or coreclr_args.tiered_pgo:
+               raise RuntimeError("Tiering options have no effect for pmi or crossgen2 collections.")
+
+        if coreclr_args.tiered_compilation and coreclr_args.tiered_pgo:
+            raise RuntimeError("Pass only one tiering option.")
 
         self.coreclr_args = coreclr_args
 
@@ -789,7 +795,12 @@ class SuperPMICollect:
             dotnet_env = {}
             dotnet_env["EnableExtraSuperPmiQueries"] = "1"
 
-            if not self.coreclr_args.tiered_compilation:
+            if self.coreclr_args.tiered_compilation:
+                dotnet_env["TieredCompilation"] = "1"
+            elif self.coreclr_args.tiered_pgo:
+                dotnet_env["TieredCompilation"] = "1"
+                dotnet_env["TieredPGO"] = "1"
+            else:
                 dotnet_env["TieredCompilation"] = "0"
 
             if self.coreclr_args.use_zapdisable:
@@ -1912,7 +1923,7 @@ class SuperPMIReplayAsmDiffs:
                             num_same,
                             byte_improvements,
                             byte_regressions))
-                        
+
                         if byte_improvements > 0 and byte_regressions > 0:
                             logging.info("  -{:,d}/+{:,d} bytes".format(byte_improvements, byte_regressions))
                         elif byte_improvements > 0:
@@ -2053,7 +2064,7 @@ class SuperPMIReplayAsmDiffs:
 
                 sum_base = sum(int(base_metrics[row]["Diffed code bytes"]) for (_, base_metrics, _, _, _, _) in asm_diffs)
                 sum_diff = sum(int(diff_metrics[row]["Diffed code bytes"]) for (_, _, diff_metrics, _, _, _) in asm_diffs)
-                
+
                 with DetailsSection(write_fh, "{} ({} bytes)".format(row, format_delta(sum_base, sum_diff))):
                     write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|\n")
                     write_fh.write("|---|--:|--:|\n")
@@ -2126,7 +2137,7 @@ class SuperPMIReplayAsmDiffs:
                     num_missed_base / num_contexts * 100,
                     num_missed_diff,
                     num_missed_diff / num_contexts * 100))
-                        
+
             for t in rows:
                 write_row(*t)
 
@@ -2193,7 +2204,7 @@ superpmi.py asmdiffs -target_os {1} -target_arch {2} -arch {0}
                             first_line = f.readline().rstrip()
                             if first_line and first_line.startswith("; Assembly listing for method "):
                                 func_name += " - " + first_line[len("; Assembly listing for method "):]
-                        
+
                         git_diff_command = [ git_path, "diff", "--diff-algorithm=histogram", "--no-index", "--", base_dasm_path, diff_dasm_path ]
                         git_diff_proc = subprocess.Popen(git_diff_command, stdout=subprocess.PIPE)
                         (stdout, _) = git_diff_proc.communicate()
@@ -2269,7 +2280,7 @@ superpmi.py asmdiffs -target_os {1} -target_arch {2} -arch {0}
 
             display_subset("Top {} improvements, percentage-wise:", top_improvements_pct)
             display_subset("Top {} regressions, percentage-wise:", top_regressions_pct)
-            
+
             # 20 contexts without size diffs (possibly GC info diffs), sorted by size
             zero_size_diffs = filter(lambda r: int(r["Diff size"]) == int(r["Base size"]), diffs)
             smallest_zero_size_contexts = sorted(zero_size_diffs, key=lambda r: int(r["Context size"]))[:20]
@@ -4074,6 +4085,11 @@ def setup_args(args):
                             "Unable to set tiered_compilation")
 
         coreclr_args.verify(args,
+                            "tiered_pgo",
+                            lambda unused: True,
+                            "Unable to set tiered_pgo")
+
+        coreclr_args.verify(args,
                             "pmi_path",
                             lambda unused: True,
                             "Unable to set pmi_path")
@@ -4303,6 +4319,11 @@ def setup_args(args):
                             "arch",
                             lambda arch: arch == "x86" or arch == "x64",
                             "Throughput measurements not supported on platform {}".format(coreclr_args.arch))
+
+        coreclr_args.verify(determine_coredis_tools(coreclr_args),
+                            "coredistools_location",
+                            os.path.isfile,
+                            "Unable to find coredistools.")
 
         process_base_jit_path_arg(coreclr_args)
         download_clrjit_pintool(coreclr_args)

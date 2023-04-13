@@ -42,6 +42,11 @@ extern void mono_wasm_typed_array_from_ref (int ptr, int begin, int end, int byt
 extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
 #endif /* ENABLE_LEGACY_JS_INTEROP */
 
+// HybridGlobalization
+extern void mono_wasm_change_case_invariant(MonoString **exceptionMessage, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
+extern void mono_wasm_change_case(MonoString **exceptionMessage, MonoString **culture, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
+extern int mono_wasm_compare_string(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options);
+
 void bindings_initialize_internals (void)
 {
 	mono_add_internal_call ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::ScheduleBackgroundJob", mono_threads_schedule_background_job);
@@ -69,4 +74,7 @@ void bindings_initialize_internals (void)
 	// Blazor specific custom routines - see dotnet_support.js for backing code
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
 #endif /* ENABLE_LEGACY_JS_INTEROP */
+	mono_add_internal_call ("Interop/JsGlobalization::ChangeCaseInvariant", mono_wasm_change_case_invariant);
+	mono_add_internal_call ("Interop/JsGlobalization::ChangeCase", mono_wasm_change_case);
+	mono_add_internal_call ("Interop/JsGlobalization::CompareString", mono_wasm_compare_string);
 }

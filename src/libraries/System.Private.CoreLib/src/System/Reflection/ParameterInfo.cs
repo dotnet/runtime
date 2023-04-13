@@ -2,11 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    public class ParameterInfo : ICustomAttributeProvider, IObjectReference
+    public class ParameterInfo : ICustomAttributeProvider
+#pragma warning disable SYSLIB0050 // IObjectReference is obsolete
+#pragma warning disable SA1001 // CommasMustBeSpacedCorrectly
+        , IObjectReference
+#pragma warning restore SA1001
+#pragma warning restore SYSLIB0050
     {
         protected ParameterInfo() { }
 
@@ -49,6 +55,8 @@ namespace System.Reflection
 
         public virtual int MetadataToken => MetadataToken_ParamDef;
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public object GetRealObject(StreamingContext context)
         {
             // Once all the serializable fields have come in we can set up the real

@@ -301,11 +301,6 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                         JITDUMP(" Found Vector<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
 
                         size = getSIMDVectorRegisterByteLength();
-
-                        uint32_t handleIndex = static_cast<uint32_t>(simdBaseJitType - CORINFO_TYPE_BYTE);
-                        assert(handleIndex < SIMDHandlesCache::SupportedTypeCount);
-
-                        m_simdHandleCache->VectorTHandles[handleIndex] = typeHnd;
                         break;
                     }
 
@@ -347,11 +342,6 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                 }
 
                 JITDUMP(" Found Vector64<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
-
-                uint32_t handleIndex = static_cast<uint32_t>(simdBaseJitType - CORINFO_TYPE_BYTE);
-                assert(handleIndex < SIMDHandlesCache::SupportedTypeCount);
-
-                m_simdHandleCache->Vector64THandles[handleIndex] = typeHnd;
                 break;
             }
 #endif // TARGET_ARM64
@@ -372,11 +362,6 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                 }
 
                 JITDUMP(" Found Vector128<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
-
-                uint32_t handleIndex = static_cast<uint32_t>(simdBaseJitType - CORINFO_TYPE_BYTE);
-                assert(handleIndex < SIMDHandlesCache::SupportedTypeCount);
-
-                m_simdHandleCache->Vector128THandles[handleIndex] = typeHnd;
                 break;
             }
 
@@ -403,11 +388,6 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                 }
 
                 JITDUMP(" Found Vector256<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
-
-                uint32_t handleIndex = static_cast<uint32_t>(simdBaseJitType - CORINFO_TYPE_BYTE);
-                assert(handleIndex < SIMDHandlesCache::SupportedTypeCount);
-
-                m_simdHandleCache->Vector256THandles[handleIndex] = typeHnd;
                 break;
             }
 
@@ -433,11 +413,6 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                 }
 
                 JITDUMP(" Found Vector512<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
-
-                uint32_t handleIndex = static_cast<uint32_t>(simdBaseJitType - CORINFO_TYPE_BYTE);
-                assert(handleIndex < SIMDHandlesCache::SupportedTypeCount);
-
-                m_simdHandleCache->Vector512THandles[handleIndex] = typeHnd;
                 break;
             }
 #endif // TARGET_XARCH
@@ -459,34 +434,6 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
     {
         assert(size == info.compCompHnd->getClassSize(typeHnd));
         setUsesSIMDTypes(true);
-
-        CORINFO_CLASS_HANDLE* pCanonicalHnd = nullptr;
-
-        switch (size)
-        {
-            case 8:
-                pCanonicalHnd = &m_simdHandleCache->CanonicalSimd8Handle;
-                break;
-            case 12:
-                // There is no need for a canonical SIMD12 handle because it is always Vector3.
-                break;
-            case 16:
-                pCanonicalHnd = &m_simdHandleCache->CanonicalSimd16Handle;
-                break;
-            case 32:
-                pCanonicalHnd = &m_simdHandleCache->CanonicalSimd32Handle;
-                break;
-            case 64:
-                pCanonicalHnd = &m_simdHandleCache->CanonicalSimd64Handle;
-                break;
-            default:
-                unreached();
-        }
-
-        if ((pCanonicalHnd != nullptr) && (*pCanonicalHnd == NO_CLASS_HANDLE))
-        {
-            *pCanonicalHnd = typeHnd;
-        }
     }
 
     return simdBaseJitType;
@@ -521,9 +468,9 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
         tree = gtNewOperNode(GT_IND, type, tree);
     }
 
-    if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_LCL_VAR_ADDR))
+    if (tree->OperIsIndir() && tree->AsIndir()->Addr()->IsLclVarAddr())
     {
-        GenTreeLclVar* lclAddr = tree->AsIndir()->Addr()->AsLclVar();
+        GenTreeLclFld* lclAddr = tree->AsIndir()->Addr()->AsLclFld();
         LclVarDsc*     varDsc  = lvaGetDesc(lclAddr);
         if (varDsc->TypeGet() == type)
         {
@@ -557,7 +504,7 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
     else if (tree->gtType == TYP_BYREF)
     {
         assert(tree->IsLocal() || tree->OperIs(GT_RET_EXPR, GT_CALL) ||
-               (tree->OperIs(GT_LCL_VAR_ADDR) && varTypeIsSIMD(lvaGetDesc(tree->AsLclVar()))));
+               (tree->IsLclVarAddr() && varTypeIsSIMD(lvaGetDesc(tree->AsLclFld()))));
     }
 
     return tree;
@@ -571,7 +518,7 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
 //
 void Compiler::setLclRelatedToSIMDIntrinsic(GenTree* tree)
 {
-    assert(tree->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR));
+    assert(tree->OperIs(GT_LCL_VAR) || tree->IsLclVarAddr());
     LclVarDsc* lclVarDsc             = lvaGetDesc(tree->AsLclVarCommon());
     lclVarDsc->lvUsedInSIMDIntrinsic = true;
 }
@@ -599,7 +546,7 @@ bool areFieldsParentsLocatedSame(GenTree* op1, GenTree* op2)
             break;
         }
 
-        if (op1ObjRef->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR) &&
+        if ((op1ObjRef->OperIs(GT_LCL_VAR) || op1ObjRef->IsLclVarAddr()) &&
             (op1ObjRef->AsLclVarCommon()->GetLclNum() == op2ObjRef->AsLclVarCommon()->GetLclNum()))
         {
             return true;
@@ -775,7 +722,7 @@ GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_
     if (tree->OperIs(GT_FIELD))
     {
         GenTree* objRef = tree->AsField()->GetFldObj();
-        if ((objRef != nullptr) && objRef->OperIs(GT_LCL_VAR_ADDR))
+        if ((objRef != nullptr) && objRef->IsLclVarAddr())
         {
             // If the field is directly from a struct, then in this case,
             // we should set this struct's lvUsedInSIMDIntrinsic as true,
@@ -788,7 +735,7 @@ GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_
             // TODO-CQ:
             //  In future, we should optimize this case so that if there is a nested field like s1.s2.x and s1.s2.x's
             //  address is used for initializing the vector, then s1 can be promoted but s2 can't.
-            if (varTypeIsSIMD(lvaGetDesc(objRef->AsLclVar())))
+            if (varTypeIsSIMD(lvaGetDesc(objRef->AsLclFld())))
             {
                 setLclRelatedToSIMDIntrinsic(objRef);
             }
@@ -887,7 +834,7 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
                     if (curDst->OperIs(GT_FIELD) && curDst->AsField()->IsInstance())
                     {
                         GenTree* objRef = curDst->AsField()->GetFldObj();
-                        if (objRef->OperIs(GT_LCL_VAR_ADDR) && varTypeIsStruct(lvaGetDesc(objRef->AsLclVar())))
+                        if (objRef->IsLclVarAddr() && varTypeIsStruct(lvaGetDesc(objRef->AsLclFld())))
                         {
                             setLclRelatedToSIMDIntrinsic(objRef);
                         }

@@ -3545,7 +3545,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 // bl CORINFO_HELP_ASSIGN_BYREF
 // ldr tempReg, [R13, #8]
 // str tempReg, [R14, #8]
-void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
+void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
     GenTree*  dstAddr       = cpObjNode->Addr();
     GenTree*  source        = cpObjNode->Data();
@@ -3565,7 +3565,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIsLocalAddr();
+    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -3601,7 +3601,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(tmpReg2 != REG_WRITE_BARRIER_SRC_BYREF);
     }
 
-    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpObjNode->IsVolatile())
     {
         // issue a full memory barrier before a volatile CpObj operation
         instGen_MemoryBarrier();
@@ -3674,7 +3674,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(gcPtrCount == 0);
     }
 
-    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpObjNode->IsVolatile())
     {
         // issue a load barrier after a volatile CpObj operation
         instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
@@ -4188,7 +4188,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         var_types   type = tree->TypeGet();
         instruction ins  = ins_StoreFromSrc(dataReg, type);
 
-        if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
+        if (tree->IsVolatile())
         {
             bool addrIsInReg   = addr->isUsedFromReg();
             bool addrIsAligned = ((tree->gtFlags & GTF_IND_UNALIGNED) == 0);
@@ -4678,6 +4678,66 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
 
     regSet.verifyRegUsed(targetReg);
     genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForCinc: Produce code for a GT_CINC/GT_CINCCC node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForCinc(GenTreeOp* cinc)
+{
+    assert(cinc->OperIs(GT_CINC, GT_CINCCC));
+
+    GenTree* opcond = nullptr;
+    GenTree* op     = cinc->gtOp1;
+    if (cinc->OperIs(GT_CINC))
+    {
+        opcond = cinc->gtOp1;
+        op     = cinc->gtOp2;
+        genConsumeRegs(opcond);
+    }
+
+    emitter*  emit   = GetEmitter();
+    var_types opType = genActualType(op->TypeGet());
+    emitAttr  attr   = emitActualTypeSize(cinc->TypeGet());
+
+    assert(!op->isUsedFromMemory());
+    genConsumeRegs(op);
+
+    GenCondition cond;
+
+    if (cinc->OperIs(GT_CINC))
+    {
+        assert(!opcond->isContained());
+        // Condition has been generated into a register - move it into flags.
+        emit->emitIns_R_I(INS_cmp, emitActualTypeSize(opcond), opcond->GetRegNum(), 0);
+        cond = GenCondition::NE;
+    }
+    else
+    {
+        assert(cinc->OperIs(GT_CINCCC));
+        cond = cinc->AsOpCC()->gtCondition;
+    }
+    const GenConditionDesc& prevDesc  = GenConditionDesc::Get(cond);
+    regNumber               targetReg = cinc->GetRegNum();
+    regNumber               srcReg;
+
+    if (op->isContained())
+    {
+        assert(op->IsIntegralConst(0));
+        srcReg = REG_ZR;
+    }
+    else
+    {
+        srcReg = op->GetRegNum();
+    }
+
+    assert(prevDesc.oper != GT_OR && prevDesc.oper != GT_AND);
+    emit->emitIns_R_R_COND(INS_cinc, attr, targetReg, srcReg, JumpKindToInsCond(prevDesc.jumpKind1));
+    regSet.verifyRegUsed(targetReg);
+    genProduceReg(cinc);
 }
 
 //------------------------------------------------------------------------

@@ -82,6 +82,10 @@ namespace System.Reflection.Tests
         [InlineData(typeof(string), new Type[] { typeof(char), typeof(int) })]
         public void Properties(Type type, Type[] typeParameters)
         {
+            // Trick trimming into keeping the string ctor
+            if (string.Empty.Length > 0)
+                typeof(string).GetConstructors();
+
             ConstructorInfo constructor = TypeExtensions.GetConstructor(type, typeParameters);
 
             Assert.Equal(type, constructor.DeclaringType);
