@@ -7,6 +7,7 @@ namespace System.Diagnostics.Metrics
     {
         private readonly bool _isMonotonic;
         private double _sum;
+        private double _totalSum;
 
         public RateSumAggregator(bool isMonotonic)
         {
@@ -25,7 +26,8 @@ namespace System.Diagnostics.Metrics
         {
             lock (this)
             {
-                RateStatistics? stats = new RateStatistics(_sum, _isMonotonic);
+                _totalSum += _sum;
+                RateStatistics? stats = new RateStatistics(_sum, _isMonotonic, _totalSum);
                 _sum = 0;
                 return stats;
             }
@@ -36,7 +38,8 @@ namespace System.Diagnostics.Metrics
     {
         private readonly bool _isMonotonic;
         private double? _prevValue;
-        private double _value;
+        private double? _value;
+        private double _sum;
 
         public RateAggregator(bool isMonotonic)
         {
@@ -58,10 +61,12 @@ namespace System.Diagnostics.Metrics
                 double? delta = null;
                 if (_prevValue.HasValue)
                 {
-                    delta = _value - _prevValue.Value;
+                    delta = _value.HasValue ? _value - _prevValue.Value : 0;
                 }
-                RateStatistics stats = new RateStatistics(delta, _isMonotonic);
-                _prevValue = _value;
+                _sum += _value ?? 0;
+                RateStatistics stats = new RateStatistics(delta, _isMonotonic, _sum);
+                _prevValue = _value ?? _prevValue;
+                _value = null;
                 return stats;
             }
         }
@@ -75,8 +80,15 @@ namespace System.Diagnostics.Metrics
             IsMonotonic = isMonotonic;
         }
 
+        public RateStatistics(double? delta, bool isMonotonic, double value) : this(delta, isMonotonic)
+        {
+            Value = value;
+        }
+
         public double? Delta { get; }
 
         public bool IsMonotonic { get; }
+
+        public double Value { get; }
     }
 }

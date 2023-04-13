@@ -25,7 +25,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesWithEmptyMetadata()
         {
             using Meter meter = new Meter("TestMeter1");
@@ -56,17 +56,21 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
+            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
+            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
+            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "", "", "5", "17");
+            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "", "", "10", "27");
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", "-33", "-40");
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", "", "-11");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "", "", "-33", "-40");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "", "", "", "-11");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "", "", "-33", "-73");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "", "", "-11", "-33");
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesWithMetadata()
         {
             using Meter meter = new Meter("TestMeter2");
@@ -97,17 +101,21 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, "5", "12");
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, "", "7", "7");
+            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", c.Unit, "5", "12");
+            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, "", "7", "7");
+            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "", c.Unit, "5", "17");
+            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, "10", "27", "51");
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, "33", "40");
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, "", "11");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, "33", "40");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, "", "11", "11");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, "33", "73");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, "11", "33", "66");
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesForLateMeter()
         {
             // this ensures the MetricsEventSource exists when the listener tries to query
@@ -152,12 +160,16 @@ namespace System.Diagnostics.Metrics.Tests
 
                 AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
                 AssertInitialEnumerationCompleteEventPresent(events);
-                AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
-                AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
+                AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
+                AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
+                AssertCounterValueEventsPresent(events, meter.Name, c.Name, "", "", "5", "17");
+                AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "", "", "10", "27");
                 AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
                 AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-                AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", "33", "40");
-                AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", "", "-11");
+                AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "", "", "33", "40");
+                AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "", "", "", "-11");
+                AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "", "", "33", "73");
+                AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "", "", "-11", "-33");
                 AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
             }
             finally
@@ -167,7 +179,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesForLateInstruments()
         {
             // this ensures the MetricsEventSource exists when the listener tries to query
@@ -208,17 +220,21 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
+            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
+            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
+            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "", "", "5", "17");
+            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "", "", "10", "27");
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", "-33", "-40");
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", "", "11");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "", "", "-33", "-40");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "", "", "", "11");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "", "", "-33", "-73");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "", "", "11", "33");
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesWithTags()
         {
             using Meter meter = new Meter("TestMeter5");
@@ -281,24 +297,32 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "Color=red", "", "5", "12");
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "Color=blue", "", "6", "13");
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "Color=red,Size=19", "", "", "7");
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "Color=blue,Size=4", "", "", "14");
+            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "Color=red", "", "5", "12");
+            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "Color=blue", "", "6", "13");
+            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "Color=red,Size=19", "", "", "7");
+            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "Color=blue,Size=4", "", "", "14");
+            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "Color=red", "", "5", "17");
+            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "Color=blue", "", "6", "19");
+            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "Color=red,Size=19", "", "10");
+            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "Color=blue,Size=4", "", "20");
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "Color=red,Size=19", "", "9", "18");
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "Color=blue,Size=4", "", "18", "36");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "Size=123", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "Size=124", "", "0.5=20;0.95=20;0.99=20", "0.5=27;0.95=27;0.99=27");
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "Color=red", "", "-33", "40");
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "Color=blue", "", "-34", "41");
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "Color=red,Size=19", "", "", "-11");
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "Color=blue,Size=4", "", "", "-22");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "Color=red", "", "-33", "40");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "Color=blue", "", "-34", "41");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "Color=red,Size=19", "", "", "-11");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "Color=blue,Size=4", "", "", "-22");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "Color=red", "", "-33", "7");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "Color=blue", "", "-34", "7");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "Color=red,Size=19", "", "-11");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "Color=blue,Size=4", "", "-22");
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/79749", TargetFrameworkMonikers.NetFramework)]
         public void EventSourceFiltersInstruments()
         {
@@ -347,12 +371,12 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c3a, c1b, c2b, c3b, c2c, c3c);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterEventsPresent(events, meterA.Name, c3a.Name, "", "", "1", "2");
-            AssertCounterEventsPresent(events, meterB.Name, c1b.Name, "", "", "1", "2");
-            AssertCounterEventsPresent(events, meterB.Name, c2b.Name, "", "", "1", "2");
-            AssertCounterEventsPresent(events, meterB.Name, c3b.Name, "", "", "1", "2");
-            AssertCounterEventsPresent(events, meterC.Name, c3c.Name, "", "", "1", "2");
-            AssertCounterEventsPresent(events, meterC.Name, c3c.Name, "", "", "1", "2");
+            AssertCounterRateEventsPresent(events, meterA.Name, c3a.Name, "", "", "1", "2");
+            AssertCounterRateEventsPresent(events, meterB.Name, c1b.Name, "", "", "1", "2");
+            AssertCounterRateEventsPresent(events, meterB.Name, c2b.Name, "", "", "1", "2");
+            AssertCounterRateEventsPresent(events, meterB.Name, c3b.Name, "", "", "1", "2");
+            AssertCounterRateEventsPresent(events, meterC.Name, c3c.Name, "", "", "1", "2");
+            AssertCounterRateEventsPresent(events, meterC.Name, c3c.Name, "", "", "1", "2");
             AssertCounterEventsNotPresent(events, meterA.Name, c1a.Name, "");
             AssertCounterEventsNotPresent(events, meterA.Name, c2a.Name, "");
             AssertCounterEventsNotPresent(events, meterC.Name, c1c.Name, "");
@@ -360,7 +384,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesMissingDataPoints()
         {
             using Meter meter = new Meter("TestMeter6");
@@ -438,17 +462,21 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", "5", "0", "12");
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", "", "0", "14", "0");
+            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", "", "5", "0", "12");
+            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "", "", "", "0", "14", "0");
+            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "", "", "5", "5", "17");
+            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "", "", "17", "17", "48", "48");
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "18", "", "36", "");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "", "0.5=26;0.95=26;0.99=26", "");
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", "33", "0", "40");
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", "", "0", "22", "0");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "", "", "33", "0", "40");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "", "", "", "0", "22", "0");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "", "", "33", "33", "73");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "", "", "22", "22", "66", "66");
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 5);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourceRejectsNewListener()
         {
             using Meter meter = new Meter("TestMeter7");
@@ -484,17 +512,21 @@ namespace System.Diagnostics.Metrics.Tests
             }
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, "5", "12");
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, "", "7", "7");
+            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", c.Unit, "5", "12");
+            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, "", "7", "7");
+            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "", c.Unit, "5", "17");
+            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, "10", "27", "51");
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, "33", "40");
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, "", "11");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, "33", "40");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, "", "11", "11");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, "33", "73");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, "11", "33", "66");
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesEndEventsOnMeterDispose()
         {
             using Meter meterA = new Meter("TestMeter8");
@@ -532,19 +564,23 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterEventsPresent(events, meterA.Name, c.Name, "", c.Unit, "5", "12");
-            AssertCounterEventsPresent(events, meterA.Name, oc.Name, "", oc.Unit, "", "7", "7");
+            AssertCounterRateEventsPresent(events, meterA.Name, c.Name, "", c.Unit, "5", "12");
+            AssertCounterRateEventsPresent(events, meterA.Name, oc.Name, "", oc.Unit, "", "7", "7");
+            AssertCounterValueEventsPresent(events, meterA.Name, c.Name, "", c.Unit, "5", "17");
+            AssertCounterValueEventsPresent(events, meterA.Name, oc.Name, "", oc.Unit, "10", "27", "51");
             AssertGaugeEventsPresent(events, meterA.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meterB.Name, h.Name, "", h.Unit, "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26", "0.5=21;0.95=21;0.99=21");
-            AssertUpDownCounterEventsPresent(events, meterA.Name, udc.Name, "", udc.Unit, "33", "40");
-            AssertUpDownCounterEventsPresent(events, meterA.Name, oudc.Name, "", oudc.Unit, "", "11", "11");
+            AssertUpDownCounterRateEventsPresent(events, meterA.Name, udc.Name, "", udc.Unit, "33", "40");
+            AssertUpDownCounterRateEventsPresent(events, meterA.Name, oudc.Name, "", oudc.Unit, "", "11", "11");
+            AssertUpDownCounterValueEventsPresent(events, meterA.Name, udc.Name, "", udc.Unit, "33", "73");
+            AssertUpDownCounterValueEventsPresent(events, meterA.Name, oudc.Name, "", oudc.Unit, "11", "33", "66");
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
             AssertEndInstrumentReportingEventsPresent(events, c, oc, og, udc, oudc);
         }
 
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesInstruments()
         {
             using Meter meterA = new Meter("TestMeter10");
@@ -571,7 +607,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesAllDataTypes()
         {
             using Meter meter = new Meter("TestMeter12");
@@ -626,18 +662,18 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, i, s, b, l, dec, f, d);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterEventsPresent(events, meter.Name, i.Name, "", "", "1234568", "1234568");
-            AssertCounterEventsPresent(events, meter.Name, s.Name, "", "", "21433", "21433");
-            AssertCounterEventsPresent(events, meter.Name, b.Name, "", "", "2", "2");
-            AssertCounterEventsPresent(events, meter.Name, l.Name, "", "", "123456789013", "123456789013");
-            AssertCounterEventsPresent(events, meter.Name, dec.Name, "", "", "123456789012346", "123456789012346");
-            AssertCounterEventsPresent(events, meter.Name, f.Name, "", "", "123457.7890625", "123457.7890625");
-            AssertCounterEventsPresent(events, meter.Name, d.Name, "", "", "87654321987655.4", "87654321987655.4");
+            AssertCounterRateEventsPresent(events, meter.Name, i.Name, "", "", "1234568", "1234568");
+            AssertCounterRateEventsPresent(events, meter.Name, s.Name, "", "", "21433", "21433");
+            AssertCounterRateEventsPresent(events, meter.Name, b.Name, "", "", "2", "2");
+            AssertCounterRateEventsPresent(events, meter.Name, l.Name, "", "", "123456789013", "123456789013");
+            AssertCounterRateEventsPresent(events, meter.Name, dec.Name, "", "", "123456789012346", "123456789012346");
+            AssertCounterRateEventsPresent(events, meter.Name, f.Name, "", "", "123457.7890625", "123457.7890625");
+            AssertCounterRateEventsPresent(events, meter.Name, d.Name, "", "", "87654321987655.4", "87654321987655.4");
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourceEnforcesTimeSeriesLimit()
         {
             using Meter meter = new Meter("TestMeter13");
@@ -664,8 +700,8 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "Color=red", "", "5", "12");
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "Color=blue", "", "6", "13");
+            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "Color=red", "", "5", "12");
+            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "Color=blue", "", "6", "13");
             AssertTimeSeriesLimitPresent(events);
             AssertCounterEventsNotPresent(events, meter.Name, c.Name, "Color=green");
             AssertCounterEventsNotPresent(events, meter.Name, c.Name, "Color=yellow");
@@ -673,7 +709,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourceEnforcesHistogramLimit()
         {
             using Meter meter = new Meter("TestMeter14");
@@ -710,7 +746,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourceHandlesObservableCallbackException()
         {
             using Meter meter = new Meter("TestMeter15");
@@ -731,13 +767,13 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
+            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
             AssertObservableCallbackErrorPresent(events);
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourceWorksWithSequentialListeners()
         {
             using Meter meter = new Meter("TestMeter16");
@@ -768,12 +804,16 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
+            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
+            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
+            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "", "", "5", "17");
+            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "", "", "10", "27");
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", "33", "40");
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", "", "11");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "", "", "33", "40");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "", "", "", "11");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "", "", "33", "73");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "", "", "11", "33");
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
 
             // Now create a new listener and do everything a 2nd time. Because the listener above has been disposed the source should be
@@ -795,17 +835,21 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
+            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
+            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
+            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "", "", "5", "17");
+            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "", "", "31", "69");
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "36", "45");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", "33", "40");
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", "", "11");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "", "", "33", "40");
+            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "", "", "", "11");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "", "", "33", "73");
+            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "", "", "44", "99");
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourceEnforcesHistogramLimitAndNotMaxTimeSeries()
         {
             using Meter meter = new Meter("TestMeter17");
@@ -943,19 +987,31 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(expectedInstruments.Length, publishEvents.Length);
         }
 
-        private void AssertCounterEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
+        private void AssertCounterRateEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
             string expectedUnit, params string[] expectedRates)
         {
-            AssertGenericCounterEventsPresent("CounterRateValuePublished", events, meterName, instrumentName, tags, expectedUnit, expectedRates);
+            AssertGenericCounterRateEventsPresent("CounterRateValuePublished", events, meterName, instrumentName, tags, expectedUnit, expectedRates);
         }
 
-        private void AssertUpDownCounterEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
+        private void AssertCounterValueEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
+            string expectedUnit, params string[] expectedValues)
+        {
+            AssertGenericCounterValueEventsPresent("CounterRateValuePublished", events, meterName, instrumentName, tags, expectedUnit, expectedValues);
+        }
+
+        private void AssertUpDownCounterRateEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
             string expectedUnit, params string[] expectedRates)
         {
-            AssertGenericCounterEventsPresent("UpDownCounterRateValuePublished", events, meterName, instrumentName, tags, expectedUnit, expectedRates);
+            AssertGenericCounterRateEventsPresent("UpDownCounterRateValuePublished", events, meterName, instrumentName, tags, expectedUnit, expectedRates);
         }
 
-        private void AssertGenericCounterEventsPresent(string eventName, EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
+        private void AssertUpDownCounterValueEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
+            string expectedUnit, params string[] expectedValues)
+        {
+            AssertGenericCounterValueEventsPresent("UpDownCounterRateValuePublished", events, meterName, instrumentName, tags, expectedUnit, expectedValues);
+        }
+
+        private void AssertGenericCounterRateEventsPresent(string eventName, EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
             string expectedUnit, params string[] expectedRates)
         {
             var counterEvents = events.Where(e => e.EventName == eventName).Select(e =>
@@ -975,6 +1031,31 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal(expectedUnit, filteredEvents[i].Unit);
                 Assert.Equal(expectedRates[i], filteredEvents[i].Rate);
             }
+        }
+
+        private void AssertGenericCounterValueEventsPresent(string eventName, EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
+            string expectedUnit, params string[] expectedValues)
+        {
+            var counterEvents = events.Where(e => e.EventName == eventName).Select(e =>
+                new
+                {
+                    MeterName = e.Payload[1].ToString(),
+                    MeterVersion = e.Payload[2].ToString(),
+                    InstrumentName = e.Payload[3].ToString(),
+                    Unit = e.Payload[4].ToString(),
+                    Tags = e.Payload[5].ToString(),
+                    Rate = e.Payload[6].ToString(),
+                    Value = e.Payload[7].ToString()
+                }).ToArray();
+            var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags).ToArray();
+
+            Assert.True(filteredEvents.Length >= expectedValues.Length);
+            for (int i = 0; i < expectedValues.Length; i++)
+            {
+                Assert.Equal(expectedUnit, filteredEvents[i].Unit);
+                Assert.Equal(expectedValues[i], filteredEvents[i].Value);
+            }
+
         }
 
         private void AssertCounterEventsNotPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags)
