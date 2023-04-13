@@ -25,7 +25,7 @@ export class BootConfigResult {
             bootConfigResponse = await loaderResponse;
         }
 
-        const applicationEnvironment = environment || Module?.getApplicationEnvironment(bootConfigResponse) || "Production";
+        const applicationEnvironment = environment || (Module.getApplicationEnvironment && Module.getApplicationEnvironment(bootConfigResponse)) || "Production";
         const bootConfig: BootJsonData = await bootConfigResponse.json();
         bootConfig.modifiableAssemblies = bootConfigResponse.headers.get("DOTNET-MODIFIABLE-ASSEMBLIES");
         bootConfig.aspnetCoreBrowserTools = bootConfigResponse.headers.get("ASPNETCORE-BROWSER-TOOLS");
