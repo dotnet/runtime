@@ -174,7 +174,7 @@ namespace System.Net.Http.Unit.Tests.QPack
         }
 
         [Fact]
-        public void LiteralFieldWithoutNameReferece_SingleBuffer()
+        public void LiteralFieldWithoutNameReference_SingleBuffer()
         {
             byte[] encoded = _literalFieldLineWithLiteralName
                 .Concat(_headerValue)
@@ -189,7 +189,7 @@ namespace System.Net.Http.Unit.Tests.QPack
         }
 
         [Fact]
-        public void LiteralFieldWithoutNameReferece_NameLengthBrokenIntoSeparateBuffers()
+        public void LiteralFieldWithoutNameReference_NameLengthBrokenIntoSeparateBuffers()
         {
             byte[] encoded = _literalFieldLineWithLiteralName
                 .Concat(_headerValue)
@@ -205,7 +205,7 @@ namespace System.Net.Http.Unit.Tests.QPack
         }
 
         [Fact]
-        public void LiteralFieldWithoutNameReferece_NameBrokenIntoSeparateBuffers()
+        public void LiteralFieldWithoutNameReference_NameBrokenIntoSeparateBuffers()
         {
             byte[] encoded = _literalFieldLineWithLiteralName
                 .Concat(_headerValue)
@@ -221,7 +221,7 @@ namespace System.Net.Http.Unit.Tests.QPack
         }
 
         [Fact]
-        public void LiteralFieldWithoutNameReferece_NameAndValueBrokenIntoSeparateBuffers()
+        public void LiteralFieldWithoutNameReference_NameAndValueBrokenIntoSeparateBuffers()
         {
             byte[] encoded = _literalFieldLineWithLiteralName
                 .Concat(_headerValue)
@@ -237,7 +237,7 @@ namespace System.Net.Http.Unit.Tests.QPack
         }
 
         [Fact]
-        public void LiteralFieldWithoutNameReferece_ValueLengthBrokenIntoSeparateBuffers()
+        public void LiteralFieldWithoutNameReference_ValueLengthBrokenIntoSeparateBuffers()
         {
             byte[] encoded = _literalFieldLineWithLiteralName
                 .Concat(_headerValue)
@@ -253,7 +253,7 @@ namespace System.Net.Http.Unit.Tests.QPack
         }
 
         [Fact]
-        public void LiteralFieldWithoutNameReferece_ValueBrokenIntoSeparateBuffers()
+        public void LiteralFieldWithoutNameReference_ValueBrokenIntoSeparateBuffers()
         {
             byte[] encoded = _literalFieldLineWithLiteralName
                 .Concat(_headerValue)
@@ -267,7 +267,7 @@ namespace System.Net.Http.Unit.Tests.QPack
             Assert.True(_handler.DecodedHeaders.ContainsKey(_literalHeaderFieldString));
             Assert.Equal(_headerValueString, _handler.DecodedHeaders[_literalHeaderFieldString]);
         }
-    
+
         public static readonly TheoryData<byte[]> _incompleteHeaderBlockData = new TheoryData<byte[]>
         {
             // Incomplete header
