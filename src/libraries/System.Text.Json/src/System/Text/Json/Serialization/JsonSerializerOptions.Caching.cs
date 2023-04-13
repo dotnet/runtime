@@ -161,7 +161,11 @@ namespace System.Text.Json
             Type runtimeType = rootValue.GetType();
             if (runtimeType != JsonTypeInfo.ObjectType)
             {
+                // To determine the contract for an object value:
+                // 1. Find the JsonTypeInfo for the runtime type with fallback to the nearest ancestor, if not available.
+                // 2. If the resolved type is deriving from a polymorphic type, use the contract of the polymorphic type instead.
                 polymorphicTypeInfo = GetTypeInfoForRootType(runtimeType, fallBackToNearestAncestorType: true);
+                polymorphicTypeInfo = polymorphicTypeInfo.AncestorPolymorphicType ?? polymorphicTypeInfo;
                 return true;
             }
 
