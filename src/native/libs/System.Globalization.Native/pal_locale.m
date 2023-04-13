@@ -173,18 +173,14 @@ static char* NormalizeNumericPattern(const char* srcPattern, int isNegative)
 {
     int iStart = 0;
     int iEnd = strlen(srcPattern);
-    int32_t iNegativePatternStart = -1;
 
-    for (int i = iStart; i < iEnd; i++)
+    // ';'  separates positive and negative subpatterns. 
+    // When there is no explicit negative subpattern,
+    // an implicit negative subpattern is formed from the positive pattern with a prefixed.
+    char * ptrNegativePattern = strrchr(srcPattern,';');
+    if (ptrNegativePattern)
     {
-        if (srcPattern[i] == ';')
-        {
-            iNegativePatternStart = i;
-        }
-    }
-
-    if (iNegativePatternStart >= 0)
-    {
+        int32_t iNegativePatternStart = ptrNegativePattern - srcPattern;
         if (isNegative)
         {
             iStart = iNegativePatternStart + 1;
@@ -211,6 +207,9 @@ static char* NormalizeNumericPattern(const char* srcPattern, int isNegative)
                 minusAdded = true;
                 break;
         }
+
+        if (minusAdded)
+           break;
     }
 
     // international currency symbol (CHAR_CURRENCY)
@@ -302,12 +301,13 @@ static int GetNumericPatternNative(const char* pNumberFormat,
                                    int isNegative)
 {
     const int INVALID_FORMAT = -1;
+    const int MEMORY_ALLOCATION_ERROR = 7;
     const int MAX_DOTNET_NUMERIC_PATTERN_LENGTH = 6; // example: "(C n)" plus terminator
     char* normalizedPattern = NormalizeNumericPattern(pNumberFormat, isNegative);
 
     if (!normalizedPattern)
     {
-        return U_MEMORY_ALLOCATION_ERROR;
+        return MEMORY_ALLOCATION_ERROR;
     }
 
     size_t normalizedPatternLength = strlen(normalizedPattern);
