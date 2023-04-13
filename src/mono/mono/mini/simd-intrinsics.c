@@ -1251,7 +1251,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 #endif
 
-	MonoClass *klass = cmethod->klass;
+	MonoClass* klass = fsig->param_count > 0 ? args[0]->klass : cmethod->klass;
 	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
 
 	if (cfg->verbose_level > 1) {
@@ -1471,7 +1471,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 
 		int instc0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
-		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, args[0]->klass, OP_XBINOP, instc0, arg0_type, fsig, args);
+		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
 		return emit_sum_vector (cfg, fsig->params [0], arg0_type, pairwise_multiply);
 #elif defined(TARGET_AMD64)
 		int instc =-1;
