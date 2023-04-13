@@ -301,13 +301,12 @@ static int GetNumericPatternNative(const char* pNumberFormat,
                                    int isNegative)
 {
     const int INVALID_FORMAT = -1;
-    const int MEMORY_ALLOCATION_ERROR = 7;
     const int MAX_DOTNET_NUMERIC_PATTERN_LENGTH = 6; // example: "(C n)" plus terminator
     char* normalizedPattern = NormalizeNumericPattern(pNumberFormat, isNegative);
 
     if (!normalizedPattern)
     {
-        return MEMORY_ALLOCATION_ERROR;
+        return INVALID_FORMAT;
     }
 
     size_t normalizedPatternLength = strlen(normalizedPattern);

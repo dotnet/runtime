@@ -53,7 +53,13 @@ namespace System.Globalization
             if (type == LocaleNumberData.CalendarType)
                 return 0;
 
-            return Interop.Globalization.GetLocaleInfoIntNative(_sWindowsName, (uint)type);
+            int value = Interop.Globalization.GetLocaleInfoIntNative(_sWindowsName, (uint)type);
+            if (value < 0)
+            {
+                Debug.Fail("[CultureData.GetLocaleInfoNative(LocaleNumberData)] failed");
+            }
+
+            return value;
         }
 
         private int[] GetLocaleInfoNative(LocaleGroupingData type)
