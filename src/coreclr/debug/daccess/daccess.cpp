@@ -8416,3 +8416,94 @@ HRESULT DacHandleTableMemoryEnumerator::Init()
 
     return S_OK;
 }
+
+void DacFreeRegionEnumerator::AddSingleSegment(const dac_heap_segment &curr, FreeRegionKind kind)
+{
+    SOSMemoryRegion mem = {0};
+    mem.Start = TO_CDADDR(curr.mem);
+    mem.ExtraData = (CLRDATA_ADDRESS)kind;
+
+    if (curr.mem < curr.committed)
+        mem.Size = TO_CDADDR(curr.committed) - mem.Start;
+
+    if (mem.Start)
+        mRegions.Add(mem);
+}
+
+void DacFreeRegionEnumerator::AddSegmentList(DPTR(dac_heap_segment) start, FreeRegionKind kind)
+{
+    int iterationMax = 2048;
+
+    DPTR(dac_heap_segment) curr = start;
+    while (curr != nullptr)
+    {
+        AddSingleSegment(*curr, kind);
+
+        curr = curr->next;
+        if (curr == start)
+            break;
+
+        if (iterationMax-- <= 0)
+            break;
+    }
+}
+
+void DacFreeRegionEnumerator::AddFreeList(DPTR(dac_region_free_list) free_list, FreeRegionKind kind)
+{
+    if (free_list != nullptr)
+    {
+        AddSegmentList(free_list->head_free_region, kind);
+    }
+}
+
+HRESULT DacFreeRegionEnumerator::Init()
+{
+    // Cap the number of free regions we will walk at a sensible number.  This is to protect against
+    // memory corruption, un-initialized data, or just a bug.
+    int count_free_region_kinds = g_gcDacGlobals->count_free_region_kinds;
+    count_free_region_kinds = min(count_free_region_kinds, 16);
+
+    unsigned int index = 0;
+    if (g_gcDacGlobals->global_free_huge_regions != nullptr)
+    {
+        DPTR(dac_region_free_list) global_free_huge_regions(g_gcDacGlobals->global_free_huge_regions);
+        AddFreeList(global_free_huge_regions, FreeRegionKind::FreeGlobalHugeRegion);
+    }
+
+    if (g_gcDacGlobals->global_regions_to_decommit != nullptr)
+    {
+        DPTR(dac_region_free_list) regionList(g_gcDacGlobals->global_regions_to_decommit);
+        if (regionList != nullptr)
+            for (int i = 0; i < count_free_region_kinds; i++, regionList++)
+                AddFreeList(regionList, FreeRegionKind::FreeGlobalRegion);
+    }
+    
+#if defined(FEATURE_SVR_GC)
+    if (GCHeapUtilities::IsServerHeap())
+    {
+        AddServerRegions();
+    }
+    else
+#endif //FEATURE_SVR_GC
+    {
+        DPTR(dac_region_free_list) regionList(g_gcDacGlobals->free_regions);
+        if (regionList != nullptr)
+            for (int i = 0; i < count_free_region_kinds; i++, regionList++)
+                AddFreeList(regionList, FreeRegionKind::FreeRegion);
+
+        
+        if (g_gcDacGlobals->freeable_soh_segment != nullptr)
+        {
+            DPTR(dac_heap_segment) freeable_soh_segment(*g_gcDacGlobals->freeable_soh_segment);
+            AddSegmentList(freeable_soh_segment, FreeRegionKind::FreeSohSegment);
+        }
+        
+        if (g_gcDacGlobals->freeable_uoh_segment != nullptr)
+        {
+            DPTR(dac_heap_segment) freeable_uoh_segment(*g_gcDacGlobals->freeable_uoh_segment);
+            AddSegmentList(freeable_uoh_segment, FreeRegionKind::FreeUohSegment);
+        }
+    }
+
+    return S_OK;
+}

@@ -1213,7 +1213,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocator, int count, CLRDATA_ADDRESS *pLoaderHeaps, LoaderHeapKind *pKinds, int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetHandleTableMemoryRegions(ISOSMemoryEnum **ppEnum);
     virtual HRESULT STDMETHODCALLTYPE GetGCBookkeepingMemoryRegions(ISOSMemoryEnum **ppEnum);
-    virtual HRESULT STDMETHODCALLTYPE GetGCFreeRegions(unsigned int count, CLRDATA_ADDRESS region[], unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetGCFreeRegions(ISOSMemoryEnum **ppEnum);
     virtual HRESULT STDMETHODCALLTYPE LockedFlush();
 
     //
@@ -1337,9 +1337,6 @@ public:
     HRESULT EnumMemDumpAppDomainInfo(CLRDataEnumMemoryFlags flags);
     HRESULT EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags);
     HRESULT EnumMemCLRMainModuleInfo();
-
-    void AddFreeRegion(const dac_region_free_list &free_list, unsigned int count, CLRDATA_ADDRESS regions[], unsigned int &index);
-    void GetServerFreeRegions(unsigned int count, CLRDATA_ADDRESS regions[], unsigned int &index);
 
     bool ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess = true);
     bool DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* buffer);
@@ -1997,6 +1994,18 @@ class DacGCBookkeepingEnumerator : public DacMemoryEnumerator
 {
 public:
     virtual HRESULT Init();
+};
+
+class DacFreeRegionEnumerator : public DacMemoryEnumerator
+{
+public:
+    virtual HRESULT Init();
+
+private:
+    void AddSingleSegment(const dac_heap_segment &seg, FreeRegionKind kind);
+    void AddSegmentList(DPTR(dac_heap_segment) seg, FreeRegionKind kind);
+    void AddFreeList(DPTR(dac_region_free_list) freeList, FreeRegionKind kind);
+    void AddServerRegions();
 };
 
 struct DacGcReference;

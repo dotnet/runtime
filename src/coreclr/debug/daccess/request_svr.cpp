@@ -459,7 +459,7 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
     return S_OK;
 }
 
-void ClrDataAccess::GetServerFreeRegions(unsigned int count, CLRDATA_ADDRESS regions[], unsigned int &index)
+void DacFreeRegionEnumerator::AddServerRegions()
 {
     // Cap the number of free regions we will walk at a sensible number.  This is to protect against
     // memory corruption, un-initialized data, or just a bug.
@@ -474,7 +474,13 @@ void ClrDataAccess::GetServerFreeRegions(unsigned int count, CLRDATA_ADDRESS reg
         
         dac_gc_heap heap = LoadGcHeapData(heapAddress);
         for (int i = 0; i < count_free_region_kinds; i++)
-            AddFreeRegion(heap.free_regions[i], count, regions, index);
+            AddSegmentList(heap.free_regions[i].head_free_region, FreeRegionKind::FreeRegion);
+        
+        AddSingleSegment(heap.freeable_soh_segment, FreeRegionKind::FreeSohSegment);
+        AddSegmentList(heap.freeable_soh_segment.next, FreeRegionKind::FreeSohSegment);
+        
+        AddSingleSegment(heap.freeable_uoh_segment, FreeRegionKind::FreeUohSegment);
+        AddSegmentList(heap.freeable_uoh_segment.next, FreeRegionKind::FreeUohSegment);
     }
 }
 

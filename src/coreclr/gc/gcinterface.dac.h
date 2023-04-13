@@ -205,7 +205,7 @@ public:
     dac_generation generation_table[1];
 };
 
-#define GENERATION_TABLE_FIELD_INDEX 19
+#define GENERATION_TABLE_FIELD_INDEX 21
 
 // Unlike other DACized structures, these types are loaded manually in the debugger.
 // To avoid misuse, pointers to them are explicitly casted to these unused type.

@@ -205,6 +205,7 @@ typedef int VCSHeapType;
 typedef enum { TYPEDEFTOMETHODTABLE, TYPEREFTOMETHODTABLE } ModuleMapType;
 typedef enum {IndcellHeap, LookupHeap, ResolveHeap, DispatchHeap, CacheEntryHeap, VtableHeap} VCSHeapType;
 typedef enum {LoaderHeapKindNormal = 0, LoaderHeapKindExplicitControl = 1} LoaderHeapKind;
+typedef enum {FreeUnknownRegion = 0, FreeGlobalHugeRegion = 1, FreeGlobalRegion = 2, FreeRegion = 3, FreeSohSegment = 4, FreeUohSegment = 5 } FreeRegionKind;
 typedef void ( *MODULEMAPTRAVERSE )(
     UINT index,
     CLRDATA_ADDRESS methodTable,
@@ -3240,9 +3241,7 @@ EXTERN_C const IID IID_ISOSDacInterface13;
             ISOSMemoryEnum **ppEnum) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetGCFreeRegions( 
-            unsigned int count,
-            CLRDATA_ADDRESS region[  ],
-            unsigned int *pNeeded) = 0;
+            ISOSMemoryEnum **ppEnum) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE LockedFlush( void) = 0;
     };
@@ -3302,9 +3301,7 @@ EXTERN_C const IID IID_ISOSDacInterface13;
         
         HRESULT ( STDMETHODCALLTYPE *GetGCFreeRegions )( 
             ISOSDacInterface13 * This,
-            unsigned int count,
-            CLRDATA_ADDRESS region[  ],
-            unsigned int *pNeeded);
+            ISOSMemoryEnum **ppEnum);
         
         HRESULT ( STDMETHODCALLTYPE *LockedFlush )( 
             ISOSDacInterface13 * This);

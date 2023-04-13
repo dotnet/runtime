@@ -5350,74 +5350,30 @@ HRESULT ClrDataAccess::GetGCBookkeepingMemoryRegions(ISOSMemoryEnum** ppEnum)
     return hr;
 }
 
-void ClrDataAccess::AddFreeRegion(const dac_region_free_list &free_list, unsigned int count, CLRDATA_ADDRESS regions[], unsigned int& index)
+
+HRESULT ClrDataAccess::GetGCFreeRegions(ISOSMemoryEnum **ppEnum)
 {
-    // Cap the number of regions we will walk in case we hit memory corruption that
-    // puts us into an infinite loop.
-    int maxRegions = 4096;
-
-    DPTR(dac_heap_segment) seg = free_list.head_free_region;
-    while (seg != nullptr)
-    {
-        if (regions && index < count)
-            regions[index++] = seg.GetAddr();
-        else
-            index++;
-
-        seg = seg->next;
-        if (seg == free_list.head_free_region)
-            break;
-
-        if (--maxRegions <= 0)
-            break;
-    }
-}
-
-HRESULT ClrDataAccess::GetGCFreeRegions(unsigned int count, CLRDATA_ADDRESS regions[], unsigned int *pNeeded)
-{
-    if (!pNeeded)
+    if (!ppEnum)
         return E_POINTER;
 
     SOSDacEnter();
 
-    // Cap the number of free regions we will walk at a sensible number.  This is to protect against
-    // memory corruption, un-initialized data, or just a bug.
-    int count_free_region_kinds = g_gcDacGlobals->count_free_region_kinds;
-    count_free_region_kinds = min(count_free_region_kinds, 16);
+    DacFreeRegionEnumerator* frEnum = new (nothrow) DacFreeRegionEnumerator();
+    if (frEnum)
+    {
+        hr = frEnum->Init();
 
-    unsigned int index = 0;
-    if (g_gcDacGlobals->global_free_huge_regions != nullptr)
-    {
-        DPTR(dac_region_free_list) global_free_huge_regions(g_gcDacGlobals->global_free_huge_regions);
-        AddFreeRegion(*global_free_huge_regions, count, regions, index);
-    }
+        if (SUCCEEDED(hr))
+            hr = frEnum->QueryInterface(__uuidof(ISOSMemoryEnum), (void**)ppEnum);
 
-    if (g_gcDacGlobals->global_regions_to_decommit != nullptr)
-    {
-        DPTR(dac_region_free_list) regionList(g_gcDacGlobals->global_regions_to_decommit);
-        for (int i = 0; i < count_free_region_kinds; i++, regionList++)
-            AddFreeRegion(*regionList, count, regions, index);
-    }
-    
-#if defined(FEATURE_SVR_GC)
-    if (GCHeapUtilities::IsServerHeap())
-    {
-        GetServerFreeRegions(count, regions, index);
+        if (FAILED(hr))
+            delete frEnum;
     }
     else
-#endif //FEATURE_SVR_GC
     {
-        DPTR(dac_region_free_list) regionList(g_gcDacGlobals->free_regions);
-        if (regionList != nullptr)
-            for (int i = 0; i < count_free_region_kinds; i++, regionList++)
-                AddFreeRegion(*regionList, count, regions, index);
+        hr = E_OUTOFMEMORY;
     }
 
-    if (regions)
-        *pNeeded = min(index, count);
-    else
-        *pNeeded = index;
-    
     SOSDacLeave();
     return hr;
 }
