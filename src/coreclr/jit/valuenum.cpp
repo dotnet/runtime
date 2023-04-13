@@ -10617,9 +10617,14 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     CORINFO_CLASS_HANDLE handle    = gtGetClassHandle(addr, &isExact, &isNonNull);
                     if (isExact && (handle != NO_CLASS_HANDLE))
                     {
-                        ValueNum handleVN = vnStore->VNForHandle((ssize_t)handle, GTF_ICON_CLASS_HDL);
-                        tree->gtVNPair    = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), addrXvnp);
-                        returnsTypeHandle = true;
+                        // Make sure the "exact" handle is not shared
+                        if (info.compCompHnd->compareTypesForEquality(handle, handle) == TypeCompareState::Must)
+                        {
+                            JITDUMP("IND(obj) is actually a class handle for %s\n", eeGetClassName(handle));
+                            ValueNum handleVN = vnStore->VNForHandle((ssize_t)handle, GTF_ICON_CLASS_HDL);
+                            tree->gtVNPair    = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), addrXvnp);
+                            returnsTypeHandle = true;
+                        }
                     }
                     else
                     {
