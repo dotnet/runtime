@@ -15,18 +15,6 @@ namespace System
         where TSelf : unmanaged, IUtfChar<TSelf>
     {
         /// <summary>Casts the specified value to this type.</summary>
-        public static abstract TSelf CastFrom(byte value);
-
-        /// <summary>Casts the specified value to this type.</summary>
-        public static abstract TSelf CastFrom(char value);
-
-        /// <summary>Casts the specified value to this type.</summary>
-        public static abstract TSelf CastFrom(int value);
-
-        /// <summary>Casts the specified value to this type.</summary>
-        public static abstract TSelf CastFrom(uint value);
-
-        /// <summary>Casts the specified value to this type.</summary>
-        public static abstract TSelf CastFrom(ulong value);
+        public static abstract TSelf CastFrom<TFrom>(TFrom value) where TFrom : unmanaged;
     }
 }

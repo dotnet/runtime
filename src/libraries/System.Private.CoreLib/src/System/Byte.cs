@@ -1208,10 +1208,12 @@ namespace System
         // IUtfChar
         //
 
-        static byte IUtfChar<byte>.CastFrom(byte value) => value;
-        static byte IUtfChar<byte>.CastFrom(char value) => (byte)value;
-        static byte IUtfChar<byte>.CastFrom(int value) => (byte)value;
-        static byte IUtfChar<byte>.CastFrom(uint value) => (byte)value;
-        static byte IUtfChar<byte>.CastFrom(ulong value) => (byte)value;
+        static byte IUtfChar<byte>.CastFrom<TFrom>(TFrom value) =>
+            typeof(TFrom) == typeof(byte) ? (byte)(object)value :
+            typeof(TFrom) == typeof(char) ? (byte)(char)(object)value :
+            typeof(TFrom) == typeof(int) ? (byte)(int)(object)value :
+            typeof(TFrom) == typeof(uint) ? (byte)(uint)(object)value :
+            typeof(TFrom) == typeof(ulong) ? (byte)(ulong)(object)value :
+            throw new Exception($"Unknown type {value} {value.GetType()}");
     }
 }

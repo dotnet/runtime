@@ -2016,10 +2016,12 @@ namespace System
         // IUtfChar
         //
 
-        static char IUtfChar<char>.CastFrom(byte value) => (char)value;
-        static char IUtfChar<char>.CastFrom(char value) => value;
-        static char IUtfChar<char>.CastFrom(int value) => (char)value;
-        static char IUtfChar<char>.CastFrom(uint value) => (char)value;
-        static char IUtfChar<char>.CastFrom(ulong value) => (char)value;
+        static char IUtfChar<char>.CastFrom<TFrom>(TFrom value) =>
+            typeof(TFrom) == typeof(byte) ? (char)(byte)(object)value :
+            typeof(TFrom) == typeof(char) ? (char)(object)value :
+            typeof(TFrom) == typeof(int) ? (char)(int)(object)value :
+            typeof(TFrom) == typeof(uint) ? (char)(uint)(object)value :
+            typeof(TFrom) == typeof(ulong) ? (char)(ulong)(object)value :
+            throw new Exception($"Unknown type {value} {value.GetType()}");
     }
 }
