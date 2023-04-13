@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -28,7 +29,7 @@ namespace NativeExports.ComInterfaceGenerator
             return (void*)ptr;
         }
 
-        class MyComWrapper : NonGeneratedStrategyBasedComWrappers
+        class MyComWrapper : ComWrappers
         {
             static void* _s_comInterface1VTable = null;
             static void* GetIntArrayVTable
@@ -60,6 +61,9 @@ namespace NativeExports.ComInterfaceGenerator
                 count = 0;
                 return null;
             }
+
+            protected override object? CreateObject(nint externalComObject, CreateObjectFlags flags) => throw new NotImplementedException();
+            protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
         }
         class ImplementingObject : IGetIntArray
         {

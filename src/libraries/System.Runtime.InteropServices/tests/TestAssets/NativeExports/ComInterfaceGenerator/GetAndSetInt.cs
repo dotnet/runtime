@@ -30,7 +30,7 @@ namespace NativeExports.ComInterfaceGenerator
             return (void*)ptr;
         }
 
-        class MyComWrapper : NonGeneratedStrategyBasedComWrappers
+        class MyComWrapper : ComWrappers
         {
             static void* _s_comInterface1VTable = null;
             static void* s_comInterface1VTable
@@ -63,6 +63,9 @@ namespace NativeExports.ComInterfaceGenerator
                 count = 0;
                 return null;
             }
+
+            protected override object? CreateObject(nint externalComObject, CreateObjectFlags flags) => throw new NotImplementedException();
+            protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
         }
 
         class ImplementingObject : IGetAndSetInt
