@@ -24,7 +24,7 @@
     </ItemGroup>
 
     <MSBuild Projects="@(TaskProject)"
-             Properties="Configuration=Debug;Platform=AnyCPU"
+             Properties="Configuration=Debug;LibrariesConfiguration=$(LibrariesConfiguration);Platform=AnyCPU"
              Targets="Build" />
 
     <WriteLinesToFile File="$(TasksIntermediateFile)"
