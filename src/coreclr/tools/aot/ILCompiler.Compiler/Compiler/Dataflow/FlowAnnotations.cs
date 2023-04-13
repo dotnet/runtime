@@ -39,6 +39,7 @@ namespace ILLink.Shared.TrimAnalysis
             _logger = logger;
             ILProvider = ilProvider;
             CompilerGeneratedState = compilerGeneratedState;
+            compilerGeneratedState.InitializeFlowAnnotations(this);
         }
 
         /// <summary>
