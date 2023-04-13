@@ -561,12 +561,8 @@ namespace System.Runtime
         internal static extern IntPtr RhGetOSModuleFromEEType(IntPtr pEEType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticStorageForModule")]
-        internal static extern unsafe object[] RhGetThreadStaticStorageForModule(int moduleIndex);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhSetThreadStaticStorageForModule")]
-        internal static extern unsafe bool RhSetThreadStaticStorageForModule(object[] storage, int moduleIndex);
+        [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticStorage")]
+        internal static extern ref object[][] RhGetThreadStaticStorage();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]

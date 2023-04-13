@@ -473,6 +473,7 @@ while :; do
         hostarch|-hostarch)
             if [[ -n "$2" ]]; then
                 __HostArch="$2"
+                __ExplicitHostArch=1
                 shift
             else
                 echo "ERROR: 'hostarch' requires a non-empty option argument"

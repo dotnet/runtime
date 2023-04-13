@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Security.Principal;
@@ -229,6 +230,8 @@ namespace System.Security.Claims
             SafeAddClaims(other._instanceClaims);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected ClaimsIdentity(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -242,6 +245,8 @@ namespace System.Security.Claims
         /// The <see cref="SerializationInfo"/> to read from.
         /// </param>
         /// <exception cref="ArgumentNullException">Thrown is the <paramref name="info"/> is null.</exception>
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected ClaimsIdentity(SerializationInfo info)
         {
             throw new PlatformNotSupportedException();

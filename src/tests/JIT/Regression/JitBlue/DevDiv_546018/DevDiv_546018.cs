@@ -13,12 +13,14 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Test
+public class Test
 {
     static Random random;
 
-    public static int Main ()
+    [Fact]
+    public static int TestEntryPoint()
     {
         random = new Random ();
         VectorSingle_op_Division_VectorSingle_VectorSingle (5);
@@ -26,7 +28,7 @@ class Test
     }
 
     [MethodImpl (MethodImplOptions.NoInlining)]
-    public static void VectorSingle_op_Division_VectorSingle_VectorSingle (long iterations)
+    internal static void VectorSingle_op_Division_VectorSingle_VectorSingle (long iterations)
     {
         Vector<float> dividend = CreateRandomVector ();
         Vector<float> divisor = CreateRandomVector ();

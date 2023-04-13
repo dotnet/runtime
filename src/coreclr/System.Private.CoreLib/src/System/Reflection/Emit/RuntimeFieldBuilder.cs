@@ -20,12 +20,8 @@ namespace System.Reflection.Emit
         internal RuntimeFieldBuilder(RuntimeTypeBuilder typeBuilder, string fieldName, Type type,
             Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
-            ArgumentException.ThrowIfNullOrEmpty(fieldName);
-
             if (fieldName[0] == '\0')
                 throw new ArgumentException(SR.Argument_IllegalName, nameof(fieldName));
-
-            ArgumentNullException.ThrowIfNull(type);
 
             if (type == typeof(void))
                 throw new ArgumentException(SR.Argument_BadFieldType);

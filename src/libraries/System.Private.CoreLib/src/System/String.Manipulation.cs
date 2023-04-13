@@ -2101,7 +2101,7 @@ namespace System
             string result = FastAllocateString(length);
 
             Buffer.Memmove(
-                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                elementCount: (uint)length,
                 destination: ref result._firstChar,
                 source: ref Unsafe.Add(ref _firstChar, (nint)(uint)startIndex /* force zero-extension */));
 
@@ -2142,10 +2142,24 @@ namespace System
         // Trims the whitespace from both ends of the string.  Whitespace is defined by
         // char.IsWhiteSpace.
         //
-        public string Trim() => TrimWhiteSpaceHelper(TrimType.Both);
+        public string Trim()
+        {
+            if (Length == 0 || (!char.IsWhiteSpace(_firstChar) && !char.IsWhiteSpace(this[^1])))
+            {
+                return this;
+            }
+            return TrimWhiteSpaceHelper(TrimType.Both);
+        }
 
         // Removes a set of characters from the beginning and end of this string.
-        public unsafe string Trim(char trimChar) => TrimHelper(&trimChar, 1, TrimType.Both);
+        public unsafe string Trim(char trimChar)
+        {
+            if (Length == 0 || (_firstChar != trimChar && this[^1] != trimChar))
+            {
+                return this;
+            }
+            return TrimHelper(&trimChar, 1, TrimType.Both);
+        }
 
         // Removes a set of characters from the beginning and end of this string.
         public unsafe string Trim(params char[]? trimChars)

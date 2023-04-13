@@ -147,6 +147,21 @@
         <target state="translated">Metot, 'GeneratedComInterface' özniteliğinden farklı bir kısmi bildirimde bildirilmiş.</target>
         <note />
       </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesDescription">
+        <source>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</source>
+        <target state="translated">'GeneratedComInterfaceAttribute' özniteliğine sahip arabirim yalnızca, 'GeneratedComInterfaceAttribute' özniteliğine sahip en fazla bir başka arabirimden türetilebilir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesMessage">
+        <source>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</source>
+        <target state="translated">'{0}' arabirimi, 'GeneratedComInterfaceAttribute' özniteliğine sahip iki veya daha fazla arabirimden türetildi.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesTitle">
+        <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
+        <target state="translated">Belirtilen arabirim 'GeneratedComInterfaceAttribute' özniteliğine sahip iki veya daha fazla arabirimden türetildi.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
         <target state="translated">Kaynak tarafından oluşturulan P/Invokes tarafından desteklenmeyen türler için, elde edilen P/Invoke, belirtilen türü sıralamak için temel alınan çalışma zamanını kullanır.</target>

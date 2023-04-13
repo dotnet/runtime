@@ -1400,7 +1400,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     int oceOffset = GetOffset(section.RelativeVirtualAddress);
                     string ownerCompositeExecutable = Encoding.UTF8.GetString(Image, oceOffset, section.Size - 1); // exclude the zero terminator
-                    _ownerCompositeExecutable = ownerCompositeExecutable.ToEscapedString();
+                    _ownerCompositeExecutable = ownerCompositeExecutable.ToEscapedString(placeQuotes: false);
                     break;
                 }
             }

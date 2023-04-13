@@ -147,6 +147,21 @@
         <target state="translated">Die Methode wird in einer anderen partiellen Deklaration als das GeneratedComInterface-Attribut deklariert.</target>
         <note />
       </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesDescription">
+        <source>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</source>
+        <target state="translated">Eine "GeneratedComInterfaceAttribute"-attributierte Schnittstelle kann nur von höchstens einer weiteren "GeneratedComInterfaceAttribute"-Attributschnittstelle abgeleitet werden.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesMessage">
+        <source>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</source>
+        <target state="translated">Die Schnittstelle '{0}' wird von mindestens zwei Schnittstellen abgeleitet, die mit "GeneratedComInterfaceAttribute" attributiert sind.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesTitle">
+        <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
+        <target state="translated">Die angegebene Schnittstelle wird von mindestens zwei Schnittstellen abgeleitet, die "GeneratedComInterfaceAttribute" zugeordnet sind.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
         <target state="translated">Bei Typen, die von dquellgenerierten P/Invokes nicht unterstützt werden, basiert der resultierende P/Invoke auf der zugrunde liegenden Laufzeit, um den angegebenen Typ zu marshallen.</target>

@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class Test
 {
@@ -12,7 +13,8 @@ public class Test
     /// </summary>
     /// <param name="args"></param>
     /// <returns></returns>
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double expected = -4.54403989493052E+18;
         double value = -66876.654654;

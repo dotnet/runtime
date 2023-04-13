@@ -179,6 +179,51 @@ public class ComparisonTestAnd3Chains
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void consume<T>(T a1, T a2, T a3) {}
+
+    // If conditions that are consumed.
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void Le_byte_3_consume(byte a1, byte a2, byte a3) {
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #10
+        //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #11, nzc, {{gt|le}}
+        //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #12, nzc, {{gt|le}}
+        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        if (a1 <= 10 || a2 <= 11 || a3 <= 12) { a1 = 10; }
+        consume<byte>(a1, a2, a3);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void Gt_short_3_consume(short a1, short a2, short a3) {
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #13
+        //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #14, 0, {{gt|le}}
+        //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #15, 0, {{gt|le}}
+        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        if (a1 <= 13 && a2 <= 14 && a3 <= 15) { a1 = 10; }
+        consume<short>(a1, a2, a3);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void Ge_int_3_consume(int a1, int a2, int a3) {
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #16
+        //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #17, 0, {{gt|le}}
+        //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #18, nzc, {{gt|le}}
+        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        if (a1 <= 16 && a2 <= 17 || a3 <= 18) { a1 = 10; }
+        consume<int>(a1, a2, a3);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void Eq_else_long_3_consume(long a1, long a2, long a3) {
+        //ARM64-FULL-LINE: cmp {{x[0-9]+}}, #20
+        //ARM64-FULL-LINE-NEXT: ccmp {{x[0-9]+}}, #21, 0, {{eq|ne}}
+        //ARM64-FULL-LINE-NEXT: ccmp {{x[0-9]+}}, #19, z, {{eq|ne}}
+        //ARM64-FULL-LINE-NEXT: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{eq|ne}}
+        if (a1 == 19 || a2 == 20 && a3 == 21) { a1 = 10; } else { a1 = 12; }
+        consume<long>(a1, a2, a3);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Main()
     {
         if (!Eq_byte_3(10, 11, 12))
@@ -456,6 +501,11 @@ public class ComparisonTestAnd3Chains
             Console.WriteLine("ComparisonTestAnd2Chains:Le_double_3(10.5, 11.5, 12.5) failed");
             return 101;
         }
+
+        Le_byte_3_consume(101, 102, 103);
+        Gt_short_3_consume(104, 105, 106);
+        Ge_int_3_consume(107, 108, 109);
+        Eq_else_long_3_consume(110, 111, 112);
 
         Console.WriteLine("PASSED");
         return 100;

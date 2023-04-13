@@ -512,7 +512,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     GenTree* src     = blkNode->Data();
     unsigned size    = blkNode->Size();
 
-    const bool isDstAddrLocal = dstAddr->OperIsLocalAddr();
+    const bool isDstAddrLocal = dstAddr->OperIs(GT_LCL_ADDR);
 
     if (blkNode->OperIsInitBlkOp())
     {
@@ -596,7 +596,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         unsigned copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
         if (blkNode->OperIs(GT_STORE_OBJ))
         {
-            if (!blkNode->AsObj()->GetLayout()->HasGCPtr())
+            if (!blkNode->AsBlk()->GetLayout()->HasGCPtr())
             {
                 blkNode->SetOper(GT_STORE_BLK);
             }
@@ -647,7 +647,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIsLocalAddr())
+    if (addr->OperIs(GT_LCL_ADDR))
     {
         addr->SetContained();
         return;
@@ -701,7 +701,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 
     if (src->TypeIs(TYP_STRUCT))
     {
-        // STRUCT args (FIELD_LIST / OBJ / LCL_VAR / LCL_FLD) will always be contained.
+        // STRUCT args (FIELD_LIST / BLK / LCL_VAR / LCL_FLD) will always be contained.
         MakeSrcContained(putArgNode, src);
 
         if (src->OperIs(GT_LCL_VAR))
@@ -1108,6 +1108,28 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector128_op_Inequality:
         {
             return LowerHWIntrinsicCmpOp(node, GT_NE);
+        }
+
+        case NI_Vector128_WithLower:
+        case NI_Vector128_WithUpper:
+        {
+            // Converts to equivalent managed code:
+            //   AdvSimd.InsertScalar(vector.AsUInt64(), 0, value.AsUInt64()).As<ulong, T>();
+            // -or-
+            //   AdvSimd.InsertScalar(vector.AsUInt64(), 1, value.AsUInt64()).As<ulong, T>();
+
+            int index = (intrinsicId == NI_Vector128_WithUpper) ? 1 : 0;
+
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            GenTree* op3 = comp->gtNewIconNode(index);
+            BlockRange().InsertBefore(node, op3);
+            LowerNode(op3);
+
+            node->SetSimdBaseJitType(CORINFO_TYPE_ULONG);
+            node->ResetHWIntrinsicId(NI_AdvSimd_InsertScalar, comp, op1, op3, op2);
+            break;
         }
 
         case NI_AdvSimd_FusedMultiplyAddScalar:
@@ -1981,10 +2003,10 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
             MakeSrcContained(indirNode, addr);
         }
     }
-    else if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+    else if (addr->OperIs(GT_LCL_ADDR))
     {
         // These nodes go into an addr mode:
-        // - GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR is a stack addr mode.
+        // - GT_LCL_ADDR is a stack addr mode.
         MakeSrcContained(indirNode, addr);
     }
 #ifdef TARGET_ARM64
@@ -1993,6 +2015,10 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         // These nodes go into an addr mode:
         // - GT_CLS_VAR_ADDR turns into a constant.
         // make this contained, it turns into a constant that goes into an addr mode
+        MakeSrcContained(indirNode, addr);
+    }
+    else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
+    {
         MakeSrcContained(indirNode, addr);
     }
 #endif // TARGET_ARM64
@@ -2466,6 +2492,67 @@ void Lowering::ContainCheckNeg(GenTreeOp* neg)
         if (IsInvariantInRange(childNode, neg))
         {
             MakeSrcContained(neg, childNode);
+        }
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// Try converting SELECT/SELECTCC to CINC/CINCCC. Conversion is possible only if
+// both the trueVal and falseVal are integral constants and abs(trueVal - falseVal) = 1.
+//
+// Arguments:
+//     select - The select node that is now SELECT or SELECTCC
+//     cond   - The condition node that SELECT or SELECTCC uses
+//
+void Lowering::TryLowerCselToCinc(GenTreeOp* select, GenTree* cond)
+{
+    assert(select->OperIs(GT_SELECT, GT_SELECTCC));
+
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+    size_t   op1Val   = (size_t)trueVal->AsIntCon()->IconValue();
+    size_t   op2Val   = (size_t)falseVal->AsIntCon()->IconValue();
+
+    if (op1Val + 1 == op2Val || op2Val + 1 == op1Val)
+    {
+        const bool shouldReverseCondition = op1Val + 1 == op2Val;
+
+        // Create a cinc node, insert it and update the use.
+        if (select->OperIs(GT_SELECT))
+        {
+            if (shouldReverseCondition)
+            {
+                // Reverse the condition so that op2 will be selected
+                if (!cond->OperIsCompare())
+                {
+                    // Non-compare nodes add additional GT_NOT node after reversing.
+                    // This would remove gains from this optimisation so don't proceed.
+                    return;
+                }
+                select->gtOp2    = select->gtOp1;
+                GenTree* revCond = comp->gtReverseCond(cond);
+                assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
+            }
+            select->gtOp1 = cond->AsOp();
+            select->SetOper(GT_CINC);
+            DISPTREERANGE(BlockRange(), select);
+        }
+        else
+        {
+            GenTreeOpCC* selectcc   = select->AsOpCC();
+            GenCondition selectCond = selectcc->gtCondition;
+            if (shouldReverseCondition)
+            {
+                // Reverse the condition so that op2 will be selected
+                selectcc->gtCondition = GenCondition::Reverse(selectCond);
+            }
+            else
+            {
+                std::swap(selectcc->gtOp1, selectcc->gtOp2);
+            }
+            BlockRange().Remove(selectcc->gtOp2);
+            selectcc->SetOper(GT_CINCCC);
+            DISPTREERANGE(BlockRange(), selectcc);
         }
     }
 }

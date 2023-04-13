@@ -30,8 +30,12 @@ export function init_globalization() {
     }
 
     const invariantEnv = "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT";
+    const hybridEnv = "DOTNET_SYSTEM_GLOBALIZATION_HYBRID";
     const env_variables = runtimeHelpers.config.environmentVariables!;
-    if (env_variables[invariantEnv] === undefined && runtimeHelpers.invariantMode) {
+    if (env_variables[hybridEnv] === undefined && runtimeHelpers.config.globalizationMode === "hybrid") {
+        env_variables[hybridEnv] = "1";
+    }
+    else if (env_variables[invariantEnv] === undefined && runtimeHelpers.invariantMode) {
         env_variables[invariantEnv] = "1";
     }
     if (env_variables["TZ"] === undefined) {

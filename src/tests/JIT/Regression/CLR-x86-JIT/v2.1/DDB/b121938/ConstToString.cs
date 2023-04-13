@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class ConstToString
 {
@@ -66,7 +67,8 @@ public class ConstToString
         }
         return iret;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int iret = 100;
         if (IntConstToString() != 100)
