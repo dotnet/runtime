@@ -1011,7 +1011,7 @@ namespace System.Text.Json.SourceGeneration
                 if (propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
                 {
                     ignoredMembers ??= new();
-                    ignoredMembers.Add(propGenSpec.MemberName, memberInfo);
+                    ignoredMembers[propGenSpec.MemberName] = memberInfo;
                 }
             }
 
