@@ -359,10 +359,8 @@ namespace System.Collections.Frozen.Tests
 
     public abstract class FrozenDictionary_Generic_Tests_string_string : FrozenDictionary_Generic_Tests<string, string>
     {
-        protected override KeyValuePair<string, string> CreateT(int seed)
-        {
-            return new KeyValuePair<string, string>(CreateTKey(seed), CreateTKey(seed + 500));
-        }
+        protected override KeyValuePair<string, string> CreateT(int seed) =>
+            new KeyValuePair<string, string>(CreateTKey(seed), CreateTKey(seed + 500));
 
         protected override string CreateTKey(int seed)
         {
@@ -458,10 +456,8 @@ namespace System.Collections.Frozen.Tests
 
     public class FrozenDictionary_Generic_Tests_SimpleClass_SimpleClass : FrozenDictionary_Generic_Tests<SimpleClass, SimpleClass>
     {
-        protected override KeyValuePair<SimpleClass, SimpleClass> CreateT(int seed)
-        {
-            return new KeyValuePair<SimpleClass, SimpleClass>(CreateTKey(seed), CreateTValue(seed + 500));
-        }
+        protected override KeyValuePair<SimpleClass, SimpleClass> CreateT(int seed) =>
+            new KeyValuePair<SimpleClass, SimpleClass>(CreateTKey(seed), CreateTValue(seed + 500));
 
         protected override SimpleClass CreateTKey(int seed)
         {
@@ -486,12 +482,41 @@ namespace System.Collections.Frozen.Tests
 
     public class FrozenDictionary_Generic_Tests_SimpleStruct_int : FrozenDictionary_Generic_Tests<SimpleStruct, int>
     {
-        protected override KeyValuePair<SimpleStruct, int> CreateT(int seed)
-        {
-            return new KeyValuePair<SimpleStruct, int>(CreateTKey(seed), CreateTValue(seed + 500));
-        }
+        protected override KeyValuePair<SimpleStruct, int> CreateT(int seed) =>
+            new KeyValuePair<SimpleStruct, int>(CreateTKey(seed), CreateTValue(seed + 500));
 
         protected override SimpleStruct CreateTKey(int seed) => new SimpleStruct { Value = seed + 1 };
+
+        protected override int CreateTValue(int seed) => seed;
+
+        protected override bool DefaultValueAllowed => true;
+
+        protected override bool AllowVeryLargeSizes => false; // hash code contention leads to longer running times
+    }
+
+    public class FrozenDictionary_Generic_Tests_SimpleNonComparableStruct_int : FrozenDictionary_Generic_Tests<SimpleNonComparableStruct, int>
+    {
+        protected override KeyValuePair<SimpleNonComparableStruct, int> CreateT(int seed) =>
+            new KeyValuePair<SimpleNonComparableStruct, int>(CreateTKey(seed), CreateTValue(seed + 500));
+
+        protected override SimpleNonComparableStruct CreateTKey(int seed) => new SimpleNonComparableStruct { Value = seed + 1 };
+
+        protected override int CreateTValue(int seed) => seed;
+
+        protected override bool DefaultValueAllowed => true;
+
+        protected override bool AllowVeryLargeSizes => false; // hash code contention leads to longer running times
+    }
+
+    public class FrozenDictionary_Generic_Tests_ValueTupleSimpleNonComparableStruct_int : FrozenDictionary_Generic_Tests<ValueTuple<SimpleNonComparableStruct,SimpleNonComparableStruct>, int>
+    {
+        protected override KeyValuePair<ValueTuple<SimpleNonComparableStruct, SimpleNonComparableStruct>, int> CreateT(int seed) =>
+            new KeyValuePair<ValueTuple<SimpleNonComparableStruct, SimpleNonComparableStruct>, int>(CreateTKey(seed), CreateTValue(seed + 500));
+
+        protected override ValueTuple<SimpleNonComparableStruct, SimpleNonComparableStruct> CreateTKey(int seed) =>
+            new ValueTuple<SimpleNonComparableStruct, SimpleNonComparableStruct>(
+                new SimpleNonComparableStruct { Value = seed + 1 },
+                new SimpleNonComparableStruct { Value = seed + 1 });
 
         protected override int CreateTValue(int seed) => seed;
 
@@ -512,6 +537,18 @@ namespace System.Collections.Frozen.Tests
 
         public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is SimpleStruct other && Equals(other);
+    }
+
+    public struct SimpleNonComparableStruct : IEquatable<SimpleNonComparableStruct>
+    {
+        public int Value { get; set; }
+
+        public bool Equals(SimpleNonComparableStruct other) => Value == other.Value;
+
+        public override int GetHashCode() => 0; // to force hashcode contention in implementation
+
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is SimpleNonComparableStruct other && Equals(other);
     }
 
     public sealed class NonDefaultEqualityComparer<TKey> : IEqualityComparer<TKey>
