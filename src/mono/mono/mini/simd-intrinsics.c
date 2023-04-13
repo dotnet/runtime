@@ -1238,7 +1238,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_GetElement:
 		case SN_GetLower:
 		case SN_GetUpper:
-		case SN_Narrow:
 		case SN_Shuffle:
 		case SN_ToVector128:
 		case SN_ToVector128Unsafe:
@@ -1650,8 +1649,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (size == 16) {
 			switch (arg0_type) {
 			case MONO_TYPE_R8: {
-				MonoInst *ins = emit_simd_ins (cfg, arg_class, OP_ARM64_FCVTN, args [0]->dreg, -1);
-				return emit_simd_ins (cfg, arg_class, OP_ARM64_FCVTN2, ins->dreg, args [1]->dreg);
+				MonoInst* ins = emit_simd_ins (cfg, arg_class, OP_ARM64_FCVTN, args [0]->dreg, -1);
+				ins->inst_c1 = arg0_type;
+				MonoInst* ret = emit_simd_ins (cfg, arg_class, OP_ARM64_FCVTN2, ins->dreg, args [1]->dreg);
+				ret->inst_c1 = arg0_type;
+				return ret;
 			}
 			case MONO_TYPE_I2:
 			case MONO_TYPE_I4:
@@ -1659,13 +1661,19 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			case MONO_TYPE_U2:
 			case MONO_TYPE_U4:
 			case MONO_TYPE_U8: {
-				MonoInst *ins = emit_simd_ins (cfg, arg_class, OP_ARM64_XTN, args [0]->dreg, -1);
-				return emit_simd_ins (cfg, arg_class, OP_ARM64_XTN2, ins->dreg, args [1]->dreg);
+				MonoInst* ins = emit_simd_ins (cfg, arg_class, OP_ARM64_XTN, args [0]->dreg, -1);
+				ins->inst_c1 = arg0_type;
+				MonoInst* ret = emit_simd_ins (cfg, arg_class, OP_ARM64_XTN2, ins->dreg, args [1]->dreg);
+				ret->inst_c1 = arg0_type;
+				return ret;
 			}
 			default:
 				return NULL;
 			}
 		} else {
+			if (!COMPILE_LLVM (cfg))
+				return NULL;
+
 			switch (arg0_type) {
 			case MONO_TYPE_R8: {
 				//Widen arg0

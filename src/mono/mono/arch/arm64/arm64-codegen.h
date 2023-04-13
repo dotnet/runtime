@@ -1208,6 +1208,8 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 //   type  - data type of vector elements, one of {TYPE_I8, TYPE_I16, TYPE_I32, TYPE_I64}
 #define arm_neon_abs(p, width, type, rd, rn) arm_neon_2mvec_opcode ((p), (width), 0b0, (type), 0b01011, (rd), (rn))
 #define arm_neon_neg(p, width, type, rd, rn) arm_neon_2mvec_opcode ((p), (width), 0b1, (type), 0b01011, (rd), (rn))
+#define arm_neon_xtn(p, type, rd, rn) arm_neon_2mvec_opcode ((p), VREG_LOW, 0b0, (type), 0b10010, (rd), (rn))
+#define arm_neon_xtn2(p, type, rd, rn) arm_neon_2mvec_opcode ((p), VREG_FULL, 0b0, (type), 0b10010, (rd), (rn))
 
 // Parametrized variants of the float opcodes
 //   width - determines if full register or its lower half is used one of {VREG_LOW, VREG_FULL}
@@ -1215,6 +1217,8 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_neon_fabs(p, width, type, rd, rn) arm_neon_2mvec_opcode ((p), (width), 0b0, 0b10 | (type), 0b01111, (rd), (rn))
 #define arm_neon_fneg(p, width, type, rd, rn) arm_neon_2mvec_opcode ((p), (width), 0b1, 0b10 | (type), 0b01111, (rd), (rn))
 #define arm_neon_fsqrt(p, width, type, rd, rn) arm_neon_2mvec_opcode ((p), (width), 0b1, 0b10 | (type), 0b11111, (rd), (rn))
+#define arm_neon_fcvtn(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_LOW, 0b0, SIZE_2, 0b10110, (rd), (rn))
+#define arm_neon_fcvtn2(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_FULL, 0b0, SIZE_2, 0b10110, (rd), (rn))
 
 // Parametrized variants of the bitwise opcodes
 //   width - determines if full register or its lower half is used, one of {VREG_LOW, VREG_FULL}
@@ -1304,24 +1308,12 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_neon_abs_4s(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_FULL, 0b0, SIZE_4, 0b01011, (rd), (rn))
 #define arm_neon_abs_2d(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_FULL, 0b0, SIZE_8, 0b01011, (rd), (rn))
 
-#define arm_neon_xtn_8b(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_LOW, 0b0, SIZE_1, 0b10010, (rd), (rn))
-#define arm_neon_xtn2_8b(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_FULL, 0b0, SIZE_1, 0b10010, (rd), (rn))
-#define arm_neon_xtn_4h(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_LOW, 0b0, SIZE_2, 0b10010, (rd), (rn))
-#define arm_neon_xtn2_8h(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_FULL, 0b0, SIZE_2, 0b10010, (rd), (rn))
-#define arm_neon_xtn_2s(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_LOW, 0b0, SIZE_4, 0b10010, (rd), (rn))
-#define arm_neon_xtn2_4s(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_FULL, 0b0, SIZE_4, 0b10010, (rd), (rn))
-
 #define arm_neon_sqxtn_8b(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_LOW, 0b0, SIZE_1, 0b10100, (rd), (rn))
 #define arm_neon_sqxtn2_8b(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_FULL, 0b0, SIZE_1, 0b10100, (rd), (rn))
 #define arm_neon_sqxtn_4h(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_LOW, 0b0, SIZE_2, 0b10100, (rd), (rn))
 #define arm_neon_sqxtn2_8h(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_FULL, 0b0, SIZE_2, 0b10100, (rd), (rn))
 #define arm_neon_sqxtn_2s(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_LOW, 0b0, SIZE_4, 0b10100, (rd), (rn))
 #define arm_neon_sqxtn2_4s(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_FULL, 0b0, SIZE_4, 0b10100, (rd), (rn))
-
-#define arm_neon_fcvtn_4h(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_LOW, 0b0, SIZE_1, 0b10110, (rd), (rn))
-#define arm_neon_fcvtn2_4h(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_FULL, 0b0, SIZE_1, 0b10110, (rd), (rn))
-#define arm_neon_fcvtn_2s(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_LOW, 0b0, SIZE_2, 0b10110, (rd), (rn))
-#define arm_neon_fcvtn2_2s(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_FULL, 0b0, SIZE_2, 0b10110, (rd), (rn))
 
 #define arm_neon_fcvtl_4h(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_LOW, 0b0, SIZE_1, 0b10111, (rd), (rn))
 #define arm_neon_fcvtl2_4h(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_FULL, 0b0, SIZE_1, 0b10111, (rd), (rn))
