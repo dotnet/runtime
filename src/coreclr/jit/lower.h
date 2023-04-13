@@ -90,6 +90,8 @@ private:
     void ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void ContainCheckNeg(GenTreeOp* neg);
     void TryLowerCselToCinc(GenTreeOp* select, GenTree* cond);
+    void TryLowerCselToCinv(GenTreeOp* select, GenTree* cond);
+    void LowerToCincOrCinv(GenTreeOp* select, GenTree* cond, bool shouldReverseCondition, bool isCinc);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);

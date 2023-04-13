@@ -4681,47 +4681,47 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForCinc: Produce code for a GT_CINC/GT_CINCCC node.
+// genCodeForCincOrCinv: Produce code for a GT_CINC/GT_CINCCC/GT_CINV/GT_CINVCC node.
 //
 // Arguments:
-//    tree - the node
+//    tree   - The node.
+//    isCinc - If true, emit the 'cinc' instruction otherwise the 'cinv' instruction.
 //
-void CodeGen::genCodeForCinc(GenTreeOp* cinc)
+void CodeGen::genCodeForCincOrCinv(GenTreeOp* condOp, const bool isCinc)
 {
-    assert(cinc->OperIs(GT_CINC, GT_CINCCC));
+    assert(condOp->OperIs(GT_CINC, GT_CINCCC, GT_CINV, GT_CINVCC));
 
     GenTree* opcond = nullptr;
-    GenTree* op     = cinc->gtOp1;
-    if (cinc->OperIs(GT_CINC))
+    GenTree* op     = condOp->gtOp1;
+    if (condOp->OperIs(GT_CINC, GT_CINV))
     {
-        opcond = cinc->gtOp1;
-        op     = cinc->gtOp2;
+        opcond = condOp->gtOp1;
+        op     = condOp->gtOp2;
         genConsumeRegs(opcond);
     }
 
-    emitter*  emit   = GetEmitter();
     var_types opType = genActualType(op->TypeGet());
-    emitAttr  attr   = emitActualTypeSize(cinc->TypeGet());
+    emitAttr  attr   = emitActualTypeSize(condOp->TypeGet());
 
     assert(!op->isUsedFromMemory());
     genConsumeRegs(op);
 
     GenCondition cond;
 
-    if (cinc->OperIs(GT_CINC))
+    if (condOp->OperIs(GT_CINC, GT_CINV))
     {
         assert(!opcond->isContained());
         // Condition has been generated into a register - move it into flags.
-        emit->emitIns_R_I(INS_cmp, emitActualTypeSize(opcond), opcond->GetRegNum(), 0);
+        GetEmitter()->emitIns_R_I(INS_cmp, emitActualTypeSize(opcond), opcond->GetRegNum(), 0);
         cond = GenCondition::NE;
     }
     else
     {
-        assert(cinc->OperIs(GT_CINCCC));
-        cond = cinc->AsOpCC()->gtCondition;
+        assert(condOp->OperIs(GT_CINCCC, GT_CINVCC));
+        cond = condOp->AsOpCC()->gtCondition;
     }
     const GenConditionDesc& prevDesc  = GenConditionDesc::Get(cond);
-    regNumber               targetReg = cinc->GetRegNum();
+    regNumber               targetReg = condOp->GetRegNum();
     regNumber               srcReg;
 
     if (op->isContained())
@@ -4735,9 +4735,10 @@ void CodeGen::genCodeForCinc(GenTreeOp* cinc)
     }
 
     assert(prevDesc.oper != GT_OR && prevDesc.oper != GT_AND);
-    emit->emitIns_R_R_COND(INS_cinc, attr, targetReg, srcReg, JumpKindToInsCond(prevDesc.jumpKind1));
+    GetEmitter()->emitIns_R_R_COND(isCinc ? INS_cinc : INS_cinv, attr, targetReg, srcReg,
+                                   JumpKindToInsCond(prevDesc.jumpKind1));
     regSet.verifyRegUsed(targetReg);
-    genProduceReg(cinc);
+    genProduceReg(condOp);
 }
 
 //------------------------------------------------------------------------

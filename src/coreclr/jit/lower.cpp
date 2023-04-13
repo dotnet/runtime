@@ -3859,6 +3859,11 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     {
         TryLowerCselToCinc(select, cond);
     }
+
+    if (((trueVal->gtOper == GT_NOT) || (falseVal->gtOper == GT_NOT)))
+    {
+        TryLowerCselToCinv(select, cond);
+    }
 #endif
     return newSelect != nullptr ? newSelect->gtNext : select->gtNext;
 }

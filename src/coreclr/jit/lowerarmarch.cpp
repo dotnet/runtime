@@ -2497,8 +2497,8 @@ void Lowering::ContainCheckNeg(GenTreeOp* neg)
 }
 
 //----------------------------------------------------------------------------------------------
-// Try converting SELECT/SELECTCC to CINC/CINCCC. Conversion is possible only if
-// both the trueVal and falseVal are integral constants and abs(trueVal - falseVal) = 1.
+// TryLowerCselToCinc: Try converting SELECT/SELECTCC to CINC/CINCCC. Conversion is possible only if both the trueVal
+// and falseVal are integral constants and abs(trueVal - falseVal) = 1.
 //
 // Arguments:
 //     select - The select node that is now SELECT or SELECTCC
@@ -2513,47 +2513,86 @@ void Lowering::TryLowerCselToCinc(GenTreeOp* select, GenTree* cond)
     size_t   op1Val   = (size_t)trueVal->AsIntCon()->IconValue();
     size_t   op2Val   = (size_t)falseVal->AsIntCon()->IconValue();
 
-    if (op1Val + 1 == op2Val || op2Val + 1 == op1Val)
+    if ((op1Val + 1 == op2Val) || (op2Val + 1 == op1Val))
     {
-        const bool shouldReverseCondition = op1Val + 1 == op2Val;
+        LowerToCincOrCinv(select, cond, (op1Val + 1 == op2Val), true);
+    }
+}
 
-        // Create a cinc node, insert it and update the use.
-        if (select->OperIs(GT_SELECT))
+//----------------------------------------------------------------------------------------------
+// TryLowerCselToCinv: Try converting SELECT/SELECTCC to CINV/CINVCC. Conversion is possible only if the
+// trueVal == ~(falseVal).
+//
+// Arguments:
+//     select - The select node that is now SELECT or SELECTCC
+//     cond   - The condition node that SELECT or SELECTCC uses
+//
+void Lowering::TryLowerCselToCinv(GenTreeOp* select, GenTree* cond)
+{
+    assert(select->OperIs(GT_SELECT, GT_SELECTCC));
+
+    GenTree* trueVal       = select->gtOp1;
+    GenTree* falseVal      = select->gtOp2;
+    GenTree* negatedVal    = (trueVal->gtOper == GT_NOT) ? trueVal : falseVal;
+    GenTree* nonNegatedVal = (trueVal->gtOper == GT_NOT) ? falseVal : trueVal;
+
+    if (GenTree::Compare(negatedVal->AsOp()->gtOp1, nonNegatedVal))
+    {
+        LowerToCincOrCinv(select, cond, (trueVal->gtOper == GT_NOT), false);
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerToCincOrCinv: A helper method with common code that lowers node to CINC/CINCC/CINV/CINVCC.
+//
+// Arguments:
+//     select                   - The select node that is now SELECT or SELECTCC
+//     cond                     - The condition node that SELECT or SELECTCC uses
+//     shouldReverseCondition   - Should the condition be reversed or not
+//     isCinc                   - Lower the select node to CINC/CINCC if the value is true
+//
+void Lowering::LowerToCincOrCinv(GenTreeOp* select, GenTree* cond, bool shouldReverseCondition, bool isCinc)
+{
+    // Create a cinc/cinv node, insert it and update the use.
+    if (select->OperIs(GT_SELECT))
+    {
+        if (shouldReverseCondition)
         {
-            if (shouldReverseCondition)
+            // Reverse the condition so that op2 will be selected
+            if (!cond->OperIsCompare())
             {
-                // Reverse the condition so that op2 will be selected
-                if (!cond->OperIsCompare())
-                {
-                    // Non-compare nodes add additional GT_NOT node after reversing.
-                    // This would remove gains from this optimisation so don't proceed.
-                    return;
-                }
-                select->gtOp2    = select->gtOp1;
-                GenTree* revCond = comp->gtReverseCond(cond);
-                assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
+                // Non-compare nodes add additional GT_NOT node after reversing.
+                // This would remove gains from this optimisation so don't proceed.
+                return;
             }
-            select->gtOp1 = cond->AsOp();
-            select->SetOper(GT_CINC);
-            DISPTREERANGE(BlockRange(), select);
+            select->gtOp2    = select->gtOp1;
+            GenTree* revCond = comp->gtReverseCond(cond);
+            assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
+        }
+        select->gtOp1 = cond->AsOp();
+        select->SetOper(isCinc ? GT_CINC : GT_CINV);
+        JITDUMP("Converted to ", (isCinc ? "GT_CINC" : "GT_CINV"), " :\n");
+        DISPTREERANGE(BlockRange(), select);
+        JITDUMP("\n");
+    }
+    else
+    {
+        GenTreeOpCC* selectcc   = select->AsOpCC();
+        GenCondition selectCond = selectcc->gtCondition;
+        if (shouldReverseCondition)
+        {
+            // Reverse the condition so that op2 will be selected
+            selectcc->gtCondition = GenCondition::Reverse(selectCond);
         }
         else
         {
-            GenTreeOpCC* selectcc   = select->AsOpCC();
-            GenCondition selectCond = selectcc->gtCondition;
-            if (shouldReverseCondition)
-            {
-                // Reverse the condition so that op2 will be selected
-                selectcc->gtCondition = GenCondition::Reverse(selectCond);
-            }
-            else
-            {
-                std::swap(selectcc->gtOp1, selectcc->gtOp2);
-            }
-            BlockRange().Remove(selectcc->gtOp2);
-            selectcc->SetOper(GT_CINCCC);
-            DISPTREERANGE(BlockRange(), selectcc);
+            std::swap(selectcc->gtOp1, selectcc->gtOp2);
         }
+        BlockRange().Remove(selectcc->gtOp2, true);
+        selectcc->SetOper(isCinc ? GT_CINCCC : GT_CINVCC);
+        JITDUMP("Converted to ", (isCinc ? "GT_CINCCC" : "GT_CINVCC"), " :\n");
+        DISPTREERANGE(BlockRange(), selectcc);
+        JITDUMP("\n");
     }
 }
 #endif // TARGET_ARM64

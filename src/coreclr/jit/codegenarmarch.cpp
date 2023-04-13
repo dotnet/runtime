@@ -361,7 +361,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_CINC:
         case GT_CINCCC:
-            genCodeForCinc(treeNode->AsOp());
+            genCodeForCincOrCinv(treeNode->AsOp(), true);
+            break;
+
+        case GT_CINV:
+        case GT_CINVCC:
+            genCodeForCincOrCinv(treeNode->AsOp(), false);
             break;
 
         case GT_SELECTCC:

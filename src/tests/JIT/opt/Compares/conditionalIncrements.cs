@@ -25,6 +25,15 @@ public class ConditionalIncrementTest
         return op1 >= 43 ? byte.MinValue : byte.MaxValue;
     }
 
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte cinv_byte_min_max(byte op1)
+    {
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #43
+        //ARM64-FULL-LINE-NEXT: cinc {{w[0-9]+}}, {{w[0-9]+}}, {{ge|lt}}
+        return (byte) (op1 >= 43 ? byte.MinValue : ~byte.MinValue);
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int cinc_short(short op1)
     {
@@ -76,6 +85,14 @@ public class ConditionalIncrementTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    static long cinv_long_min_max(long op1)
+    {
+        //ARM64-FULL-LINE: cmp {{x[0-9]+}}, #49
+        //ARM64-FULL-LINE-NEXT: cinc {{x[0-9]+}}, {{x[0-9]+}}, {{ge|lt}}
+        return op1 < 49 ? long.MinValue : ~long.MinValue;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int cinc_float(float op1)
     {
         //ARM64-FULL-LINE: fcmp {{s[0-9]+}}, {{s[0-9]+}}
@@ -83,6 +100,13 @@ public class ConditionalIncrementTest
         return op1 > 50.0f ? 6 : 5;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int cinc_double(double op1)
+    {
+        //ARM64-FULL-LINE: fcmp {{d[0-9]+}}, {{d[0-9]+}}
+        //ARM64-FULL-LINE-NEXT: cinc {{w[0-9]+}}, {{w[0-9]+}}, {{hs|l0}}
+        return op1 < 51.0 ? 5 : 6;
+    }
 
     public static int Main()
     {
@@ -107,6 +131,18 @@ public class ConditionalIncrementTest
         if (cinc_byte_min_max(32) != byte.MaxValue)
         {
             Console.WriteLine("ConditionalIncrementTest:cinc_byte_min_max() failed");
+            return 101;
+        }
+
+        if (cinv_byte_min_max(72) != byte.MinValue)
+        {
+            Console.WriteLine("ConditionalIncrementTest:cinv_byte_min_max() failed");
+            return 101;
+        }
+
+        if (cinv_byte_min_max(32) != byte.MaxValue)
+        {
+            Console.WriteLine("ConditionalIncrementTest:cinv_byte_min_max() failed");
             return 101;
         }
 
@@ -182,6 +218,19 @@ public class ConditionalIncrementTest
             return 101;
         }
 
+
+        if (cinv_long_min_max(79) != long.MaxValue)
+        {
+            Console.WriteLine("ConditionalIncrementTest:cinv_long_min_max() failed");
+            return 101;
+        }
+
+        if (cinv_long_min_max(39) != long.MinValue)
+        {
+            Console.WriteLine("ConditionalIncrementTest:cinv_long_min_max() failed");
+            return 101;
+        }
+
         if (cinc_float(80.0f) != 6)
         {
             Console.WriteLine("ConditionalIncrementTest:cinc_float() failed");
@@ -191,6 +240,18 @@ public class ConditionalIncrementTest
         if (cinc_float(30.0f) != 5)
         {
             Console.WriteLine("ConditionalIncrementTest:cinc_float() failed");
+            return 101;
+        }
+
+        if (cinc_double(80.0) != 6)
+        {
+            Console.WriteLine("ConditionalIncrementTest:cinc_double() failed");
+            return 101;
+        }
+
+        if (cinc_double(30.0) != 5)
+        {
+            Console.WriteLine("ConditionalIncrementTest:cinc_double() failed");
             return 101;
         }
 
