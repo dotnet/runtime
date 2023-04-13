@@ -924,8 +924,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			class DynamicallyAccessedLocalFunctionUnusedShouldWarn
 			{
-				// https://github.com/dotnet/runtime/issues/68786
-				[ExpectedWarning ("IL2118", nameof (TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction), "LocalFunction", ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL2118", nameof (TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction), "LocalFunction", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 				public static void TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction ()
 				{
 					typeof (DynamicallyAccessedLocalFunctionUnusedShouldWarn).RequiresNonPublicMethods ();
@@ -1934,12 +1933,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL3002", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
 
-			// ILLink warns about reflection access to compiler-generated state machine members.
-			// https://github.com/dotnet/runtime/issues/68786
 			[ExpectedWarning ("IL2118", nameof (StateMachinesOnlyReferencedViaReflection), "<" + nameof (TestAsyncOnlyReferencedViaReflectionWhichShouldWarn) + ">", "MoveNext()",
-				ProducedBy = Tool.Trimmer)]
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2118", nameof (StateMachinesOnlyReferencedViaReflection), "<" + nameof (TestIteratorOnlyReferencedViaReflectionWhichShouldWarn) + ">", "MoveNext()",
-				ProducedBy = Tool.Trimmer)]
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void TestAll ()
 			{
 				typeof (StateMachinesOnlyReferencedViaReflection).RequiresAll ();
@@ -2066,10 +2063,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL3002", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
-			// ILLink warn about reflection access to compiler-generated code
-			// https://github.com/dotnet/runtime/issues/68786
 			[ExpectedWarning ("IL2118", nameof (LocalFunctionsReferencedViaReflection), nameof (TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection),
-				ProducedBy = Tool.Trimmer)]
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void TestAll ()
 			{
 				typeof (LocalFunctionsReferencedViaReflection).RequiresAll ();
@@ -2101,10 +2096,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL3002", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
-			// ILLink warn about reflection access to compiler-generated code
-			// https://github.com/dotnet/runtime/issues/68786
 			[ExpectedWarning ("IL2118", nameof (LocalFunctionsReferencedViaReflection), "<" + nameof (TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection) + ">",
-				ProducedBy = Tool.Trimmer)]
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void TestNonPublicMethods ()
 			{
 				typeof (LocalFunctionsReferencedViaReflection).RequiresNonPublicMethods ();

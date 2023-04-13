@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using ILCompiler.Logging;
 using ILLink.Shared;
+using ILLink.Shared.TrimAnalysis;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -27,10 +28,12 @@ namespace ILCompiler.Dataflow
             IReadOnlyList<GenericParameterDesc?>? OriginalAttributes);
 
         private readonly TypeCacheHashtable _typeCacheHashtable;
+        private DataflowRequirementHashtable? _dataflowRequirementHashtable;
 
         public CompilerGeneratedState(ILProvider ilProvider, Logger logger)
         {
             _typeCacheHashtable = new TypeCacheHashtable(ilProvider, logger);
+            _dataflowRequirementHashtable = null;
         }
 
         private sealed class TypeCacheHashtable : LockFreeReaderHashtable<MetadataType, TypeCache>
@@ -661,6 +664,103 @@ namespace ILCompiler.Dataflow
             }
 
             return false;
+        }
+
+        private sealed class DataflowRequirementValue
+        {
+            public MethodDesc Method;
+            public bool RequiresDataflow;
+
+            public DataflowRequirementValue(MethodDesc method, FlowAnnotations flowAnnotations)
+            {
+                Debug.Assert(method == method.GetTypicalMethodDefinition());
+                Debug.Assert(IsNestedFunctionOrStateMachineMember(method));
+
+                Method = method;
+
+                bool requiresDataflowProcessing = ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForMethodBody(flowAnnotations, method);
+
+                MethodIL body = flowAnnotations.ILProvider.GetMethodIL(method);
+                ILReader reader = new ILReader(body.GetILBytes());
+                while (reader.HasNext)
+                {
+                    ILOpcode opcode = reader.ReadILOpcode();
+                    switch (opcode)
+                    {
+                        case ILOpcode.newobj:
+                        case ILOpcode.ldftn:
+                        case ILOpcode.ldvirtftn:
+                        case ILOpcode.call:
+                        case ILOpcode.callvirt:
+                        case ILOpcode.jmp:
+                            {
+                                if (body.GetObject(reader.ReadILToken()) is MethodDesc referencedMethod)
+                                    requiresDataflowProcessing |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(flowAnnotations, referencedMethod);
+                            }
+                            break;
+
+                        case ILOpcode.ldtoken:
+                            {
+                                object referencedObject = body.GetObject(reader.ReadILToken());
+                                if (referencedObject is FieldDesc referencedField)
+                                    requiresDataflowProcessing |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(flowAnnotations, referencedField);
+                                else if (referencedObject is MethodDesc referencedMethod)
+                                    requiresDataflowProcessing |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(flowAnnotations, referencedMethod);
+                            }
+                            break;
+
+                        case ILOpcode.ldfld:
+                        case ILOpcode.ldsfld:
+                        case ILOpcode.ldflda:
+                        case ILOpcode.ldsflda:
+                        case ILOpcode.stfld:
+                        case ILOpcode.stsfld:
+                            {
+                                if (body.GetObject(reader.ReadILToken()) is FieldDesc referencedField)
+                                    requiresDataflowProcessing |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(flowAnnotations, referencedField);
+                            }
+                            break;
+
+                        default:
+                            reader.Skip(opcode);
+                            break;
+                    }
+                }
+
+                RequiresDataflow = requiresDataflowProcessing;
+            }
+        }
+
+        private sealed class DataflowRequirementHashtable : LockFreeReaderHashtable<MethodDesc, DataflowRequirementValue>
+        {
+            private FlowAnnotations _flowAnnotations;
+
+            public DataflowRequirementHashtable(FlowAnnotations flowAnnotations) => _flowAnnotations = flowAnnotations;
+
+            protected override bool CompareKeyToValue(MethodDesc key, DataflowRequirementValue value) => key == value.Method;
+            protected override bool CompareValueToValue(DataflowRequirementValue value1, DataflowRequirementValue value2) => value1.Method == value2.Method;
+            protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
+            protected override int GetValueHashCode(DataflowRequirementValue value) => value.Method.GetHashCode();
+
+            protected override DataflowRequirementValue CreateValueFromKey(MethodDesc key)
+                => new DataflowRequirementValue(key, _flowAnnotations);
+        }
+
+        public void InitializeFlowAnnotations(FlowAnnotations flowAnnotations)
+        {
+            Debug.Assert(_dataflowRequirementHashtable == null);
+            _dataflowRequirementHashtable = new DataflowRequirementHashtable(flowAnnotations);
+        }
+
+        public bool CompilerGeneratedMethodRequiresDataflow(MethodDesc method)
+        {
+            Debug.Assert(IsNestedFunctionOrStateMachineMember(method));
+
+            if (_dataflowRequirementHashtable == null)
+                throw new InvalidOperationException();
+
+            method = method.GetTypicalMethodDefinition();
+            return _dataflowRequirementHashtable.GetOrCreateValue(method).RequiresDataflow;
         }
     }
 }

@@ -9,30 +9,30 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.Dataflow
 {
-    public readonly record struct TrimAnalysisReflectionAccessPattern
+    public readonly record struct TrimAnalysisTokenAccessPattern
     {
         public TypeSystemEntity Entity { init; get; }
         public MessageOrigin Origin { init; get; }
 
-        internal TrimAnalysisReflectionAccessPattern(TypeSystemEntity entity, MessageOrigin origin)
+        internal TrimAnalysisTokenAccessPattern(TypeSystemEntity entity, MessageOrigin origin)
         {
             Entity = entity;
             Origin = origin;
         }
 
         // No Merge - there's nothing to merge since this pattern is uniquely identified by both the origin and the entity
-        // and there's only one way to "reflection access" an entity.
+        // and there's only one way to access entity by its handle.
 
         public void MarkAndProduceDiagnostics(ReflectionMarker reflectionMarker, Logger logger)
         {
             switch (Entity)
             {
                 case MethodDesc method:
-                    reflectionMarker.CheckAndWarnOnReflectionAccess(Origin, method);
+                    reflectionMarker.CheckAndWarnOnReflectionAccess(Origin, method, ReflectionMarker.AccessKind.TokenAccess);
                     break;
 
                 case FieldDesc field:
-                    reflectionMarker.CheckAndWarnOnReflectionAccess(Origin, field);
+                    reflectionMarker.CheckAndWarnOnReflectionAccess(Origin, field, ReflectionMarker.AccessKind.TokenAccess);
                     break;
 
                 default:

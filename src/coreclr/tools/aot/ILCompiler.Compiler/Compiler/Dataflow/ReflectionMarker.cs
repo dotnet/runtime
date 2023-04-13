@@ -31,6 +31,13 @@ namespace ILCompiler.Dataflow
         public FlowAnnotations Annotations { get; }
         public DependencyList Dependencies { get => _dependencies; }
 
+        internal enum AccessKind
+        {
+            Unspecified,
+            DynamicallyAccessedMembersMark,
+            TokenAccess
+        }
+
         public ReflectionMarker(Logger logger, NodeFactory factory, FlowAnnotations annotations, MetadataType? typeHierarchyDataFlowOrigin, bool enabled)
         {
             _logger = logger;
@@ -107,7 +114,7 @@ namespace ILCompiler.Dataflow
             return true;
         }
 
-        internal void MarkType(in MessageOrigin origin, TypeDesc type, string reason, bool dynamicallyAccessedMembersMark = false)
+        internal void MarkType(in MessageOrigin origin, TypeDesc type, string reason, AccessKind accessKind = AccessKind.Unspecified)
         {
             if (!_enabled)
                 return;
@@ -115,27 +122,27 @@ namespace ILCompiler.Dataflow
             RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, Factory, type, reason);
         }
 
-        internal void MarkMethod(in MessageOrigin origin, MethodDesc method, string reason, bool dynamicallyAccessedMembersMark = false)
+        internal void MarkMethod(in MessageOrigin origin, MethodDesc method, string reason, AccessKind accessKind = AccessKind.Unspecified)
         {
             if (!_enabled)
                 return;
 
-            CheckAndWarnOnReflectionAccess(origin, method, dynamicallyAccessedMembersMark);
+            CheckAndWarnOnReflectionAccess(origin, method, accessKind);
 
             RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, Factory, method, reason);
         }
 
-        internal void MarkField(in MessageOrigin origin, FieldDesc field, string reason, bool dynamicallyAccessedMembersMark = false)
+        internal void MarkField(in MessageOrigin origin, FieldDesc field, string reason, AccessKind accessKind = AccessKind.Unspecified)
         {
             if (!_enabled)
                 return;
 
-            CheckAndWarnOnReflectionAccess(origin, field, dynamicallyAccessedMembersMark);
+            CheckAndWarnOnReflectionAccess(origin, field, accessKind);
 
             RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, Factory, field, reason);
         }
 
-        internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, string reason, bool dynamicallyAccessedMembersMark = false)
+        internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, string reason, AccessKind accessKind = AccessKind.Unspecified)
         {
             if (!_enabled)
                 return;
@@ -146,7 +153,7 @@ namespace ILCompiler.Dataflow
                 MarkMethod(origin, property.SetMethod, reason);
         }
 
-        private void MarkEvent(in MessageOrigin origin, EventPseudoDesc @event, string reason, bool dynamicallyAccessedMembersMark = false)
+        private void MarkEvent(in MessageOrigin origin, EventPseudoDesc @event, string reason, AccessKind accessKind = AccessKind.Unspecified)
         {
             if (!_enabled)
                 return;
@@ -209,7 +216,7 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        internal void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, bool dynamicallyAccessedMembersMark = false)
+        internal void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, AccessKind accessKind = AccessKind.Unspecified)
         {
             if (!_enabled)
                 return;
@@ -220,11 +227,11 @@ namespace ILCompiler.Dataflow
             }
             else
             {
-                ReportWarningsForReflectionAccess(origin, entity, dynamicallyAccessedMembersMark);
+                ReportWarningsForReflectionAccess(origin, entity, accessKind);
             }
         }
 
-        private void ReportWarningsForReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, bool dynamicallyAccessedMembersMark)
+        private void ReportWarningsForReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, AccessKind accessKind)
         {
             Debug.Assert(entity is MethodDesc or FieldDesc);
 
@@ -235,7 +242,7 @@ namespace ILCompiler.Dataflow
                 // All override methods should have the same annotations as their base methods
                 // (else we will produce warning IL2046 or IL2092 or some other warning).
                 // When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
-                skipWarningsForOverride = dynamicallyAccessedMembersMark && IsOverrideMethod(methodForOverrideCheck);
+                skipWarningsForOverride = (accessKind == AccessKind.DynamicallyAccessedMembersMark) && IsOverrideMethod(methodForOverrideCheck);
             }
 
             // Note that we're using `ShouldSuppressAnalysisWarningsForRequires` instead of `DoesMemberRequire`.
@@ -280,16 +287,21 @@ namespace ILCompiler.Dataflow
             // for virtual overrides. This ensures that we include the unannotated MoveNext state machine method. Lambdas and local
             // functions should never be virtual overrides in the first place.
             bool isCoveredByAnnotations = isReflectionAccessCoveredByRUC || isReflectionAccessCoveredByDAM;
-            if (entity is MethodDesc method)
+            // If the access is via a direct token access, then don't warn, since the direct access could only be generated by the compiler
+            // and we will perform the data flow analysis of the target via the interprocedural data flow.
+            if (accessKind != AccessKind.TokenAccess)
             {
-                if (ShouldWarnForReflectionAccessToCompilerGeneratedCode(method, isCoveredByAnnotations))
-                    _logger.LogWarning(origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, method.GetDisplayName());
-            }
-            else
-            {
-                FieldDesc field = (FieldDesc)entity;
-                if (ShouldWarnForReflectionAccessToCompilerGeneratedCode(field, isCoveredByAnnotations))
-                    _logger.LogWarning(origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, field.GetDisplayName());
+                if (entity is MethodDesc method)
+                {
+                    if (ShouldWarnForReflectionAccessToCompilerGeneratedCode(method, isCoveredByAnnotations))
+                        _logger.LogWarning(origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, method.GetDisplayName());
+                }
+                else
+                {
+                    FieldDesc field = (FieldDesc)entity;
+                    if (ShouldWarnForReflectionAccessToCompilerGeneratedCode(field, isCoveredByAnnotations))
+                        _logger.LogWarning(origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, field.GetDisplayName());
+                }
             }
         }
 
@@ -384,7 +396,7 @@ namespace ILCompiler.Dataflow
             return true;
         }
 
-        private static bool ShouldWarnForReflectionAccessToCompilerGeneratedCode(MethodDesc method, bool isCoveredByAnnotations)
+        private bool ShouldWarnForReflectionAccessToCompilerGeneratedCode(MethodDesc method, bool isCoveredByAnnotations)
         {
             // No need to warn if it's already covered by the Requires attribute or explicit annotations on the method.
             if (isCoveredByAnnotations)
@@ -398,10 +410,7 @@ namespace ILCompiler.Dataflow
             // hasn't been marked already. A cache ensures this only happens once for the method, whether or not
             // it is accessed via reflection.
 
-            // TODO: Basically we want to warn if the method in question undergoes DataFlow - so ideally we need to add a conditional dependency
-            // to the dataflow node for the method - but that's really hard from here.
-            // return CheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(method));
-            return false;
+            return Annotations.CompilerGeneratedState.CompilerGeneratedMethodRequiresDataflow(method);
         }
 
         private static bool ShouldWarnForReflectionAccessToCompilerGeneratedCode(FieldDesc field, bool isCoveredByAnnotations)

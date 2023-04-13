@@ -193,7 +193,7 @@ namespace ILCompiler.Dataflow
         protected override void HandleStoreMethodReturnValue(MethodIL methodBody, int offset, MethodReturnValue returnValue, MultiValue valueToStore)
             => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, returnValue, valueToStore, returnValue.Method.GetDisplayName());
 
-        protected override void HandleTypeReflectionAccess(MethodIL methodBody, int offset, TypeDesc accessedType)
+        protected override void HandleTypeTokenAccess(MethodIL methodBody, int offset, TypeDesc accessedType)
         {
             // Note that ldtoken alone is technically a reflection access to the type
             // it doesn't lead to full reflection marking of the type
@@ -204,20 +204,20 @@ namespace ILCompiler.Dataflow
             ProcessGenericArgumentDataFlow(accessedType);
         }
 
-        protected override void HandleMethodReflectionAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod)
+        protected override void HandleMethodTokenAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod)
         {
             _origin = _origin.WithInstructionOffset(methodBody, offset);
 
-            TrimAnalysisPatterns.Add(new TrimAnalysisReflectionAccessPattern(accessedMethod, _origin));
+            TrimAnalysisPatterns.Add(new TrimAnalysisTokenAccessPattern(accessedMethod, _origin));
 
             ProcessGenericArgumentDataFlow(accessedMethod);
         }
 
-        protected override void HandleFieldReflectionAccess(MethodIL methodBody, int offset, FieldDesc accessedField)
+        protected override void HandleFieldTokenAccess(MethodIL methodBody, int offset, FieldDesc accessedField)
         {
             _origin = _origin.WithInstructionOffset(methodBody, offset);
 
-            TrimAnalysisPatterns.Add(new TrimAnalysisReflectionAccessPattern(accessedField, _origin));
+            TrimAnalysisPatterns.Add(new TrimAnalysisTokenAccessPattern(accessedField, _origin));
 
             ProcessGenericArgumentDataFlow(accessedField);
         }
