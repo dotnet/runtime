@@ -54,28 +54,28 @@ namespace ILCompiler.Dataflow
 
             foreach (var member in typeDefinition.GetDynamicallyAccessedMembers(requiredMemberTypes, declaredOnly))
             {
-                MarkTypeSystemEntity(origin, member, reason, dynamicallyAccessedMembersMark: true);
+                MarkTypeSystemEntity(origin, member, reason, AccessKind.DynamicallyAccessedMembersMark);
             }
         }
 
-        internal void MarkTypeSystemEntity(in MessageOrigin origin, TypeSystemEntity entity, string reason, bool dynamicallyAccessedMembersMark = false)
+        internal void MarkTypeSystemEntity(in MessageOrigin origin, TypeSystemEntity entity, string reason, AccessKind accessKind = AccessKind.Unspecified)
         {
             switch (entity)
             {
                 case MethodDesc method:
-                    MarkMethod(origin, method, reason);
+                    MarkMethod(origin, method, reason, accessKind);
                     break;
                 case FieldDesc field:
-                    MarkField(origin, field, reason);
+                    MarkField(origin, field, reason, accessKind);
                     break;
                 case MetadataType nestedType:
-                    MarkType(origin, nestedType, reason);
+                    MarkType(origin, nestedType, reason, accessKind);
                     break;
                 case PropertyPseudoDesc property:
-                    MarkProperty(origin, property, reason);
+                    MarkProperty(origin, property, reason, accessKind);
                     break;
                 case EventPseudoDesc @event:
-                    MarkEvent(origin, @event, reason);
+                    MarkEvent(origin, @event, reason, accessKind);
                     break;
                     // case InterfaceImplementation
                     //  Nothing to do currently as Native AOT will preserve all interfaces on a preserved type
