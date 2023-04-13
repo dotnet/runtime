@@ -8338,16 +8338,19 @@ HRESULT DacGCBookkeepingEnumerator::Init()
     DPTR(dac_card_table_info) card_table_info(ctiAddr);
 
     SOSMemoryRegion mem = {0};
-    mem.Start = card_table_info.GetAddr();
-    mem.Size = card_table_info->size;
-    mRegions.Add(mem);
+    if (card_table_info->recount && card_table_info->size)
+    {
+        mem.Start = card_table_info.GetAddr();
+        mem.Size = card_table_info->size;
+        mRegions.Add(mem);
+    }
     
     size_t card_table_info_size = g_gcDacGlobals->card_table_info_size;
     TADDR next = card_table_info->next_card_table;
 
     // Cap the number of regions we will walk in case we have run into some kind of
-    // memory corruption.  We shouldn't have more than 2 linked card tables anyway.
-    int maxRegions = 8;
+    // memory corruption.  We shouldn't have more than a few linked card tables anyway.
+    int maxRegions = 32;
 
     // This loop is effectively "while (next != 0)" but with an added check to make
     // sure we don't underflow next when subtracting card_table_info_size if we encounter
@@ -8356,10 +8359,13 @@ HRESULT DacGCBookkeepingEnumerator::Init()
     {
         DPTR(dac_card_table_info) ct(next - card_table_info_size);
 
-        mem = {0};
-        mem.Start = ct.GetAddr();
-        mem.Size = ct->size;
-        mRegions.Add(mem);
+        if (ct->recount && ct->size)
+        {
+            mem = {0};
+            mem.Start = ct.GetAddr();
+            mem.Size = ct->size;
+            mRegions.Add(mem);
+        }
         
         next = ct->next_card_table;
         if (next == card_table_info->next_card_table)
