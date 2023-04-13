@@ -782,6 +782,7 @@
     <MergedPayloads Update="@(MergedPayloads)">
       <PayloadGroup>%(FileName)%(Extension)</PayloadGroup>
       <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).apk</ApkPath>
+      <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
     </MergedPayloads>
   </ItemGroup>
 

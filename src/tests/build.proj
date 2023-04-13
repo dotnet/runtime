@@ -292,7 +292,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <!-- FIXME: Currently tracing/eventpipe tests work only with Mono Interpreter. It should be enabled only for iOSSimulator target. -->
+      <!-- FIXME: Currently, tracing/eventpipe tests only work with the Mono Interpreter. Mono interpreter should be only enabled for simulator targets. -->
       <MonoForceInterpreter>True</MonoForceInterpreter>
     </PropertyGroup>
     <ItemGroup>
@@ -560,7 +560,7 @@
     <!-- We need to build group #1 manually as it doesn't have a _GroupStartsWith item associated with it, see the comment in Common\dirs.proj -->
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=1;__SkipRestorePackages=1" Condition="'$(RunWithiOS)' != 'true'" />
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=%(_GroupStartsWith.GroupNumber);__SkipRestorePackages=1" Condition="'$(RunWithiOS)' != 'true'" />
-    <!-- FIXME: Currently tracing/eventpipe tests work only with Mono Interpreter. It should be expanded to include all runtime tests. Tracking issue: https://github.com/dotnet/runtime/issues/84254 -->
+    <!-- FIXME: Currently, tracing/eventpipe tests are only enabled on iOS platforms. It should be expanded to include all runtime tests. Tracking issue: https://github.com/dotnet/runtime/issues/84254 -->
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=4;__SkipRestorePackages=1" Condition="'$(RunWithiOS)' == 'true'" />
   </Target>
 

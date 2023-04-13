@@ -100,7 +100,7 @@ namespace CoreclrTestLib
                                 break;
                         }
 
-                        cmdStr += $" --output-directory={reportBase}/{action} --target={targetString}"; //To Do: target should be either emulator or device
+                        cmdStr += $" --output-directory={reportBase}/{action} --target={targetString}";
 
                         if (action == "install")
                         {

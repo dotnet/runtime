@@ -72,6 +72,7 @@
         <GroupNumber>3</GroupNumber>
       </_GroupStartsWith>
 
+      <!-- FIXME: Currently, tracing/eventpipe tests are only enabled on iOS platforms. It should be expanded to include all runtime tests. Tracking issue: https://github.com/dotnet/runtime/issues/84254 -->
       <_GroupStartsWith Include="$(TestRoot)tracing\eventpipe\">
         <GroupNumber>4</GroupNumber>
       </_GroupStartsWith>
