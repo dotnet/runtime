@@ -1055,7 +1055,6 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal(expectedUnit, filteredEvents[i].Unit);
                 Assert.Equal(expectedValues[i], filteredEvents[i].Value);
             }
-
         }
 
         private void AssertCounterEventsNotPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags)

@@ -6,8 +6,8 @@ namespace System.Diagnostics.Metrics
     internal sealed class RateSumAggregator : Aggregator
     {
         private readonly bool _isMonotonic;
-        private double _sum;
-        private double _totalSum;
+        private double _delta;
+        private double _aggregatedValue;
 
         public RateSumAggregator(bool isMonotonic)
         {
@@ -18,7 +18,7 @@ namespace System.Diagnostics.Metrics
         {
             lock (this)
             {
-                _sum += value;
+                _delta += value;
             }
         }
 
@@ -26,9 +26,9 @@ namespace System.Diagnostics.Metrics
         {
             lock (this)
             {
-                _totalSum += _sum;
-                RateStatistics? stats = new RateStatistics(_sum, _isMonotonic, _totalSum);
-                _sum = 0;
+                _aggregatedValue += _delta;
+                RateStatistics? stats = new RateStatistics(_delta, _isMonotonic, _aggregatedValue);
+                _delta = 0;
                 return stats;
             }
         }
@@ -38,8 +38,9 @@ namespace System.Diagnostics.Metrics
     {
         private readonly bool _isMonotonic;
         private double? _prevValue;
-        private double? _value;
-        private double _sum;
+        private double _currValue;
+        private double _aggregatedValue;
+        private bool _updated;
 
         public RateAggregator(bool isMonotonic)
         {
@@ -50,7 +51,8 @@ namespace System.Diagnostics.Metrics
         {
             lock (this)
             {
-                _value = value;
+                _currValue = value;
+                _updated = true;
             }
         }
 
@@ -61,12 +63,13 @@ namespace System.Diagnostics.Metrics
                 double? delta = null;
                 if (_prevValue.HasValue)
                 {
-                    delta = _value.HasValue ? _value - _prevValue.Value : 0;
+                    delta = _currValue - _prevValue.Value;
                 }
-                _sum += _value ?? 0;
-                RateStatistics stats = new RateStatistics(delta, _isMonotonic, _sum);
-                _prevValue = _value ?? _prevValue;
-                _value = null;
+                _aggregatedValue += _updated ? _currValue : 0;
+                _updated = false;
+
+                RateStatistics stats = new RateStatistics(delta, _isMonotonic, _aggregatedValue);
+                _prevValue = _currValue;
                 return stats;
             }
         }
@@ -74,14 +77,10 @@ namespace System.Diagnostics.Metrics
 
     internal sealed class RateStatistics : IAggregationStatistics
     {
-        public RateStatistics(double? delta, bool isMonotonic)
+        public RateStatistics(double? delta, bool isMonotonic, double value)
         {
             Delta = delta;
             IsMonotonic = isMonotonic;
-        }
-
-        public RateStatistics(double? delta, bool isMonotonic, double value) : this(delta, isMonotonic)
-        {
             Value = value;
         }
 
