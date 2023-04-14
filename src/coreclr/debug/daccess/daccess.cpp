@@ -8502,7 +8502,7 @@ HRESULT DacFreeRegionEnumerator::Init()
         {
             DPTR(DPTR(dac_heap_segment)) freeable_soh_segment_ptr(g_gcDacGlobals->freeable_soh_segment);
             if (freeable_soh_segment_ptr != nullptr)
-                AddSegmentList(*freeable_soh_segment, FreeRegionKind::FreeSohSegment);
+                AddSegmentList(*freeable_soh_segment_ptr, FreeRegionKind::FreeSohSegment);
         }
         
         if (g_gcDacGlobals->freeable_uoh_segment != nullptr)
