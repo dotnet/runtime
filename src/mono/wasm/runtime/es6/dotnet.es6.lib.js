@@ -101,7 +101,7 @@ let linked_functions = [
     "mono_wasm_change_case",
     "mono_wasm_compare_string",
 
-    "icudt72_dat",
+    "icudt68_dat",
 ];
 
 if (monoWasmThreads) {
