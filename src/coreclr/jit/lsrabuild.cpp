@@ -423,7 +423,13 @@ void LinearScan::checkConflictingDefUse(RefPosition* useRP)
     {
         if (!isSingleRegister(newAssignment) || !theInterval->hasInterferingUses)
         {
-            defRP->registerAssignment = newAssignment;
+#ifdef TARGET_ARM64
+            if (!compiler->info.compNeedsConsecutiveRegisters ||
+                !defRP->isLiveAtConsecutiveRegistersLoc(consecutiveRegistersLocation))
+#endif
+            {
+                defRP->registerAssignment = newAssignment;
+            }
         }
     }
     else
@@ -1808,7 +1814,9 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
 #ifdef TARGET_ARM64
                 else if (newRefPosition->needsConsecutive)
                 {
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                     assert(newRefPosition->refType == RefTypeUpperVectorRestore);
+#endif
                     minRegCount++;
                 }
 #endif

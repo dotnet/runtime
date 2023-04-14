@@ -1802,6 +1802,45 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
 
     return srcCount;
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// isLiveAtConsecutiveRegistersLoc: Check if the refPosition is live at the location
+//    where consecutive registers are needed. This is used during JitStressRegs to
+//    not constrained the register requirements for such refpositions, because lot
+//    of registers will be busy. For RefTypeUse, it will just see if the nodeLocation
+//    matches with the tracking `consecutiveRegistersLocation`. For Def, it will check
+//    the underlying `GenTree*` to see if the tree that produced it had consecutive
+//    registers requirement.
+// 
+//
+// Arguments:
+//    consecutiveRegistersLocation - The most recent location where consecutive
+//     registers were needed.
+//
+bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegistersLocation)
+{
+    if (needsConsecutive)
+    {
+        return true;
+    }
+
+    if (refType == RefTypeDef)
+    {
+        if (treeNode->OperIsHWIntrinsic())
+        {
+            const HWIntrinsic intrin(treeNode->AsHWIntrinsic());
+            return HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id);
+        }
+    }
+    else if ((refType == RefTypeUse) || (refType == RefTypeUpperVectorRestore))
+    {
+        return consecutiveRegistersLocation == nodeLocation;
+    }
+    return false;
+}
+#endif
+
 #endif
 
 #endif // TARGET_ARM64

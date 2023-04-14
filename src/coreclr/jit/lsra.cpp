@@ -12087,12 +12087,13 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
 
 #ifdef DEBUG
 #ifdef TARGET_ARM64
-    if (!refPosition->needsConsecutive && (linearScan->consecutiveRegistersLocation == refPosition->nodeLocation))
+    if (!refPosition->needsConsecutive && refPosition->isLiveAtConsecutiveRegistersLoc(linearScan->consecutiveRegistersLocation))
     {
         // If a method has consecutive registers and we are assigning to refPositions that are not part
-        // of consecutive registers, but are live at same location, skip the limit stress for them, because
-        // there are high chances that many registers are busy for consecutive requirements and we don't
-        // have enough remaining for other refpositions (like operands).
+        // of consecutive registers, but are live at the same location, skip the limit stress for them,
+        // because there are high chances that many registers are busy for consecutive requirements and
+        // we do not have enough remaining for other refpositions (like operands). Likewise, skip for the
+        // definition node that comes after that, for which, all the registers are in "delayRegFree" state.
     }
     else
 #endif

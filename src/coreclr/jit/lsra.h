@@ -2652,6 +2652,10 @@ public:
         }
         return false;
     }
+
+#ifdef DEBUG
+    bool isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegistersLocation);
+#endif
 #endif // TARGET_ARM64
 
 #ifdef DEBUG
