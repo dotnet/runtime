@@ -23,62 +23,31 @@ namespace System.Net.Security
             TlsCipherSuite = cipherSuite;
             KeyExchKeySize = 0;
 
-            // set most common values as default to reduce the IL size
-            KeyExchangeAlg = (int)ExchangeAlgorithmType.DiffieHellman;
-            DataCipherAlg = (int)CipherAlgorithmType.Null;
-            DataKeySize = 128;
-            DataHashAlg = (int)HashAlgorithmType.None;
-            DataHashKeySize = 0;
-
-            switch (cipherSuite)
+            ulong data = cipherSuite switch
             {
 <#
 foreach (TlsCipherSuite val in enumValues)
 {
     TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
 #>
-                case TlsCipherSuite.<#= val #>:
-<#
-    if (EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm) != "DiffieHellman")
-    {
-#>
-                    KeyExchangeAlg = (int)ExchangeAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm) #>;
-<#
-    }
-
-    if (EnumHelpers.ToFrameworkName(data.CipherAlgorithm) != "Null")
-    {
-#>
-                    DataCipherAlg = (int)CipherAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.CipherAlgorithm) #>;
-<#
-    }
-
-    if (data.CipherAlgorithmStrength != 128)
-    {
-#>
-                    DataKeySize = <#= data.CipherAlgorithmStrength #>;
-<#
-    }
-
-    if (EnumHelpers.ToFrameworkName(data.MACAlgorithm) != "None")
-    {
-#>
-                    DataHashAlg = (int)HashAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.MACAlgorithm) #>;
-<#
-    }
-#>
-                    break;
+                TlsCipherSuite.<#= val #> =>
+                    (ulong)ExchangeAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm) #> << (64 - (16 * 1)) |
+                    (ulong)CipherAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.CipherAlgorithm) #> << (64 - (16 * 2)) |
+                    (ulong)<#= data.CipherAlgorithmStrength #> << (64 - (16 * 3)) |
+                    (ulong)HashAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.MACAlgorithm) #>  << (64 - (16 * 4)),
 
 <#
 }
 #>
-                default:
-                    Debug.Fail($"No mapping found for cipherSuite {cipherSuite}");
-                    KeyExchangeAlg = (int)ExchangeAlgorithmType.None;
-                    DataKeySize = 0;
-                    break;
-            }
+                _ => 0
+            };
 
+            Debug.Assert(data != 0, $"No mapping found for cipherSuite {cipherSuite}");
+
+            KeyExchangeAlg = (int)(data >> (64 - (16 * 1)));
+            DataCipherAlg = (int)(data >> (64 - (16 * 2)));
+            DataKeySize = (int)(data >> (64 - (16 * 3)));
+            DataHashAlg = (int)(data >> (64 - (16 * 4)));
             DataHashKeySize = GetHashSize((HashAlgorithmType)DataHashAlg);
 
             static int GetHashSize(HashAlgorithmType hash)
