@@ -935,7 +935,7 @@ namespace System.Threading.Tasks
             Action<TInt, ParallelLoopState>? bodyWithState,
             Func<TInt, ParallelLoopState, TLocal, TLocal>? bodyWithLocal,
             Func<TLocal>? localInit, Action<TLocal>? localFinally)
-            where TInt : struct, INumber<TInt>, IMinMaxValue<TInt>
+            where TInt : struct, IBinaryInteger<TInt>, IMinMaxValue<TInt>
         {
             Debug.Assert(typeof(TInt) == typeof(int) || typeof(TInt) == typeof(long));
             Debug.Assert(((body == null ? 0 : 1) + (bodyWithState == null ? 0 : 1) + (bodyWithLocal == null ? 0 : 1)) == 1,

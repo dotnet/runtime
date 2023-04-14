@@ -173,7 +173,7 @@ namespace System.Threading.Tasks
             return false;
         }
 
-        internal bool FindNewWork<TInt>(out TInt fromInclusive, out TInt toExclusive) where TInt : struct, INumber<TInt>, IMinMaxValue<TInt>
+        internal bool FindNewWork<TInt>(out TInt fromInclusive, out TInt toExclusive) where TInt : struct, IBinaryInteger<TInt>, IMinMaxValue<TInt>
         {
             Debug.Assert(typeof(TInt) == typeof(int) || typeof(TInt) == typeof(long));
 

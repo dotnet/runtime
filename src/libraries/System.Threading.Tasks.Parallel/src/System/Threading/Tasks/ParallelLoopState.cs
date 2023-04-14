@@ -181,7 +181,7 @@ namespace System.Threading.Tasks
             InternalBreak();
         }
 
-        internal static void Break<TInt>(TInt iteration, ParallelLoopStateFlags<TInt> pflags) where TInt : struct, INumber<TInt>, IMinMaxValue<TInt>
+        internal static void Break<TInt>(TInt iteration, ParallelLoopStateFlags<TInt> pflags) where TInt : struct, IBinaryInteger<TInt>, IMinMaxValue<TInt>
         {
             Debug.Assert(typeof(TInt) == typeof(int) || typeof(TInt) == typeof(long));
 
@@ -223,7 +223,7 @@ namespace System.Threading.Tasks
         }
     }
 
-    internal sealed class ParallelLoopState<TInt> : ParallelLoopState where TInt : struct, INumber<TInt>, IMinMaxValue<TInt>
+    internal sealed class ParallelLoopState<TInt> : ParallelLoopState where TInt : struct, IBinaryInteger<TInt>, IMinMaxValue<TInt>
     {
         private readonly ParallelLoopStateFlags<TInt> _sharedParallelStateFlags;
         private TInt _currentIteration;
@@ -349,7 +349,7 @@ namespace System.Threading.Tasks
     }
 
     internal sealed unsafe class ParallelLoopStateFlags<TInt> : ParallelLoopStateFlags
-        where TInt : struct, INumber<TInt>, IMinMaxValue<TInt>
+        where TInt : struct, IBinaryInteger<TInt>, IMinMaxValue<TInt>
     {
         // Records the lowest iteration at which a Break() has been called,
         // or TInt.MaxValue if no break has been called.
