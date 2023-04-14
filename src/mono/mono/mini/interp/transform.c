@@ -9398,10 +9398,12 @@ retry:
 					local_defs [dreg].type = LOCAL_VALUE_NONE;
 					local_defs [dreg].ins = def;
 					local_defs [dreg].def_index = local_defs [original_dreg].def_index;
+					local_defs [dreg].ref_count++;
 					local_defs [original_dreg].type = LOCAL_VALUE_LOCAL;
 					local_defs [original_dreg].ins = ins;
 					local_defs [original_dreg].local = dreg;
 					local_defs [original_dreg].def_index = ins_index;
+					local_defs [original_dreg].ref_count--;
 
 					local_ref_count [original_dreg]--;
 					local_ref_count [dreg]++;
