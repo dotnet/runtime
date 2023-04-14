@@ -1140,6 +1140,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(SimpleLoop* loop)
     //
     if (cyclicWeight > cappedLikelihood)
     {
+        JITDUMP("Cyclic weight " FMT_WT " > " FMT_WT "(cap) -- will reduce to cap\n", cyclicWeight, cappedLikelihood);
         capped       = true;
         cyclicWeight = cappedLikelihood;
         m_cappedCyclicProbabilities++;
@@ -1171,79 +1172,88 @@ void ProfileSynthesis::ComputeCyclicProbabilities(SimpleLoop* loop)
             BasicBlock* const exitBlock          = exitEdge->getSourceBlock();
             weight_t const    exitBlockFrequency = exitBlock->bbWeight;
             weight_t const    exitBlockWeight    = exitBlockFrequency * cyclicProbability;
-            cappedExitWeight += exitEdge->getLikelihood() * exitBlockWeight;
+            weight_t const    exitWeight         = exitEdge->getLikelihood() * exitBlockWeight;
+            cappedExitWeight += exitWeight;
+            JITDUMP("Exit from " FMT_BB " has weight " FMT_WT "\n", exitBlock->bbNum, exitWeight);
         }
+
+        JITDUMP("Total exit weight " FMT_WT "\n", cappedExitWeight);
 
         // We should end up with a value less than one since we input one unit of flow into the
         // loop and are artificially capping the iteration count of the loop, so less weight is
-        // now flowing out than in.
+        // now flowing out than in. However because of rounding we might end up near or a bit over 1.0.
         //
-        assert(cappedExitWeight < 1.0);
-
-        // We want to increase the exit likelihood of one exit block to create
-        // additional flow out of the loop. Figure out how much we need.
-        //
-        weight_t const missingExitWeight = 1.0 - cappedExitWeight;
-        JITDUMP("Loop exit flow deficit from capping is " FMT_WT "\n", missingExitWeight);
-
-        bool adjustedExit = false;
-
-        for (FlowEdge* const exitEdge : loop->m_exitEdges)
+        if ((cappedExitWeight + epsilon) < 1.0)
         {
-            // Does this block have enough weight that it can supply all the missing weight?
+            // We want to increase the exit likelihood of one exit block to create
+            // additional flow out of the loop. Figure out how much we need.
             //
-            BasicBlock* const exitBlock          = exitEdge->getSourceBlock();
-            weight_t const    exitBlockFrequency = exitBlock->bbWeight;
-            weight_t const    exitBlockWeight    = exitBlockFrequency * cyclicProbability;
-            weight_t const    currentExitWeight  = exitEdge->getLikelihood() * exitBlockWeight;
+            weight_t const missingExitWeight = 1.0 - cappedExitWeight;
+            JITDUMP("Loop exit flow deficit from capping is " FMT_WT "\n", missingExitWeight);
 
-            // TODO: we might also want to exclude edges that are exiting from child loops here,
-            // or think harder about what might be appropriate in those cases. Seems like we ought
-            // to adjust an edge's likelihoods at most once.
-            //
-            // Currently we don't know which edges do this.
-            //
-            if ((exitBlock->bbJumpKind == BBJ_COND) && (exitBlockWeight > (missingExitWeight + currentExitWeight)))
+            bool adjustedExit = false;
+
+            for (FlowEdge* const exitEdge : loop->m_exitEdges)
             {
-                JITDUMP("Will adjust likelihood of the exit edge from loop exit block " FMT_BB
-                        " to reflect capping; current likelihood is " FMT_WT "\n",
-                        exitBlock->bbNum, exitEdge->getLikelihood());
-
-                BasicBlock* const jump               = exitBlock->bbJumpDest;
-                BasicBlock* const next               = exitBlock->bbNext;
-                FlowEdge* const   jumpEdge           = m_comp->fgGetPredForBlock(jump, exitBlock);
-                FlowEdge* const   nextEdge           = m_comp->fgGetPredForBlock(next, exitBlock);
-                weight_t const    exitLikelihood     = (missingExitWeight + currentExitWeight) / exitBlockWeight;
-                weight_t const    continueLikelihood = 1.0 - exitLikelihood;
-
-                // We are making it more likely that the loop exits, so the new exit likelihood
-                // should be greater than the old.
+                // Does this block have enough weight that it can supply all the missing weight?
                 //
-                assert(exitLikelihood > exitEdge->getLikelihood());
+                BasicBlock* const exitBlock          = exitEdge->getSourceBlock();
+                weight_t const    exitBlockFrequency = exitBlock->bbWeight;
+                weight_t const    exitBlockWeight    = exitBlockFrequency * cyclicProbability;
+                weight_t const    currentExitWeight  = exitEdge->getLikelihood() * exitBlockWeight;
 
-                if (jumpEdge == exitEdge)
+                // TODO: we might also want to exclude edges that are exiting from child loops here,
+                // or think harder about what might be appropriate in those cases. Seems like we ought
+                // to adjust an edge's likelihoods at most once.
+                //
+                // Currently we don't know which edges do this.
+                //
+                if ((exitBlock->bbJumpKind == BBJ_COND) && (exitBlockWeight > (missingExitWeight + currentExitWeight)))
                 {
-                    jumpEdge->setLikelihood(exitLikelihood);
-                    nextEdge->setLikelihood(continueLikelihood);
-                }
-                else
-                {
-                    assert(nextEdge == exitEdge);
-                    jumpEdge->setLikelihood(continueLikelihood);
-                    nextEdge->setLikelihood(exitLikelihood);
-                }
-                adjustedExit = true;
+                    JITDUMP("Will adjust likelihood of the exit edge from loop exit block " FMT_BB
+                            " to reflect capping; current likelihood is " FMT_WT "\n",
+                            exitBlock->bbNum, exitEdge->getLikelihood());
 
-                JITDUMP("New likelihood is  " FMT_WT "\n", exitEdge->getLikelihood());
-                break;
+                    BasicBlock* const jump               = exitBlock->bbJumpDest;
+                    BasicBlock* const next               = exitBlock->bbNext;
+                    FlowEdge* const   jumpEdge           = m_comp->fgGetPredForBlock(jump, exitBlock);
+                    FlowEdge* const   nextEdge           = m_comp->fgGetPredForBlock(next, exitBlock);
+                    weight_t const    exitLikelihood     = (missingExitWeight + currentExitWeight) / exitBlockWeight;
+                    weight_t const    continueLikelihood = 1.0 - exitLikelihood;
+
+                    // We are making it more likely that the loop exits, so the new exit likelihood
+                    // should be greater than the old.
+                    //
+                    assert(exitLikelihood > exitEdge->getLikelihood());
+
+                    if (jumpEdge == exitEdge)
+                    {
+                        jumpEdge->setLikelihood(exitLikelihood);
+                        nextEdge->setLikelihood(continueLikelihood);
+                    }
+                    else
+                    {
+                        assert(nextEdge == exitEdge);
+                        jumpEdge->setLikelihood(continueLikelihood);
+                        nextEdge->setLikelihood(exitLikelihood);
+                    }
+                    adjustedExit = true;
+
+                    JITDUMP("New likelihood is  " FMT_WT "\n", exitEdge->getLikelihood());
+                    break;
+                }
+            }
+
+            if (!adjustedExit)
+            {
+                // Possibly we could have fixed things up by adjusting more than one exit?
+                //
+                JITDUMP("Unable to find suitable exit to carry off capped flow\n");
             }
         }
-
-        if (!adjustedExit)
+        else
         {
-            // Possibly we could have fixed things up by adjusting more than one exit?
-            //
-            JITDUMP("Unable to find suitable exit to carry off capped flow\n");
+            JITDUMP("Exit weight comparable or above 1.0, leaving as is\n");
         }
     }
 }
