@@ -125,7 +125,7 @@ namespace System.Formats.Tar
                 {
                     throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, kvp.Key, kvp.Key[index] == '\n' ? "\\n" : kvp.Key[index]));
                 }
-                if (kvp.Value.IndexOf('\n') != -1)
+                if (kvp.Value.Contains('\n'))
                 {
                     throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedValueChar, kvp.Key, "\\n"));
                 }
