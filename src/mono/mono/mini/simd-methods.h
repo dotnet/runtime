@@ -634,10 +634,12 @@ METHOD(MultiplyRoundedDoublingScalarBySelectedScalarAndSubtractSaturateHigh)
 // Arm.Dp
 METHOD(DotProductBySelectedQuadruplet)
 // Wasm
+METHOD(AverageRounded)
 METHOD(Bitmask)
 METHOD(ConvertNarrowingSignedSaturate)
 METHOD(ConvertNarrowingUnsignedSaturate)
 METHOD(ExtractLane)
+METHOD(MultiplyRoundedSaturateQ15)
 METHOD(ReplaceLane)
 METHOD(ShiftLeft)
 METHOD(Splat)
