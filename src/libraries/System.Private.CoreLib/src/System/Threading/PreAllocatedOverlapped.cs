@@ -9,8 +9,6 @@ namespace System.Threading
     /// <seealso cref="ThreadPoolBoundHandle.AllocateNativeOverlapped(PreAllocatedOverlapped)"/>
     public sealed partial class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
     {
-        internal readonly ThreadPoolBoundHandleOverlapped _overlapped_portable_core;
-        private DeferredDisposableLifetime<PreAllocatedOverlapped> _lifetime;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="PreAllocatedOverlapped"/> class, specifying
@@ -93,7 +91,9 @@ namespace System.Threading
 
         private PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
-            InitializePortableCore(callback, state, pinData, flowExecutionContext);
+            ArgumentNullException.ThrowIfNull(callback);
+
+            _overlapped_portable_core = new ThreadPoolBoundHandleOverlapped(callback, state, pinData, this, flowExecutionContext);
         }
 
         internal bool AddRef() => AddRefPortableCore();

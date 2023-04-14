@@ -17,7 +17,7 @@ namespace System.Threading
     public sealed partial class ThreadPoolBoundHandle : IDisposable, IDeferredDisposable
     {
         private readonly SafeHandle _handle;
-        private readonly SafeThreadPoolIOHandle _threadPoolHandle;
+        private readonly SafeThreadPoolIOHandle? _threadPoolHandle;
         private DeferredDisposableLifetime<ThreadPoolBoundHandle> _lifetime;
         private bool _isDisposed;
 
@@ -52,7 +52,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* UnsafeAllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData) =>
             ThreadPool.UseWindowsThreadPool ?
-            UnsafeAllocateNativeOverlappedCore(callback, state, pinData, flowExecutionContext: false) :
+            UnsafeAllocateNativeOverlappedCore(callback, state, pinData) :
             UnsafeAllocateNativeOverlappedPortableCore(callback, state, pinData);
 
         [CLSCompliant(false)]
@@ -62,13 +62,20 @@ namespace System.Threading
             AllocateNativeOverlappedPortableCore(preAllocated);
 
         [CLSCompliant(false)]
-        public unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped) =>
-            ThreadPool.UseWindowsThreadPool ?
-            FreeNativeOverlappedCore(overlapped) :
-            FreeNativeOverlappedPortableCore(overlapped);
+        public unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped)
+        {
+            if (ThreadPool.UseWindowsThreadPool)
+            {
+                FreeNativeOverlappedCore(overlapped);
+            }
+            else
+            {
+                FreeNativeOverlappedPortableCore(overlapped);
+            }
+        }
 
         [CLSCompliant(false)]
-        public static unsafe object GetNativeOverlappedState(NativeOverlapped* overlapped) =>
+        public static unsafe object? GetNativeOverlappedState(NativeOverlapped* overlapped) =>
             ThreadPool.UseWindowsThreadPool ?
             GetNativeOverlappedStateCore(overlapped) :
             GetNativeOverlappedStatePortableCore(overlapped);

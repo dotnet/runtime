@@ -38,7 +38,7 @@ namespace System.Threading
 
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* UnsafeAllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData) =>
-            UnsafeAllocateNativeOverlappedCore(callback, state, pinData, flowExecutionContext: false);
+            UnsafeAllocateNativeOverlappedCore(callback, state, pinData);
 
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* AllocateNativeOverlapped(PreAllocatedOverlapped preAllocated) =>

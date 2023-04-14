@@ -22,7 +22,9 @@ namespace System.Threading
 
         private unsafe PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
-            InitiliazeCore(callback, state, pinData, flowExecutionContext);
+            ArgumentNullException.ThrowIfNull(callback);
+
+            _overlapped_core = Win32ThreadPoolNativeOverlapped.Allocate(callback, state, pinData, this, flowExecutionContext);
         }
 
         internal bool AddRef() => AddRefCore();

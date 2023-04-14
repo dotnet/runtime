@@ -7,15 +7,10 @@ namespace System.Threading
 {
     public sealed partial class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
     {
+        internal readonly unsafe Win32ThreadPoolNativeOverlapped* _overlapped_core;
+
         private static PreAllocatedOverlapped UnsafeCreateCore(IOCompletionCallback callback, object? state, object? pinData) =>
             new PreAllocatedOverlapped(callback, state, pinData, flowExecutionContext: false);
-
-        private unsafe void InitializeCore(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
-        {
-            ArgumentNullException.ThrowIfNull(callback);
-
-            _overlapped_core = Win32ThreadPoolNativeOverlapped.Allocate(callback, state, pinData, this, flowExecutionContext);
-        }
 
         private bool AddRefCore()
         {

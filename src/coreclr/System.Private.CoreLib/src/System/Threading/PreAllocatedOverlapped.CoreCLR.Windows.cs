@@ -11,8 +11,6 @@ namespace System.Threading
     /// <seealso cref="ThreadPoolBoundHandle.AllocateNativeOverlapped(PreAllocatedOverlapped)"/>
     public sealed partial class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
     {
-        internal readonly unsafe Win32ThreadPoolNativeOverlapped* _overlapped_core;
-        private DeferredDisposableLifetime<PreAllocatedOverlapped> _lifetime;
 
         [CLSCompliant(false)]
         public PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData) :
@@ -28,18 +26,31 @@ namespace System.Threading
         {
             if (ThreadPool.UseWindowsThreadPool)
             {
-                InitiliazeCore(callback, state, pinData, flowExecutionContext);
+                ArgumentNullException.ThrowIfNull(callback);
+
+                _overlapped_core = Win32ThreadPoolNativeOverlapped.Allocate(callback, state, pinData, this, flowExecutionContext);
             }
             else
             {
-                InitializePortableCore(callback, state, pinData, flowExecutionContext);
+                ArgumentNullException.ThrowIfNull(callback);
+
+                _overlapped_portable_core = new ThreadPoolBoundHandleOverlapped(callback, state, pinData, this, flowExecutionContext);
             }
         }
 
         internal bool AddRef() => ThreadPool.UseWindowsThreadPool ? AddRefCore() : AddRefPortableCore();
 
-        internal void Release() => ThreadPool.UseWindowsThreadPool ? ReleaseCore() : ReleasePortableCore();
-
+        internal void Release()
+        {
+            if (ThreadPool.UseWindowsThreadPool)
+            {
+                ReleaseCore();
+            }
+            else
+            {
+                ReleasePortableCore();
+            }
+        }
         public void Dispose()
         {
             if (ThreadPool.UseWindowsThreadPool)
@@ -61,7 +72,7 @@ namespace System.Threading
         {
             if (ThreadPool.UseWindowsThreadPool)
             {
-                IDeferredDisposableOnFinalReleaseCore();
+                IDeferredDisposableOnFinalReleaseCore(disposed);
             }
             else
             {
