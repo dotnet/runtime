@@ -857,7 +857,7 @@ namespace System.Net.Sockets
             /// <see cref="s_completedSentinel"/> if it has completed. Another delegate if OnCompleted was called before the operation could complete,
             /// in which case it's the delegate to invoke when the operation does complete.
             /// </summary>
-            private Action<object?>? _continuation;
+            private volatile Action<object?>? _continuation;
             private ExecutionContext? _executionContext;
             private object? _scheduler;
             /// <summary>Current token value given to a ValueTask and then verified against the value it passes back to us.</summary>
@@ -930,7 +930,7 @@ namespace System.Net.Sockets
             /// <returns>This instance.</returns>
             public ValueTask<Socket> AcceptAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
+                Debug.Assert(_continuation == null, "Expected null continuation to indicate reserved for use");
 
                 if (socket.AcceptAsync(this, cancellationToken))
                 {
@@ -952,7 +952,7 @@ namespace System.Net.Sockets
             /// <returns>This instance.</returns>
             public ValueTask<int> ReceiveAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
+                Debug.Assert(_continuation == null, "Expected null continuation to indicate reserved for use");
 
                 if (socket.ReceiveAsync(this, cancellationToken))
                 {
@@ -972,7 +972,7 @@ namespace System.Net.Sockets
 
             public ValueTask<SocketReceiveFromResult> ReceiveFromAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
+                Debug.Assert(_continuation == null, "Expected null continuation to indicate reserved for use");
 
                 if (socket.ReceiveFromAsync(this, cancellationToken))
                 {
@@ -993,7 +993,7 @@ namespace System.Net.Sockets
 
             public ValueTask<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
+                Debug.Assert(_continuation == null, "Expected null continuation to indicate reserved for use");
 
                 if (socket.ReceiveMessageFromAsync(this, cancellationToken))
                 {
@@ -1018,7 +1018,7 @@ namespace System.Net.Sockets
             /// <returns>This instance.</returns>
             public ValueTask<int> SendAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
+                Debug.Assert(_continuation == null, "Expected null continuation to indicate reserved for use");
 
                 if (socket.SendAsync(this, cancellationToken))
                 {
@@ -1038,7 +1038,7 @@ namespace System.Net.Sockets
 
             public ValueTask SendAsyncForNetworkStream(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
+                Debug.Assert(_continuation == null, "Expected null continuation to indicate reserved for use");
 
                 if (socket.SendAsync(this, cancellationToken))
                 {
@@ -1057,7 +1057,7 @@ namespace System.Net.Sockets
 
             public ValueTask SendPacketsAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
+                Debug.Assert(_continuation == null, "Expected null continuation to indicate reserved for use");
 
                 if (socket.SendPacketsAsync(this, cancellationToken))
                 {
@@ -1076,7 +1076,7 @@ namespace System.Net.Sockets
 
             public ValueTask<int> SendToAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
+                Debug.Assert(_continuation == null, "Expected null continuation to indicate reserved for use");
 
                 if (socket.SendToAsync(this, cancellationToken))
                 {
@@ -1096,7 +1096,7 @@ namespace System.Net.Sockets
 
             public ValueTask ConnectAsync(Socket socket)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
+                Debug.Assert(_continuation == null, "Expected null continuation to indicate reserved for use");
 
                 try
                 {
@@ -1122,7 +1122,7 @@ namespace System.Net.Sockets
 
             public ValueTask DisconnectAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
+                Debug.Assert(_continuation == null, $"Expected null continuation to indicate reserved for use");
 
                 if (socket.DisconnectAsync(this, cancellationToken))
                 {
