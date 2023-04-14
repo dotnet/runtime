@@ -82,7 +82,6 @@ namespace CoreclrTestLib
                     }
                     else // platform is apple
                     {
-
                         string targetString = "";
 
                         switch (targetOS) {
