@@ -327,6 +327,14 @@ static unsafe partial class CoreCLRHost
         IntPtr field)
         => FieldInfo.GetFieldFromHandle(field.FieldHandleFromHandleIntPtr(), RuntimeTypeHandle.FromIntPtr(klass)).ToNativeRepresentation();
 
+    [return: NativeCallbackType("MonoObject*")]
+    public static IntPtr assembly_get_object(
+        [ManagedWrapperOptions(ManagedWrapperOptions.Exclude)] [NativeCallbackType("MonoDomain*")]
+        IntPtr domain,
+        [NativeCallbackType("MonoAssembly*")]
+        IntPtr assembly)
+        => assembly.AssemblyFromGCHandleIntPtr().ToNativeRepresentation();
+
     private static StringPtr StringToPtr(string s)
     {
         // Return raw object pointer for now with the NullGC.
