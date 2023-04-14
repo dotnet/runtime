@@ -17,6 +17,9 @@ public static class Extensions
         return elements.AggregateWith(" ", builder);
     }
 
+    public static string AggregateWith(this IEnumerable<string> elements, string separator)
+        => elements.AggregateWith(separator, new StringBuilder());
+
     public static string AggregateWith(this IEnumerable<string> elements, string separator, StringBuilder builder)
     {
         bool addSep = false;

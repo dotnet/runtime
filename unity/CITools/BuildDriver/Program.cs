@@ -168,8 +168,9 @@ public class Program
             {
                 if (bTargets.HasFlag(BuildTargets.NullGC))
                     NullGC.Build(gConfig);
-                if (bTargets.HasFlag(BuildTargets.CoreCLR))
-                    CoreCLR.Build(gConfig);
+
+                if (bTargets.HasFlag(BuildTargets.Runtime) || bTargets.HasFlag(BuildTargets.ClassLibs))
+                    CoreCLR.Build(gConfig, bTargets);
 
                 // TODO: Switch to using Embedding Host build to perform the copy instead of this once that lands.
                 NPath artifacts = Artifacts.ConsolidateArtifacts(gConfig);
