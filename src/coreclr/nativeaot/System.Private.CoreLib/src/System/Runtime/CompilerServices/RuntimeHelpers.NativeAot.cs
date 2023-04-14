@@ -274,7 +274,10 @@ namespace System.Runtime.CompilerServices
             ArgumentOutOfRangeException.ThrowIfNegative(size);
 
             // We don't support unloading; the memory will never be freed.
-            return (IntPtr)NativeMemory.Alloc((uint)size);
+            void* mem = NativeMemory.Alloc((uint)size);
+            NativeMemory.Clear(mem, (uint)size);
+
+            return (IntPtr)mem;
         }
 
         public static void PrepareDelegate(Delegate d)
