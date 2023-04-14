@@ -205,18 +205,11 @@ namespace System.Tests
             // MacCatalyst is a special case since it also returns true for iOS
             if (currentOSName == "MacCatalyst")
             {
-                Assert.Equal(10, allResults.Length);
-                Assert.False(allResults[0]); // IsBrowser()
-                Assert.False(allResults[1]); // IsLinux()
-                Assert.False(allResults[2]); // IsFreeBSD()
-                Assert.False(allResults[3]); // IsAndroid()
-                Assert.True(allResults[4]);  // IsIOS()
-                Assert.True(allResults[5]);  // IsMacCatalyst()
-                Assert.False(allResults[6]); // IsMacOS()
-                Assert.False(allResults[7]); // IsTvOS()
-                Assert.False(allResults[8]); // IsWatchOS()
-                Assert.False(allResults[9]); // IsWindows()
-                Assert.False(allResults[10]); // IsWasi()
+                for (int i = 0; i < allResults.Length; i++)
+                {
+                    bool expected = (i == 4 || i == 5) ? true : false; // true for IsIOS() and IsMacCatalyst()
+                    Assert.Equal(expected, allResults[i]);
+                }
             }
             else
             {
