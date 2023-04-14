@@ -31,6 +31,7 @@ internal sealed unsafe partial class MsQuicApi
     // Remove once fixed: https://github.com/mono/linker/issues/1660
     [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(MsQuicSafeHandle))]
     [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(MsQuicContextSafeHandle))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(MsQuicApi))]
     private MsQuicApi(QUIC_API_TABLE* apiTable)
     {
         ApiTable = apiTable;
@@ -226,5 +227,20 @@ internal sealed unsafe partial class MsQuicApi
         }
 #endif
         return false;
+    }
+
+    // Do not change the name and signature without looking for textual occurrences!
+    // This method is invoked via reflection from QUIC functional and HTTP stress tests.
+    private static (bool, string) SetUpForTests()
+    {
+        if (!IsQuicSupported)
+        {
+            return (true, MsQuicLibraryVersion);
+        }
+
+        QUIC_SETTINGS settings = default(QUIC_SETTINGS);
+        settings.IsSet.MaxWorkerQueueDelayUs = 1;
+        settings.MaxWorkerQueueDelayUs = 2_500_000u; // 2.5s, 10x the default
+        return (StatusSucceeded(MsQuicApi.Api.ApiTable->SetParam(null, QUIC_PARAM_GLOBAL_SETTINGS, (uint)sizeof(QUIC_SETTINGS), (byte*)&settings)), MsQuicLibraryVersion);
     }
 }

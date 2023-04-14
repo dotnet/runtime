@@ -119,7 +119,7 @@ namespace System.Net.Quic.Tests
 
             // Connect attempt should be stopped with "UserCanceled".
             var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await connectTask);
-            Assert.Contains(TlsAlertMessage.UserCanceled.ToString(), connectException.Message);
+            Assert.Contains("UserCanceled", connectException.Message);
         }
 
         [Fact]
@@ -160,7 +160,7 @@ namespace System.Net.Quic.Tests
 
             // Connect attempt should be stopped with "UserCanceled".
             var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await connectTask);
-            Assert.Contains(TlsAlertMessage.UserCanceled.ToString(), connectException.Message);
+            Assert.Contains("UserCanceled", connectException.Message);
         }
 
         [Fact]

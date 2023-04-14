@@ -13,8 +13,7 @@ using Xunit;
 using Xunit.Abstractions;
 using System.Diagnostics.Tracing;
 using System.Net.Sockets;
-using Microsoft.Quic;
-using static Microsoft.Quic.MsQuic;
+using System.Reflection;
 
 namespace System.Net.Quic.Tests
 {
@@ -44,17 +43,14 @@ namespace System.Net.Quic.Tests
 
         static unsafe QuicTestBase()
         {
-            Console.WriteLine($"MsQuic {(IsSupported ? "supported" : "not supported")} and using '{MsQuicApi.MsQuicLibraryVersion}'.");
+            Type msQuicApi = typeof(QuicConnection).Assembly.GetType("System.Net.Quic.MsQuicApi");
+            (bool maxQueueWorkDelaySet, string msQuicLibraryVersion) = ((bool, string))msQuicApi.GetMethod("SetUpForTests", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, Array.Empty<object?>());
 
-            if (IsSupported)
+            Console.WriteLine($"MsQuic {(IsSupported ? "supported" : "not supported")} and using '{msQuicLibraryVersion}'.");
+
+            if (IsSupported && !maxQueueWorkDelaySet)
             {
-                QUIC_SETTINGS settings = default(QUIC_SETTINGS);
-                settings.IsSet.MaxWorkerQueueDelayUs = 1;
-                settings.MaxWorkerQueueDelayUs = 2_500_000u; // 2.5s, 10x the default
-                if (StatusFailed(MsQuicApi.Api.ApiTable->SetParam(null, QUIC_PARAM_GLOBAL_SETTINGS, (uint)sizeof(QUIC_SETTINGS), (byte*)&settings)))
-                {
-                    Console.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
-                }
+                Console.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
             }
         }
 
