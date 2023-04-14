@@ -136,8 +136,6 @@ PerfMap::PerfMap()
 
     // Initialize with no failures.
     m_ErrorEncountered = false;
-
-    s_StubsMapped = 0;
 }
 
 // Clean-up resources.
