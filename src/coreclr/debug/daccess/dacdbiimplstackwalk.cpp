@@ -158,7 +158,9 @@ void DacDbiInterfaceImpl::GetStackWalkCurrentContext(StackFrameIterator * pIter,
     T_CONTEXT tmpContext = { };
     UpdateContextFromRegDisp(pCF->GetRegisterSet(), &tmpContext);
     CopyMemory(pContext, &tmpContext, sizeof(*pContext));
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     pContext->ContextFlags &= ~(CONTEXT_XSTATE & CONTEXT_AREA_MASK);
+#endif
 }
 
 
