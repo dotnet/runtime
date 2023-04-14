@@ -472,7 +472,7 @@ typedef enum
      *
      * NOTE: HNDTYPE_WEAK_NATIVE_COM is no longer used in the VM starting .NET 8
      *       but we are keeping it here for backward compatibility purposes"
-     * 
+     *
      */
     HNDTYPE_WEAK_NATIVE_COM   = 9
 } HandleType;
@@ -565,7 +565,7 @@ enum class GCConfigurationType
 {
     Int64,
     StringUtf8,
-    Boolean 
+    Boolean
 };
 
 using ConfigurationValueFunc = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);

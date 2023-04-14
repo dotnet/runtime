@@ -18,46 +18,46 @@
 #include "gcrecord.h"
 
 // The per heap and global fields are separated into the following categories -
-// 
+//
 // Used in GC and needs to be maintained, ie, next GC can be using this field so it needs to have the right value.
 // Note that for some fields this doesn't mean the value of the field itself will change (it could remain the same
 // throughout the process lifetime (for example, finalize_queue) but you'll need to pay attention to its content
-// and make sure it's updated correctly through each GC. 
-// 
+// and make sure it's updated correctly through each GC.
+//
 // Some fields are marked as "loosely maintained" in their comments - this means they are really only modified during
 // a single GC *except* they can be resized during a GC so the reinit-ed value will carry over to later GCs.
 // PER_HEAP_FIELD_MAINTAINED
-// 
+//
 // Like PER_HEAP_FIELD_MAINTAINED and also used in the allocator code paths
 // PER_HEAP_FIELD_MAINTAINED_ALLOC
-// 
+//
 // Used only during a single GC so we could fill it with an arbitrary value and shouldn't break anything.
 // Note that for BGC fields, this means it's initialized at the beginning of that BGC. Ephemeral GCs can happen during
 // this single BGC but they do not actually modify these fields.
 // PER_HEAP_FIELD_SINGLE_GC
-// 
+//
 // Like PER_HEAP_FIELD_SINGLE_GC and also used in the allocator code paths
 // PER_HEAP_FIELD_SINGLE_GC_ALLOC
-// 
+//
 // Only used by the allocator code paths
 // PER_HEAP_FIELD_ALLOC
-// 
+//
 // Initialized during the GC init and never changes
 // PER_HEAP_FIELD_INIT_ONLY
-// 
+//
 // Used for diagnostics purpose only
 // PER_HEAP_FIELD_DIAG_ONLY
-// 
+//
 // Corresponding annotation for global fields
 // PER_HEAP_ISOLATED_FIELD_MAINTAINED
 // PER_HEAP_ISOLATED_FIELD_MAINTAINED_ALLOC
 // PER_HEAP_ISOLATED_FIELD_SINGLE_GC
 // PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC
 // PER_HEAP_ISOLATED_FIELD_INIT_ONLY
-// 
-// If a field does not fit any of the above category, such as fgn_maxgen_percent which is only updated by an API, 
+//
+// If a field does not fit any of the above category, such as fgn_maxgen_percent which is only updated by an API,
 // it will be marked as PER_HEAP_FIELD/PER_HEAP_ISOLATED_FIELD.
-// 
+//
 // A few notes -
 //
 // + within the section of a particular category of fields I use the following policy to list them -
@@ -70,7 +70,7 @@
 //
 // + some of the fields are used by both regions and segments share. When that's the case, the annotation
 // is based on regions. So for segments they may or may not apply (segments code is in maintainence mode only).
-// 
+//
 // + some fields are used by the GC and WB but not by the allocator, in which case I will indicate them as such.
 #ifdef MULTIPLE_HEAPS
 #define PER_HEAP_FIELD
@@ -278,7 +278,7 @@ void GCLogConfig (const char *fmt, ... );
 #define MAX_NUM_BUCKETS (MAX_INDEX_POWER2 - MIN_INDEX_POWER2 + 1)
 
 #ifdef USE_REGIONS
-#define MAX_REGION_SIZE 0x80000000 
+#define MAX_REGION_SIZE 0x80000000
 #endif // USE_REGIONS
 
 #define MAX_NUM_FREE_SPACES 200
@@ -969,7 +969,7 @@ public:
     // When a generation is condemned, these are re-calculated. For older generations these are maintained across GCs as
     // younger generation GCs allocate into this generation's FL.
     //
-    // If we rearrange regions between heaps, we need to adjust these values accordingly. free_list_space can be adjusted 
+    // If we rearrange regions between heaps, we need to adjust these values accordingly. free_list_space can be adjusted
     // when we adjust the FL. However, since we don't actually maintain free_obj_space per region and walking an entire
     // region just to get free_obj_space is not really worth it, we might just have to live with inaccurate value till
     // the next GC that condemns this generation which is okay since this is usually a small value anyway.
@@ -1028,7 +1028,7 @@ struct static_data
 };
 
 // dynamic data is maintained per generation, so we have total_generation_count number of them.
-// 
+//
 // The dynamic data fields are grouped into 3 categories:
 //
 // calculated logical data (like desired_allocation)
@@ -1046,7 +1046,7 @@ public:
 
     //
     // The next group of fields are updated during a GC if that GC condemns this generation.
-    // 
+    //
     // Same as new_allocation but only updated during a GC if the generation is condemned.
     // We should really just get rid of this.
     ptrdiff_t gc_new_allocation;
@@ -3543,7 +3543,7 @@ private:
     PER_HEAP_FIELD_MAINTAINED generation generation_table[total_generation_count];
 
     // These are loosely maintained, ie, could be reinitialized at any GC if needed. All that's
-    // maintained is just the # of elements in mark_stack_array.    
+    // maintained is just the # of elements in mark_stack_array.
     // The content of mark_stack_array is only maintained during a single GC.
     PER_HEAP_FIELD_MAINTAINED size_t mark_stack_array_length;
     PER_HEAP_FIELD_MAINTAINED mark* mark_stack_array;
@@ -3634,7 +3634,7 @@ private:
     PER_HEAP_FIELD_MAINTAINED_ALLOC alloc_list poh_alloc_list[NUM_POH_ALIST - 1];
 
     // Keeps track of the highest address allocated by Alloc
-    // Used in allocator code path. Blocking GCs do use it at the beginning (to update heap_segment_allocated) and 
+    // Used in allocator code path. Blocking GCs do use it at the beginning (to update heap_segment_allocated) and
     // at the end they get initialized for the allocator.
     PER_HEAP_FIELD_MAINTAINED_ALLOC uint8_t* alloc_allocated;
 
@@ -3700,13 +3700,13 @@ private:
 #define vm_heap ((GCHeap*) g_theGCHeap)
 #define heap_number (0)
 #endif //MULTIPLE_HEAPS
-    
+
 #ifdef BACKGROUND_GC
     // We only use this when we need to timeout BGC threads.
     PER_HEAP_FIELD_INIT_ONLY CLRCriticalSection bgc_threads_timeout_cs;
 
     // For regions these are the same as g_gc_lowest_address/g_gc_highest_address
-    // and never change. 
+    // and never change.
     PER_HEAP_FIELD_INIT_ONLY uint8_t* background_saved_lowest_address;
     PER_HEAP_FIELD_INIT_ONLY uint8_t* background_saved_highest_address;
 
@@ -3972,7 +3972,7 @@ private:
 
     // Highest and lowest address for ephemeral generations.
     // For regions these are only used during a GC (init-ed at beginning of mark and
-    // used later in that GC). 
+    // used later in that GC).
     // They could be used for WB but we currently don't use them for that purpose, even
     // thought we do pass them to the WB code.
     //
@@ -4244,7 +4244,7 @@ private:
 
     // For implementation of GCHeap::GetMemoryInfo which is called by
     // the GC.GetGCMemoryInfo API
-    // 
+    //
     // We record the time GC work is done while EE is suspended.
     // suspended_start_ts is what we get right before we call
     // SuspendEE. We omit the time between GC end and RestartEE
