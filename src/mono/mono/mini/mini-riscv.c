@@ -924,11 +924,25 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	//  If the reture value would have been passed by reference,
 	// the caller allocates memory for the return value, and
 	// passes the address as an implicit first parameter.
-	if (cinfo->ret.storage == ArgVtypeByRef) {
+
+	switch (cinfo->ret.storage) {
+	case ArgVtypeByRef:
 		g_assert (cinfo->ret.reg == RISCV_A0);
 		cinfo->next_arg = RISCV_A1;
-	} else
+		break;
+
+	case ArgVtypeInIReg:
+	case ArgInIReg:
+	case ArgInFReg:
+	case ArgNone:
 		cinfo->next_arg = RISCV_A0;
+		break;
+
+	default:
+		g_print("Unhandled retyrn type %d\n", cinfo->ret.storage);
+		NOT_IMPLEMENTED;
+		break;
+	}
 
 	cinfo->next_farg = RISCV_FA0;
 	// reset status
