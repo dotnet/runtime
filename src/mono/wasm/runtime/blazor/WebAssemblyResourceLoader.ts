@@ -40,6 +40,7 @@ export class WebAssemblyResourceLoader {
         return { name, url: toAbsoluteUrl(url), response };
     }
 
+    // TODO MF: logToConsole
     logToConsole(): void {
         const cacheLoadsEntries = Object.values(this.cacheLoads);
         const networkLoadsEntries = Object.values(this.networkLoads);
