@@ -2,10 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
+using Xunit;
 
-internal class Ddb103087
+public class Ddb103087
 {
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint() => Run(new string[0]);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int Run(string[] args)
     {
         double v1 = args.Length == 0 ? -0.0 : 0.0;
         double v2 = args.Length != 0 ? -0.0 : 0.0;

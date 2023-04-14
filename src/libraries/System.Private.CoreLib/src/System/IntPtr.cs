@@ -211,9 +211,9 @@ namespace System
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             ((nint_t)_value).TryFormat(destination, out charsWritten, format, provider);
 
-        /// <inheritdoc/>
-        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
-            ((IUtf8SpanFormattable)(nint_t)_value).TryFormat(utf8Destination, out bytesWritten, format, provider);
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+            ((nint_t)_value).TryFormat(utf8Destination, out bytesWritten, format, provider);
 
         public static nint Parse(string s) => (nint)nint_t.Parse(s);
         public static nint Parse(string s, NumberStyles style) => (nint)nint_t.Parse(s, style);

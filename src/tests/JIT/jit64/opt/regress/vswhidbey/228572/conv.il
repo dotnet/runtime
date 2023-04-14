@@ -8,9 +8,9 @@
 }
 .assembly extern xunit.core {}
 
-.assembly 'conv' {}
+.assembly 'conv_228572' {}
 .assembly extern mscorlib{auto}
-.class Conv_test {
+.class public Conv_test {
 .method static int32 Main_test() {
 .maxstack	5
 
@@ -38,7 +38,7 @@ IL_01:
 
  ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )
