@@ -6675,12 +6675,32 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     LIR::Range& blockRange = LIR::AsRange(block);
     if (tree != nullptr)
     {
-        JITDUMP("before %d.%s:\n", tree->gtTreeID, GenTree::OpName(tree->gtOper));
         LIR::Use treeUse;
+        GenTree* useNode  = nullptr;
         bool     foundUse = blockRange.TryGetUse(tree, &treeUse);
         assert(foundUse);
+        useNode = treeUse.User();
+
+#ifdef TARGET_ARM64
+        if (refPosition->needsConsecutive && useNode->OperIs(GT_FIELD_LIST))
+        {
+            // The tree node requiring consecutive registers are represented as GT_FIELD_LIST.
+            // When restoring the upper vector, make sure to restore it at the point where
+            // GT_FIELD_LIST is consumed instead where the individual field is consumed, which
+            // will always be at GT_FIELD_LIST creation time. That way, we will restore the
+            // upper vector just before the use of them in the intrinsic.
+            LIR::Use fieldListUse;
+            if (blockRange.TryGetUse(useNode, &fieldListUse))
+            {
+                treeUse = fieldListUse;
+                useNode = treeUse.User();
+            }
+        }
+#endif
+        JITDUMP("before %d.%s:\n", useNode->gtTreeID, GenTree::OpName(useNode->gtOper));
+
         // We need to insert the restore prior to the use, not (necessarily) immediately after the lclVar.
-        blockRange.InsertBefore(treeUse.User(), LIR::SeqTree(compiler, simdUpperRestore));
+        blockRange.InsertBefore(useNode, LIR::SeqTree(compiler, simdUpperRestore));
     }
     else
     {
