@@ -14,12 +14,6 @@ resources:
       env:
         ROOTFS_DIR: /crossrootfs/armv6
 
-    # Use old build images until we can avoid a clang-12 crash: https://github.com/dotnet/runtime/issues/84503
-    - container: mono_linux_arm64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-cross-arm64
-      env:
-        ROOTFS_DIR: /crossrootfs/arm64
-
     - container: linux_arm64
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64-20230414124727-8100bf7
       env:

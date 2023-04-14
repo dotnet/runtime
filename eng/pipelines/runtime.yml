@@ -701,9 +701,7 @@ extends:
           - osx_x64
           - osx_arm64
           - linux_x64
-          # - linux_arm64
-          # Remove once we can use linux_arm64: https://github.com/dotnet/runtime/issues/84503
-          - mono_linux_arm64
+          - linux_arm64
           # - linux_musl_arm64
           - windows_x64
           - windows_x86
