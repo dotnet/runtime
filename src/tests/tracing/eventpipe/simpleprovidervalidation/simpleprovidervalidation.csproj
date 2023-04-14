@@ -9,6 +9,7 @@
     <EventSourceSupport Condition="'$(TestBuildMode)' == 'nativeaot'">true</EventSourceSupport>
     <EnableNativeEventPipe Condition="'$(TestBuildMode)' == 'nativeaot'">true</EnableNativeEventPipe>
     <IncludeOOBLibraries Condition="'$(TestBuildMode)' == 'nativeaot'">true</IncludeOOBLibraries>
+    <NativeAotIncompatible>false</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
@@ -29,4 +30,5 @@
       <IlcReference Include="@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll' and '%(LibrariesRuntimeFiles.IsNative)' != 'true'"/>
     </ItemGroup>
   </Target>
+
 </Project>
