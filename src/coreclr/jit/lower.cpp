@@ -1958,7 +1958,7 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                 else if ((loadWidth == 64) || (MaxUnrollSize == 128))
                 {
                     loadWidth = 64;
-                    loadType = TYP_SIMD64;
+                    loadType  = TYP_SIMD64;
                 }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
