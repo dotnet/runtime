@@ -30,22 +30,25 @@ namespace System.Reflection.Emit
             Justification = "Could not propagate attribute into 'ctor.DeclaringType' only available at runtime")]
         internal static CustomAttributeInfo DecodeCustomAttribute(ConstructorInfo ctor, ReadOnlySpan<byte> data)
         {
-            int pos;
+            int pos = 2;
             CustomAttributeInfo info = default;
 
-            // Prolog
             if (data.Length < 2)
-                throw new InvalidOperationException(SR.Format(SR.InvalidOperation_InvalidCustomAttributeLength, data.Length));
+            {
+                throw new InvalidOperationException(SR.Format(SR.InvalidOperation_InvalidCustomAttributeLength, ctor.DeclaringType, data.Length));
+            }
             if ((data[0] != 0x1) || (data[1] != 0x00))
-                throw new InvalidOperationException(SR.InvalidOperation_InvalidProlog);
-            pos = 2;
+            {
+                throw new InvalidOperationException(SR.Format(SR.InvalidOperation_InvalidProlog, ctor.DeclaringType));
+            }
 
             ParameterInfo[] pi = ctor.GetParameters();
             info._ctor = ctor;
             info._ctorArgs = new object?[pi.Length];
             for (int i = 0; i < pi.Length; ++i)
+            {
                 info._ctorArgs[i] = DecodeCustomAttributeValue(pi[i].ParameterType, data, pos, out pos);
-
+            }
             int numNamed = data[pos] + (data[pos + 1] * 256);
             pos += 2;
 
@@ -74,9 +77,11 @@ namespace System.Reflection.Emit
                     /* Field */
                     FieldInfo? fi = ctor.DeclaringType!.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                     if (fi == null)
-                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_EmptyFieldForCustomAttributeType, ctor.DeclaringType, name));
-
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_EmptyFieldForCustomAttribute, ctor.DeclaringType, name));
+                    }
                     object? val = DecodeCustomAttributeValue(fi.FieldType, data, pos, out pos);
+
                     if (enumTypeName != null)
                     {
                         Type enumType = Type.GetType(enumTypeName)!;
@@ -86,7 +91,9 @@ namespace System.Reflection.Emit
                     info._namedParamValues[i] = val;
                 }
                 else
-                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_UnknownNamedType, namedType));
+                {
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_UnknownNamedType, ctor.DeclaringType, namedType));
+                }
             }
 
             return info;
@@ -142,12 +149,13 @@ namespace System.Reflection.Emit
                     pos += 1;
 
                     if (subtype >= 0x02 && subtype <= 0x0e)
+                    {
                         return DecodeCustomAttributeValue(ElementTypeToType(subtype), data, pos, out rpos);
-                    else
-                        throw new NotImplementedException(SR.NotImplemented_UnhandledSubType);
-                default:
-                    throw new NotImplementedException(SR.Format(SR.NotImplemented_TypeForValueNotHandled, t));
+                    }
+                    break;
             }
+
+            throw new NotImplementedException(SR.Format(SR.NotImplemented_TypeForValue, t));
         }
 
         private static Type ElementTypeToType(int elementType) =>

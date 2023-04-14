@@ -19,8 +19,8 @@ namespace System.Reflection.Emit
         private PackingSize _packingSize;
         private int _typeSize;
 
-        internal List<MethodBuilderImpl> _methodDefStore = new();
-        internal List<FieldBuilderImpl> _fieldDefStore = new();
+        internal List<MethodBuilderImpl> _methodDefinitions = new();
+        internal List<FieldBuilderImpl> _fieldDefinitions = new();
         internal List<CustomAttributeWrapper> _customAttributes = new();
 
         internal TypeBuilderImpl(string fullName, TypeAttributes typeAttributes,
@@ -54,7 +54,7 @@ namespace System.Reflection.Emit
         protected override FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
             var field = new FieldBuilderImpl(this, fieldName, type, attributes);
-            _fieldDefStore.Add(field);
+            _fieldDefinitions.Add(field);
             return field;
         }
         protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names) => throw new NotImplementedException();
@@ -62,7 +62,7 @@ namespace System.Reflection.Emit
         protected override MethodBuilder DefineMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             MethodBuilderImpl methodBuilder = new(name, attributes, callingConvention, returnType, parameterTypes, _module, this);
-            _methodDefStore.Add(methodBuilder);
+            _methodDefinitions.Add(methodBuilder);
             return methodBuilder;
         }
 
@@ -100,7 +100,7 @@ namespace System.Reflection.Emit
                 case "System.Runtime.InteropServices.ComImportAttribute":
                     _attributes |= TypeAttributes.Import;
                     break;
-                case "System.Security.SuppressUnmanagedCodeSecurityAttribute":
+                case "System.Security.SuppressUnmanagedCodeSecurityAttribute": // It says has no effect in .NET Core, maybe remove?
                     _attributes |= TypeAttributes.HasSecurity;
                     return false;
                 default: return false;
@@ -118,7 +118,7 @@ namespace System.Reflection.Emit
                 LayoutKind.Auto => TypeAttributes.AutoLayout,
                 LayoutKind.Explicit => TypeAttributes.ExplicitLayout,
                 LayoutKind.Sequential => TypeAttributes.SequentialLayout,
-                _ => throw new ArgumentException(SR.Argument_InvalidKindOfTypeForCA),
+                _ => TypeAttributes.AutoLayout,
             };
 
             for (int i = 0; i < attributeInfo._namedParamNames.Length; ++i)
@@ -152,7 +152,7 @@ namespace System.Reflection.Emit
                         _typeSize = value;
                         break;
                     default:
-                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_UnknownNamedType, name));
+                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_UnknownNamedType, con.DeclaringType, name));
                 }
             }
         }

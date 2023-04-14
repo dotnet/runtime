@@ -130,9 +130,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
-        {
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute) =>
             _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
-        }
     }
 }

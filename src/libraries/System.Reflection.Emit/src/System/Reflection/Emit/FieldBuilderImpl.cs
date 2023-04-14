@@ -10,6 +10,7 @@ namespace System.Reflection.Emit
     {
         private readonly TypeBuilderImpl _typeBuilder;
         private readonly string _fieldName;
+        internal int _offset;
         private FieldAttributes _attributes;
         private readonly Type _fieldType;
 
@@ -21,28 +22,27 @@ namespace System.Reflection.Emit
             _typeBuilder = typeBuilder;
             _fieldType = type;
             _attributes = attributes & ~FieldAttributes.ReservedMask;
+            _offset = -1;
         }
 
         protected override void SetConstantCore(object? defaultValue) => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
-            if (!IsPseudoAttribute(con.ReflectedType!.FullName!))
+            if (!IsPseudoAttribute(con.ReflectedType!.FullName!, binaryAttribute))
             {
                 _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
             }
         }
 
-        private bool IsPseudoAttribute(string attributeName)
+        private bool IsPseudoAttribute(string attributeName, ReadOnlySpan<byte> binaryAttribute)
         {
             switch (attributeName)
             {
                 case "System.Runtime.InteropServices.FieldOffsetAttribute":
-                    /* TODO:  Not sure how to apply this
-                     * byte[] data = customBuilder.Data;
-                        offset = (int)data[2];
-                        offset |= ((int)data[3]) << 8;
-                        offset |= ((int)data[4]) << 16;
-                        offset |= ((int)data[5]) << 24;*/
+                    _offset = (int)binaryAttribute[2];
+                    _offset |= ((int)binaryAttribute[3]) << 8;
+                    _offset |= ((int)binaryAttribute[4]) << 16;
+                    _offset |= ((int)binaryAttribute[5]) << 24;
                     break;
                 case "System.NonSerializedAttribute":
 #pragma warning disable SYSLIB0050 // 'FieldAttributes.NotSerialized' is obsolete: 'Formatter-based serialization is obsolete and should not be used'.
@@ -61,7 +61,12 @@ namespace System.Reflection.Emit
             return true;
         }
 
-        protected override void SetOffsetCore(int iOffset) => throw new NotImplementedException();
+        protected override void SetOffsetCore(int iOffset)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(iOffset);
+
+            _offset = iOffset;
+        }
 
         #region MemberInfo Overrides
 

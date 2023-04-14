@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
@@ -18,6 +19,7 @@ namespace System.Reflection.Emit
         private readonly string _name;
         private readonly CallingConventions _callingConventions;
         private readonly TypeBuilderImpl _declaringType;
+        internal DllImportData? _dllImportData;
 
         internal List<CustomAttributeWrapper> _customAttributes = new();
 
@@ -67,44 +69,15 @@ namespace System.Reflection.Emit
                     impla |= data[3] << 8;
                     _methodImplFlags |= (MethodImplAttributes)impla;
                     break;
-
                 case "System.Runtime.InteropServices.DllImportAttribute":
-                    CustomAttributeInfo attr = CustomAttributeInfo.DecodeCustomAttribute(con, data);
-                    bool preserveSig = true;
-
-                    /* TODO
-                     * pi_dll = (string?)attr._ctorArgs[0];
-                    if (pi_dll == null || pi_dll.Length == 0)
-                        throw new ArgumentException(SR.Arg_DllNameCannotBeEmpty);
-
-                    native_cc = Runtime.InteropServices.CallingConvention.Winapi;*/
-
-                    for (int i = 0; i < attr._namedParamNames.Length; ++i)
                     {
-                        string name = attr._namedParamNames[i];
-                        object? value = attr._namedParamValues[i];
-
-                        if (name == "PreserveSig")
-                            preserveSig = (bool)value!;
-                        /*else if (name == "CallingConvention") // TODO: this values might need to be covered
-                            native_cc = (CallingConvention)value!;
-                        else if (name == "CharSet")
-                            charset = (CharSet)value!;
-                        else if (name == "EntryPoint")
-                            pi_entry = (string)value!;
-                        else if (name == "ExactSpelling")
-                            ExactSpelling = (bool)value!;
-                        else if (name == "SetLastError")
-                            SetLastError = (bool)value!;
-                        else if (name == "BestFitMapping")
-                            BestFitMapping = (bool)value!;
-                        else if (name == "ThrowOnUnmappableChar")
-                            ThrowOnUnmappableChar = (bool)value!;*/
+                        _dllImportData = DllImportData.CreateDllImportData(CustomAttributeInfo.DecodeCustomAttribute(con, data), out var preserveSig);
+                        _attributes |= MethodAttributes.PinvokeImpl;
+                        if (preserveSig)
+                        {
+                            _methodImplFlags |= MethodImplAttributes.PreserveSig;
+                        }
                     }
-
-                    _attributes |= MethodAttributes.PinvokeImpl;
-                    if (preserveSig)
-                        _methodImplFlags |= MethodImplAttributes.PreserveSig;
                     break;
                 case "System.Runtime.InteropServices.PreserveSigAttribute":
                     _methodImplFlags |= MethodImplAttributes.PreserveSig;
@@ -175,5 +148,112 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCodeAttribute("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params System.Type[] typeArguments)
             => throw new NotImplementedException();
+    }
+
+    internal sealed class DllImportData
+    {
+        private readonly string _moduleName;
+        private readonly string? _entryPoint;
+        private readonly MethodImportAttributes _flags;
+        internal DllImportData(string moduleName, string? enntryPoint, MethodImportAttributes flags)
+        {
+            _moduleName = moduleName;
+            _entryPoint = enntryPoint;
+            _flags = flags;
+        }
+
+        public string ModuleName
+        {
+            get { return _moduleName; }
+        }
+
+        public string? EntryPoint
+        {
+            get { return _entryPoint; }
+        }
+
+        public MethodImportAttributes Flags
+        {
+            get { return _flags; }
+        }
+
+        internal static DllImportData CreateDllImportData(CustomAttributeInfo attr, out bool preserveSig)
+        {
+            string? moduleName = (string?)attr._ctorArgs[0];
+            if (moduleName == null || moduleName.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_DllNameCannotBeEmpty);
+            }
+
+            MethodImportAttributes importAttributes = MethodImportAttributes.None;
+            string? entryPoint = null;
+            preserveSig = true;
+            for (int i = 0; i < attr._namedParamNames.Length; ++i)
+            {
+                string name = attr._namedParamNames[i];
+                object value = attr._namedParamValues[i]!;
+                switch (name)
+                {
+                    case "PreserveSig":
+                        preserveSig = (bool)value; break;
+                    case "CallingConvention":
+                        importAttributes |= (CallingConvention)value switch
+                        {
+                            CallingConvention.Cdecl => MethodImportAttributes.CallingConventionCDecl,
+                            CallingConvention.FastCall => MethodImportAttributes.CallingConventionFastCall,
+                            CallingConvention.StdCall => MethodImportAttributes.CallingConventionStdCall,
+                            CallingConvention.ThisCall => MethodImportAttributes.CallingConventionThisCall,
+                            _=> MethodImportAttributes.CallingConventionWinApi // Roslyn defaults with this
+                        };
+                        break;
+                    case "CharSet":
+                        importAttributes |= (CharSet)value switch
+                        {
+                            CharSet.Ansi => MethodImportAttributes.CharSetAnsi,
+                            CharSet.Auto => MethodImportAttributes.CharSetAuto,
+                            CharSet.Unicode => MethodImportAttributes.CharSetUnicode,
+                            _ => MethodImportAttributes.CharSetAuto
+                        };
+                        break;
+                    case "EntryPoint":
+                        entryPoint = (string?)value;
+                        break;
+                    case "ExactSpelling":
+                        if ((bool)value)
+                        {
+                            importAttributes |= MethodImportAttributes.ExactSpelling;
+                        }
+                        break;
+                    case "SetLastError":
+                        if ((bool)value)
+                        {
+                            importAttributes |= MethodImportAttributes.SetLastError;
+                        }
+                        break;
+                    case "BestFitMapping":
+                        if ((bool)value)
+                        {
+                            importAttributes |= MethodImportAttributes.BestFitMappingEnable;
+                        }
+                        else
+                        {
+                            importAttributes |= MethodImportAttributes.BestFitMappingDisable;
+                        }
+                        break;
+                    case "ThrowOnUnmappableChar":
+                        if ((bool)value)
+                        {
+                            importAttributes |= MethodImportAttributes.ThrowOnUnmappableCharEnable;
+                        }
+                        else
+                        {
+                            importAttributes |= MethodImportAttributes.ThrowOnUnmappableCharDisable;
+                        }
+                        break;
+                }
+            }
+
+            return new DllImportData(moduleName, entryPoint, importAttributes);
+        }
     }
 }
