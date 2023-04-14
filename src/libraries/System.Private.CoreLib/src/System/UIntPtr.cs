@@ -32,7 +32,8 @@ namespace System
           ISerializable,
           IBinaryInteger<nuint>,
           IMinMaxValue<nuint>,
-          IUnsignedNumber<nuint>
+          IUnsignedNumber<nuint>,
+          IUtf8SpanFormattable
     {
         private readonly nuint _value;
 
@@ -205,6 +206,10 @@ namespace System
 
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             ((nuint_t)_value).TryFormat(destination, out charsWritten, format, provider);
+
+        /// <inheritdoc/>
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            ((IUtf8SpanFormattable)(nuint_t)_value).TryFormat(utf8Destination, out bytesWritten, format, provider);
 
         public static nuint Parse(string s) => (nuint)nuint_t.Parse(s);
         public static nuint Parse(string s, NumberStyles style) => (nuint)nuint_t.Parse(s, style);
