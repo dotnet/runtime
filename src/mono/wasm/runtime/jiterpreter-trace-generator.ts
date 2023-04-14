@@ -16,6 +16,7 @@ import {
     append_memmove_dest_src, try_append_memset_fast,
     try_append_memmove_fast, counters,
     getMemberOffset, JiterpMember, BailoutReason,
+    getOpcodeTableValue
 } from "./jiterpreter-support";
 import {
     sizeOfDataItem,
@@ -215,7 +216,7 @@ export function generateWasmBody (
             exitOpcodeCounter = conditionalOpcodeCounter + prologueOpcodeCounter +
                 builder.branchTargets.size;
         let skipDregInvalidation = false,
-            opcodeValue = 1;
+            opcodeValue = getOpcodeTableValue(opcode);
 
         // We record the offset of each backward branch we encounter, so that later branch
         //  opcodes know that it's available by branching to the top of the dispatch loop
@@ -244,6 +245,10 @@ export function generateWasmBody (
             conditionalOpcodeCounter = 0;
         }
 
+        // Handle the _OUTSIDE_BRANCH_BLOCK table entries
+        if ((opcodeValue < -1) && isConditionallyExecuted)
+            opcodeValue = (opcodeValue === -2) ? 2 : 0;
+
         isFirstInstruction = false;
 
         if (disabledOpcodes.indexOf(opcode) >= 0) {
@@ -259,7 +264,6 @@ export function generateWasmBody (
                 const startOffsetInBytes = getArgU16(ip, 1),
                     sizeInBytes = getArgU16(ip, 2);
                 append_memset_local(builder, startOffsetInBytes, 0, sizeInBytes);
-                opcodeValue = 3;
                 break;
             }
             case MintOpcode.MINT_LOCALLOC: {
@@ -275,7 +279,6 @@ export function generateWasmBody (
             case MintOpcode.MINT_INITOBJ: {
                 append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
                 append_memset_dest(builder, 0, getArgU16(ip, 2));
-                opcodeValue = 3;
                 break;
             }
             case MintOpcode.MINT_CPBLK: {
@@ -311,7 +314,6 @@ export function generateWasmBody (
                 builder.appendU8(0);
                 builder.appendU8(0);
                 builder.endBlock(); // if #1
-                opcodeValue = 3;
                 break;
             }
             case MintOpcode.MINT_INITBLK: {
@@ -327,7 +329,6 @@ export function generateWasmBody (
                 builder.appendU8(WasmOpcode.PREFIX_sat);
                 builder.appendU8(11);
                 builder.appendU8(0);
-                opcodeValue = 3;
                 break;
             }
 
@@ -378,7 +379,6 @@ export function generateWasmBody (
                     notNullSince.set(dest, <any>ip);
                 }
                 skipDregInvalidation = true;
-                opcodeValue = 2;
                 break;
             }
 
@@ -411,7 +411,7 @@ export function generateWasmBody (
                 //  and leaves us in the interp.
                 if (
                     abortAtJittedLoopBodies &&
-                    (result >= builder.options.minimumTraceLength) &&
+                    (result >= builder.options.minimumTraceValue) &&
                     // This is an unproductive heuristic if backward branches are on
                     !builder.options.noExitBackwardBranches
                 ) {
@@ -432,21 +432,6 @@ export function generateWasmBody (
                         ip = abort;
                     }
                 }
-                break;
-
-            case MintOpcode.MINT_TIER_MONITOR_JITERPRETER:
-            case MintOpcode.MINT_TIER_PREPARE_JITERPRETER:
-            case MintOpcode.MINT_TIER_NOP_JITERPRETER: // FIXME: Should we abort for NOPs like ENTERs?
-            case MintOpcode.MINT_NOP:
-            case MintOpcode.MINT_DEF:
-            case MintOpcode.MINT_DUMMY_USE:
-            case MintOpcode.MINT_IL_SEQ_POINT:
-            case MintOpcode.MINT_TIER_PATCHPOINT_DATA:
-            case MintOpcode.MINT_MONO_MEMORY_BARRIER:
-            case MintOpcode.MINT_SDB_BREAKPOINT:
-            case MintOpcode.MINT_SDB_INTR_LOC:
-            case MintOpcode.MINT_SDB_SEQ_POINT:
-                opcodeValue = 0;
                 break;
 
             case MintOpcode.MINT_SAFEPOINT:
@@ -897,7 +882,6 @@ export function generateWasmBody (
                             ? BailoutReason.CallDelegate
                             : BailoutReason.Call
                     );
-                    opcodeValue = 0;
                 } else {
                     ip = abort;
                 }
@@ -913,7 +897,6 @@ export function generateWasmBody (
                 // See comments for MINT_CALL
                 if (isConditionallyExecuted) {
                     append_bailout(builder, ip, BailoutReason.Icall);
-                    opcodeValue = 0;
                 } else {
                     ip = abort;
                 }
@@ -926,7 +909,6 @@ export function generateWasmBody (
                 // Not an exit, because throws are by definition unlikely
                 // We shouldn't make optimization decisions based on them.
                 append_bailout(builder, ip, BailoutReason.Throw);
-                opcodeValue = 0;
                 break;
 
             // These are generated in place of regular LEAVEs inside of the body of a catch clause.
@@ -934,7 +916,6 @@ export function generateWasmBody (
             case MintOpcode.MINT_LEAVE_CHECK:
             case MintOpcode.MINT_LEAVE_S_CHECK:
                 append_bailout(builder, ip, BailoutReason.LeaveCheck);
-                opcodeValue = 0;
                 break;
 
             case MintOpcode.MINT_ENDFINALLY: {
@@ -1203,7 +1184,6 @@ export function generateWasmBody (
                         // FIXME: Or do we want to record them? Early conditional returns might reduce the value of a trace,
                         //  but the main problem is more likely to be calls early in traces. Worth testing later.
                         append_bailout(builder, ip, BailoutReason.Return);
-                        opcodeValue = 0;
                     } else
                         ip = abort;
                 } else if (
@@ -1278,10 +1258,14 @@ export function generateWasmBody (
                     if (builder.branchTargets.size > 0) {
                         // FIXME: Try to reduce the number of these
                         append_exit(builder, ip, exitOpcodeCounter, BailoutReason.ComplexBranch);
-                        opcodeValue = 0;
                     } else
                         ip = abort;
+                } else if (opcodeValue === 0) {
+                    // This means it was explicitly marked as no-value in the opcode value table
+                    //  so we can just skip over it. This is done for things like nops.
                 } else {
+                    if (opcodeValue > 0)
+                        console.log(`JITERP: aborting trace for opcode ${opname} with value ${opcodeValue}`);
                     ip = abort;
                 }
                 break;
@@ -1328,6 +1312,8 @@ export function generateWasmBody (
                 else
                     prologueOpcodeCounter++;
                 result += opcodeValue;
+            } else if (opcodeValue < 0) {
+                console.log(`JITERP: opcode ${opname} did not abort but had value ${opcodeValue}`);
             }
 
             ip += <any>(info[1] * 2);
