@@ -38,7 +38,14 @@ uint32_t WINAPI FinalizerStart(void* pContext)
 {
     HANDLE hFinalizerEvent = (HANDLE)pContext;
 
-    g_pFinalizerThread = ThreadStore::RawGetCurrentThread();
+    ThreadStore::AttachCurrentThread();
+    Thread * pThread = ThreadStore::GetCurrentThread();
+
+    // Disallow gcstress on this thread to work around the current implementation's limitation that it will
+    // get into an infinite loop if performed on the finalizer thread.
+    pThread->SetSuppressGcStress();
+
+    g_pFinalizerThread = PTR_Thread(pThread);
 
     // We have some time until the first finalization request - use the time to calibrate normalized waits.
     EnsureYieldProcessorNormalizedInitialized();

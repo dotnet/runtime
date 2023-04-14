@@ -32,16 +32,8 @@ namespace Internal.Runtime.CompilerHelpers
         {
             RuntimeImports.RhpRegisterOsModule(osModule);
             TypeManagerHandle[] modules = CreateTypeManagers(osModule, pModuleHeaders, count, pClasslibFunctions, nClasslibFunctions);
-
-            // threads initialize inlined threadstatics on attach
-            // but the current thread could not, since modules were not ready.
-            // initialize now
-            if (modules.Length == 1)
-            {
-                ThreadStatics.InitInlineThreadStaticsImpl(modules[0]);
-            }
-
             object[] gcStaticBaseSpines = new object[count];
+
             for (int i = 0; i < modules.Length; i++)
             {
                 InitializeGlobalTablesForModule(modules[i], i, gcStaticBaseSpines);

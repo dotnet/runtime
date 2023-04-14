@@ -49,37 +49,34 @@ namespace Internal.Runtime
 
             ref object[] threadStorage = ref RuntimeImports.RhGetInlineThreadStaticStorage();
             if (threadStorage == null)
-                InitInlineThreadStaticsImpl(pModuleData->TypeManager);
+                return GetInlinedThreadStaticBaseSlow(pModuleData, typeTlsIndex);
 
             return threadStorage[typeTlsIndex];
         }
 
-        // entry point for unmanaged callers (thread attach)
-        [UnmanagedCallersOnly(EntryPoint = "InitInlineThreadStatics", CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static unsafe void InitInlineThreadStatics(TypeManagerHandle typeManager)
+        [RuntimeExport("RhpGetInlinedThreadStaticBaseSlow")]
+        internal static unsafe object GetInlinedThreadStaticBaseSlow(TypeManagerSlot* pModuleData, int typeTlsIndex)
         {
-            InitInlineThreadStaticsImpl(typeManager);
-        }
+            Debug.Assert(pModuleData->ModuleIndex == 0);
 
-        internal static unsafe void InitInlineThreadStaticsImpl(TypeManagerHandle typeManager)
-        {
             // Get the array that holds thread statics for the current thread, if none present
             // allocate a new one big enough to hold the current module data
             ref object[] threadStorage = ref RuntimeImports.RhGetInlineThreadStaticStorage();
-            if (threadStorage != null)
-                return;
+            Debug.Assert(threadStorage == null);
 
+            TypeManagerHandle typeManager = pModuleData->TypeManager;
             int inlineThreaStaticsLen = GetInlineTlsLength(typeManager);
-            threadStorage = new object[inlineThreaStaticsLen];
+            object[] newStorage = new object[inlineThreaStaticsLen];
 
             for(int i = 0; i < inlineThreaStaticsLen; i++)
             {
                 // Allocate an object that will represent a memory block for all thread static fields of the type
                 object threadStaticBase = AllocateThreadStaticStorageForType(typeManager, i);
-
-                Debug.Assert(threadStorage[i] == null);
-                threadStorage[i] = threadStaticBase;
+                newStorage[i] = threadStaticBase;
             }
+
+            threadStorage = newStorage;
+            return newStorage[typeTlsIndex];
         }
 
         internal static unsafe object GetUninlinedThreadStaticBaseForType(TypeManagerSlot* pModuleData, int typeTlsIndex)

@@ -31,9 +31,6 @@ volatile uint32_t RhpTrapThreads = (uint32_t)TrapThreadsFlags::None;
 
 GVAL_IMPL_INIT(PTR_Thread, RhpSuspendingThread, 0);
 
-GPTR_DECL(Thread, g_pFinalizerThread);
-EXTERN_C NATIVEAOT_API void REDHAWK_CALLCONV InitInlineThreadStatics(void* pTypeManager);
-
 ThreadStore * GetThreadStore()
 {
     return GetRuntimeInstance()->GetThreadStore();
@@ -149,21 +146,6 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
 void ThreadStore::AttachCurrentThread()
 {
     AttachCurrentThread(true);
-
-    // Disallow gcstress on finalizer thread to work around the current implementation's limitation that it will
-    // get into an infinite loop if performed on the finalizer thread.
-    Thread* pAttachedThread = GetCurrentThread();
-    if (pAttachedThread == g_pFinalizerThread)
-    {
-        pAttachedThread->SetSuppressGcStress();
-    }
-
-    // initialize inlined threadstatics (single-module config only)
-    TypeManager* pSingleTypeManager = GetRuntimeInstance()->GetSingleTypeManager();
-    if (pSingleTypeManager != NULL)
-    {
-        InitInlineThreadStatics(pSingleTypeManager);
-    }
 }
 
 void ThreadStore::DetachCurrentThread()

@@ -47,24 +47,41 @@ NESTED_END RhpStackProbe, _TEXT
 
 NESTED_ENTRY RhpGetThreadStaticBaseForType, _TEXT, NoHandler
         // On entry:
-        //   rdi - TypeManagerSlot*  (unused)
+        //   rdi - TypeManagerSlot*
         //   rsi - type index
         // On exit:
         //   rax - the thread static base for the given type
 
+        push_nonvol_reg rbx
         push_nonvol_reg r12
 
+        mov     rbx, rdi               // Save TypeManagerSlot*
         mov     r12, rsi               // Save type index
 
         // rax = GetThread()
         INLINE_GETTHREAD
-
         // get per-thread storage
         mov     rax, [rax + OFFSETOF__Thread__m_pInlineThreadLocalStatics]
-        // get the per-type storage
+        test    rax, rax
+        jz      LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
+
+        // get the actual per-type storage
         mov     rax, [rax + r12 * 8 + 0x10]
+
         // return it
         .cfi_remember_state
         pop_nonvol_reg r12
+        pop_nonvol_reg rbx
         ret
+
+        .cfi_restore_state
+        .cfi_def_cfa_offset 24  // workaround cfi_restore_state bug
+LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath):
+        mov         rdi, rbx    // restore TypeManagerSlot*
+        mov         rsi, r12    // restore type index
+
+        pop_nonvol_reg r12
+        pop_nonvol_reg rbx
+        jmp C_FUNC(RhpGetInlinedThreadStaticBaseSlow)
 NESTED_END RhpGetThreadStaticBaseForType, _TEXT
+

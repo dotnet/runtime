@@ -3,6 +3,8 @@
 
 include AsmMacros.inc
 
+EXTERN RhpGetInlinedThreadStaticBaseSlow : PROC
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; The following helper will access ("probe") a word on each page of the stack
 ; starting with the page right beneath rsp down to the one pointed to by r11.
@@ -39,7 +41,7 @@ LEAF_END RhpStackProbe, _TEXT
 
 LEAF_ENTRY RhpGetThreadStaticBaseForType, _TEXT
         ; On entry and thorough the procedure:
-        ;   rcx - TypeManagerSlot*      (unused)
+        ;   rcx - TypeManagerSlot*
         ;   rdx - type index
         ; On exit:
         ;   rax - the thread static base for the given type
@@ -48,6 +50,9 @@ LEAF_ENTRY RhpGetThreadStaticBaseForType, _TEXT
         INLINE_GETTHREAD rax, r8
         ;; get per-thread storage
         mov     rax, [rax + OFFSETOF__Thread__m_pInlineThreadLocalStatics]
+        test    rax, rax
+        jz      RhpGetInlinedThreadStaticBaseSlow
+
         ;; get the per-type storage
         mov     rax, [rax + rdx * 8 + 10h]
         ;; return it
