@@ -1253,6 +1253,7 @@ emit_msb_shift_vector_constant (MonoCompile *cfg, MonoClass *arg_class, MonoType
 {
 	guint64 msb_shift_value[2];
 
+	// NOTE: On ARM64 ushl shifts a vector left or right depending on the sign of the shift constant
 	switch (arg_type) {
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
@@ -1632,33 +1633,19 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #ifdef TARGET_WASM
 		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_BITMASK, -1, -1, fsig, args);
 #elif defined(TARGET_ARM64)
+		if (COMPILE_LLVM (cfg))
+			return NULL;
+
 		MonoInst* result_ins = NULL;
 		MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int size = mono_class_value_size (arg_class, NULL);
-		// FIXME: Support Vector64
 		if (size != 16)
 			return NULL;
-
-		// On arm64, there is no single instruction to perform the operation.
-		// To emulate the behavior we implement a similar approach to coreCLR by performing the following set of operations:
-		// The general case (all element types except byte/sbyte):
-		// 1. Extract the most significant bit of each element of the source vector by anding elements with MSB mask
-		// 2. Shift each element to the right by its index
-		// 3. Sum all the element values together tp get the final result of ExtractMSB
-		// Handling byte/sbyte element types:
-		// 1. Extract the most significant bit of each element of the source vector by anding elements with MSB mask
-		// 2. Shift each element to the right by its relative index to the high/low (64bit) boundary.
-		//	- This basically means we treat the source 128bit, as two 64bit (high and low) vectors and shift their elements respectively
-		// 3. Sum the low 64bits of the shifted vector
-		// 4. Sum the high 64bits of the shifted vector
-		// 5. Shift left the result of 4) by 8, to adjust the value
-		// 6. OR the results from 3) and 5) to get the final result of ExtractMSB
 
 		MonoInst* msb_mask_vec = emit_msb_vector_mask (cfg, arg_class, arg0_type);
 		MonoInst* and_res_vec = emit_simd_ins_for_binary_op (cfg, arg_class, fsig, args, arg0_type, SN_BitwiseAnd);
 		and_res_vec->sreg2 = msb_mask_vec->dreg;
 
-		// NOTE: (on ARM64 ushl shifts a vector left or right depending on the sign of the shift constant)
 		MonoInst* msb_shift_vec = emit_msb_shift_vector_constant (cfg, arg_class, arg0_type);
 		MonoInst* shift_res_vec = emit_simd_ins (cfg, arg_class, OP_ARM64_USHL, and_res_vec->dreg, msb_shift_vec->dreg);
 		shift_res_vec->inst_c1 = arg0_type;
@@ -1688,7 +1675,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 		return result_ins;
 #elif defined(TARGET_AMD64)
-		// FIXME: Support ExtractMostSignificantBits on AMD64
 		return NULL;
 #endif
 	}
