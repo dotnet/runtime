@@ -319,7 +319,6 @@ namespace System
             "(#)", "-#", "- #", "#-", "# -",
         };
 
-#if !MONO
         // Optimizations using "TwoDigits" inspired by:
         // https://engineering.fb.com/2013/03/15/developer-tools/three-optimization-tips-for-c/
         private static readonly byte[] TwoDigitsCharsAsBytes =
@@ -344,7 +343,6 @@ namespace System
                                         "70717273747576777879"u8 +
                                         "80818283848586878889"u8 +
                                         "90919293949596979899"u8).ToArray();
-#endif
 
         public static unsafe string FormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
@@ -1740,17 +1738,10 @@ namespace System
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(value <= 99);
 
-#if MONO // mono currently regresses in performance taking the CopyBlockUnaligned path
-            uint temp = '0' + value;
-            value /= 10;
-            ptr[1] = TChar.CastFrom(temp - (value * 10));
-            ptr[0] = TChar.CastFrom('0' + value);
-#else
             Unsafe.CopyBlockUnaligned(
                 ref *(byte*)ptr,
                 ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(typeof(TChar) == typeof(char) ? TwoDigitsCharsAsBytes : TwoDigitsBytes), (uint)sizeof(TChar) * 2 * value),
                 (uint)sizeof(TChar) * 2);
-#endif
         }
 
         /// <summary>
@@ -1763,21 +1754,6 @@ namespace System
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(value <= 9999);
 
-#if MONO // mono currently regresses in performance taking the CopyBlockUnaligned path
-            uint temp = '0' + value;
-            value /= 10;
-            ptr[3] = TChar.CastFrom(temp - (value * 10));
-
-            temp = '0' + value;
-            value /= 10;
-            ptr[2] = TChar.CastFrom(temp - (value * 10));
-
-            temp = '0' + value;
-            value /= 10;
-            ptr[1] = TChar.CastFrom(temp - (value * 10));
-
-            ptr[0] = TChar.CastFrom('0' + value);
-#else
             (value, uint remainder) = Math.DivRem(value, 100);
 
             ref byte charsArray = ref MemoryMarshal.GetArrayDataReference(typeof(TChar) == typeof(char) ? TwoDigitsCharsAsBytes : TwoDigitsBytes);
@@ -1791,7 +1767,6 @@ namespace System
                 ref *(byte*)(ptr + 2),
                 ref Unsafe.Add(ref charsArray, (uint)sizeof(TChar) * 2 * remainder),
                 (uint)sizeof(TChar) * 2);
-#endif
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
