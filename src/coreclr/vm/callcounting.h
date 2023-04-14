@@ -99,6 +99,8 @@ public:
     static const SIZE_T CodeSize = 32;
 #elif defined(TARGET_LOONGARCH64)
     static const SIZE_T CodeSize = 40;
+#elif defined(TARGET_RISCV64)
+    static const SIZE_T CodeSize = 40;
 #endif
 
 private:
