@@ -323,6 +323,144 @@ namespace System.Runtime.InteropServices.ComTypes
         TYMED_ENHMF = 64,
     }
 }
+namespace System.Runtime.InteropServices.Marshalling
+{
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited = false)]
+    [System.CLSCompliantAttribute(false)]
+    public sealed partial class ComExposedClassAttribute<T> : System.Attribute, System.Runtime.InteropServices.Marshalling.IComExposedDetails where T : System.Runtime.InteropServices.Marshalling.IComExposedClass
+    {
+        public ComExposedClassAttribute() { }
+        public unsafe System.Runtime.InteropServices.ComWrappers.ComInterfaceEntry* GetComInterfaceEntries(out int count) { throw null; }
+    }
+    public sealed partial class ComObject : System.Runtime.InteropServices.IDynamicInterfaceCastable, System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider
+    {
+        internal ComObject() { }
+        public void FinalRelease() { }
+        ~ComObject() { }
+        System.RuntimeTypeHandle System.Runtime.InteropServices.IDynamicInterfaceCastable.GetInterfaceImplementation(System.RuntimeTypeHandle interfaceType) { throw null; }
+        bool System.Runtime.InteropServices.IDynamicInterfaceCastable.IsInterfaceImplemented(System.RuntimeTypeHandle interfaceType, bool throwIfNotImplemented) { throw null; }
+        System.Runtime.InteropServices.Marshalling.VirtualMethodTableInfo System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider.GetVirtualMethodTableInfoForKey(System.Type type) { throw null; }
+    }
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Exception), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ExceptionAsDefaultMarshaller<>))]
+    public static partial class ExceptionAsDefaultMarshaller<T> where T : struct
+    {
+        public static T ConvertToUnmanaged(System.Exception e) { throw null; }
+    }
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Exception), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ExceptionAsHResultMarshaller<>))]
+    public static partial class ExceptionAsHResultMarshaller<T> where T : struct
+    {
+        public static T ConvertToUnmanaged(System.Exception e) { throw null; }
+    }
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Exception), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ExceptionAsNaNMarshaller<>))]
+    public static partial class ExceptionAsNaNMarshaller<T> where T : struct
+    {
+        public static T ConvertToUnmanaged(System.Exception e) { throw null; }
+    }
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Exception), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ExceptionAsVoidMarshaller))]
+    public static partial class ExceptionAsVoidMarshaller
+    {
+        public static void ConvertToUnmanaged(System.Exception e) { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class)]
+    public sealed partial class GeneratedComClassAttribute : System.Attribute
+    {
+        public GeneratedComClassAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Interface)]
+    public partial class GeneratedComInterfaceAttribute : System.Attribute
+    {
+        public GeneratedComInterfaceAttribute() { }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IComExposedClass
+    {
+        unsafe static abstract System.Runtime.InteropServices.ComWrappers.ComInterfaceEntry* GetComInterfaceEntries(out int count);
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IComExposedDetails
+    {
+        unsafe System.Runtime.InteropServices.ComWrappers.ComInterfaceEntry* GetComInterfaceEntries(out int count);
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IIUnknownCacheStrategy
+    {
+        void Clear(System.Runtime.InteropServices.Marshalling.IIUnknownStrategy unknownStrategy);
+        unsafe System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy.TableInfo ConstructTableInfo(System.RuntimeTypeHandle handle, System.Runtime.InteropServices.Marshalling.IIUnknownDerivedDetails interfaceDetails, void* ptr);
+        bool TryGetTableInfo(System.RuntimeTypeHandle handle, out System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy.TableInfo info);
+        bool TrySetTableInfo(System.RuntimeTypeHandle handle, System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy.TableInfo info);
+        public readonly partial struct TableInfo
+        {
+            private readonly object _dummy;
+            private readonly int _dummyPrimitive;
+            public System.RuntimeTypeHandle ManagedType { get { throw null; } init { } }
+            public unsafe void** Table { get { throw null; } init { } }
+            public unsafe void* ThisPtr { get { throw null; } init { } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IIUnknownDerivedDetails
+    {
+        System.Guid Iid { get; }
+        System.Type Implementation { get; }
+        unsafe void** ManagedVirtualMethodTable { get; }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IIUnknownInterfaceDetailsStrategy
+    {
+        System.Runtime.InteropServices.Marshalling.IComExposedDetails? GetComExposedTypeDetails(System.RuntimeTypeHandle type);
+        System.Runtime.InteropServices.Marshalling.IIUnknownDerivedDetails? GetIUnknownDerivedDetails(System.RuntimeTypeHandle type);
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IIUnknownInterfaceType
+    {
+        static abstract System.Guid Iid { get; }
+        unsafe static abstract void** ManagedVirtualMethodTable { get; }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IIUnknownStrategy
+    {
+        unsafe void* CreateInstancePointer(void* unknown);
+        unsafe int QueryInterface(void* instancePtr, in System.Guid iid, out void* ppObj);
+        unsafe int Release(void* instancePtr);
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Interface, Inherited = false)]
+    [System.CLSCompliantAttribute(false)]
+    public partial class IUnknownDerivedAttribute<T, TImpl> : System.Attribute, System.Runtime.InteropServices.Marshalling.IIUnknownDerivedDetails where T : System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceType
+    {
+        public IUnknownDerivedAttribute() { }
+        public System.Guid Iid { get { throw null; } }
+        public System.Type Implementation { get { throw null; } }
+        public unsafe void** ManagedVirtualMethodTable { get { throw null; } }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IUnmanagedVirtualMethodTableProvider
+    {
+        System.Runtime.InteropServices.Marshalling.VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(System.Type type);
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial class StrategyBasedComWrappers : System.Runtime.InteropServices.ComWrappers
+    {
+        public StrategyBasedComWrappers() { }
+        public static System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceDetailsStrategy DefaultIUnknownInterfaceDetailsStrategy { get { throw null; } }
+        public static System.Runtime.InteropServices.Marshalling.IIUnknownStrategy DefaultIUnknownStrategy { get { throw null; } }
+        protected unsafe sealed override System.Runtime.InteropServices.ComWrappers.ComInterfaceEntry* ComputeVtables(object obj, System.Runtime.InteropServices.CreateComInterfaceFlags flags, out int count) { throw null; }
+        protected virtual System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy CreateCacheStrategy() { throw null; }
+        protected static System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy CreateDefaultCacheStrategy() { throw null; }
+        protected sealed override object CreateObject(nint externalComObject, System.Runtime.InteropServices.CreateObjectFlags flags) { throw null; }
+        protected virtual System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceDetailsStrategy GetOrCreateInterfaceDetailsStrategy() { throw null; }
+        protected virtual System.Runtime.InteropServices.Marshalling.IIUnknownStrategy GetOrCreateIUnknownStrategy() { throw null; }
+        protected sealed override void ReleaseObjects(System.Collections.IEnumerable objects) { }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public readonly partial struct VirtualMethodTableInfo
+    {
+        private readonly int _dummyPrimitive;
+        public unsafe VirtualMethodTableInfo(void* thisPointer, void** virtualMethodTable) { throw null; }
+        public unsafe void* ThisPointer { get { throw null; } }
+        public unsafe void** VirtualMethodTable { get { throw null; } }
+        public unsafe void Deconstruct(out void* thisPointer, out void** virtualMethodTable) { throw null; }
+    }
+}
 namespace System.Security
 {
     public static partial class SecureStringMarshal

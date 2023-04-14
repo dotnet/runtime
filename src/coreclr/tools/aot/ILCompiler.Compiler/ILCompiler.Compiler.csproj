@@ -494,7 +494,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfFrozenObjectsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ClassConstructorContextMap.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ClonedConstructedEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ConstructedEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DictionaryLayoutNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternalReferencesTableNode.cs" />

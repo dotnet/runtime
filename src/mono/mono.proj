@@ -105,7 +105,7 @@
     <Error Condition="'$(HostOS)' == 'windows' and ('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Text="Error: Mono runtime for $(TargetOS) can't be built on Windows." />
 
     <!-- check if Ninja is available and default to it on Unix platforms -->
-    <Exec Condition="'$(HostOS)' != 'windows' and '$(Ninja)' == ''" Command="which ninja" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
+    <Exec Condition="'$(HostOS)' != 'windows' and '$(Ninja)' == ''" Command="command -v ninja" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
       <Output TaskParameter="ExitCode" PropertyName="_MonoFindNinjaExitCode"/>
     </Exec>
     <PropertyGroup>
@@ -312,6 +312,20 @@
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x64" />
       <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/lib/pkgconfig" />
+    </ItemGroup>
+
+    <!-- x64 linux cross build options -->
+    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 'x64'">
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
+      <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x64" />
+      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/pkgconfig" />
+    </ItemGroup>
+
+    <!-- x86 linux cross build options -->
+    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 'x86'">
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
+      <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x86" />
+      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/pkgconfig" />
     </ItemGroup>
 
     <!-- riscv64 Linux cross build options -->
@@ -546,11 +560,15 @@
     <!-- Linux options -->
     <ItemGroup Condition="'$(TargetsLinux)' == true">
       <_MonoCFLAGS Include="-Wl,--build-id=sha1" />
+      <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
       <_MonoCXXFLAGS Include="-Wl,--build-id=sha1" />
+      <_MonoCXXFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
     </ItemGroup>
     <ItemGroup Condition="'$(RealTargetOS)' == 'linux'">
       <_MonoAOTCFLAGS Include="-Wl,--build-id=sha1" />
+      <_MonoAOTCFLAGS Condition="'$(RealTargetArchitecture)' == 'arm'" Include="-march=armv7-a" />
       <_MonoAOTCXXFLAGS Include="-Wl,--build-id=sha1" />
+      <_MonoAOTCXXFLAGS Condition="'$(RealTargetArchitecture)' == 'arm'" Include="-march=armv7-a" />
     </ItemGroup>
 
     <!-- Devloop features -->
@@ -659,7 +677,13 @@
       <_ObjcopyPrefix Condition="'$(MonoCrossDir)' != '' and '$(Platform)' == 'riscv64' and $(_Objcopy) == ''">llvm-objcopy-</_ObjcopyPrefix>
     </PropertyGroup>
     <!-- test viability of objcopy command -->
-    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true')" Command="$(_Objcopy) -V" IgnoreStandardErrorWarningFormat="true" ContinueOnError="WarnAndContinue" IgnoreExitCode="true" EchoOff="true" ConsoleToMsBuild="true">
+    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true')" Command="llvm-objcopy -V" IgnoreStandardErrorWarningFormat="true" ContinueOnError="WarnAndContinue" IgnoreExitCode="true" EchoOff="true" ConsoleToMsBuild="true">
+      <Output TaskParameter="ExitCode" PropertyName="_ObjcopyFound"/>
+    </Exec>
+    <PropertyGroup>
+      <_Objcopy Condition="'$(_ObjcopyFound)' == '0'">llvm-objcopy</_Objcopy>
+    </PropertyGroup>
+    <Exec Condition="'$(_ObjcopyFound)' != '0' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true')" Command="$(_Objcopy) -V" IgnoreStandardErrorWarningFormat="true" ContinueOnError="WarnAndContinue" IgnoreExitCode="true" EchoOff="true" ConsoleToMsBuild="true">
       <Output TaskParameter="ExitCode" PropertyName="_ObjcopyFound"/>
     </Exec>
     <Exec Condition="'$(_ObjcopyPrefix)' != ''" Command="find /usr/bin -name $(_ObjcopyPrefix)* | sort -V | tail -1" IgnoreStandardErrorWarningFormat="true" ContinueOnError="WarnAndContinue" IgnoreExitCode="true" EchoOff="true" ConsoleToMsBuild="true">
@@ -818,6 +842,13 @@
       <MonoAotCrossOffsetsToolParams Condition="'$(TargetsWasi)' == 'true'" Include="--wasi-sdk=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)'))&quot;" />
     </ItemGroup>
 
+    <!-- x64 Linux cross build options -->
+    <ItemGroup Condition="'$(RealTargetArchitecture)' == 'x64' and '$(RealTargetOS)' == 'linux'">
+      <MonoAOTCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
+      <_MonoAotBuildEnv Include="TARGET_BUILD_ARCH=x64" />
+      <_MonoAotBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/x86_64-linux-gnu/pkgconfig" />
+    </ItemGroup>
+
     <!-- ARM Linux cross build options on CI -->
     <ItemGroup Condition="'$(RealTargetArchitecture)' == 'arm64' and '$(RealTargetOS)' == 'linux'">
       <MonoAOTCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
@@ -856,6 +887,7 @@
 
     <PropertyGroup>
       <_MonoSkipInitCompiler Condition="'$(RealTargetArchitecture)' != '' and '$(RealTargetArchitecture)' != '$(BuildArchitecture)'">false</_MonoSkipInitCompiler>
+      <_MonoSkipInitCompiler Condition="'$(CrossBuild)' == 'true'">false</_MonoSkipInitCompiler>
       <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">$(PythonCmd) $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
       <_MonoAotCMakeConfigureCommand>cmake @(MonoAOTCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoAotCMakeConfigureCommand>
       <_MonoAotCMakeConfigureCommand Condition="'$(_MonoSkipInitCompiler)' != 'true' and '$(HostOS)' != 'windows'">sh -c 'build_arch=&quot;$(_CompilerTargetArch)&quot; compiler=&quot;$(MonoCCompiler)&quot; . &quot;$(RepositoryEngineeringCommonDir)native/init-compiler.sh&quot; &amp;&amp; @(_MonoAotBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)'</_MonoAotCMakeConfigureCommand>
