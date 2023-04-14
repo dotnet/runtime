@@ -85,19 +85,19 @@ struct StubPrecode
 {
 #if defined(HOST_AMD64)
     static const BYTE Type = 0x4C;
-    static const int CodeSize = 24;
+    static const SIZE_T CodeSize = 24;
 #elif defined(HOST_X86)
     static const BYTE Type = 0xA1;
-    static const int CodeSize = 24;
+    static const SIZE_T CodeSize = 24;
 #elif defined(HOST_ARM64)
     static const int Type = 0x4A;
-    static const int CodeSize = 24;
+    static const SIZE_T CodeSize = 24;
 #elif defined(HOST_ARM)
     static const int Type = 0xCF;
-    static const int CodeSize = 12;
+    static const SIZE_T CodeSize = 12;
 #elif defined(HOST_LOONGARCH64)
     static const int Type = 0x4;
-    static const int CodeSize = 24;
+    static const SIZE_T CodeSize = 24;
 #endif // HOST_AMD64
 
     BYTE m_code[CodeSize];
@@ -114,7 +114,7 @@ struct StubPrecode
     PTR_StubPrecodeData GetData() const
     {
         LIMITED_METHOD_CONTRACT;
-        return dac_cast<PTR_StubPrecodeData>(dac_cast<TADDR>(this) + GetOsPageSize());
+        return dac_cast<PTR_StubPrecodeData>(dac_cast<TADDR>(this) + GetStubCodePageSize());
     }
 
     TADDR GetMethodDesc()
@@ -165,7 +165,7 @@ struct StubPrecode
         return InterlockedCompareExchangeT<PCODE>(&pData->Target, (PCODE)target, (PCODE)expected) == expected;
   }
 
-    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX);
+    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
 
 #endif // !DACCESS_COMPILE
 };
@@ -216,23 +216,23 @@ struct FixupPrecode
 {
 #if defined(HOST_AMD64)
     static const int Type = 0xFF;
-    static const int CodeSize = 24;
+    static const SIZE_T CodeSize = 24;
     static const int FixupCodeOffset = 6;
 #elif defined(HOST_X86)
     static const int Type = 0xFF;
-    static const int CodeSize = 24;
+    static const SIZE_T CodeSize = 24;
     static const int FixupCodeOffset = 6;
 #elif defined(HOST_ARM64)
     static const int Type = 0x0B;
-    static const int CodeSize = 24;
+    static const SIZE_T CodeSize = 24;
     static const int FixupCodeOffset = 8;
 #elif defined(HOST_ARM)
     static const int Type = 0xFF;
-    static const int CodeSize = 12;
+    static const SIZE_T CodeSize = 12;
     static const int FixupCodeOffset = 4 + THUMB_CODE;
 #elif defined(HOST_LOONGARCH64)
     static const int Type = 0x3;
-    static const int CodeSize = 32;
+    static const SIZE_T CodeSize = 32;
     static const int FixupCodeOffset = 12;
 #endif // HOST_AMD64
 
@@ -247,12 +247,12 @@ struct FixupPrecode
 
     static void StaticInitialize();
 
-    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX);
+    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
 
     PTR_FixupPrecodeData GetData() const
     {
         LIMITED_METHOD_CONTRACT;
-        return dac_cast<PTR_FixupPrecodeData>(dac_cast<TADDR>(this) + GetOsPageSize());
+        return dac_cast<PTR_FixupPrecodeData>(dac_cast<TADDR>(this) + GetStubCodePageSize());
     }
 
     TADDR GetMethodDesc()
@@ -579,7 +579,7 @@ public:
     static DWORD GetMaxTemporaryEntryPointsCount()
     {
         SIZE_T maxPrecodeCodeSize = Max(FixupPrecode::CodeSize, StubPrecode::CodeSize);
-        SIZE_T count = GetOsPageSize() / maxPrecodeCodeSize;
+        SIZE_T count = GetStubCodePageSize() / maxPrecodeCodeSize;
         _ASSERTE(count < MAXDWORD);
         return (DWORD)count;
     }

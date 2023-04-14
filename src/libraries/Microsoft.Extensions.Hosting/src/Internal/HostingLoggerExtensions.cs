@@ -101,5 +101,16 @@ namespace Microsoft.Extensions.Hosting.Internal
                     message: SR.BackgroundServiceExceptionStoppedHost);
             }
         }
+
+        public static void HostedServiceStartupFaulted(this ILogger logger, Exception? ex)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.LogError(
+                   eventId: LoggerEventIds.HostedServiceStartupFaulted,
+                   exception: ex,
+                   message: "Hosting failed to start");
+            }
+        }
     }
 }

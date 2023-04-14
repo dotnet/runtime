@@ -7281,6 +7281,10 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
         {
             sz += 1;
         }
+        else if (fldHnd == FLD_GLOBAL_GS)
+        {
+            sz += 2; // Needs SIB byte as well.
+        }
     }
 
     id->idCodeSize(sz);
@@ -7349,7 +7353,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
     }
 
     // Special case: mov reg, fs:[ddd]
-    if (fldHnd == FLD_GLOBAL_FS)
+    if ((fldHnd == FLD_GLOBAL_FS) || (fldHnd == FLD_GLOBAL_GS))
     {
         sz += 1;
     }
@@ -10023,6 +10027,12 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
     if (fldHnd == FLD_GLOBAL_FS)
     {
         printf("FS:[0x%04X]", (unsigned)offs);
+        return;
+    }
+
+    if (fldHnd == FLD_GLOBAL_GS)
+    {
+        printf("GS:[0x%04X]", (unsigned)offs);
         return;
     }
 
@@ -13370,10 +13380,15 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     fldh = id->idAddr()->iiaFieldHnd;
     offs = emitGetInsDsp(id);
 
-    // Special case: mov reg, fs:[ddd]
     if (fldh == FLD_GLOBAL_FS)
     {
+        // Special case: mov reg, fs:[ddd]
         dst += emitOutputByte(dst, 0x64);
+    }
+    else if (fldh == FLD_GLOBAL_GS)
+    {
+        // Special case: mov reg, gs:[ddd]
+        dst += emitOutputByte(dst, 0x65);
     }
 
     // Compute VEX/EVEX prefix
@@ -13584,6 +13599,11 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
     }
 
+    if (fldh == FLD_GLOBAL_GS)
+    {
+        dst += emitOutputByte(dst, 0x25);
+    }
+
     // Do we have a constant or a static data member?
     doff = Compiler::eeGetJitDataOffs(fldh);
     if (doff >= 0)
@@ -13663,12 +13683,18 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 #endif // TARGET_AMD64
 
 #ifdef TARGET_AMD64
-        // All static field and data section constant accesses should be marked as relocatable
-        noway_assert(id->idIsDspReloc());
-        dst += emitOutputLong(dst, 0);
-#else  // TARGET_X86
+        if (id->idIsDspReloc())
+        {
+            // All static field and data section constant accesses should be marked as relocatable
+            dst += emitOutputLong(dst, 0);
+        }
+        else
+        {
+            dst += emitOutputLong(dst, (ssize_t)target);
+        }
+#else
         dst += emitOutputLong(dst, (int)(ssize_t)target);
-#endif // TARGET_X86
+#endif // TARGET_AMD64
 
         if (id->idIsDspReloc())
         {
@@ -16481,8 +16507,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     code = insEncodeReg3456(id, id->idReg1(), size, code);
                 }
 
-                regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
-                dst     = emitOutputCV(dst, id, code | regcode | 0x0500);
+                regcode                   = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
+                CORINFO_FIELD_HANDLE fldh = id->idAddr()->iiaFieldHnd;
+                if (fldh == FLD_GLOBAL_GS)
+                {
+                    dst = emitOutputCV(dst, id, code | regcode | 0x0400);
+                }
+                else
+                {
+                    dst = emitOutputCV(dst, id, code | regcode | 0x0500);
+                }
             }
 
             sz = emitSizeOfInsDsc(id);

@@ -24,6 +24,7 @@ namespace System
           IBinaryInteger<uint>,
           IMinMaxValue<uint>,
           IUnsignedNumber<uint>,
+          IUtf8SpanFormattable,
           IBinaryIntegerParseAndFormatInfo<uint>
     {
         private readonly uint m_value; // Do not rename (binary serialization)
@@ -122,6 +123,12 @@ namespace System
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatUInt32(m_value, format, provider, destination, out charsWritten);
+        }
+
+        /// <inheritdoc/>
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        {
+            return Number.TryFormatUInt32(m_value, format, provider, utf8Destination, out bytesWritten);
         }
 
         public static uint Parse(string s) => Parse(s, NumberStyles.Integer, provider: null);

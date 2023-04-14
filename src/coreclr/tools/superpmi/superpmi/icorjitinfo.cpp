@@ -924,6 +924,18 @@ void MyICJI::getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     jitInstance->mc->repGetFieldInfo(pResolvedToken, callerHandle, flags, pResult);
 }
 
+uint32_t MyICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+{
+    jitInstance->mc->cr->AddCall("getThreadLocalFieldInfo");
+    return jitInstance->mc->repGetThreadLocalFieldInfo(field);
+}
+
+void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+{
+    jitInstance->mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
+    jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo);
+}
+
 // Returns true iff "fldHnd" represents a static field.
 bool MyICJI::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
 {

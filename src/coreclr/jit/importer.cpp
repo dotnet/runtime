@@ -4148,6 +4148,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     }
 
     bool     isStaticReadOnlyInitedRef = false;
+    unsigned typeIndex                 = 0;
     GenTree* op1;
     switch (pFieldInfo->fieldAccessor)
     {
@@ -4182,6 +4183,11 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         }
         break;
 
+        case CORINFO_FIELD_STATIC_TLS_MANAGED:
+
+            typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField);
+
+            FALLTHROUGH;
         case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
         {
 #ifdef FEATURE_READYTORUN
@@ -4215,7 +4221,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             else
 #endif
             {
-                op1 = fgGetStaticsCCtorHelper(pResolvedToken->hClass, pFieldInfo->helper);
+                op1 = fgGetStaticsCCtorHelper(pResolvedToken->hClass, pFieldInfo->helper, typeIndex);
             }
 
             op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
@@ -9419,6 +9425,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         usesHelper = true;
                         break;
 
+                    case CORINFO_FIELD_STATIC_TLS_MANAGED:
+                        setMethodHasTlsFieldAccess();
+                        FALLTHROUGH;
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_ADDRESS:
                         // Replace static read-only fields with constant if possible
@@ -9668,7 +9677,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
                     }
                     break;
-
                     case CORINFO_FIELD_STATIC_TLS:
 #ifdef TARGET_X86
                         // Legacy TLS access is implemented as intrinsic on x86 only.
@@ -9696,6 +9704,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                                clsHnd, op2);
                         goto SPILL_APPEND;
 
+                    case CORINFO_FIELD_STATIC_TLS_MANAGED:
+                        setMethodHasTlsFieldAccess();
+                        FALLTHROUGH;
                     case CORINFO_FIELD_STATIC_ADDRESS:
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:

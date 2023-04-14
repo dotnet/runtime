@@ -11,6 +11,8 @@ parameters:
   dependOnEvaluatePaths: false
   runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-diffs-job.yml'
   diffType: 'asmdiffs'            # required -- 'asmdiffs', 'tpdiff', or 'all'
+  baseJitOptions: ''              # e.g. JitStressModeNames=STRESS_PHYSICAL_PROMOTION;JitFullyInt=1
+  diffJitOptions: ''
 
 jobs:
 - template: ${{ parameters.runJobTemplate }}
@@ -27,6 +29,8 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     helixQueues: ${{ parameters.helixQueues }}
     diffType: ${{ parameters.diffType }}
+    baseJitOptions: ${{ parameters.baseJitOptions }}
+    diffJitOptions: ${{ parameters.diffJitOptions }}
     dependsOn:
       - ${{ if in(parameters.diffType, 'asmdiffs', 'all') }}:
         - ${{ format('coreclr_jit_build_{0}{1}_{2}_checked', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}

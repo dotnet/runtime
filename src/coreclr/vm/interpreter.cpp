@@ -7781,7 +7781,7 @@ bool Interpreter::StaticFldAddrWork(CORINFO_ACCESS_FLAGS accessFlgs, /*out (byre
 
         EnsureClassInit(GetMethodTableFromClsHnd(fldTok.hClass));
 
-        if (fldInfo.fieldAccessor == CORINFO_FIELD_STATIC_TLS)
+        if ((fldInfo.fieldAccessor == CORINFO_FIELD_STATIC_TLS) || (fldInfo.fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED))
         {
             NYI_INTERP("Thread-local static.");
         }
