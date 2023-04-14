@@ -54,9 +54,11 @@ namespace System.Globalization
                 return 0;
 
             int value = Interop.Globalization.GetLocaleInfoIntNative(_sWindowsName, (uint)type);
+            const int DEFAULT_VALUE = 0;
             if (value < 0)
             {
                 Debug.Fail("[CultureData.GetLocaleInfoNative(LocaleNumberData)] failed");
+                return DEFAULT_VALUE;
             }
 
             return value;
