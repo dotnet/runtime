@@ -1467,7 +1467,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 #if defined(TARGET_ARM64) || defined(TARGET_WASM)
-		if (arg0_type == MONO_TYPE_I8 || arg0_type == MONO_TYPE_U8)
+		if (COMPILE_LLVM (cfg) && (arg0_type == MONO_TYPE_I8 || arg0_type == MONO_TYPE_U8 || arg0_type == MONO_TYPE_I || arg0_type == MONO_TYPE_U))
 			return NULL;
 
 		int instc0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
