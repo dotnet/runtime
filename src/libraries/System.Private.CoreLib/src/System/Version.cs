@@ -185,7 +185,7 @@ namespace System
         public bool TryFormat(Span<char> destination, int fieldCount, out int charsWritten) =>
             TryFormatCore(destination, fieldCount, out charsWritten);
 
-        private bool TryFormatCore<TChar>(Span<TChar> destination, int fieldCount, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private bool TryFormatCore<TChar>(Span<TChar> destination, int fieldCount, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -219,7 +219,7 @@ namespace System
                         return false;
                     }
 
-                    destination[0] = TChar.CreateTruncating('.');
+                    destination[0] = TChar.CastFrom('.');
                     destination = destination.Slice(1);
                     totalCharsWritten++;
                 }
@@ -235,7 +235,7 @@ namespace System
                 int valueCharsWritten;
                 bool formatted = typeof(TChar) == typeof(char) ?
                     ((uint)value).TryFormat(MemoryMarshal.Cast<TChar, char>(destination), out valueCharsWritten) :
-                    Utf8Formatter.TryFormat((uint)value, MemoryMarshal.Cast<TChar, byte>(destination), out valueCharsWritten); // TODO https://github.com/dotnet/runtime/issues/84527: Use UInt32's IUtf8SpanFormattable when available
+                    ((IUtf8SpanFormattable)(uint)value).TryFormat(MemoryMarshal.Cast<TChar, byte>(destination), out valueCharsWritten, default, CultureInfo.InvariantCulture);
 
                 if (!formatted)
                 {

@@ -4547,7 +4547,6 @@ mono_aot_can_dedup (MonoMethod *method)
 #else
 		return FALSE;
 #endif
-		break;
 	case MONO_WRAPPER_OTHER: {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 

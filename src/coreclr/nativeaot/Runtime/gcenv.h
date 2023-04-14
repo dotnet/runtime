@@ -57,6 +57,7 @@
         typedef uint16_t UINT16;
     #endif // _INC_WINDOWS
 
+    #include "clretwallmain.h"
     #include "etwevents.h"
     #include "eventtrace.h"
 

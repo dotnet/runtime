@@ -664,16 +664,14 @@ namespace System
 
             if (format.Length == 1)
             {
-                switch (format[0])
+                switch (format[0] | 0x20)
                 {
                     case 'o':
-                    case 'O':
                         format = OFormat;
                         provider = CultureInfo.InvariantCulture.DateTimeFormat;
                         break;
 
                     case 'r':
-                    case 'R':
                         format = RFormat;
                         provider = CultureInfo.InvariantCulture.DateTimeFormat;
                         break;
@@ -743,16 +741,14 @@ namespace System
 
                 if (format.Length == 1)
                 {
-                    switch (format[0])
+                    switch (format[0] | 0x20)
                     {
                         case 'o':
-                        case 'O':
                             format = OFormat;
                             dtfiToUse = CultureInfo.InvariantCulture.DateTimeFormat;
                             break;
 
                         case 'r':
-                        case 'R':
                             format = RFormat;
                             dtfiToUse = CultureInfo.InvariantCulture.DateTimeFormat;
                             break;
@@ -925,26 +921,23 @@ namespace System
 
             if (format.Length == 1)
             {
-                switch (format[0])
+                switch (format[0] | 0x20)
                 {
                     case 'o':
-                    case 'O':
                         return string.Create(16, this, (destination, value) =>
                         {
-                            bool b = DateTimeFormat.TryFormatTimeOnlyO(value.Hour, value.Minute, value.Second, value._ticks % TimeSpan.TicksPerSecond, destination);
-                            Debug.Assert(b);
+                            DateTimeFormat.TryFormatTimeOnlyO(value.Hour, value.Minute, value.Second, value._ticks % TimeSpan.TicksPerSecond, destination, out int charsWritten);
+                            Debug.Assert(charsWritten == destination.Length);
                         });
 
                     case 'r':
-                    case 'R':
                         return string.Create(8, this, (destination, value) =>
                         {
-                            bool b = DateTimeFormat.TryFormatTimeOnlyR(value.Hour, value.Minute, value.Second, destination);
-                            Debug.Assert(b);
+                            DateTimeFormat.TryFormatTimeOnlyR(value.Hour, value.Minute, value.Second, destination, out int charsWritten);
+                            Debug.Assert(charsWritten == destination.Length);
                         });
 
                     case 't':
-                    case 'T':
                         return DateTimeFormat.Format(ToDateTime(), format, provider);
 
                     default:
@@ -971,7 +964,7 @@ namespace System
         bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.TimeOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider) =>
             TryFormatCore(utf8Destination, out bytesWritten, format, provider);
 
-        private bool TryFormatCore<TChar>(Span<TChar> destination, out int written, [StringSyntax(StringSyntaxAttribute.TimeOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider) where TChar : unmanaged, IBinaryInteger<TChar>
+        private bool TryFormatCore<TChar>(Span<TChar> destination, out int written, [StringSyntax(StringSyntaxAttribute.TimeOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider) where TChar : unmanaged, IUtfChar<TChar>
         {
             if (format.Length == 0)
             {
@@ -980,34 +973,20 @@ namespace System
 
             if (format.Length == 1)
             {
-                switch (format[0])
+                switch (format[0] | 0x20)
                 {
                     case 'o':
-                    case 'O':
-                        if (!DateTimeFormat.TryFormatTimeOnlyO(Hour, Minute, Second, _ticks % TimeSpan.TicksPerSecond, destination))
-                        {
-                            written = 0;
-                            return false;
-                        }
-                        written = 16;
-                        return true;
+                        return DateTimeFormat.TryFormatTimeOnlyO(Hour, Minute, Second, _ticks % TimeSpan.TicksPerSecond, destination, out written);
 
                     case 'r':
-                    case 'R':
-                        if (!DateTimeFormat.TryFormatTimeOnlyR(Hour, Minute, Second, destination))
-                        {
-                            written = 0;
-                            return false;
-                        }
-                        written = 8;
-                        return true;
+                        return DateTimeFormat.TryFormatTimeOnlyR(Hour, Minute, Second, destination, out written);
 
                     case 't':
-                    case 'T':
                         return DateTimeFormat.TryFormat(ToDateTime(), destination, out written, format, provider);
 
                     default:
-                        throw new FormatException(SR.Argument_BadFormatSpecifier);
+                        ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+                        break;
                 }
             }
 
