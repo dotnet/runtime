@@ -231,6 +231,9 @@
   <data name="Cryptography_Xml_UnknownTransform" xml:space="preserve">
     <value>Unknown transform has been encountered.</value>
   </data>
+  <data name="Cryptography_Xml_UnknownTransform_AlgorithmName" xml:space="preserve">
+    <value>Unknown transform has been encountered, couldn't create algorithm with name "{0}". Note that Xslts are only supported when dynamic code is supported.</value>
+  </data>
   <data name="Cryptography_Xml_UriNotResolved" xml:space="preserve">
     <value>Unable to resolve Uri {0}.</value>
   </data>
