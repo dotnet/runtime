@@ -5,9 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Xml.Schema;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -44,6 +46,56 @@ namespace Microsoft.Interop
             public const string GenerateInterfaceInformation = nameof(GenerateInterfaceInformation);
             public const string GenerateIUnknownDerivedAttribute = nameof(GenerateIUnknownDerivedAttribute);
         }
+        public record struct DerivedComInterfacesContext(
+            int StartingOffset,
+            ManagedTypeInfo? BaseInterface,
+            ImmutableArray<ShadowingMethodContext> ShadowingMethodsToGenerate,
+            bool IsMarkerInterface);
+
+        internal struct BaseInterfacesInfo
+        {
+            internal BaseInterfacesInfo(ImmutableArray<ShadowingMethodContext> methodsToShadow, ManagedTypeInfo? baseInterface, bool isMarkerInterface)
+            {
+                MethodsToShadow = methodsToShadow;
+                BaseInterface = baseInterface;
+                IsMarkerInterface = isMarkerInterface;
+            }
+
+            public int StartingOffset => MethodsToShadow.Length;
+
+            public ImmutableArray<ShadowingMethodContext> MethodsToShadow { get; }
+
+            public ManagedTypeInfo? BaseInterface { get; }
+
+            public bool IsMarkerInterface { get; }
+        }
+        public record ShadowingMethodContext(
+            int Offset,
+            ManagedTypeInfo BaseInterfaceType,
+            string MethodName,
+            MethodDeclarationSyntax Syntax,
+            ManagedTypeInfo ReturnType,
+            ImmutableArray<(ManagedTypeInfo Type, string Name, ParameterSyntax Syntax)> Parameters)
+        {
+            public MethodDeclarationSyntax Generate()
+            {
+                // DeclarationCopiedFromBaseDeclaration(<Arguments>)
+                // {
+                //    return ((<baseInterfaceType>)this).<MethodName>(<Arguments>);
+                // }
+                return Syntax.WithBody(
+                    Block(
+                        ReturnStatement(
+                            InvocationExpression(
+                                MemberAccessExpression(
+                                    SyntaxKind.SimpleMemberAccessExpression,
+                                    CastExpression(BaseInterfaceType.Syntax, IdentifierName(Token(SyntaxKind.ThisKeyword))),
+                                    IdentifierName(MethodName)),
+                                ArgumentList(
+                                    SeparatedList(Parameters.Select(p => Argument(IdentifierName(p.Name)))))))));
+            }
+
+        }
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -70,19 +122,84 @@ namespace Microsoft.Interop
 
             var interfaceBaseInfo = interfacesToGenerate.Collect().SelectMany((data, ct) =>
             {
-                ImmutableArray<(int StartingOffset, ManagedTypeInfo? BaseInterface, bool IsMarkerInterface)>.Builder baseInterfaceInfo = ImmutableArray.CreateBuilder<(int, ManagedTypeInfo?, bool)>(data.Length);
+                // Interface to BaseInterfaceInformation cache
+                var methodsToShadowCache = new Dictionary<INamedTypeSymbol, ImmutableArray<ShadowingMethodContext>>(SymbolEqualityComparer.Default);
+                foreach (var iface in data)
+                {
+                    AddBaseInfo(iface.Symbol, methodsToShadowCache, ct);
+                }
+                return data.Select(iface => methodsToShadowCache[iface.Symbol]);
+
+                static void AddBaseInfo(INamedTypeSymbol iface, Dictionary<INamedTypeSymbol, ImmutableArray<ShadowingMethodContext>> cache, CancellationToken ct)
+                {
+                    if (TryGetBaseComInterface(iface, out var baseComIface))
+                    {
+                        if (!cache.TryGetValue(baseComIface, out var methodsToShadow))
+                        {
+                            AddBaseInfo(baseComIface, cache, ct);
+                            methodsToShadow = cache[baseComIface];
+                        }
+                        cache.Add(iface, GetRelevantInformationAboutBaseTypes(iface, methodsToShadow.Length, ct).ToImmutableArray());
+                    }
+                    else
+                    {
+                        cache.Add(iface, GetRelevantInformationAboutBaseTypes(iface, 3, ct).ToImmutableArray());
+                    }
+
+                }
+
+                static bool TryGetBaseComInterface(INamedTypeSymbol comIface, [NotNullWhen(true)] out INamedTypeSymbol? baseComIface)
+                {
+                    baseComIface = null;
+                    foreach (var implemented in comIface.Interfaces)
+                    {
+                        if (implemented.GetAttributes().Any(static attr => attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute))
+                        {
+                            // We'll filter out cases where there's multiple matching interfaces when determining
+                            // if this is a valid candidate for generation.
+                            Debug.Assert(baseComIface is null);
+                            baseComIface = implemented;
+                        }
+                    }
+                    return baseComIface is not null;
+                }
+
+                ImmutableArray<DerivedComInterfacesContext>.Builder baseInterfaceInfo = ImmutableArray.CreateBuilder<DerivedComInterfacesContext>(data.Length);
                 // Track the calculated last offsets of the interfaces.
                 // If a type has invalid methods, we'll count them and issue an error when generating code for that
                 // interface.
-                Dictionary<INamedTypeSymbol, int> derivedNextOffset = new(SymbolEqualityComparer.Default);
+                Dictionary<INamedTypeSymbol, (int, INamedTypeSymbol)> derivedNextOffsets = new(SymbolEqualityComparer.Default);
                 foreach (var iface in data)
                 {
-                    var (starting, baseType, derivedStarting) = CalculateOffsetsForInterface(iface.Symbol, derivedNextOffset);
-                    baseInterfaceInfo.Add((starting, baseType is not null ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(baseType) : null, starting == derivedStarting));
+                    var (starting, baseType, derivedStarting) = CalculateOffsetsForInterface(iface.Symbol, derivedNextOffsets);
+                    var baseTypes = ImmutableArray.CreateBuilder<ShadowingMethodContext>();
+                    // TODO: We can cache the list of base types for each interface so we don't have to recalculate them.
+                    while (baseType is not null)
+                    {
+                        (var baseStarting, var nextBaseType, derivedStarting) = CalculateOffsetsForInterface(baseType, derivedNextOffsets);
+                        baseTypes.AddRange(GetRelevantInformationAboutBaseTypes(baseType, baseStarting, ct));
+                        baseType = nextBaseType;
+                    }
+                    baseInterfaceInfo.Add(new(starting, baseTypes.FirstOrDefault()?.BaseInterfaceType, baseTypes.ToImmutableArray(), starting == derivedStarting));
                 }
-                return baseInterfaceInfo.MoveToImmutable();
+                //return baseInterfaceInfo.MoveToImmutable();
 
-                static (int Starting, INamedTypeSymbol? BaseType, int DerivedStarting) CalculateOffsetsForInterface(INamedTypeSymbol iface, Dictionary<INamedTypeSymbol, int> derivedNextOffsetCache)
+                static IEnumerable<ShadowingMethodContext> GetRelevantInformationAboutBaseTypes(INamedTypeSymbol iface, int starting, CancellationToken ct)
+                {
+                    foreach (var method in iface.GetMembers().Where(m => m is IMethodSymbol))
+                    {
+                        var m = (IMethodSymbol)method;
+                        yield return new ShadowingMethodContext(
+                            starting++,
+                            ManagedTypeInfo.CreateTypeInfoForTypeSymbol(iface),
+                            iface.Name,
+                            (MethodDeclarationSyntax)m.DeclaringSyntaxReferences[0].GetSyntax(ct),
+                            ManagedTypeInfo.CreateTypeInfoForTypeSymbol(m.ReturnType),
+                            m.Parameters.Select(p => (ManagedTypeInfo.CreateTypeInfoForTypeSymbol(p.Type), p.Name, (ParameterSyntax)p.DeclaringSyntaxReferences[0].GetSyntax(ct))).ToImmutableArray());
+
+                    }
+                }
+                static (int Starting, INamedTypeSymbol BaseInterface, int DerivedStarting) CalculateOffsetsForInterface(INamedTypeSymbol iface, Dictionary<INamedTypeSymbol, (int DerivedStartingIndex, INamedTypeSymbol BaseInterface)> baseInterfaceInfoCache)
                 {
                     INamedTypeSymbol? baseInterface = null;
                     foreach (var implemented in iface.Interfaces)
@@ -97,24 +214,27 @@ namespace Microsoft.Interop
                     }
 
                     // Cache the starting offsets for each base interface so we don't have to recalculate them.
-                    int startingOffset = 3;
+                    (int StartingOffset, INamedTypeSymbol? BaseInterface) pair = (3, baseInterface);
                     if (baseInterface is not null)
                     {
-                        if (!derivedNextOffsetCache.TryGetValue(baseInterface, out int offset))
+                        if (!baseInterfaceInfoCache.TryGetValue(baseInterface, out pair))
                         {
-                            offset = CalculateOffsetsForInterface(baseInterface, derivedNextOffsetCache).DerivedStarting;
+                            var baseInfo = CalculateOffsetsForInterface(baseInterface, baseInterfaceInfoCache);
+                            pair = (baseInfo.DerivedStarting, baseInterface);
                         }
-
-                        startingOffset = offset;
                     }
 
                     // This calculation isn't strictly accurate. This will count methods that aren't in the same declaring syntax as the attribute on the interface,
                     // but we'll emit an error later if that's a problem. We also can't detect this error if the base type is in metadata.
-                    int ifaceDerivedNextOffset = startingOffset + iface.GetMembers().Where(static m => m is IMethodSymbol { IsStatic: false }).Count();
-                    derivedNextOffsetCache[iface] = ifaceDerivedNextOffset;
+                    int ifaceDerivedNextOffset = pair.StartingOffset + iface.GetMembers().Where(static m => m is IMethodSymbol { IsStatic: false }).Count();
+                    baseInterfaceInfoCache[iface] = pair;
 
-                    return (startingOffset, baseInterface, ifaceDerivedNextOffset);
+                    return (pair.StartingOffset, baseInterface, ifaceDerivedNextOffset);
                 }
+            });
+            var shadowingMethods = interfaceBaseInfo.Zip(interfacesToGenerate).Select((data, ct) =>
+            {
+                return (data.Right, data.Left.Select(s => s.Generate()));
             });
 
             // Zip the interface base information back with the symbols and syntax for the interface
@@ -122,7 +242,7 @@ namespace Microsoft.Interop
             // The generator infrastructure preserves ordering of the tables once Select statements are in use,
             // so we can rely on the order matching here.
             var interfaceContexts = interfacesToGenerate
-                .Zip(interfaceBaseInfo.Select((data, ct) => data.StartingOffset))
+                .Zip(interfaceBaseInfo.Select((data, ct) => data.Length))
                 .Select((data, ct) =>
             {
                 var (iface, startingOffset) = data;
@@ -141,6 +261,13 @@ namespace Microsoft.Interop
                     startingOffset,
                     guid ?? Guid.Empty);
             });
+            //var shadowingMethods = interfacesToGenerate.Zip(interfaceBaseInfo).Select((data, ct) =>
+            //{
+            //    var interfaceInfo = data.Left;
+            //    var interfaceBaseInfo = data.Right;
+            //    interfaceBaseInfo.BaseInterface.
+
+            //})
 
             context.RegisterDiagnostics(invalidTypeDiagnostics.Select((data, ct) => data.Diagnostic));
 
@@ -152,7 +279,7 @@ namespace Microsoft.Interop
             {
                 var (interfaceData, interfaceContext) = data;
                 Location interfaceLocation = interfaceData.Syntax.GetLocation();
-                var methods = ImmutableArray.CreateBuilder<(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol, int Index, Diagnostic? Diagnostic)>();
+                var methods = ImmutableArray.CreateBuilder<ComInterfaceMethodContext>();
                 int methodVtableOffset = interfaceContext.MethodStartIndex;
                 foreach (var member in interfaceData.Symbol.GetMembers())
                 {
@@ -644,7 +771,7 @@ namespace Microsoft.Interop
 
         private static readonly MethodDeclarationSyntax CreateManagedVirtualFunctionTableMethodTemplate = MethodDeclaration(VoidStarStarSyntax, CreateManagedVirtualFunctionTableMethodName)
             .AddModifiers(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword));
-        private static InterfaceDeclarationSyntax GenerateImplementationVTable(ImmutableArray<IncrementalMethodStubGenerationContext> interfaceMethodStubs, (int StartingOffset, ManagedTypeInfo? BaseInterface, bool) baseInterfaceTypeInfo)
+        private static InterfaceDeclarationSyntax GenerateImplementationVTable(ImmutableArray<IncrementalMethodStubGenerationContext> interfaceMethodStubs, DerivedComInterfacesContext baseInterfaceTypeInfo)
         {
             const string vtableLocalName = "vtable";
             var interfaceType = interfaceMethodStubs[0].OriginalDefiningType;
@@ -882,5 +1009,11 @@ namespace Microsoft.Interop
                                         SeparatedList<ExpressionSyntax>(literals)))));
             }
         }
+    }
+
+    internal record struct ComInterfaceMethodContext(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol, int Index, Diagnostic? Diagnostic)
+    {
+        public static implicit operator (MethodDeclarationSyntax Syntax, IMethodSymbol Symbol, int Index, Diagnostic? Diagnostic)(ComInterfaceMethodContext value) => (value.Syntax, value.Symbol, value.Index, value.Diagnostic);
+        public static implicit operator ComInterfaceMethodContext((MethodDeclarationSyntax Syntax, IMethodSymbol Symbol, int Index, Diagnostic? Diagnostic) value) => new ComInterfaceMethodContext(value.Syntax, value.Symbol, value.Index, value.Diagnostic);
     }
 }

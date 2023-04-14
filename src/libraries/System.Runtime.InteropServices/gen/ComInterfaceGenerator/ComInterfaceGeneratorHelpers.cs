@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
 {
@@ -64,5 +65,12 @@ namespace Microsoft.Interop
 
             return MarshallingGeneratorFactoryKey.Create((env.TargetFramework, env.TargetFrameworkVersion), generatorFactory);
         }
+
+        //public static IsComMethod(IMethodSymbol method)
+        //{
+        //    method.ContainingSymbol is INamedTypeSymbol interfaceSymbol
+        //        && method.DeclaringSyntaxReferences.First().GetSyntax().Parent is InterfaceDeclarationSyntax interfaceDeclaration&& interfaceDeclaration.AttributeLists.Any(attLiToString() == "GeneratedComInterfaceAttribute"))
+        //        && interfaceSymbol.GetAttributes().Any(att=> att.AttributeClass.IsOfType(TypeNames.GeneratedComInterfaceAttribute))
+        //}
     }
 }
