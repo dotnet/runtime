@@ -51,7 +51,7 @@ namespace System.Diagnostics.Tracing
 
             lock (s_counterGroupLock)      // Lock the CounterGroup
             {
-                if (e.Command == EventCommand.Enable)
+                if (e.Command == EventCommand.Enable || e.Command == EventCommand.Update)
                 {
                     Debug.Assert(e.Arguments != null);
 
@@ -62,18 +62,9 @@ namespace System.Diagnostics.Tracing
                         return;
                     }
 
-                    // Sending an Enabled with EventCounterIntervalSec <=0 is a signal that we should immediately turn
-                    // off counters
-                    if (intervalValue <= 0)
-                    {
-                        DisableTimer();
-                    }
-                    else
-                    {
-                        EnableTimer(intervalValue);
-                    }
+                    EnableTimer(intervalValue);
                 }
-                else
+                else if (e.Command == EventCommand.Disable)
                 {
                     Debug.Assert(e.Command == EventCommand.Disable);
                     // Since we allow sessions to send multiple Enable commands to update the interval, we cannot
@@ -152,7 +143,11 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(pollingIntervalInSeconds > 0);
             Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
-            if (_pollingIntervalInMilliseconds == 0 || pollingIntervalInSeconds * 1000 < _pollingIntervalInMilliseconds)
+            if (pollingIntervalInSeconds <= 0)
+            {
+                DisableTimer();
+            }
+            else if (_pollingIntervalInMilliseconds == 0 || pollingIntervalInSeconds * 1000 < _pollingIntervalInMilliseconds)
             {
                 _pollingIntervalInMilliseconds = (int)(pollingIntervalInSeconds * 1000);
                 ResetCounters(); // Reset statistics for counters before we start the thread.
