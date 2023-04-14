@@ -605,14 +605,21 @@ mono_jiterp_cas_i32 (volatile int32_t *addr, int32_t newVal, int32_t expected)
 EMSCRIPTEN_KEEPALIVE void
 mono_jiterp_cas_i64 (volatile int64_t *addr, int64_t *newVal, int64_t *expected, int64_t *oldVal)
 {
-	*oldVal= mono_atomic_cas_i64 (addr, *newVal, *expected);
+	*oldVal = mono_atomic_cas_i64 (addr, *newVal, *expected);
 }
 
-// should_abort_trace returns one of these codes depending on the opcode and current state
-#define TRACE_IGNORE -1
-#define TRACE_CONTINUE 0
-#define TRACE_ABORT 1
-#define TRACE_CONDITIONAL_ABORT 2
+static int8_t opcode_value_table [MINT_LASTOP] = { 0 };
+static gboolean opcode_value_table_initialized = FALSE;
+
+static void
+initialize_opcode_value_table () {
+	#include "jiterpreter-opcode-values.h"
+
+	#undef OP
+	#undef OPRANGE
+
+	opcode_value_table_initialized = TRUE;
+}
 
 /*
  * This function provides an approximate answer for "will this instruction cause the jiterpreter
@@ -623,8 +630,11 @@ mono_jiterp_cas_i64 (volatile int64_t *addr, int64_t *newVal, int64_t *expected,
  * At present this is around 94-97% accurate, which is more than good enough
  */
 static int
-jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
+jiterp_get_opcode_value (InterpInst *ins, gboolean *inside_branch_block)
 {
+	if (!opcode_value_table_initialized)
+		initialize_opcode_value_table ();
+
 	guint16 opcode = ins->opcode;
 	switch (opcode) {
 		// Individual instructions that never abort traces.
@@ -643,30 +653,41 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_SDB_BREAKPOINT:
 		case MINT_SDB_INTR_LOC:
 		case MINT_SDB_SEQ_POINT:
-			return TRACE_IGNORE;
+			return VALUE_NONE;
+
+		case MINT_SAFEPOINT:
+			return VALUE_BRANCH;
 
 		case MINT_LEAVE_CHECK:
 		case MINT_LEAVE_S_CHECK:
 			// These are only generated inside catch clauses, so it's safe to assume that
 			//  during normal execution they won't run, and compile them as a bailout.
-			return TRACE_IGNORE;
+			return VALUE_NONE;
 
-		case MINT_INITLOCAL:
-		case MINT_INITLOCALS:
-		case MINT_LOCALLOC:
-		case MINT_INITOBJ:
 		case MINT_CKNULL:
 		case MINT_LDLOCA_S:
 		case MINT_LDSTR:
 		case MINT_LDFTN:
 		case MINT_LDFTN_ADDR:
 		case MINT_LDPTR:
+		case MINT_STRLEN:
+		case MINT_BOX:
+		case MINT_BOX_VT:
+		case MINT_UNBOX:
+		case MINT_NEWSTR:
+		case MINT_LD_DELEGATE_METHOD_PTR:
+		case MINT_LDTSFLDA:
+		case MINT_ADD_MUL_I4_IMM:
+		case MINT_ADD_MUL_I8_IMM:
+		case MINT_ARRAY_RANK:
+		case MINT_ARRAY_ELEMENT_SIZE:
+			return VALUE_NORMAL;
+
 		case MINT_CPOBJ_VT:
 		case MINT_LDOBJ_VT:
 		case MINT_STOBJ_VT:
 		case MINT_STOBJ_VT_NOREF:
 		case MINT_CPOBJ_VT_NOREF:
-		case MINT_STRLEN:
 		case MINT_GETCHR:
 		case MINT_GETITEM_SPAN:
 		case MINT_GETITEM_LOCALSPAN:
@@ -679,26 +700,19 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_ISINST:
 		case MINT_ISINST_COMMON:
 		case MINT_ISINST_INTERFACE:
-		case MINT_BOX:
-		case MINT_BOX_VT:
-		case MINT_UNBOX:
-		case MINT_NEWSTR:
-		case MINT_NEWOBJ_INLINED:
-		case MINT_NEWOBJ_VT_INLINED:
-		case MINT_LD_DELEGATE_METHOD_PTR:
-		case MINT_LDTSFLDA:
-		case MINT_SAFEPOINT:
+		case MINT_INITLOCAL:
+		case MINT_INITLOCALS:
+		case MINT_LOCALLOC:
+		case MINT_INITOBJ:
 		case MINT_INTRINS_GET_HASHCODE:
 		case MINT_INTRINS_TRY_GET_HASHCODE:
 		case MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
 		case MINT_INTRINS_ENUM_HASFLAG:
 		case MINT_INTRINS_ORDINAL_IGNORE_CASE_ASCII:
-		case MINT_ADD_MUL_I4_IMM:
-		case MINT_ADD_MUL_I8_IMM:
-		case MINT_ARRAY_RANK:
-		case MINT_ARRAY_ELEMENT_SIZE:
 		case MINT_MONO_CMPXCHG_I4:
 		case MINT_MONO_CMPXCHG_I8:
+		case MINT_NEWOBJ_INLINED:
+		case MINT_NEWOBJ_VT_INLINED:
 		case MINT_CPBLK:
 		case MINT_INITBLK:
 		case MINT_ROL_I4_IMM:
@@ -715,7 +729,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_LOG2_I8:
 		case MINT_SHL_AND_I4:
 		case MINT_SHL_AND_I8:
-			return TRACE_CONTINUE;
+			return VALUE_HEAVY;
 
 		case MINT_BR:
 		case MINT_BR_S:
@@ -724,20 +738,19 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 			// Detect backwards branches
 			if (ins->info.target_bb->il_offset <= ins->il_offset) {
 				if (*inside_branch_block)
-					return TRACE_CONDITIONAL_ABORT;
+					return VALUE_BRANCH;
 				else
-					return mono_opt_jiterpreter_backward_branches_enabled ? TRACE_CONTINUE : TRACE_ABORT;
+					return mono_opt_jiterpreter_backward_branches_enabled ? VALUE_BRANCH : VALUE_ABORT;
 			}
 
 			// NOTE: This is technically incorrect - we are not conditionally executing code. However
 			//  the instructions *following* this may not be executed since we might skip over them.
 			*inside_branch_block = TRUE;
-
-			return TRACE_CONTINUE;
+			return VALUE_BRANCH;
 
 		case MINT_ENDFINALLY:
 			// May produce either a backwards branch or a bailout
-			return TRACE_CONDITIONAL_ABORT;
+			return VALUE_BRANCH;
 
 		case MINT_ICALL_V_P:
 		case MINT_ICALL_V_V:
@@ -747,20 +760,23 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_ICALL_PP_P:
 		case MINT_MONO_RETHROW:
 		case MINT_THROW:
+			// NOTE: Any throw opcode means that the branch is unlikely to be taken,
+			//  so it's possible we should use VALUE_NONE here
 			if (*inside_branch_block)
-				return TRACE_CONDITIONAL_ABORT;
+				return VALUE_BRANCH;
 
-			return TRACE_ABORT;
+			return VALUE_ABORT;
 
 		case MINT_RETHROW:
 		case MINT_PROF_EXIT:
 		case MINT_PROF_EXIT_VOID:
-			return TRACE_ABORT;
+			return VALUE_ABORT;
 
 		case MINT_MOV_SRC_OFF:
 		case MINT_MOV_DST_OFF:
 			// These opcodes will turn into supported MOVs later
-			return TRACE_CONTINUE;
+			// FIXME: Is this the right value?
+			return VALUE_NORMAL;
 
 		default:
 		if (
@@ -772,7 +788,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		) {
 			// FIXME: Detect negative displacement and abort appropriately
 			*inside_branch_block = TRUE;
-			return TRACE_CONTINUE;
+			return VALUE_BRANCH;
 		}
 		else if (
 			// calls
@@ -782,71 +798,82 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 			(opcode <= MINT_CALLI_NAT_FAST)
 			// (opcode <= MINT_JIT_CALL2)
 		)
-			return *inside_branch_block ? TRACE_CONDITIONAL_ABORT : TRACE_ABORT;
+			return *inside_branch_block ? VALUE_CALL : VALUE_ABORT;
 		else if (
 			// returns
 			(opcode >= MINT_RET) &&
 			(opcode <= MINT_RET_U2)
 		)
-			return *inside_branch_block ? TRACE_CONDITIONAL_ABORT : TRACE_ABORT;
+			return *inside_branch_block ? VALUE_RET : VALUE_ABORT;
 		else if (
 			(opcode >= MINT_LDC_I4_M1) &&
 			(opcode <= MINT_LDC_R8)
 		)
-			return TRACE_CONTINUE;
+			return VALUE_NORMAL;
 		else if (
 			(opcode >= MINT_MOV_I4_I1) &&
 			(opcode <= MINT_MOV_8_4)
 		)
-			return TRACE_CONTINUE;
+			return VALUE_NORMAL; // FIXME: Heavy for the 8/block moves
 		else if (
 			// binops
 			(opcode >= MINT_ADD_I4) &&
 			(opcode <= MINT_CLT_UN_R8)
 		)
-			return TRACE_CONTINUE;
+			return VALUE_NORMAL;
 		else if (
 			// unops and some superinsns
 			// fixme: a lot of these aren't actually implemented. but they're also uncommon
 			(opcode >= MINT_ADD1_I4) &&
 			(opcode <= MINT_SHR_I8_IMM)
 		)
-			return TRACE_CONTINUE;
+			return VALUE_NORMAL;
 		else if (
 			// math intrinsics - we implement most but not all of these
 			(opcode >= MINT_ASIN) &&
 			(opcode <= MINT_MAXF)
 		)
-			return TRACE_CONTINUE;
+			return VALUE_NORMAL;
 		else if (
 			// field operations
 			// the trace compiler currently implements most, but not all of these
 			(opcode >= MINT_LDFLD_I1) &&
 			(opcode <= MINT_LDTSFLDA)
 		)
-			return TRACE_CONTINUE;
+			return VALUE_HEAVY;
 		else if (
 			// indirect operations
 			// there are also a few of these not implemented by the trace compiler yet
 			(opcode >= MINT_LDLOCA_S) &&
 			(opcode <= MINT_STIND_OFFSET_IMM_I8)
 		)
-			return TRACE_CONTINUE;
+			return VALUE_NORMAL;
 		else if (
 			// array operations
 			// some of these like the _I ones aren't implemented yet but are rare
 			(opcode >= MINT_LDELEM_I1) &&
 			(opcode <= MINT_GETITEM_LOCALSPAN)
 		)
-			return TRACE_CONTINUE;
+			return VALUE_HEAVY;
+		else if (
+			// simd operations
+			// these aren't all implemented, but for now we want the jiterp to
+			//  attempt to compile any traces that contain them
+			(opcode >= MINT_SIMD_V128_LDC) &&
+			(opcode <= MINT_SIMD_INTRINS_P_PPP)
+		)
+			return VALUE_SIMD;
 		else
-			return TRACE_ABORT;
+			return VALUE_ABORT;
 	}
 }
 
 static gboolean
 should_generate_trace_here (InterpBasicBlock *bb) {
-	int current_trace_length = 0;
+	// TODO: Estimate interpreter and jiterpreter side values based on table, and only keep traces
+	//  where the jiterpreter value is better than the interpreter value.
+
+	int current_trace_value = 0;
 	// A preceding trace may have been in a branch block, but we only care whether the current
 	//  trace will have a branch block opened, because that determines whether calls and branches
 	//  will unconditionally abort the trace or not.
@@ -856,24 +883,19 @@ should_generate_trace_here (InterpBasicBlock *bb) {
 		// We scan forward through the entire method body starting from the current block, not just
 		//  the current block (since the actual trace compiler doesn't know about block boundaries).
 		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
-			int category = jiterp_should_abort_trace(ins, &inside_branch_block);
-			switch (category) {
-				case TRACE_ABORT:
-					jiterpreter_abort_counts[ins->opcode]++;
-					return current_trace_length >= mono_opt_jiterpreter_minimum_trace_length;
-				case TRACE_CONDITIONAL_ABORT:
-					// FIXME: Stop traces that contain these early on, as long as we are relatively certain
-					//  that these instructions will be hit (i.e. they are not unlikely branches)
-					break;
-				case TRACE_IGNORE:
-					break;
-				default:
-					current_trace_length++;
-					break;
+			int value = jiterp_get_opcode_value(ins, &inside_branch_block);
+			if (value < 0) {
+				jiterpreter_abort_counts[ins->opcode]++;
+				return current_trace_value >= mono_opt_jiterpreter_minimum_trace_value;
+			} else if (value >= VALUE_SIMD) {
+				// HACK
+				return TRUE;
+			} else if (value > 0) {
+				current_trace_value += value;
 			}
 
 			// Once we know the trace is long enough we can stop scanning.
-			if (current_trace_length >= mono_opt_jiterpreter_minimum_trace_length)
+			if (current_trace_value >= mono_opt_jiterpreter_minimum_trace_value)
 				return TRUE;
 		}
 

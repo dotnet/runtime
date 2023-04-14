@@ -214,8 +214,8 @@ export function generateWasmBody (
             //  a given exit
             exitOpcodeCounter = conditionalOpcodeCounter + prologueOpcodeCounter +
                 builder.branchTargets.size;
-        let isLowValueOpcode = false,
-            skipDregInvalidation = false;
+        let skipDregInvalidation = false,
+            opcodeValue = 1;
 
         // We record the offset of each backward branch we encounter, so that later branch
         //  opcodes know that it's available by branching to the top of the dispatch loop
@@ -259,6 +259,7 @@ export function generateWasmBody (
                 const startOffsetInBytes = getArgU16(ip, 1),
                     sizeInBytes = getArgU16(ip, 2);
                 append_memset_local(builder, startOffsetInBytes, 0, sizeInBytes);
+                opcodeValue = 3;
                 break;
             }
             case MintOpcode.MINT_LOCALLOC: {
@@ -274,6 +275,7 @@ export function generateWasmBody (
             case MintOpcode.MINT_INITOBJ: {
                 append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
                 append_memset_dest(builder, 0, getArgU16(ip, 2));
+                opcodeValue = 3;
                 break;
             }
             case MintOpcode.MINT_CPBLK: {
@@ -309,6 +311,7 @@ export function generateWasmBody (
                 builder.appendU8(0);
                 builder.appendU8(0);
                 builder.endBlock(); // if #1
+                opcodeValue = 3;
                 break;
             }
             case MintOpcode.MINT_INITBLK: {
@@ -324,6 +327,7 @@ export function generateWasmBody (
                 builder.appendU8(WasmOpcode.PREFIX_sat);
                 builder.appendU8(11);
                 builder.appendU8(0);
+                opcodeValue = 3;
                 break;
             }
 
@@ -374,6 +378,7 @@ export function generateWasmBody (
                     notNullSince.set(dest, <any>ip);
                 }
                 skipDregInvalidation = true;
+                opcodeValue = 2;
                 break;
             }
 
@@ -393,7 +398,7 @@ export function generateWasmBody (
             }
 
             case MintOpcode.MINT_TIER_ENTER_JITERPRETER:
-                isLowValueOpcode = true;
+                opcodeValue = 0;
                 // If we hit an enter opcode and we're not currently in a branch block
                 //  or the enter opcode is the first opcode in a branch block, this likely
                 //  indicates that we've reached a loop body that was already jitted before
@@ -441,7 +446,7 @@ export function generateWasmBody (
             case MintOpcode.MINT_SDB_BREAKPOINT:
             case MintOpcode.MINT_SDB_INTR_LOC:
             case MintOpcode.MINT_SDB_SEQ_POINT:
-                isLowValueOpcode = true;
+                opcodeValue = 0;
                 break;
 
             case MintOpcode.MINT_SAFEPOINT:
@@ -868,7 +873,7 @@ export function generateWasmBody (
                     //  to abort the entire trace if we have branch support enabled - the call
                     //  might be infrequently hit and as a result it's worth it to keep going.
                     append_exit(builder, ip, exitOpcodeCounter, BailoutReason.Call);
-                    isLowValueOpcode = true;
+                    opcodeValue = 0;
                 } else {
                     // We're in a block that executes unconditionally, and no branches have been
                     //  executed before now so the trace will always need to bail out into the
@@ -892,7 +897,7 @@ export function generateWasmBody (
                             ? BailoutReason.CallDelegate
                             : BailoutReason.Call
                     );
-                    isLowValueOpcode = true;
+                    opcodeValue = 0;
                 } else {
                     ip = abort;
                 }
@@ -908,7 +913,7 @@ export function generateWasmBody (
                 // See comments for MINT_CALL
                 if (isConditionallyExecuted) {
                     append_bailout(builder, ip, BailoutReason.Icall);
-                    isLowValueOpcode = true;
+                    opcodeValue = 0;
                 } else {
                     ip = abort;
                 }
@@ -921,7 +926,7 @@ export function generateWasmBody (
                 // Not an exit, because throws are by definition unlikely
                 // We shouldn't make optimization decisions based on them.
                 append_bailout(builder, ip, BailoutReason.Throw);
-                isLowValueOpcode = true;
+                opcodeValue = 0;
                 break;
 
             // These are generated in place of regular LEAVEs inside of the body of a catch clause.
@@ -929,7 +934,7 @@ export function generateWasmBody (
             case MintOpcode.MINT_LEAVE_CHECK:
             case MintOpcode.MINT_LEAVE_S_CHECK:
                 append_bailout(builder, ip, BailoutReason.LeaveCheck);
-                isLowValueOpcode = true;
+                opcodeValue = 0;
                 break;
 
             case MintOpcode.MINT_ENDFINALLY: {
@@ -1198,7 +1203,7 @@ export function generateWasmBody (
                         // FIXME: Or do we want to record them? Early conditional returns might reduce the value of a trace,
                         //  but the main problem is more likely to be calls early in traces. Worth testing later.
                         append_bailout(builder, ip, BailoutReason.Return);
-                        isLowValueOpcode = true;
+                        opcodeValue = 0;
                     } else
                         ip = abort;
                 } else if (
@@ -1273,7 +1278,7 @@ export function generateWasmBody (
                     if (builder.branchTargets.size > 0) {
                         // FIXME: Try to reduce the number of these
                         append_exit(builder, ip, exitOpcodeCounter, BailoutReason.ComplexBranch);
-                        isLowValueOpcode = true;
+                        opcodeValue = 0;
                     } else
                         ip = abort;
                 } else {
@@ -1317,12 +1322,12 @@ export function generateWasmBody (
                 builder.traceBuf.push(stmtText);
             }
 
-            if (!isLowValueOpcode) {
+            if (opcodeValue > 0) {
                 if (isConditionallyExecuted)
                     conditionalOpcodeCounter++;
                 else
                     prologueOpcodeCounter++;
-                result++;
+                result += opcodeValue;
             }
 
             ip += <any>(info[1] * 2);
