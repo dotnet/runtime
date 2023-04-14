@@ -95,6 +95,6 @@ resources:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg
 
     - container: rpmpkg
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-rpmpkg
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-fpm
 
 stages: ${{ parameters.stages }}
