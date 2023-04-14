@@ -2051,6 +2051,8 @@ class SuperPMIReplayAsmDiffs:
                     html_color(base_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / diffed_contexts * 100)),
                     html_color(diff_color, "{:,d} ({:1.2f}%)".format(missing_diff_contexts, missing_diff_contexts / diffed_contexts * 100))))
 
+        self.write_jit_options(write_fh)
+
         def has_diffs(row):
             return int(row["Contexts with diffs"]) > 0
 
@@ -2168,6 +2170,32 @@ superpmi.py asmdiffs -target_os {1} -target_arch {2} -arch {0}
 """.format(self.coreclr_args.arch, self.coreclr_args.target_os, self.coreclr_args.target_arch))
 
                             shutil.copyfileobj(read_fh, write_fh)
+
+    def write_jit_options(self, write_fh):
+        """ If any custom JIT options are specified then write their values out to the summmary
+
+        Args:
+            write_fh: file to output to
+        
+        """
+        base_options = []
+        diff_options = []
+        
+        if self.coreclr_args.jitoption:
+            base_options += self.coreclr_args.jitoption
+            diff_options += self.coreclr_args.jitoption
+
+        if self.coreclr_args.base_jit_option:
+            base_options += self.coreclr_args.base_jit_option
+
+        if self.coreclr_args.diff_jit_option:
+            diff_options += self.coreclr_args.diff_jit_option
+
+        if len(base_options) > 0:
+            write_fh.write("Base JIT options: {}\n\n".format(";".join(base_options)))
+
+        if len(diff_options) > 0:
+            write_fh.write("Diff JIT options: {}\n\n".format(";".join(diff_options)))
 
     def write_example_diffs_to_markdown_summary(self, write_fh, asm_diffs):
         """ Write a section with example diffs to the markdown summary.
