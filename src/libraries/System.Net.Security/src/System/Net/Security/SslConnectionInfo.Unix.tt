@@ -23,6 +23,13 @@ namespace System.Net.Security
             TlsCipherSuite = cipherSuite;
             KeyExchKeySize = 0;
 
+            // set most common values as default to reduce the IL size
+            KeyExchangeAlg = (int)ExchangeAlgorithmType.DiffieHellman;
+            DataCipherAlg = (int)CipherAlgorithmType.Null;
+            DataKeySize = 128;
+            DataHashAlg = (int)HashAlgorithmType.None;
+            DataHashKeySize = 0;
+
             switch (cipherSuite)
             {
 <#
@@ -31,11 +38,35 @@ foreach (TlsCipherSuite val in enumValues)
     TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
 #>
                 case TlsCipherSuite.<#= val #>:
+<#
+    if (EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm) != "DiffieHellman")
+    {
+#>
                     KeyExchangeAlg = (int)ExchangeAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm) #>;
+<#
+    }
+
+    if (EnumHelpers.ToFrameworkName(data.CipherAlgorithm) != "Null")
+    {
+#>
                     DataCipherAlg = (int)CipherAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.CipherAlgorithm) #>;
+<#
+    }
+
+    if (data.CipherAlgorithmStrength != 128)
+    {
+#>
                     DataKeySize = <#= data.CipherAlgorithmStrength #>;
+<#
+    }
+
+    if (EnumHelpers.ToFrameworkName(data.MACAlgorithm) != "None")
+    {
+#>
                     DataHashAlg = (int)HashAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.MACAlgorithm) #>;
-                    DataHashKeySize = <#= EnumHelpers.GetHashSize(data.MACAlgorithm) #>;
+<#
+    }
+#>
                     break;
 
 <#
@@ -43,7 +74,32 @@ foreach (TlsCipherSuite val in enumValues)
 #>
                 default:
                     Debug.Fail($"No mapping found for cipherSuite {cipherSuite}");
+                    KeyExchangeAlg = (int)ExchangeAlgorithmType.None;
+                    DataKeySize = 0;
                     break;
+            }
+
+            DataHashKeySize = GetHashSize((HashAlgorithmType)DataHashAlg);
+
+            static int GetHashSize(HashAlgorithmType hash)
+            {
+                switch (hash)
+                {
+                    case HashAlgorithmType.None:
+                        return 0;
+                    case HashAlgorithmType.Md5:
+                        return 128;
+                    case HashAlgorithmType.Sha1:
+                        return 160;
+                    case HashAlgorithmType.Sha256:
+                        return 256;
+                    case HashAlgorithmType.Sha384:
+                        return 384;
+                    case HashAlgorithmType.Sha512:
+                        return 512;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(hash));
+                }
             }
         }
     }

@@ -150,28 +150,6 @@ internal static class EnumHelpers
                 throw new Exception($"Value `HashAlgorithmType.{val}` does not have framework corresponding name. See TlsCipherSuiteNameParser.ttinclude: ToFrameworkName.");
         }
     }
-
-    public static int GetHashSize(HashAlgorithmType hash)
-    {
-        switch (hash)
-        {
-            case HashAlgorithmType.Aead:
-            case HashAlgorithmType.None:
-                return 0;
-            case HashAlgorithmType.Md5:
-                return 128;
-            case HashAlgorithmType.Sha1:
-                return 160;
-            case HashAlgorithmType.Sha256:
-                return 256;
-            case HashAlgorithmType.Sha384:
-                return 384;
-            case HashAlgorithmType.Sha512:
-                return 512;
-            default:
-                throw new ArgumentOutOfRangeException(Enum.GetName(hash));
-        }
-    }
 }
 
 // Simplified structure which we use in the product code
