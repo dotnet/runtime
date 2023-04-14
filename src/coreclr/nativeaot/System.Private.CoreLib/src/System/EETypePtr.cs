@@ -310,14 +310,6 @@ namespace System
             }
         }
 
-        internal uint BaseSize
-        {
-            get
-            {
-                return _value->BaseSize;
-            }
-        }
-
         internal IntPtr DispatchMap
         {
             get

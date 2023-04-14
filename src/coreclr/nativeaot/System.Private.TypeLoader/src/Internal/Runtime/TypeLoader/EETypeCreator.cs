@@ -177,7 +177,7 @@ namespace Internal.Runtime.TypeLoader
                     runtimeInterfacesLength = checked((ushort)state.RuntimeInterfaces.Length);
                 }
 
-                baseSize = (int)pTemplateEEType->BaseSize;
+                baseSize = (int)pTemplateEEType->RawBaseSize;
                 isValueType = pTemplateEEType->IsValueType;
                 hasFinalizer = pTemplateEEType->IsFinalizable;
                 isNullable = pTemplateEEType->IsNullable;
@@ -269,7 +269,7 @@ namespace Internal.Runtime.TypeLoader
 
                     // Set basic MethodTable fields
                     pEEType->Flags = flags;
-                    pEEType->BaseSize = (uint)baseSize;
+                    pEEType->RawBaseSize = (uint)baseSize;
                     pEEType->NumVtableSlots = numVtableSlots;
                     pEEType->NumInterfaces = runtimeInterfacesLength;
                     pEEType->HashCode = hashCodeOfNewType;
