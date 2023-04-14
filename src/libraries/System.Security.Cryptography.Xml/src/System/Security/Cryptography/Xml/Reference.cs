@@ -258,7 +258,7 @@ namespace System.Security.Cryptography.Xml
                         Transform? transform = CryptoHelpers.CreateFromName<Transform>(algorithm);
                         if (transform == null)
                         {
-                            throw new CryptographicException(SR.Format(SR.Cryptography_Xml_UnknownTransform_AlgorithmName, algorithm));
+                            throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
                         }
                         AddTransform(transform);
                         // let the transform read the children of the transformElement for data
