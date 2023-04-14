@@ -128,6 +128,11 @@ export type MonoConfig = {
      * hash of assets
      */
     assetsHash?: string,
+
+    /**
+     * application environment
+     */
+    applicationEnvironment?: string
 };
 
 export type MonoConfigInternal = MonoConfig & {

@@ -16,18 +16,19 @@ export async function loadBootConfig(config: MonoConfigInternal,) {
 
     INTERNAL.resourceLoader = resourceLoader;
 
-    mapBootConfigToMonoConfig(Module.config as MonoConfigInternal, resourceLoader);
+    mapBootConfigToMonoConfig(Module.config as MonoConfigInternal, resourceLoader, bootConfigResult.applicationEnvironment);
 }
 
 let resourcesLoaded = 0;
 let totalResources = 0;
 
-export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, resourceLoader: WebAssemblyResourceLoader) {
+export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, resourceLoader: WebAssemblyResourceLoader, applicationEnvironment: string) {
     const resources = resourceLoader.bootConfig.resources;
 
     const assets: AssetEntry[] = [];
     const environmentVariables: any = {};
 
+    moduleConfig.applicationEnvironment = applicationEnvironment;
     moduleConfig.assets = assets;
     moduleConfig.globalizationMode = "icu";
     moduleConfig.environmentVariables = environmentVariables;
