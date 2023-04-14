@@ -263,9 +263,6 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
     }
     else
     {
-        // Note: if pEEType->IsCloned(), then no special handling is necessary.  All the
-        // functionality we need from the MethodTable below work just as well from cloned types.
-
         // Note: For generic types, we do not necessarily know the generic parameters.
         // So we leave it to the profiler at post-processing time to determine that via
         // the PDBs.  We'll leave pVal->cTypeParameters as 0, even though there could be

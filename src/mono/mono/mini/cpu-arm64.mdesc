@@ -521,6 +521,18 @@ expand_i4: dest:x src1:i len:4
 expand_i8: dest:x src1:i len:4
 expand_r4: dest:x src1:f len:4
 expand_r8: dest:x src1:f len:4
+insert_i1: dest:x src1:i len:4
+insert_i2: dest:x src1:i len:4
+insert_i4: dest:x src1:i len:4
+insert_i8: dest:x src1:i len:4
+insert_r4: dest:x src1:f len:4
+insert_r8: dest:x src1:f len:4
+create_scalar_int: dest:x src1:i len:8
+create_scalar_float: dest:x src1:f len:12
+create_scalar_unsafe_int: dest:x src1:i len:4
+create_scalar_unsafe_float: dest:x src1:f len:4
+arm64_bic: dest:x src1:x src2:x len:4
+bitwise_select: dest:x src1:x src2:x src3:x len:12
 
 generic_class_init: src1:a len:44 clob:c
 gc_safe_point: src1:i len:12 clob:c

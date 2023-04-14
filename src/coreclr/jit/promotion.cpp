@@ -20,7 +20,7 @@ PhaseStatus Compiler::PhysicalPromotion()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    if (!compStressCompile(STRESS_PHYSICAL_PROMOTION, 25))
+    if ((JitConfig.JitEnablePhysicalPromotion() == 0) && !compStressCompile(STRESS_PHYSICAL_PROMOTION, 25))
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }

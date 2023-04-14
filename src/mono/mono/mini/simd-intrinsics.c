@@ -843,9 +843,9 @@ type_to_expand_op (MonoTypeEnum type)
 }
 
 static int
-type_to_insert_op (MonoType *type)
+type_to_insert_op (MonoTypeEnum type)
 {
-	switch (type->type) {
+	switch (type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 		return OP_INSERT_I1;
@@ -992,14 +992,15 @@ support_probe_complete:
 static MonoInst *
 emit_vector_create_elementwise (
 	MonoCompile *cfg, MonoMethodSignature *fsig, MonoType *vtype,
-	MonoType *etype, MonoInst **args)
+	MonoTypeEnum type, MonoInst **args)
 {
-	int op = type_to_insert_op (etype);
+	int op = type_to_insert_op (type);
 	MonoClass *vklass = mono_class_from_mono_type_internal (vtype);
 	MonoInst *ins = emit_xzero (cfg, vklass);
 	for (int i = 0; i < fsig->param_count; ++i) {
 		ins = emit_simd_ins (cfg, vklass, op, ins->dreg, args [i]->dreg);
 		ins->inst_c0 = i;
+		ins->inst_c1 = type;
 	}
 	return ins;
 }
@@ -1097,11 +1098,6 @@ static guint16 sri_vector_methods [] = {
 	SN_AsUInt16,
 	SN_AsUInt32,
 	SN_AsUInt64,
-	SN_AsVector128,
-	SN_AsVector2,
-	SN_AsVector256,
-	SN_AsVector3,
-	SN_AsVector4,
 	SN_BitwiseAnd,
 	SN_BitwiseOr,
 	SN_Ceiling,
@@ -1150,8 +1146,6 @@ static guint16 sri_vector_methods [] = {
 	SN_ToScalar,
 	SN_ToVector128,
 	SN_ToVector128Unsafe,
-	SN_ToVector256,
-	SN_ToVector256Unsafe,
 	SN_WidenLower,
 	SN_WidenUpper,
 	SN_WithElement,
@@ -1216,11 +1210,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	if (!COMPILE_LLVM (cfg))
 		return NULL;
 #endif
-// FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
-#ifdef TARGET_ARM64
-	if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp))
-		return NULL;
-#endif
 
 	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod);
 	if (id == -1) {
@@ -1228,64 +1217,38 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 	}
 
-	if (!strcmp (m_class_get_name (cfg->method->klass), "Vector256") || !strcmp (m_class_get_name (cfg->method->klass), "Vector512"))
+	if (!strcmp (m_class_get_name (cmethod->klass), "Vector256") || !strcmp (m_class_get_name (cmethod->klass), "Vector512"))
 		return NULL; 
 		
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg)) {
+		if (!(!strcmp (m_class_get_name (cmethod->klass), "Vector128") || !strcmp (m_class_get_name (cmethod->klass), "Vector")))
+			return NULL;
 		switch (id) {
-		case SN_Add:
-		case SN_Equals:
-		case SN_GreaterThan:
-		case SN_GreaterThanOrEqual:
-		case SN_LessThan:
-		case SN_LessThanOrEqual:
-		case SN_Negate:
-		case SN_OnesComplement:
-		case SN_EqualsAny:
-		case SN_GreaterThanAny:
-		case SN_GreaterThanOrEqualAny:
-		case SN_LessThanAny:
-		case SN_LessThanOrEqualAny:
-		case SN_EqualsAll:
-		case SN_GreaterThanAll:
-		case SN_GreaterThanOrEqualAll:
-		case SN_LessThanAll:
-		case SN_LessThanOrEqualAll:
-		case SN_Subtract:
-		case SN_BitwiseAnd:
-		case SN_BitwiseOr:
-		case SN_Xor:
-		case SN_As:
-		case SN_AsByte:
-		case SN_AsDouble:
-		case SN_AsInt16:
-		case SN_AsInt32:
-		case SN_AsInt64:
-		case SN_AsSByte:
-		case SN_AsSingle:
-		case SN_AsUInt16:
-		case SN_AsUInt32:
-		case SN_AsUInt64:
-		case SN_Max:
-		case SN_Min:
-		case SN_Sum:
-		case SN_ToScalar:
-		case SN_Floor:
-		case SN_Ceiling:
-		case SN_Divide:
-		case SN_Multiply:
-		case SN_Sqrt:
-		case SN_Abs:
+		case SN_ConvertToDouble:
+		case SN_ConvertToInt32:
+		case SN_ConvertToInt64:
+		case SN_ConvertToSingle:
+		case SN_ConvertToUInt32:
+		case SN_ConvertToUInt64:
+		case SN_Create:
+		case SN_Dot:
+		case SN_ExtractMostSignificantBits:
+		case SN_GetElement:
+		case SN_GetLower:
+		case SN_GetUpper:
+		case SN_Narrow:
+		case SN_Shuffle:
+		case SN_ToVector128:
+		case SN_ToVector128Unsafe:
+		case SN_WidenLower:
+		case SN_WidenUpper:
+		case SN_WithElement:
+			return NULL;
+		default:
 			break;
-		default: 
-			return NULL;
 		}
-		MonoClass *arg0_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		int class_size = mono_class_value_size (arg0_class, NULL);
-		if (class_size != 16)
-			return NULL;
 	}
 #endif
 
@@ -1462,25 +1425,44 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
 		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
-		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype))
-			return emit_simd_ins (cfg, klass, type_to_expand_op (etype->type), args [0]->dreg, -1);
-		else if (is_create_from_half_vectors_overload (fsig))
+		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype)) {
+			MonoInst* ins = emit_simd_ins (cfg, klass, type_to_expand_op (etype->type), args [0]->dreg, -1);
+			ins->inst_c1 = arg0_type;
+			return ins;
+		} else if (is_create_from_half_vectors_overload (fsig))
 			return emit_simd_ins (cfg, klass, OP_XCONCAT, args [0]->dreg, args [1]->dreg);
 		else if (is_elementwise_create_overload (fsig, etype))
-			return emit_vector_create_elementwise (cfg, fsig, fsig->ret, etype, args);
+			return emit_vector_create_elementwise (cfg, fsig, fsig->ret, arg0_type, args);
 		break;
 	}
 	case SN_CreateScalar: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
 		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
-		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR, -1, arg0_type, fsig, args);
+		if (COMPILE_LLVM (cfg))
+			return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR, -1, arg0_type, fsig, args);
+		else {
+			if (type_enum_is_float (arg0_type)) {
+				return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_FLOAT, -1, arg0_type, fsig, args);
+			} else {
+				return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_INT, -1, arg0_type, fsig, args);
+			}
+		}
+
 	}
 	case SN_CreateScalarUnsafe: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
 		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
-		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
+		if (COMPILE_LLVM (cfg))
+			return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
+		else {
+			if (type_enum_is_float (arg0_type)) {
+				return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE_FLOAT, -1, arg0_type, fsig, args);
+			} else {
+				return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE_INT, -1, arg0_type, fsig, args);
+			}
+		}
 	}
 	case SN_Dot: {
 		if (!is_element_type_primitive (fsig->params [0]))
