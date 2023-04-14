@@ -15,6 +15,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         private const string MySqlServerPrefix = "MYSQLCONNSTR_";
         private const string SqlAzureServerPrefix = "SQLAZURECONNSTR_";
         private const string SqlServerPrefix = "SQLCONNSTR_";
+        private const string PostrgeSqlPrefix = "POSTGRESQLCONNSTR_"
         private const string CustomConnectionStringPrefix = "CUSTOMCONNSTR_";
 
         private readonly string _prefix;
