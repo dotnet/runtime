@@ -1760,6 +1760,16 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBase_Helper, MethodTable * pMT)
 HCIMPLEND
 
 
+#ifdef _MSC_VER
+__declspec(selectany) __declspec(thread) uint32_t t_maxThreadStaticBlocks;
+__declspec(selectany) __declspec(thread) uint32_t t_threadStaticBlocksSize;
+__declspec(selectany) __declspec(thread) void** t_threadStaticBlocks;
+#else
+EXTERN_C __thread uint32_t t_maxThreadStaticBlocks;
+EXTERN_C __thread uint32_t t_threadStaticBlocksSize;
+EXTERN_C __thread void** t_threadStaticBlocks;
+#endif
+
 // *** This helper corresponds to both CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE and
 //     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR. Even though we always check
 //     if the class constructor has been run, we have a separate helper ID for the "no ctor"
@@ -1793,6 +1803,68 @@ HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLoc
     return HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
 }
 HCIMPLEND
+
+// *** This helper corresponds CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED.
+//      Even though we always check if the class constructor has been run, we have a separate
+//      helper ID for the "no ctor" version because it allows the JIT to do some reordering that
+//      otherwise wouldn't be possible.
+HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
+{
+    void* staticBlock = nullptr;
+
+#ifdef HOST_WINDOWS
+    FCALL_CONTRACT;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
+
+    MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupThreadStaticBlockType(staticBlockIndex);
+    _ASSERTE(!pMT->HasGenericsStaticsInfo());
+
+    // Get the TLM
+    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
+    _ASSERTE(pThreadLocalModule != NULL);
+
+    // Check if the class constructor needs to be run
+    pThreadLocalModule->CheckRunClassInitThrowing(pMT);
+
+    // Lookup the non-GC statics base pointer
+    staticBlock = (void*) pMT->GetNonGCThreadStaticsBasePointer();
+    CONSISTENCY_CHECK(staticBlock != NULL);
+
+    if (t_threadStaticBlocksSize <= staticBlockIndex)
+    {
+        UINT32 newThreadStaticBlocksSize = max(2 * t_threadStaticBlocksSize, staticBlockIndex + 1);
+        void** newThreadStaticBlocks = (void**) new PTR_BYTE[newThreadStaticBlocksSize * sizeof(PTR_BYTE)];
+        memset(newThreadStaticBlocks + t_threadStaticBlocksSize, 0, (newThreadStaticBlocksSize - t_threadStaticBlocksSize) * sizeof(PTR_BYTE));
+
+        if (t_threadStaticBlocksSize > 0)
+        {
+            memcpy(newThreadStaticBlocks, t_threadStaticBlocks, t_threadStaticBlocksSize * sizeof(PTR_BYTE));
+            delete t_threadStaticBlocks;
+        }
+
+        t_threadStaticBlocksSize = newThreadStaticBlocksSize;
+        t_threadStaticBlocks = newThreadStaticBlocks;
+    }
+
+    void* currentEntry = t_threadStaticBlocks[staticBlockIndex];
+    // We could be coming here 2nd time after running the ctor when we try to get the static block.
+    // In such case, just avoid adding the same entry.
+    if (currentEntry != staticBlock)
+    {
+        _ASSERTE(currentEntry == nullptr);
+        t_threadStaticBlocks[staticBlockIndex] = staticBlock;
+        t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
+    }
+    HELPER_METHOD_FRAME_END();
+#else
+    _ASSERTE(!"JIT_GetSharedNonGCThreadStaticBaseOptimized not supported on non-windows.");
+#endif // HOST_WINDOWS
+
+    return staticBlock;
+}
+HCIMPLEND
+
 #include <optdefault.h>
 
 // *** This helper corresponds to both CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE and

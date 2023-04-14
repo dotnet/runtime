@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Security;
@@ -19,6 +20,7 @@ namespace System.Xml.Xsl.IlGen
         Raw = 2,        // Raw method which should not add an implicit first argument of type XmlQueryRuntime
     }
 
+    [RequiresDynamicCode("Creates DynamicMethods")]
     internal sealed class XmlILModule
     {
         private static long s_assemblyId;                                     // Unique identifier used to ensure that assembly names are unique within AppDomain

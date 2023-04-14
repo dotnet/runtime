@@ -3,10 +3,12 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
-internal class Test_objectusedonlyinhandler
+public class Test_objectusedonlyinhandler
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int exitCode = 1;
         String teststring = new String('a', 5);

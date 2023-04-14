@@ -115,12 +115,6 @@ namespace Internal.Runtime
 
                 MethodTable* pThisEEType = pThis;
 
-                if (pThisEEType->IsCloned)
-                    pThisEEType = pThisEEType->CanonicalEEType;
-
-                if (pOtherEEType->IsCloned)
-                    pOtherEEType = pOtherEEType->CanonicalEEType;
-
                 if (pThisEEType == pOtherEEType)
                     return true;
 

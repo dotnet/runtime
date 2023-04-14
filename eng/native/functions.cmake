@@ -373,11 +373,11 @@ function (get_symbol_file_name targetName outputSymbolFilename)
     endif ()
 
     set(${outputSymbolFilename} ${strip_destination_file} PARENT_SCOPE)
-  else(CLR_CMAKE_HOST_UNIX)
+  elseif(CLR_CMAKE_HOST_WIN32)
     # We can't use the $<TARGET_PDB_FILE> generator expression here since
     # the generator expression isn't supported on resource DLLs.
     set(${outputSymbolFilename} $<TARGET_FILE_DIR:${targetName}>/$<TARGET_FILE_PREFIX:${targetName}>$<TARGET_FILE_BASE_NAME:${targetName}>.pdb PARENT_SCOPE)
-  endif(CLR_CMAKE_HOST_UNIX)
+  endif()
 endfunction()
 
 function(strip_symbols targetName outputFilename)
@@ -443,7 +443,9 @@ endfunction()
 function(install_with_stripped_symbols targetName kind destination)
     if(NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
       strip_symbols(${targetName} symbol_file)
-      install_symbol_file(${symbol_file} ${destination} ${ARGN})
+      if (NOT "${symbol_file}" STREQUAL "")
+        install_symbol_file(${symbol_file} ${destination} ${ARGN})
+      endif()
     endif()
 
     if (CLR_CMAKE_TARGET_APPLE AND ("${kind}" STREQUAL "TARGETS"))
