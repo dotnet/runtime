@@ -69,8 +69,8 @@ resources:
       env:
         ROOTFS_DIR: /crossrootfs/ppc64le
 
-    - container: debian-11-gcc12-amd64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-gcc12-amd64
+    - container: ubuntu-22.04-gcc12-amd64
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04
 
     - container: linux_x64_llvmaot
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7

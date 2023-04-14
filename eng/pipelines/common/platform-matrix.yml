@@ -331,7 +331,7 @@ jobs:
       targetRid: linux-x64
       platform: linux_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: debian-11-gcc12-amd64
+      container: ubuntu-22.04-gcc12-amd64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
