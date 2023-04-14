@@ -703,7 +703,7 @@ elseif(HOST_BROWSER)
   set(STATIC_ICU 1)
   set(ICU_LIBS "icucore")
 elseif(HOST_IOS OR HOST_MACCAT)
-  set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
+  set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
   set(ICU_LIBS icuuc icui18n icudata)
@@ -731,6 +731,11 @@ elseif(TARGET_FREEBSD)
   set(ICU_LIBDIR "${CROSS_ROOTFS}/usr/local/lib")
 else()
   message(FATAL_ERROR "Unknown host")
+endif()
+
+# Ensure we aren't using deprecated ICU functions
+if(STATIC_ICU)
+  set(ICU_FLAGS "-DHAVE_UCOL_CLONE ${ICU_FLAGS}")
 endif()
 
 ######################################
