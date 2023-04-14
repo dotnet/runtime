@@ -20,8 +20,8 @@ with trimming enabled and use the `_TrimmerDumpDependencies` property:
 
 ```dotnet publish /p:PublishTrimmed=true /p:_TrimmerDumpDependencies=true```
 
-In this case the dependencies file will be in 
-`obj\<Configuration>\<TargetFramework>\<arch>\linked\linker-dependencies.xml`.
+In this case the dependencies file will be in
+`obj/<Configuration>/<TargetFramework>/<RID>/linked/linker-dependencies.xml`.
 
 For Xamarin.Android and Xamarin.iOS, that can be done on the command line by setting
 `LinkerDumpDependencies` property to `true` and building the
