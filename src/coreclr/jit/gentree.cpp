@@ -21875,6 +21875,20 @@ GenTree* Compiler::gtNewSimdMaxNode(
             }
         }
     }
+    else if (simdSize == 64)
+    {
+        if(varTypeIsSmall(simdBaseType))
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+            intrinsic = NI_AVX512BW_Max;
+        }
+        else
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+            intrinsic = NI_AVX512F_Max;
+        }
+
+    }
     else
     {
         switch (simdBaseType)
@@ -22061,6 +22075,20 @@ GenTree* Compiler::gtNewSimdMinNode(
                 intrinsic = NI_AVX2_Min;
             }
         }
+    }
+    else if (simdSize == 64)
+    {
+        if(varTypeIsSmall(simdBaseType))
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+            intrinsic = NI_AVX512BW_Min;
+        }
+        else
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+            intrinsic = NI_AVX512F_Min;
+        }
+
     }
     else
     {

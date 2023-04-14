@@ -1911,6 +1911,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Max:
         case NI_Vector256_Max:
+        case NI_Vector512_Max:
         {
             assert(sig->numArgs == 2);
 
@@ -1926,6 +1927,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Min:
         case NI_Vector256_Min:
+        case NI_Vector512_Min:
         {
             assert(sig->numArgs == 2);
 
