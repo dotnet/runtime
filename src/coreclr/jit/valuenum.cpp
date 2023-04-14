@@ -10625,8 +10625,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         {
                             // Skip indirect handles for now since this path is mostly for PGO scenarios
                             assert(embedClsHnd != nullptr);
-                            ssize_t  cnsHandle = (ssize_t)(pEmbedClsHnd != nullptr ? pEmbedClsHnd : embedClsHnd);
-                            ValueNum handleVN  = vnStore->VNForHandle(cnsHandle, GTF_ICON_CLASS_HDL);
+                            ValueNum handleVN  = vnStore->VNForHandle((ssize_t)embedClsHnd, GTF_ICON_CLASS_HDL);
                             tree->gtVNPair     = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), addrXvnp);
                             returnsTypeHandle  = true;
                         }
