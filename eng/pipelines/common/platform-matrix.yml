@@ -339,27 +339,6 @@ jobs:
         compilerName: gcc
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Mono Linux arm64 product build
-
-- ${{ if containsValue(parameters.platforms, 'mono_linux_arm64') }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      variables: ${{ parameters.variables }}
-      osGroup: linux
-      archType: arm64
-      targetRid: linux-arm64
-      platform: linux_arm64
-      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: mono_linux_arm64
-      jobParameters:
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        buildConfig: ${{ parameters.buildConfig }}
-        helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        crossBuild: true
-        ${{ insert }}: ${{ parameters.jobParameters }}
-
 # Mono LLVMAot test build
 
 - ${{ if containsValue(parameters.platforms, 'linux_x64_llvmaot') }}:
