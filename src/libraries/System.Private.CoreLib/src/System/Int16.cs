@@ -23,7 +23,8 @@ namespace System
           IEquatable<short>,
           IBinaryInteger<short>,
           IMinMaxValue<short>,
-          ISignedNumber<short>
+          ISignedNumber<short>,
+          IUtf8SpanFormattable
     {
         private readonly short m_value; // Do not rename (binary serialization)
 
@@ -116,6 +117,12 @@ namespace System
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatInt32(m_value, 0x0000FFFF, format, provider, destination, out charsWritten);
+        }
+
+        /// <inheritdoc/>
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        {
+            return Number.TryFormatInt32(m_value, 0x0000FFFF, format, provider, utf8Destination, out bytesWritten);
         }
 
         public static short Parse(string s)

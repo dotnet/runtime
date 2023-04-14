@@ -491,16 +491,14 @@ namespace System
 
             if (format.Length == 1)
             {
-                switch (format[0])
+                switch (format[0] | 0x20)
                 {
                     case 'o':
-                    case 'O':
                         format = OFormat;
                         provider = CultureInfo.InvariantCulture.DateTimeFormat;
                         break;
 
                     case 'r':
-                    case 'R':
                         format = RFormat;
                         provider = CultureInfo.InvariantCulture.DateTimeFormat;
                         break;
@@ -570,16 +568,14 @@ namespace System
 
                 if (format.Length == 1)
                 {
-                    switch (format[0])
+                    switch (format[0] | 0x20)
                     {
                         case 'o':
-                        case 'O':
                             format = OFormat;
                             dtfiToUse = CultureInfo.InvariantCulture.DateTimeFormat;
                             break;
 
                         case 'r':
-                        case 'R':
                             format = RFormat;
                             dtfiToUse = CultureInfo.InvariantCulture.DateTimeFormat;
                             break;
@@ -750,30 +746,25 @@ namespace System
 
             if (format.Length == 1)
             {
-                switch (format[0])
+                switch (format[0] | 0x20)
                 {
                     case 'o':
-                    case 'O':
                         return string.Create(10, this, (destination, value) =>
                         {
-                            bool b = DateTimeFormat.TryFormatDateOnlyO(value.Year, value.Month, value.Day, destination);
-                            Debug.Assert(b);
+                            DateTimeFormat.TryFormatDateOnlyO(value.Year, value.Month, value.Day, destination, out int charsWritten);
+                            Debug.Assert(charsWritten == destination.Length);
                         });
 
                     case 'r':
-                    case 'R':
                         return string.Create(16, this, (destination, value) =>
                         {
-                            bool b = DateTimeFormat.TryFormatDateOnlyR(value.DayOfWeek, value.Year, value.Month, value.Day, destination);
-                            Debug.Assert(b);
+                            DateTimeFormat.TryFormatDateOnlyR(value.DayOfWeek, value.Year, value.Month, value.Day, destination, out int charsWritten);
+                            Debug.Assert(charsWritten == destination.Length);
                         });
 
                     case 'm':
-                    case 'M':
                     case 'd':
-                    case 'D':
                     case 'y':
-                    case 'Y':
                         return DateTimeFormat.Format(GetEquivalentDateTime(), format, provider);
 
                     default:
@@ -800,7 +791,7 @@ namespace System
             TryFormatCore(utf8Destination, out bytesWritten, format, provider);
 
         private bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider = null)
-            where TChar : unmanaged, IBinaryInteger<TChar>
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             if (format.Length == 0)
             {
@@ -809,39 +800,22 @@ namespace System
 
             if (format.Length == 1)
             {
-                switch (format[0])
+                switch (format[0] | 0x20)
                 {
                     case 'o':
-                    case 'O':
-                        if (!DateTimeFormat.TryFormatDateOnlyO(Year, Month, Day, destination))
-                        {
-                            charsWritten = 0;
-                            return false;
-                        }
-                        charsWritten = 10;
-                        return true;
+                        return DateTimeFormat.TryFormatDateOnlyO(Year, Month, Day, destination, out charsWritten);
 
                     case 'r':
-                    case 'R':
-
-                        if (!DateTimeFormat.TryFormatDateOnlyR(DayOfWeek, Year, Month, Day, destination))
-                        {
-                            charsWritten = 0;
-                            return false;
-                        }
-                        charsWritten = 16;
-                        return true;
+                        return DateTimeFormat.TryFormatDateOnlyR(DayOfWeek, Year, Month, Day, destination, out charsWritten);
 
                     case 'm':
-                    case 'M':
                     case 'd':
-                    case 'D':
                     case 'y':
-                    case 'Y':
                         return DateTimeFormat.TryFormat(GetEquivalentDateTime(), destination, out charsWritten, format, provider);
 
                     default:
-                        throw new FormatException(SR.Argument_BadFormatSpecifier);
+                        ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+                        break;
                 }
             }
 
