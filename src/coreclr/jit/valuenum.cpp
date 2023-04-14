@@ -10619,12 +10619,17 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     {
                         info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(handle);
                         JITDUMP("IND(obj) is actually a class handle for %s\n", eeGetClassName(handle));
-                        void*    pEmbedClsHnd;
-                        void*    embedClsHnd = (void*)info.compCompHnd->embedClassHandle(handle, &pEmbedClsHnd);
-                        ssize_t  cnsHandle   = (ssize_t)(pEmbedClsHnd != nullptr ? pEmbedClsHnd : embedClsHnd);
-                        ValueNum handleVN    = vnStore->VNForHandle(cnsHandle, GTF_ICON_CLASS_HDL);
-                        tree->gtVNPair       = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), addrXvnp);
-                        returnsTypeHandle    = true;
+                        void* pEmbedClsHnd;
+                        void* embedClsHnd = (void*)info.compCompHnd->embedClassHandle(handle, &pEmbedClsHnd);
+                        if (pEmbedClsHnd == nullptr)
+                        {
+                            // Skip indirect handles for now since this path is mostly for PGO scenarios
+                            assert(embedClsHnd != nullptr);
+                            ssize_t  cnsHandle = (ssize_t)(pEmbedClsHnd != nullptr ? pEmbedClsHnd : embedClsHnd);
+                            ValueNum handleVN  = vnStore->VNForHandle(cnsHandle, GTF_ICON_CLASS_HDL);
+                            tree->gtVNPair     = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), addrXvnp);
+                            returnsTypeHandle  = true;
+                        }
                     }
                     else
                     {
