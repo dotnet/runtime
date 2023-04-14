@@ -18,6 +18,7 @@ The CoreCLR runtime and class libraries can be built and tested locally for Wind
 ### Building the CoreCLR runtime and class libraries
 
 To build locally, use the platform-specific shell script in .yamato/scripts. Either `build_yamato.cmd` or `build_yamato.sh`:
+_Note that this will require having ninja installed, which is an optional requirement._
 
 To view all possible arguments run:
 ```
