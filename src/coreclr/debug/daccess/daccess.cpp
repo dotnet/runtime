@@ -8500,14 +8500,16 @@ HRESULT DacFreeRegionEnumerator::Init()
         
         if (g_gcDacGlobals->freeable_soh_segment != nullptr)
         {
-            DPTR(dac_heap_segment) freeable_soh_segment(*g_gcDacGlobals->freeable_soh_segment);
-            AddSegmentList(freeable_soh_segment, FreeRegionKind::FreeSohSegment);
+            DPTR(DPTR(dac_heap_segment)) freeable_soh_segment_ptr(g_gcDacGlobals->freeable_soh_segment);
+            if (freeable_soh_segment_ptr != nullptr)
+                AddSegmentList(*freeable_soh_segment, FreeRegionKind::FreeSohSegment);
         }
         
         if (g_gcDacGlobals->freeable_uoh_segment != nullptr)
         {
-            DPTR(dac_heap_segment) freeable_uoh_segment(*g_gcDacGlobals->freeable_uoh_segment);
-            AddSegmentList(freeable_uoh_segment, FreeRegionKind::FreeUohSegment);
+            DPTR(DPTR(dac_heap_segment)) freeable_uoh_segment_ptr(g_gcDacGlobals->freeable_uoh_segment);
+            if (freeable_uoh_segment_ptr != nullptr)
+                AddSegmentList(*freeable_uoh_segment_ptr, FreeRegionKind::FreeUohSegment);
         }
     }
 
