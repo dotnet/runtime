@@ -39,6 +39,7 @@ namespace System.Reflection.Emit
             switch (attributeName)
             {
                 case "System.Runtime.InteropServices.FieldOffsetAttribute":
+                   Debug.Assert(binaryAttribute.Length == 6);
                     _offset = (int)binaryAttribute[2];
                     _offset |= ((int)binaryAttribute[3]) << 8;
                     _offset |= ((int)binaryAttribute[4]) << 16;

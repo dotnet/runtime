@@ -155,10 +155,10 @@ namespace System.Reflection.Emit
         private readonly string _moduleName;
         private readonly string? _entryPoint;
         private readonly MethodImportAttributes _flags;
-        internal DllImportData(string moduleName, string? enntryPoint, MethodImportAttributes flags)
+        internal DllImportData(string moduleName, string? entryPoint, MethodImportAttributes flags)
         {
             _moduleName = moduleName;
-            _entryPoint = enntryPoint;
+            _entryPoint = entryPoint;
             _flags = flags;
         }
 
