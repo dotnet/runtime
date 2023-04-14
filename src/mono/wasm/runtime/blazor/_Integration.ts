@@ -36,6 +36,14 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, reso
     moduleConfig.enableDownloadRetry = false; // disable retry downloads
     moduleConfig.mainAssemblyName = resourceLoader.bootConfig.entryAssembly;
 
+    if (resourceLoader.bootConfig.startupMemoryCache !== undefined) {
+        moduleConfig.startupMemoryCache = resourceLoader.bootConfig.startupMemoryCache;
+    }
+
+    if (resourceLoader.bootConfig.runtimeOptions) {
+        moduleConfig.runtimeOptions = [...(moduleConfig.runtimeOptions || []), ...resourceLoader.bootConfig.runtimeOptions];
+    }
+
     const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
         "assembly": "assembly",
         "pdb": "pdb",
