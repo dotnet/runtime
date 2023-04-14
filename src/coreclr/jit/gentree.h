@@ -556,9 +556,8 @@ enum GenTreeFlags : unsigned int
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
 
-    GTF_SIMDASHW_OP             = 0x80000000, // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
-                                              //                   rather than from gtGetStructHandleForHWSIMD.
     GTF_SIMD_ADD_EB             = 0x80000000,  // GT_HWINTRINSIC -- Indicate if this node will enable the embedded broadcast feature.
+
     GTF_VECCON_FROMSCALAR       = 0x80000000   // GT_VECCON -- Indicate the vector constant is created from the same scalar.
 };
 
