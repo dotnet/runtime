@@ -167,7 +167,9 @@ Function:
 NormalizeNumericPattern
 
 Returns a numeric string pattern in a format that we can match against the
-appropriate managed pattern.
+appropriate managed pattern. Examples:
+For PositiveMonetaryNumberFormat "¤#,##0.00" becomes "Cn"
+For NegativeNumberFormat "#,##0.00;(#,##0.00)" becomes "(n)"                                         
 */
 static char* NormalizeNumericPattern(const char* srcPattern, int isNegative)
 {
@@ -300,7 +302,7 @@ Determines the pattern from the decimalFormat and returns the matching pattern's
 index from patterns[].
 Returns index -1 if no pattern is found.
 */
-static int GetNumericPatternNative(char* normalizedPattern,const char* patterns[], int patternsCount)
+static int GetPatternIndex(char* normalizedPattern,const char* patterns[], int patternsCount)
 {
     const int INVALID_FORMAT = -1;
 
@@ -339,17 +341,17 @@ static int32_t GetValueForNumberFormat(NSLocale *currentLocale, LocaleNumberData
             static const char* Patterns[] = {"Cn", "nC", "C n", "n C"};
             pFormat = [[numberFormatter positiveFormat] UTF8String];
             char* normalizedPattern = NormalizeNumericPattern(pFormat, false);
-            value = GetNumericPatternNative(normalizedPattern, Patterns, sizeof(Patterns)/sizeof(Patterns[0]));
+            value = GetPatternIndex(normalizedPattern, Patterns, sizeof(Patterns)/sizeof(Patterns[0]));
             break;
         }
         case LocaleNumber_NegativeMonetaryNumberFormat:
         {
             numberFormatter.numberStyle = NSNumberFormatterCurrencyStyle;
             static const char* Patterns[] = {"(Cn)", "-Cn", "C-n", "Cn-", "(nC)", "-nC", "n-C", "nC-", "-n C",
-                        "-C n", "n C-", "C n-", "C -n", "n- C", "(C n)", "(n C)", "C- n" };
+                                             "-C n", "n C-", "C n-", "C -n", "n- C", "(C n)", "(n C)", "C- n" };
             pFormat = [[numberFormatter negativeFormat] UTF8String];
             char* normalizedPattern = NormalizeNumericPattern(pFormat, true);
-            value = GetNumericPatternNative(normalizedPattern, Patterns, sizeof(Patterns)/sizeof(Patterns[0]));
+            value = GetPatternIndex(normalizedPattern, Patterns, sizeof(Patterns)/sizeof(Patterns[0]));
             break;
         }
         case LocaleNumber_NegativeNumberFormat:
@@ -358,7 +360,7 @@ static int32_t GetValueForNumberFormat(NSLocale *currentLocale, LocaleNumberData
             static const char* Patterns[] = {"(n)", "-n", "- n", "n-", "n -"};
             pFormat = [[numberFormatter negativeFormat] UTF8String];
             char* normalizedPattern = NormalizeNumericPattern(pFormat, true);
-            value = GetNumericPatternNative(normalizedPattern, Patterns, sizeof(Patterns)/sizeof(Patterns[0]));
+            value = GetPatternIndex(normalizedPattern, Patterns, sizeof(Patterns)/sizeof(Patterns[0]));
             break;
         }
         case LocaleNumber_NegativePercentFormat:
@@ -367,7 +369,7 @@ static int32_t GetValueForNumberFormat(NSLocale *currentLocale, LocaleNumberData
             static const char* Patterns[] = {"-n %", "-n%", "-%n", "%-n", "%n-", "n-%", "n%-", "-% n", "n %-", "% n-", "% -n", "n- %"};
             pFormat = [[numberFormatter negativeFormat] UTF8String];
             char* normalizedPattern = NormalizeNumericPattern(pFormat, true);
-            value = GetNumericPatternNative(normalizedPattern, Patterns, sizeof(Patterns)/sizeof(Patterns[0]));
+            value = GetPatternIndex(normalizedPattern, Patterns, sizeof(Patterns)/sizeof(Patterns[0]));
             break;
         }
         case LocaleNumber_PositivePercentFormat:
@@ -376,7 +378,7 @@ static int32_t GetValueForNumberFormat(NSLocale *currentLocale, LocaleNumberData
             static const char* Patterns[] = {"n %", "n%", "%n", "% n"};
             pFormat = [[numberFormatter positiveFormat] UTF8String];
             char* normalizedPattern = NormalizeNumericPattern(pFormat, false);
-            value = GetNumericPatternNative(normalizedPattern, Patterns, sizeof(Patterns)/sizeof(Patterns[0]));
+            value = GetPatternIndex(normalizedPattern, Patterns, sizeof(Patterns)/sizeof(Patterns[0]));
             break;
         }
         default:
