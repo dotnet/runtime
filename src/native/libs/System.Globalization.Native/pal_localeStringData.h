@@ -51,8 +51,6 @@ PALEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeNam
                                                           const UChar* uiLocaleName);
 
 #ifdef __APPLE__
-
 PALEXPORT const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData);
-
 #endif  
 

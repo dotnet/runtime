@@ -45,7 +45,6 @@ PALEXPORT int32_t GlobalizationNative_GetLocaleInfoGroupingSizes(const UChar* lo
                                                                  int32_t* secondaryGroupSize);
 
 #ifdef __APPLE__
-
 PALEXPORT int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName,
                                                              LocaleNumberData localeNumberData);
 
@@ -54,5 +53,4 @@ PALEXPORT int32_t GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative(con
 
 PALEXPORT int32_t GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative(const char* localeName,
                                                                            LocaleNumberData localeGroupingData);
-
 #endif
