@@ -485,13 +485,13 @@ struct HeapList
     size_t              reserveForJumpStubs; // Amount of memory reserved for jump stubs in this block
 
     PTR_LoaderAllocator pLoaderAllocator; // LoaderAllocator of HeapList
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     BYTE*               CLRPersonalityRoutine;  // jump thunk to personality routine
 #endif
 
     TADDR GetModuleBase()
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         return (TADDR)CLRPersonalityRoutine;
  #else
         return (TADDR)mapBase;

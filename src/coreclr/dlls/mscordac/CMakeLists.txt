@@ -49,6 +49,8 @@ else(CLR_CMAKE_HOST_WIN32)
 
         if (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_LOONGARCH64)
             set(JUMP_INSTRUCTION b)
+        elseif (CLR_CMAKE_HOST_ARCH_RISCV64)
+            set(JUMP_INSTRUCTION tail)
         else()
             set(JUMP_INSTRUCTION jmp)
         endif()
