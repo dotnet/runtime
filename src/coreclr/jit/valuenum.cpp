@@ -10617,7 +10617,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     CORINFO_CLASS_HANDLE handle    = gtGetClassHandle(addr, &isExact, &isNonNull);
                     if (isExact && (handle != NO_CLASS_HANDLE))
                     {
-                        info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(handle);
                         JITDUMP("IND(obj) is actually a class handle for %s\n", eeGetClassName(handle));
                         void* pEmbedClsHnd;
                         void* embedClsHnd = (void*)info.compCompHnd->embedClassHandle(handle, &pEmbedClsHnd);
