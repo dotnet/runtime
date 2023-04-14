@@ -1264,8 +1264,10 @@ export function generateWasmBody (
                     // This means it was explicitly marked as no-value in the opcode value table
                     //  so we can just skip over it. This is done for things like nops.
                 } else {
+                    /*
                     if (opcodeValue > 0)
                         console.log(`JITERP: aborting trace for opcode ${opname} with value ${opcodeValue}`);
+                    */
                     ip = abort;
                 }
                 break;
@@ -1313,7 +1315,7 @@ export function generateWasmBody (
                     prologueOpcodeCounter++;
                 result += opcodeValue;
             } else if (opcodeValue < 0) {
-                console.log(`JITERP: opcode ${opname} did not abort but had value ${opcodeValue}`);
+                // console.log(`JITERP: opcode ${opname} did not abort but had value ${opcodeValue}`);
             }
 
             ip += <any>(info[1] * 2);
