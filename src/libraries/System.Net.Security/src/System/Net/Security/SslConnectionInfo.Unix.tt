@@ -44,10 +44,10 @@ foreach (TlsCipherSuite val in enumValues)
 
             Debug.Assert(data != 0, $"No mapping found for cipherSuite {cipherSuite}");
 
-            KeyExchangeAlg = (int)(data >> (64 - (16 * 1)));
-            DataCipherAlg = (int)(data >> (64 - (16 * 2)));
-            DataKeySize = (int)(data >> (64 - (16 * 3)));
-            DataHashAlg = (int)(data >> (64 - (16 * 4)));
+            KeyExchangeAlg = (int)(data >> (64 - (16 * 1)) & 0xFFFF);
+            DataCipherAlg = (int)(data >> (64 - (16 * 2)) & 0xFFFF);
+            DataKeySize = (int)(data >> (64 - (16 * 3)) & 0xFFFF);
+            DataHashAlg = (int)(data >> (64 - (16 * 4)) & 0xFFFF);
             DataHashKeySize = GetHashSize((HashAlgorithmType)DataHashAlg);
 
             static int GetHashSize(HashAlgorithmType hash)
