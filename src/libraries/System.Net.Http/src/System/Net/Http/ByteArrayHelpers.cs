@@ -2,61 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Text;
 
 namespace System
 {
     internal static class ByteArrayHelpers
     {
-        // TODO: https://github.com/dotnet/runtime/issues/28230
-        // Use Ascii.Equals* when it's available.
-
         internal static bool EqualsOrdinalAsciiIgnoreCase(string left, ReadOnlySpan<byte> right)
         {
             Debug.Assert(left != null, "Expected non-null string");
+            Debug.Assert(Ascii.IsValid(left) || Ascii.IsValid(right), "Expected at least one of the inputs to be valid ASCII");
 
-            if (left.Length != right.Length)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < left.Length; i++)
-            {
-                uint charA = left[i];
-                uint charB = right[i];
-
-                // We're only interested in ASCII characters here.
-                if ((charA - 'a') <= ('z' - 'a'))
-                    charA -= ('a' - 'A');
-                if ((charB - 'a') <= ('z' - 'a'))
-                    charB -= ('a' - 'A');
-
-                if (charA != charB)
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return Ascii.EqualsIgnoreCase(right, left);
         }
 
         internal static bool EqualsOrdinalAscii(string left, ReadOnlySpan<byte> right)
         {
             Debug.Assert(left != null, "Expected non-null string");
+            Debug.Assert(Ascii.IsValid(left) || Ascii.IsValid(right), "Expected at least one of the inputs to be valid ASCII");
 
-            if (left.Length != right.Length)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < left.Length; i++)
-            {
-                if (left[i] != right[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return Ascii.Equals(right, left);
         }
     }
 }
