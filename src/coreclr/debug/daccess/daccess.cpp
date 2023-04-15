@@ -8328,10 +8328,10 @@ HRESULT DacMemoryEnumerator::Next(unsigned int count, SOSMemoryRegion regions[],
 
 HRESULT DacGCBookkeepingEnumerator::Init()
 {
-    if (g_gcDacGlobals->bookkeeping_covered_start == nullptr)
+    if (g_gcDacGlobals->bookkeeping_start == nullptr)
         return E_FAIL;
 
-    TADDR ctiAddr = TO_TADDR(*g_gcDacGlobals->bookkeeping_covered_start);
+    TADDR ctiAddr = TO_TADDR(*g_gcDacGlobals->bookkeeping_start);
     if (ctiAddr == 0)
         return E_FAIL;
 

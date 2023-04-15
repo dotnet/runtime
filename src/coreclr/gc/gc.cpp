@@ -2228,7 +2228,7 @@ size_t      gc_heap::g_bpromoted;
 #endif //MULTIPLE_HEAPS
 
 size_t      gc_heap::card_table_element_layout[total_bookkeeping_elements + 1];
-uint8_t*    gc_heap::bookkeeping_covered_start = nullptr;
+uint8_t*    gc_heap::bookkeeping_start = nullptr;
 #ifdef USE_REGIONS
 uint8_t*    gc_heap::bookkeeping_covered_committed = nullptr;
 size_t      gc_heap::bookkeeping_sizes[total_bookkeeping_elements];
@@ -8913,21 +8913,21 @@ bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
             uint8_t* commit_end = nullptr;
             if (initial_commit)
             {
-                required_begin = bookkeeping_covered_start + ((i == card_table_element) ? 0 : card_table_element_layout[i]);
-                required_end = bookkeeping_covered_start + card_table_element_layout[i] + new_sizes[i];
+                required_begin = bookkeeping_start + ((i == card_table_element) ? 0 : card_table_element_layout[i]);
+                required_end = bookkeeping_start + card_table_element_layout[i] + new_sizes[i];
                 commit_begin = align_lower_page(required_begin);
             }
             else
             {
                 assert (additional_commit);
-                required_begin = bookkeeping_covered_start + card_table_element_layout[i] + bookkeeping_sizes[i];
+                required_begin = bookkeeping_start + card_table_element_layout[i] + bookkeeping_sizes[i];
                 required_end = required_begin + new_sizes[i] - bookkeeping_sizes[i];
                 commit_begin = align_on_page(required_begin);
             }
             assert (required_begin <= required_end);
             commit_end = align_on_page(required_end);
 
-            commit_end = min (commit_end, align_lower_page(bookkeeping_covered_start + card_table_element_layout[i + 1]));
+            commit_end = min (commit_end, align_lower_page(bookkeeping_start + card_table_element_layout[i + 1]));
             commit_begin = min (commit_begin, commit_end);
             assert (commit_begin <= commit_end);
 
@@ -9002,7 +9002,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
 
     size_t alloc_size = card_table_element_layout[total_bookkeeping_elements];
     uint8_t* mem = (uint8_t*)GCToOSInterface::VirtualReserve (alloc_size, 0, virtual_reserve_flags);
-    bookkeeping_covered_start = mem;
+    bookkeeping_start = mem;
 
     if (!mem)
         return 0;
@@ -9499,7 +9499,7 @@ void gc_heap::copy_brick_card_table()
     uint32_t* ct = &g_gc_card_table[card_word (gcard_of (g_gc_lowest_address))];
     own_card_table (ct);
     card_table = translate_card_table (ct);
-    bookkeeping_covered_start = (uint8_t*)ct - sizeof(card_table_info);
+    bookkeeping_start = (uint8_t*)ct - sizeof(card_table_info);
     card_table_size(ct) = card_table_element_layout[total_bookkeeping_elements];
     /* End of global lock */
     highest_address = card_table_highest_address (ct);
@@ -13733,8 +13733,6 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
                                            ((size_t)1 << min_segment_size_shr),
                                            &g_gc_lowest_address, &g_gc_highest_address))
             return E_OUTOFMEMORY;
-
-        bookkeeping_covered_start = global_region_allocator.get_start();
 
         if (!allocate_initial_regions(number_of_heaps))
             return E_OUTOFMEMORY;
@@ -49377,5 +49375,5 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->gc_heap_field_offsets = reinterpret_cast<int**>(&gc_heap_field_offsets);
 #endif // MULTIPLE_HEAPS
     gcDacVars->generation_field_offsets = reinterpret_cast<int**>(&generation_field_offsets);
-    gcDacVars->bookkeeping_covered_start = &gc_heap::bookkeeping_covered_start;
+    gcDacVars->bookkeeping_start = &gc_heap::bookkeeping_start;
 }

@@ -4196,7 +4196,7 @@ private:
 #endif //BGC_SERVO_TUNING
 #endif //BACKGROUND_GC
 
-    PER_HEAP_ISOLATED_FIELD_INIT_ONLY uint8_t* bookkeeping_covered_start;
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY uint8_t* bookkeeping_start;
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t regions_range;
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool enable_special_regions_p;
