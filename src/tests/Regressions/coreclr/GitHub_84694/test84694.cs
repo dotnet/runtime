@@ -3,15 +3,11 @@
 
 using System;
 
-public class C0
-{
-}
-
 public struct S0
 {
-    public C0 F0;
-    public C0 F1;
-    public S0(C0 f1) : this()
+    public object F0;
+    public object F1;
+    public S0(object f1) : this()
     {
     }
 }
@@ -20,7 +16,7 @@ public class Program
 {
     public static int Main()
     {
-        GC.KeepAlive(new S0[,] { { new S0(new C0()) } });
+        GC.KeepAlive(new S0[,] { { new S0(new object()) } });
         return 100;
     }
 }
