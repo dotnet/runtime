@@ -108,7 +108,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
 {
     assert(len >= 8 && len <= MaxPossibleUnrollSize);
 
-    const int byteLen  = len * 2;
+    const int byteLen  = len * sizeof(WCHAR);
     const int simdSize = (int)roundDownSIMDSize(byteLen);
     if (byteLen > (simdSize * 2))
     {
@@ -116,12 +116,12 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         // or baseline has no SIMD support
         return nullptr;
     }
-    assert(simdSize >= 16 && isPow2(simdSize));
+    assert(simdSize >= 16);
 
     WCHAR cnsValue[MaxPossibleUnrollSize]    = {};
     WCHAR toLowerMask[MaxPossibleUnrollSize] = {};
 
-    memcpy(cnsValue, cns, len * sizeof(WCHAR));
+    memcpy(cnsValue, cns, byteLen);
 
     if ((cmpMode == OrdinalIgnoreCase) && !ConvertToLowerCase(cnsValue, toLowerMask, len))
     {
