@@ -1458,9 +1458,9 @@ namespace System.Text
         private static bool AllCharsInVectorAreAscii<T>(Vector128<T> vector)
             where T : unmanaged
         {
-            Debug.Assert(Avx.IsSupported);
             Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
 
+            // This is a copy of VectorContainsNonAsciiChar with an inverted condition.
             if (typeof(T) == typeof(byte))
             {
                 return
