@@ -50,7 +50,7 @@ namespace System.Threading
             preAllocated.AddRef();
             try
             {
-                ThreadPoolBoundHandleOverlapped overlapped = preAllocated._overlapped;
+                ThreadPoolBoundHandleOverlapped overlapped = preAllocated._overlapped_portable_core!;
 
                 if (overlapped._boundHandle != null)
                     throw new ArgumentException(SR.Argument_PreAllocatedAlreadyAllocated, nameof(preAllocated));

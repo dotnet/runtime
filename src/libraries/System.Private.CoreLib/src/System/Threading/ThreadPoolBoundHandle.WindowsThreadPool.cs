@@ -128,7 +128,7 @@ namespace System.Threading
             return data._state;
         }
 
-        private static unsafe Win32ThreadPoolNativeOverlapped.OverlappedData GetOverlappedData(Win32ThreadPoolNativeOverlapped* overlapped, ThreadPoolBoundHandle expectedBoundHandle)
+        private static unsafe Win32ThreadPoolNativeOverlapped.OverlappedData GetOverlappedData(Win32ThreadPoolNativeOverlapped* overlapped, ThreadPoolBoundHandle? expectedBoundHandle)
         {
             Win32ThreadPoolNativeOverlapped.OverlappedData data = overlapped->Data;
 
@@ -144,10 +144,11 @@ namespace System.Threading
         [UnmanagedCallersOnly]
         private static unsafe void OnNativeIOCompleted(IntPtr instance, IntPtr context, IntPtr overlappedPtr, uint ioResult, nuint numberOfBytesTransferred, IntPtr ioPtr)
         {
-            var wrapper = ThreadPoolCallbackWrapper.Enter();
+            // PR-Comment: Assuming it's not necessary, might be wrong about this
+            // var wrapper = ThreadPoolCallbackWrapper.Enter();
             Win32ThreadPoolNativeOverlapped* overlapped = (Win32ThreadPoolNativeOverlapped*)overlappedPtr;
 
-            ThreadPoolBoundHandle boundHandle = overlapped->Data._boundHandle;
+            ThreadPoolBoundHandle? boundHandle = overlapped->Data._boundHandle;
             if (boundHandle == null)
                 throw new InvalidOperationException(SR.Argument_NativeOverlappedAlreadyFree);
 
@@ -155,7 +156,7 @@ namespace System.Threading
 
             Win32ThreadPoolNativeOverlapped.CompleteWithCallback(ioResult, (uint)numberOfBytesTransferred, overlapped);
             ThreadPool.IncrementCompletedWorkItemCount();
-            wrapper.Exit();
+            // wrapper.Exit();
         }
 
         private bool AddRef()
@@ -168,10 +169,10 @@ namespace System.Threading
             _lifetime.Release(this);
         }
 
-        void IDeferredDisposableOnFinalReleaseCore(bool disposed)
+        private void IDeferredDisposableOnFinalReleaseCore(bool disposed)
         {
             if (disposed)
-                _threadPoolHandle.Dispose();
+                _threadPoolHandle!.Dispose();
         }
 
         private void DisposeCore()

@@ -8,13 +8,13 @@ namespace System.Threading
 {
     internal partial struct Win32ThreadPoolNativeOverlapped
     {
-        internal class OverlappedData
+        internal sealed class OverlappedData
         {
-            internal GCHandle[] _pinnedData;
+            internal GCHandle[]? _pinnedData;
             internal IOCompletionCallback? _callback;
             internal object? _state;
             internal ExecutionContext? _executionContext;
-            internal ThreadPoolBoundHandle _boundHandle;
+            internal ThreadPoolBoundHandle? _boundHandle;
             internal PreAllocatedOverlapped? _preAllocated;
             internal bool _completed;
 

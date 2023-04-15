@@ -7,7 +7,6 @@ namespace System.Threading
 {
     public sealed partial class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
     {
-        internal readonly unsafe Win32ThreadPoolNativeOverlapped* _overlapped_core;
         private DeferredDisposableLifetime<PreAllocatedOverlapped> _lifetime;
 
         [CLSCompliant(false)]
