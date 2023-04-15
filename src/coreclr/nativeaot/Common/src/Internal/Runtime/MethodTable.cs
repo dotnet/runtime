@@ -455,14 +455,6 @@ namespace Internal.Runtime
             }
         }
 
-        internal bool IsCloned
-        {
-            get
-            {
-                return Kind == EETypeKind.ClonedEEType;
-            }
-        }
-
         internal bool IsCanonical
         {
             get
@@ -944,11 +936,6 @@ namespace Internal.Runtime
         {
             get
             {
-                if (IsCloned)
-                {
-                    return CanonicalEEType->BaseType;
-                }
-
                 if (IsParameterizedType)
                 {
                     if (IsArray)
@@ -969,7 +956,6 @@ namespace Internal.Runtime
             {
                 Debug.Assert(IsDynamicType);
                 Debug.Assert(!IsParameterizedType);
-                Debug.Assert(!IsCloned);
                 Debug.Assert(IsCanonical);
                 _uFlags &= (uint)~EETypeFlags.RelatedTypeViaIATFlag;
                 _relatedType._pBaseType = value;
@@ -982,13 +968,6 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(!IsArray, "array type not supported in BaseType");
-
-                if (IsCloned)
-                {
-                    // Assuming that since this is not an Array, the CanonicalEEType is also not an array
-                    return CanonicalEEType->NonArrayBaseType;
-                }
-
                 Debug.Assert(IsCanonical, "we expect canonical types here");
 
                 if (IsRelatedTypeViaIAT)
@@ -1000,12 +979,12 @@ namespace Internal.Runtime
             }
         }
 
+        // TODO rename?
         internal MethodTable* NonClonedNonArrayBaseType
         {
             get
             {
                 Debug.Assert(!IsArray, "array type not supported in NonArrayBaseType");
-                Debug.Assert(!IsCloned, "cloned type not supported in NonClonedNonArrayBaseType");
                 Debug.Assert(IsCanonical || IsGenericTypeDefinition, "we expect canonical types here");
 
                 if (IsRelatedTypeViaIAT)
@@ -1022,24 +1001,10 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(!IsParameterizedType, "array type not supported in NonArrayBaseType");
-                Debug.Assert(!IsCloned, "cloned type not supported in NonClonedNonArrayBaseType");
                 Debug.Assert(IsCanonical, "we expect canonical types here");
                 Debug.Assert(!IsRelatedTypeViaIAT, "Non IAT");
 
                 return _relatedType._pBaseType;
-            }
-        }
-
-        internal MethodTable* CanonicalEEType
-        {
-            get
-            {
-                // cloned EETypes must always refer to types in other modules
-                Debug.Assert(IsCloned);
-                if (IsRelatedTypeViaIAT)
-                    return *_relatedType._ppCanonicalTypeViaIAT;
-                else
-                    return _relatedType._pCanonicalType;
             }
         }
 

@@ -2236,10 +2236,8 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 #elif defined(HOST_RISCV64)
 
-#error "TODO-RISCV64: review this when src/coreclr/pal/src/arch/riscv64/asmconstants.h is ported"
-
 // Please refer to src/coreclr/pal/src/arch/riscv64/asmconstants.h
-#define CONTEXT_RISCV64 0x04000000L
+#define CONTEXT_RISCV64 0x01000000L
 
 #define CONTEXT_CONTROL (CONTEXT_RISCV64 | 0x1)
 #define CONTEXT_INTEGER (CONTEXT_RISCV64 | 0x2)
@@ -2286,6 +2284,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
     // Integer registers.
     //
+    DWORD64 R0;
     DWORD64 Ra;
     DWORD64 Sp;
     DWORD64 Gp;
@@ -2293,7 +2292,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     DWORD64 T0;
     DWORD64 T1;
     DWORD64 T2;
-    DWORD64 S0;
+    DWORD64 Fp;
     DWORD64 S1;
     DWORD64 A0;
     DWORD64 A1;
@@ -2333,20 +2332,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
 typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
-    PDWORD64 Ra;
-    PDWORD64 Tp;
-    PDWORD64 T0;
-    PDWORD64 T1;
-    PDWORD64 S0;
     PDWORD64 S1;
-    PDWORD64 A0;
-    PDWORD64 A1;
-    PDWORD64 A2;
-    PDWORD64 A3;
-    PDWORD64 A4;
-    PDWORD64 A5;
-    PDWORD64 A6;
-    PDWORD64 A7;
     PDWORD64 S2;
     PDWORD64 S3;
     PDWORD64 S4;
@@ -2357,31 +2343,23 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
     PDWORD64 S9;
     PDWORD64 S10;
     PDWORD64 S11;
-    PDWORD64 T3;
-    PDWORD64 T4;
-    PDWORD64 T5;
-    PDWORD64 T6;
+    PDWORD64 Fp;
+    PDWORD64 Gp;
+    PDWORD64 Tp;
+    PDWORD64 Ra;
 
-    PDWORD64 FS0;
-    PDWORD64 FS1;
-    PDWORD64 FA0;
-    PDWORD64 FA1;
-    PDWORD64 FA2;
-    PDWORD64 FA3;
-    PDWORD64 FA4;
-    PDWORD64 FA5;
-    PDWORD64 FA6;
-    PDWORD64 FA7;
-    PDWORD64 FS2;
-    PDWORD64 FS3;
-    PDWORD64 FS4;
-    PDWORD64 FS5;
-    PDWORD64 FS6;
-    PDWORD64 FS7;
-    PDWORD64 FS8;
-    PDWORD64 FS9;
-    PDWORD64 FS10;
-    PDWORD64 FS11;
+    PDWORD64 F8;
+    PDWORD64 F9;
+    PDWORD64 F18;
+    PDWORD64 F19;
+    PDWORD64 F20;
+    PDWORD64 F21;
+    PDWORD64 F22;
+    PDWORD64 F23;
+    PDWORD64 F24;
+    PDWORD64 F25;
+    PDWORD64 F26;
+    PDWORD64 F27;
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
 #elif defined(HOST_S390X)
@@ -3849,7 +3827,8 @@ YieldProcessor()
 #elif defined(HOST_LOONGARCH64)
     __asm__ volatile( "dbar 0;  \n");
 #elif defined(HOST_RISCV64)
-    __asm__ __volatile__( "wfi");
+    // TODO-RISCV64-CQ: When Zihintpause is supported, replace with `pause` instruction.
+    __asm__ __volatile__(".word 0x0100000f");
 #else
     return;
 #endif

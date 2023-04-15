@@ -104,6 +104,8 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0047`__ | XmlSecureResolver is obsolete. Use XmlResolver.ThrowingResolver instead when attempting to forbid XML external entity resolution. |
 |  __`SYSLIB0048`__ | RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead. |
 |  __`SYSLIB0049`__ | JsonSerializerOptions.AddContext is obsolete. To register a JsonSerializerContext, use either the TypeInfoResolver or TypeInfoResolverChain properties. |
+|  __`SYSLIB0050`__ | Formatter-based serialization is obsolete and should not be used. |
+|  __`SYSLIB0051`__ | This API supports obsolete formatter-based serialization. It should not be called or extended by application code. |
 
 ## Analyzer Warnings
 

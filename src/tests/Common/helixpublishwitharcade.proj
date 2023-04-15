@@ -712,6 +712,11 @@
     <HelixPostCommand Include="$HELIX_PYTHONPATH $spmi_superpmi_py collect -log_level DEBUG -core_root $CORE_ROOT --skip_cleanup --clean --ci --skip_collection_step --skip_toc_step -temp_dir $spmi_collect_dir -output_mch_path $spmi_finalmch -log_file $spmi_log_file" />
   </ItemGroup>
 
+  <!-- create dummy console app to workaround NuGet-Migrations issue: https://github.com/dotnet/runtime/issues/80619 -->
+  <ItemGroup Condition="'$(IncludeDotNetCli)' == 'true' and '$(DotNetCliPackageType)' == 'sdk' and '$(TestWrapperTargetsWindows)' != 'true'">
+    <HelixPreCommand Include="(CONSOLE_TEMP_DIR=&quot;%24(mktemp -d)&quot; %3B &quot;$DOTNET_ROOT/dotnet&quot; new console -o &quot;$CONSOLE_TEMP_DIR&quot; %3B rm -rf &quot;$CONSOLE_TEMP_DIR&quot;) || true" />
+  </ItemGroup>
+
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
     <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>

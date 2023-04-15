@@ -1024,7 +1024,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             if (clsFlags & CORINFO_FLG_VALUECLASS)
             {
-                assert(newobjThis->OperIs(GT_LCL_VAR_ADDR));
+                assert(newobjThis->IsLclVarAddr());
 
                 unsigned lclNum = newobjThis->AsLclVarCommon()->GetLclNum();
                 impPushOnStack(gtNewLclvNode(lclNum, lvaGetRealType(lclNum)),
@@ -1879,7 +1879,8 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 #endif
             )
     {
-        if (newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR))
+        if (newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR) &&
+            newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR_RARE))
         {
             return nullptr;
         }
@@ -2022,7 +2023,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
             argIndex++;
         }
 
-        assert((comma != nullptr) && comma->OperIs(GT_LCL_VAR_ADDR) &&
+        assert((comma != nullptr) && comma->IsLclVarAddr() &&
                (comma->AsLclVarCommon()->GetLclNum() == lvaNewObjArrayArgs));
 
         if (argIndex != numArgs)
@@ -2479,9 +2480,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #if defined(TARGET_XARCH)
                 // We can't guarantee that all overloads for the xplat intrinsics can be
                 // handled by the AltJit, so limit only the platform specific intrinsics
-                assert((NI_Vector256_Xor + 1) == NI_X86Base_BitScanForward);
+                assert((NI_Vector512_Xor + 1) == NI_X86Base_BitScanForward);
 
-                if (ni < NI_Vector256_Xor)
+                if (ni < NI_Vector512_Xor)
 #elif defined(TARGET_ARM64)
                 // We can't guarantee that all overloads for the xplat intrinsics can be
                 // handled by the AltJit, so limit only the platform specific intrinsics
@@ -2826,7 +2827,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 var_types resultType = JITtype2varType(sig->retType);
                 if (resultType == TYP_STRUCT)
                 {
-                    retNode = gtNewObjNode(sig->retTypeClass, lclVarAddr);
+                    retNode = gtNewBlkIndir(typGetObjLayout(sig->retTypeClass), lclVarAddr);
                 }
                 else
                 {
@@ -2880,8 +2881,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // We need to use both index and ptr-to-span twice, so clone or spill.
                 index = impCloneExpr(index, &indexClone, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
                                      nullptr DEBUGARG("Span.get_Item index"));
-                ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
-                                         nullptr DEBUGARG("Span.get_Item ptrToSpan"));
+
+                if (impIsAddressInLocal(ptrToSpan))
+                {
+                    ptrToSpanClone = gtCloneExpr(ptrToSpan);
+                }
+                else
+                {
+                    ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                             nullptr DEBUGARG("Span.get_Item ptrToSpan"));
+                }
 
                 // Bounds check
                 CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
@@ -5166,8 +5175,7 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
             GenTree* obj = thisPtr;
 
             assert(obj->TypeGet() == TYP_BYREF || obj->TypeGet() == TYP_I_IMPL);
-            obj = gtNewObjNode(pConstrainedResolvedToken->hClass, obj);
-            obj->gtFlags |= GTF_EXCEPT;
+            obj = gtNewBlkIndir(typGetObjLayout(pConstrainedResolvedToken->hClass), obj);
 
             CorInfoType jitTyp = info.compCompHnd->asCorInfoType(pConstrainedResolvedToken->hClass);
             if (impIsPrimitive(jitTyp))
@@ -6418,7 +6426,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         default:
             return false;
     }
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // TODO-LoongArch64: add some intrinsics.
     return false;
 #else
@@ -7050,11 +7058,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
                     if (optimizedTheBox)
                     {
-                        assert(localCopyThis->OperIs(GT_LCL_VAR_ADDR));
+                        assert(localCopyThis->IsLclVarAddr());
 
                         // We may end up inlining this call, so the local copy must be marked as "aliased",
                         // making sure the inlinee importer will know when to spill references to its value.
-                        lvaGetDesc(localCopyThis->AsLclVar())->lvHasLdAddrOp = true;
+                        lvaGetDesc(localCopyThis->AsLclFld())->lvHasLdAddrOp = true;
 
 #if FEATURE_TAILCALL_OPT
                         if (call->IsImplicitTailCall())
@@ -7441,7 +7449,7 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
         return true;
     }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // Jit64 compat:
     if (callerRetType == TYP_VOID)
     {
@@ -7471,7 +7479,7 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
     {
         return (varTypeIsIntegral(calleeRetType) || isCalleeRetTypMBEnreg) && (callerRetTypeSize == calleeRetTypeSize);
     }
-#endif // TARGET_AMD64 || TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_AMD64 || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
     return false;
 }
@@ -8886,7 +8894,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     {
         if (varTypeIsStruct(elemType))
         {
-            arrElem = gtNewObjNode(sig->retTypeClass, arrElem);
+            arrElem = gtNewBlkIndir(typGetObjLayout(sig->retTypeClass), arrElem);
         }
         else
         {

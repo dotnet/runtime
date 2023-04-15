@@ -286,14 +286,6 @@ EXTERN_C void * RhpCheckedLockCmpXchgAVLocation;
 EXTERN_C void * RhpCheckedXchgAVLocation;
 EXTERN_C void * RhpLockCmpXchg32AVLocation;
 EXTERN_C void * RhpLockCmpXchg64AVLocation;
-EXTERN_C void * RhpCopyMultibyteDestAVLocation;
-EXTERN_C void * RhpCopyMultibyteSrcAVLocation;
-EXTERN_C void * RhpCopyMultibyteNoGCRefsDestAVLocation;
-EXTERN_C void * RhpCopyMultibyteNoGCRefsSrcAVLocation;
-EXTERN_C void * RhpCopyMultibyteWithWriteBarrierDestAVLocation;
-EXTERN_C void * RhpCopyMultibyteWithWriteBarrierSrcAVLocation;
-EXTERN_C void * RhpCopyAnyWithWriteBarrierDestAVLocation;
-EXTERN_C void * RhpCopyAnyWithWriteBarrierSrcAVLocation;
 
 static bool InWriteBarrierHelper(uintptr_t faultingIP)
 {

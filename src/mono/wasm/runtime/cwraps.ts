@@ -123,6 +123,8 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_get_polling_required_address", "number", []],
     [true, "mono_jiterp_get_rejected_trace_count", "number", []],
     [true, "mono_jiterp_boost_back_branch_target", "void", ["number"]],
+    [true, "mono_jiterp_is_imethod_var_address_taken", "number", ["number", "number"]],
+    [true, "mono_jiterp_get_opcode_value_table_entry", "number", ["number"]],
     ...legacy_interop_cwraps
 ];
 
@@ -242,6 +244,8 @@ export interface t_Cwraps {
     mono_jiterp_write_number_unaligned(destination: VoidPtr, value: number, mode: number): void;
     mono_jiterp_get_rejected_trace_count(): number;
     mono_jiterp_boost_back_branch_target(destination: number): void;
+    mono_jiterp_is_imethod_var_address_taken(imethod: VoidPtr, offsetBytes: number): number;
+    mono_jiterp_get_opcode_value_table_entry(opcode: number): number;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

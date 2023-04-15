@@ -612,15 +612,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 compExactlyDependsOn(InstructionSet_AVX2))
             {
                 op1     = impSIMDPopStack(retType);
-                retNode = gtNewSimdAbsNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdAbsNode(retType, op1, simdBaseJitType, simdSize);
             }
             break;
         }
 
         case NI_Vector128_Add:
         case NI_Vector256_Add:
+        case NI_Vector512_Add:
         case NI_Vector128_op_Addition:
         case NI_Vector256_op_Addition:
+        case NI_Vector512_op_Addition:
         {
             assert(sig->numArgs == 2);
 
@@ -629,8 +631,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(retType);
                 op1 = impSIMDPopStack(retType);
 
-                retNode = gtNewSimdBinOpNode(GT_ADD, retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdBinOpNode(GT_ADD, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -647,8 +648,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack(retType);
             op1 = impSIMDPopStack(retType);
 
-            retNode = gtNewSimdBinOpNode(GT_AND_NOT, retType, op1, op2, simdBaseJitType, simdSize,
-                                         /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdBinOpNode(GT_AND_NOT, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -773,13 +773,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                     GenTree* idx  = gtNewIconNode(2, TYP_INT);
                     GenTree* zero = gtNewZeroConNode(TYP_FLOAT);
-                    op1           = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16,
-                                                   /* isSimdAsHWIntrinsic */ false);
+                    op1           = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16);
 
                     idx     = gtNewIconNode(3, TYP_INT);
                     zero    = gtNewZeroConNode(TYP_FLOAT);
-                    retNode = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16,
-                                                       /* isSimdAsHWIntrinsic */ false);
+                    retNode = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16);
 
                     break;
                 }
@@ -801,8 +799,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                     GenTree* idx  = gtNewIconNode(3, TYP_INT);
                     GenTree* zero = gtNewZeroConNode(TYP_FLOAT);
-                    retNode       = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16,
-                                                       /* isSimdAsHWIntrinsic */ false);
+                    retNode       = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16);
                     break;
                 }
 
@@ -934,8 +931,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack(retType);
             op1 = impSIMDPopStack(retType);
 
-            retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseJitType, simdSize,
-                                         /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -951,8 +947,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack(retType);
             op1 = impSIMDPopStack(retType);
 
-            retNode = gtNewSimdBinOpNode(GT_OR, retType, op1, op2, simdBaseJitType, simdSize,
-                                         /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdBinOpNode(GT_OR, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -969,7 +964,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             op1     = impSIMDPopStack(retType);
-            retNode = gtNewSimdCeilNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdCeilNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 
@@ -982,8 +977,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack(retType);
             op1 = impSIMDPopStack(retType);
 
-            retNode =
-                gtNewSimdCndSelNode(retType, op1, op2, op3, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdCndSelNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1300,8 +1294,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
 
-            retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize,
-                                         /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1339,13 +1332,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack(simdType);
             op1 = impSIMDPopStack(simdType);
 
-            retNode =
-                gtNewSimdDotProdNode(retType, op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdDotProdNode(retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
         case NI_Vector128_Equals:
         case NI_Vector256_Equals:
+        case NI_Vector512_Equals:
         {
             assert(sig->numArgs == 2);
 
@@ -1354,9 +1347,23 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(retType);
                 op1 = impSIMDPopStack(retType);
 
-                retNode = gtNewSimdCmpOpNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize);
             }
+            break;
+        }
+
+        case NI_Vector512_EqualsAll:
+        case NI_Vector512_op_Equality:
+        {
+            assert(sig->numArgs == 2);
+            assert(IsBaselineVector512IsaSupportedDebugOnly());
+
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            op2 = impSIMDPopStack(simdType);
+            op1 = impSIMDPopStack(simdType);
+
+            retNode = gtNewSimdCmpOpAllNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1374,9 +1381,23 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(simdType);
                 op1 = impSIMDPopStack(simdType);
 
-                retNode = gtNewSimdCmpOpAllNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize,
-                                                /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpAllNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize);
             }
+            break;
+        }
+
+        case NI_Vector512_EqualsAny:
+        {
+            assert(sig->numArgs == 2);
+            assert(simdSize == 64);
+            assert(IsBaselineVector512IsaSupportedDebugOnly());
+
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            op2 = impSIMDPopStack(simdType);
+            op1 = impSIMDPopStack(simdType);
+
+            retNode = gtNewSimdCmpOpAnyNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1392,8 +1413,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(simdType);
                 op1 = impSIMDPopStack(simdType);
 
-                retNode = gtNewSimdCmpOpAnyNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize,
-                                                /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpAnyNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1411,8 +1431,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 op1 = impSIMDPopStack(simdType);
 
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_AVX512F_MoveMaskSpecial, simdBaseJitType, simdSize,
-                                                   /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_AVX512F_MoveMaskSpecial, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1496,8 +1515,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                             simdType = TYP_SIMD16;
 
-                            op1 = gtNewSimdGetLowerNode(simdType, op1, simdBaseJitType, simdSize,
-                                                        /* isSimdAsHWIntrinsic */ false);
+                            op1 = gtNewSimdGetLowerNode(simdType, op1, simdBaseJitType, simdSize);
 
                             simdSize = 16;
                         }
@@ -1533,8 +1551,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 assert(moveMaskIntrinsic != NI_Illegal);
                 assert(op1 != nullptr);
 
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, moveMaskIntrinsic, simdBaseJitType, simdSize,
-                                                   /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, moveMaskIntrinsic, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1552,7 +1569,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             op1     = impSIMDPopStack(retType);
-            retNode = gtNewSimdFloorNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdFloorNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1585,6 +1602,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_GetElement:
         case NI_Vector256_GetElement:
+        case NI_Vector512_GetElement:
         {
             assert(sig->numArgs == 2);
 
@@ -1617,8 +1635,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impSIMDPopStack(getSIMDTypeForSize(simdSize));
 
-            retNode = gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize,
-                                              /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1632,8 +1649,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(retType);
                 op1 = impSIMDPopStack(retType);
 
-                retNode = gtNewSimdCmpOpNode(GT_GT, retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpNode(GT_GT, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1650,8 +1666,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(simdType);
                 op1 = impSIMDPopStack(simdType);
 
-                retNode = gtNewSimdCmpOpAllNode(GT_GT, retType, op1, op2, simdBaseJitType, simdSize,
-                                                /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpAllNode(GT_GT, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1668,8 +1683,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(simdType);
                 op1 = impSIMDPopStack(simdType);
 
-                retNode = gtNewSimdCmpOpAnyNode(GT_GT, retType, op1, op2, simdBaseJitType, simdSize,
-                                                /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpAnyNode(GT_GT, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1684,8 +1698,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(retType);
                 op1 = impSIMDPopStack(retType);
 
-                retNode = gtNewSimdCmpOpNode(GT_GE, retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpNode(GT_GE, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1702,8 +1715,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(simdType);
                 op1 = impSIMDPopStack(simdType);
 
-                retNode = gtNewSimdCmpOpAllNode(GT_GE, retType, op1, op2, simdBaseJitType, simdSize,
-                                                /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpAllNode(GT_GE, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1720,8 +1732,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(simdType);
                 op1 = impSIMDPopStack(simdType);
 
-                retNode = gtNewSimdCmpOpAnyNode(GT_GE, retType, op1, op2, simdBaseJitType, simdSize,
-                                                /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpAnyNode(GT_GE, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1736,8 +1747,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(retType);
                 op1 = impSIMDPopStack(retType);
 
-                retNode = gtNewSimdCmpOpNode(GT_LT, retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpNode(GT_LT, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1754,8 +1764,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(simdType);
                 op1 = impSIMDPopStack(simdType);
 
-                retNode = gtNewSimdCmpOpAllNode(GT_LT, retType, op1, op2, simdBaseJitType, simdSize,
-                                                /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpAllNode(GT_LT, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1772,8 +1781,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(simdType);
                 op1 = impSIMDPopStack(simdType);
 
-                retNode = gtNewSimdCmpOpAnyNode(GT_LT, retType, op1, op2, simdBaseJitType, simdSize,
-                                                /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpAnyNode(GT_LT, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1788,8 +1796,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(retType);
                 op1 = impSIMDPopStack(retType);
 
-                retNode = gtNewSimdCmpOpNode(GT_LE, retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpNode(GT_LE, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1806,8 +1813,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(simdType);
                 op1 = impSIMDPopStack(simdType);
 
-                retNode = gtNewSimdCmpOpAllNode(GT_LE, retType, op1, op2, simdBaseJitType, simdSize,
-                                                /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpAllNode(GT_LE, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1824,8 +1830,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(simdType);
                 op1 = impSIMDPopStack(simdType);
 
-                retNode = gtNewSimdCmpOpAnyNode(GT_LE, retType, op1, op2, simdBaseJitType, simdSize,
-                                                /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpAnyNode(GT_LE, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1865,7 +1870,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
             }
 
-            retNode = gtNewSimdLoadNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdLoadNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1883,8 +1888,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1 = op1->gtGetOp1();
             }
 
-            retNode = gtNewSimdLoadAlignedNode(retType, op1, simdBaseJitType, simdSize,
-                                               /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdLoadAlignedNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1902,8 +1906,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1 = op1->gtGetOp1();
             }
 
-            retNode = gtNewSimdLoadNonTemporalNode(retType, op1, simdBaseJitType, simdSize,
-                                                   /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdLoadNonTemporalNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1917,8 +1920,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(retType);
                 op1 = impSIMDPopStack(retType);
 
-                retNode =
-                    gtNewSimdMaxNode(retType, op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdMaxNode(retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1933,8 +1935,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(retType);
                 op1 = impSIMDPopStack(retType);
 
-                retNode =
-                    gtNewSimdMinNode(retType, op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdMinNode(retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1975,23 +1976,24 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
 
-            retNode = gtNewSimdBinOpNode(GT_MUL, retType, op1, op2, simdBaseJitType, simdSize,
-                                         /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdBinOpNode(GT_MUL, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
         case NI_Vector128_Narrow:
         case NI_Vector256_Narrow:
+        case NI_Vector512_Narrow:
         {
             assert(sig->numArgs == 2);
 
             if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
             {
+                assert((simdSize != 64) || IsBaselineVector512IsaSupportedDebugOnly());
+
                 op2 = impSIMDPopStack(retType);
                 op1 = impSIMDPopStack(retType);
 
-                retNode =
-                    gtNewSimdNarrowNode(retType, op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdNarrowNode(retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -2005,9 +2007,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
             {
-                op1 = impSIMDPopStack(retType);
-                retNode =
-                    gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+                op1     = impSIMDPopStack(retType);
+                retNode = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -2020,9 +2021,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_op_OnesComplement:
         {
             assert(sig->numArgs == 1);
-            op1 = impSIMDPopStack(retType);
-            retNode =
-                gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            op1     = impSIMDPopStack(retType);
+            retNode = gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2038,9 +2038,25 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(simdType);
                 op1 = impSIMDPopStack(simdType);
 
-                retNode = gtNewSimdCmpOpAnyNode(GT_NE, retType, op1, op2, simdBaseJitType, simdSize,
-                                                /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpAnyNode(GT_NE, retType, op1, op2, simdBaseJitType, simdSize);
             }
+            break;
+        }
+
+        case NI_Vector512_op_Inequality:
+        {
+            assert(sig->numArgs == 2);
+
+            if (IsBaselineVector512IsaSupported())
+            {
+                var_types simdType = getSIMDTypeForSize(simdSize);
+
+                op2 = impSIMDPopStack(simdType);
+                op1 = impSIMDPopStack(simdType);
+
+                retNode = gtNewSimdCmpOpAnyNode(GT_NE, retType, op1, op2, simdBaseJitType, simdSize);
+            }
+
             break;
         }
 
@@ -2054,8 +2070,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Subtract:
         case NI_Vector256_Subtract:
+        case NI_Vector512_Subtract:
         case NI_Vector128_op_Subtraction:
         case NI_Vector256_op_Subtraction:
+        case NI_Vector512_op_Subtraction:
         {
             assert(sig->numArgs == 2);
 
@@ -2064,8 +2082,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(retType);
                 op1 = impSIMDPopStack(retType);
 
-                retNode = gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -2088,8 +2105,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impPopStack().val;
                 op1 = impSIMDPopStack(retType);
 
-                retNode = gtNewSimdBinOpNode(GT_LSH, retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdBinOpNode(GT_LSH, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -2114,8 +2130,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impPopStack().val;
                 op1 = impSIMDPopStack(retType);
 
-                retNode = gtNewSimdBinOpNode(op, retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdBinOpNode(op, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -2138,8 +2153,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impPopStack().val;
                 op1 = impSIMDPopStack(retType);
 
-                retNode = gtNewSimdBinOpNode(GT_RSZ, retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdBinOpNode(GT_RSZ, retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -2220,8 +2234,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(retType);
                 op1 = impSIMDPopStack(retType);
 
-                retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize,
-                                               /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -2234,7 +2247,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (varTypeIsFloating(simdBaseType))
             {
                 op1     = impSIMDPopStack(retType);
-                retNode = gtNewSimdSqrtNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdSqrtNode(retType, op1, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -2258,7 +2271,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1 = op1->gtGetOp1();
             }
 
-            retNode = gtNewSimdStoreNode(op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdStoreNode(op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2304,7 +2317,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impSIMDPopStack(simdType);
 
-            retNode = gtNewSimdStoreNode(op2, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdStoreNode(op2, op1, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2330,7 +2343,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impSIMDPopStack(simdType);
 
-            retNode = gtNewSimdStoreAlignedNode(op2, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdStoreAlignedNode(op2, op1, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2356,8 +2369,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impSIMDPopStack(simdType);
 
-            retNode = gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseJitType, simdSize,
-                                                    /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2392,12 +2404,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             op1     = impSIMDPopStack(simdType);
-            retNode = gtNewSimdSumNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdSumNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 
         case NI_Vector128_ToScalar:
         case NI_Vector256_ToScalar:
+        case NI_Vector512_ToScalar:
         {
             assert(sig->numArgs == 1);
 
@@ -2432,7 +2445,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
 
             op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
-            retNode = gtNewSimdGetLowerNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdGetLowerNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2442,7 +2455,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
 
             op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
-            retNode = gtNewSimdGetUpperNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdGetUpperNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2452,7 +2465,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(IsBaselineVector512IsaSupportedDebugOnly());
 
             op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
-            retNode = gtNewSimdGetLowerNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdGetLowerNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2462,7 +2475,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(IsBaselineVector512IsaSupportedDebugOnly());
 
             op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
-            retNode = gtNewSimdGetUpperNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdGetUpperNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2481,36 +2494,41 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_WidenLower:
         case NI_Vector256_WidenLower:
+        case NI_Vector512_WidenLower:
         {
             assert(sig->numArgs == 1);
 
             if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
             {
+                assert((simdSize != 64) || IsBaselineVector512IsaSupportedDebugOnly());
+
                 op1 = impSIMDPopStack(retType);
 
-                retNode =
-                    gtNewSimdWidenLowerNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdWidenLowerNode(retType, op1, simdBaseJitType, simdSize);
             }
             break;
         }
 
         case NI_Vector128_WidenUpper:
         case NI_Vector256_WidenUpper:
+        case NI_Vector512_WidenUpper:
         {
             assert(sig->numArgs == 1);
 
             if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
             {
+                assert((simdSize != 64) || IsBaselineVector512IsaSupportedDebugOnly());
+
                 op1 = impSIMDPopStack(retType);
 
-                retNode =
-                    gtNewSimdWidenUpperNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdWidenUpperNode(retType, op1, simdBaseJitType, simdSize);
             }
             break;
         }
 
         case NI_Vector128_WithElement:
         case NI_Vector256_WithElement:
+        case NI_Vector512_WithElement:
         {
             assert(sig->numArgs == 3);
             GenTree* indexOp = impStackTop(1).val;
@@ -2567,8 +2585,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             impPopStack(); // Pop the indexOp now that we know its valid
             GenTree* vectorOp = impSIMDPopStack(getSIMDTypeForSize(simdSize));
 
-            retNode = gtNewSimdWithElementNode(retType, vectorOp, indexOp, valueOp, simdBaseJitType, simdSize,
-                                               /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdWithElementNode(retType, vectorOp, indexOp, valueOp, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2579,8 +2596,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op2     = impSIMDPopStack(TYP_SIMD16);
             op1     = impSIMDPopStack(TYP_SIMD32);
-            retNode = gtNewSimdWithLowerNode(retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdWithLowerNode(retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2591,8 +2607,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op2     = impSIMDPopStack(TYP_SIMD16);
             op1     = impSIMDPopStack(TYP_SIMD32);
-            retNode = gtNewSimdWithUpperNode(retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdWithUpperNode(retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2603,8 +2618,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op2     = impSIMDPopStack(TYP_SIMD32);
             op1     = impSIMDPopStack(TYP_SIMD64);
-            retNode = gtNewSimdWithLowerNode(retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdWithLowerNode(retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2615,8 +2629,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op2     = impSIMDPopStack(TYP_SIMD32);
             op1     = impSIMDPopStack(TYP_SIMD64);
-            retNode = gtNewSimdWithUpperNode(retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdWithUpperNode(retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2632,8 +2645,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack(retType);
             op1 = impSIMDPopStack(retType);
 
-            retNode = gtNewSimdBinOpNode(GT_XOR, retType, op1, op2, simdBaseJitType, simdSize,
-                                         /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewSimdBinOpNode(GT_XOR, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2852,11 +2864,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1     = getArgForHWIntrinsic(argType, argClass);
             SetOpLclRelatedToSIMDIntrinsic(op1);
 
-            const bool isSimdAsHWIntrinsic = false;
-
-            retNode = new (this, GT_HWINTRINSIC)
-                GenTreeHWIntrinsic(retType, getAllocator(CMK_ASTNode), intrinsic, simdBaseJitType, simdSize,
-                                   isSimdAsHWIntrinsic, op1, op2, op3, op4, op5);
+            retNode = new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(retType, getAllocator(CMK_ASTNode), intrinsic,
+                                                                    simdBaseJitType, simdSize, op1, op2, op3, op4, op5);
             retNode->AsHWIntrinsic()->SetAuxiliaryJitType(indexBaseJitType);
             break;
         }

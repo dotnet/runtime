@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IsPackable>false</IsPackable>
@@ -13,8 +13,9 @@
 
   <ItemGroup>
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="..\TestAssets\SharedTypes\ComInterfaces\*.cs" Link="ComInterfaces\%(FileName).cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\..\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />

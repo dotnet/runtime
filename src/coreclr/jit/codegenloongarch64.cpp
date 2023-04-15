@@ -2788,7 +2788,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     }
     else
     {
-        assert(dstAddr->OperIsLocalAddr());
+        assert(dstAddr->OperIs(GT_LCL_ADDR));
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
@@ -2901,7 +2901,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 // bl CORINFO_HELP_ASSIGN_BYREF
 // ld tempReg, 8(A5)
 // sd tempReg, 8(A6)
-void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
+void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
     GenTree*  dstAddr       = cpObjNode->Addr();
     GenTree*  source        = cpObjNode->Data();
@@ -2921,7 +2921,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIsLocalAddr();
+    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -2957,7 +2957,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(tmpReg2 != REG_WRITE_BARRIER_SRC_BYREF);
     }
 
-    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpObjNode->IsVolatile())
     {
         // issue a full memory barrier before a volatile CpObj operation
         instGen_MemoryBarrier();
@@ -3065,7 +3065,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(gcPtrCount == 0);
     }
 
-    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpObjNode->IsVolatile())
     {
         // issue a INS_BARRIER_RMB after a volatile CpObj operation
         // TODO-LOONGARCH64: there is only BARRIER_FULL for LOONGARCH64.
@@ -5000,9 +5000,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForBitCast(treeNode->AsOp());
             break;
 
-        case GT_LCL_FLD_ADDR:
-        case GT_LCL_VAR_ADDR:
-            genCodeForLclAddr(treeNode->AsLclVarCommon());
+        case GT_LCL_ADDR:
+            genCodeForLclAddr(treeNode->AsLclFld());
             break;
 
         case GT_LCL_FLD:
@@ -5478,9 +5477,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         {
             genPutArgStkFieldList(treeNode, varNumOut);
         }
-        else // We must have a GT_OBJ or a GT_LCL_VAR
+        else // We must have a GT_BLK or a GT_LCL_VAR
         {
-            noway_assert((source->OperGet() == GT_LCL_VAR) || (source->OperGet() == GT_OBJ));
+            noway_assert((source->OperGet() == GT_LCL_VAR) || (source->OperGet() == GT_BLK));
 
             var_types targetType = source->TypeGet();
             noway_assert(varTypeIsStruct(targetType));
@@ -5497,21 +5496,21 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             {
                 varNode = source->AsLclVarCommon();
             }
-            else // we must have a GT_OBJ
+            else // we must have a GT_BLK
             {
-                assert(source->OperGet() == GT_OBJ);
+                assert(source->OperGet() == GT_BLK);
 
                 addrNode = source->AsOp()->gtOp1;
 
-                // addrNode can either be a GT_LCL_VAR_ADDR or an address expression
+                // addrNode can either be a GT_LCL_ADDR<0> or an address expression
                 //
-                if (addrNode->OperGet() == GT_LCL_VAR_ADDR)
+                if (addrNode->IsLclVarAddr())
                 {
-                    // We have a GT_OBJ(GT_LCL_VAR_ADDR)
+                    // We have a GT_BLK(GT_LCL_ADDR<0>)
                     //
                     // We will treat this case the same as above
                     // (i.e if we just had this GT_LCL_VAR directly as the source)
-                    // so update 'source' to point this GT_LCL_VAR_ADDR node
+                    // so update 'source' to point this GT_LCL_ADDR node
                     // and continue to the codegen for the LCL_VAR node below
                     //
                     varNode  = addrNode->AsLclVarCommon();
@@ -5550,18 +5549,16 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                                             // as that is how much stack is allocated for this LclVar
                 layout = varDsc->GetLayout();
             }
-            else // we must have a GT_OBJ
+            else // we must have a GT_BLK
             {
-                assert(source->OperGet() == GT_OBJ);
+                assert(source->OperGet() == GT_BLK);
 
-                // If the source is an OBJ node then we need to use the type information
+                // If the source is an BLK node then we need to use the type information
                 // it provides (size and GC layout) even if the node wraps a lclvar. Due
                 // to struct reinterpretation (e.g. Unsafe.As<X, Y>) it is possible that
-                // the OBJ node has a different type than the lclvar.
-                CORINFO_CLASS_HANDLE objClass = source->AsObj()->GetLayout()->GetClassHandle();
-
-                srcSize = compiler->info.compCompHnd->getClassSize(objClass);
-                layout  = source->AsObj()->GetLayout();
+                // the BLK node has a different type than the lclvar.
+                layout  = source->AsBlk()->GetLayout();
+                srcSize = layout->GetSize();
             }
 
             unsigned structSize;
@@ -5767,7 +5764,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
     else
     {
         var_types targetType = source->TypeGet();
-        assert(source->OperGet() == GT_OBJ);
+        assert(source->OperGet() == GT_BLK);
         assert(varTypeIsStruct(targetType));
 
         regNumber baseReg = treeNode->ExtractTempReg();
@@ -5778,15 +5775,15 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
         addrNode = source->AsOp()->gtOp1;
 
-        // addrNode can either be a GT_LCL_VAR_ADDR or an address expression
+        // addrNode can either be a GT_LCL_ADDR<0> or an address expression
         //
-        if (addrNode->OperGet() == GT_LCL_VAR_ADDR)
+        if (addrNode->IsLclVarAddr())
         {
-            // We have a GT_OBJ(GT_LCL_VAR_ADDR)
+            // We have a GT_BLK(GT_LCL_ADDR<0>)
             //
             // We will treat this case the same as above
             // (i.e if we just had this GT_LCL_VAR directly as the source)
-            // so update 'source' to point this GT_LCL_VAR_ADDR node
+            // so update 'source' to point this GT_LCL_ADDR node
             // and continue to the codegen for the LCL_VAR node below
             //
             varNode  = addrNode->AsLclVarCommon();
@@ -5819,12 +5816,9 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             // Because the candidate mask for the internal baseReg does not include any of the target register,
             // we can ensure that baseReg, addrReg, and the last target register are not all same.
             assert(baseReg != addrReg);
-
-            // We don't split HFA struct
-            assert(!compiler->IsHfa(source->AsObj()->GetLayout()->GetClassHandle()));
         }
 
-        ClassLayout* layout = source->AsObj()->GetLayout();
+        ClassLayout* layout = source->AsBlk()->GetLayout();
 
         // Put on stack first
         unsigned structOffset  = treeNode->gtNumRegs * TARGET_POINTER_SIZE;
@@ -6185,14 +6179,14 @@ void CodeGen::genCodeForShift(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForLclAddr: Generates the code for GT_LCL_FLD_ADDR/GT_LCL_VAR_ADDR.
+// genCodeForLclAddr: Generates the code for GT_LCL_ADDR.
 //
 // Arguments:
 //    tree - the node.
 //
-void CodeGen::genCodeForLclAddr(GenTreeLclVarCommon* lclAddrNode)
+void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 {
-    assert(lclAddrNode->OperIs(GT_LCL_FLD_ADDR, GT_LCL_VAR_ADDR));
+    assert(lclAddrNode->OperIs(GT_LCL_ADDR));
 
     var_types targetType = lclAddrNode->TypeGet();
     emitAttr  size       = emitTypeSize(targetType);
@@ -6432,7 +6426,7 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
     // genConsumeBlockOp takes care of this for us.
     genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
 
-    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpBlkNode->IsVolatile())
     {
         // issue a full memory barrier before a volatile CpBlk operation
         instGen_MemoryBarrier();
@@ -6440,7 +6434,7 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
 
     genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
 
-    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpBlkNode->IsVolatile())
     {
         // issue a INS_BARRIER_RMB after a volatile CpBlk operation
         instGen_MemoryBarrier(BARRIER_FULL);
@@ -6481,7 +6475,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
     }
     else
     {
-        assert(dstAddr->OperIsLocalAddr());
+        assert(dstAddr->OperIs(GT_LCL_ADDR));
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
@@ -6514,7 +6508,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
         }
         else
         {
-            assert(srcAddr->OperIsLocalAddr());
+            assert(srcAddr->OperIs(GT_LCL_ADDR));
             srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
             srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
         }
@@ -6645,7 +6639,7 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
     // genConsumeBlockOp takes care of this for us.
     genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
 
-    if (initBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    if (initBlkNode->IsVolatile())
     {
         // issue a full memory barrier before a volatile initBlock Operation
         instGen_MemoryBarrier();
@@ -6661,9 +6655,9 @@ void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst
 {
     emitter* emit = GetEmitter();
 
-    if (base->OperIsLocalAddr())
+    if (base->OperIs(GT_LCL_ADDR))
     {
-        if (base->gtOper == GT_LCL_FLD_ADDR)
+        if (base->gtOper == GT_LCL_ADDR)
         {
             offset += base->AsLclFld()->GetLclOffs();
         }
@@ -7563,8 +7557,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     {
         assert(!blkOp->gtBlkOpGcUnsafe);
         assert(blkOp->OperIsCopyBlkOp());
-        assert(blkOp->AsObj()->GetLayout()->HasGCPtr());
-        genCodeForCpObj(blkOp->AsObj());
+        assert(blkOp->AsBlk()->GetLayout()->HasGCPtr());
+        genCodeForCpObj(blkOp->AsBlk());
         return;
     }
     if (blkOp->gtBlkOpGcUnsafe)
@@ -9113,75 +9107,4 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         return;
     }
 }
-
-// return size
-// alignmentWB is out param
-unsigned CodeGenInterface::InferOpSizeAlign(GenTree* op, unsigned* alignmentWB)
-{
-    unsigned alignment = 0;
-    unsigned opSize    = 0;
-
-    if (op->gtType == TYP_STRUCT || op->OperIsCopyBlkOp())
-    {
-        opSize = InferStructOpSizeAlign(op, &alignment);
-    }
-    else
-    {
-        alignment = genTypeAlignments[op->TypeGet()];
-        opSize    = genTypeSizes[op->TypeGet()];
-    }
-
-    assert(opSize != 0);
-    assert(alignment != 0);
-
-    (*alignmentWB) = alignment;
-    return opSize;
-}
-
-// return size
-// alignmentWB is out param
-unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignmentWB)
-{
-    unsigned alignment = 0;
-    unsigned opSize    = 0;
-
-    while (op->gtOper == GT_COMMA)
-    {
-        op = op->AsOp()->gtOp2;
-    }
-
-    if (op->gtOper == GT_OBJ)
-    {
-        CORINFO_CLASS_HANDLE clsHnd = op->AsObj()->GetLayout()->GetClassHandle();
-        opSize                      = op->AsObj()->GetLayout()->GetSize();
-        alignment = roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
-    }
-    else if (op->gtOper == GT_LCL_VAR)
-    {
-        const LclVarDsc* varDsc = compiler->lvaGetDesc(op->AsLclVarCommon());
-        assert(varDsc->lvType == TYP_STRUCT);
-        opSize = varDsc->lvSize();
-        {
-            alignment = TARGET_POINTER_SIZE;
-        }
-    }
-    else if (op->gtOper == GT_MKREFANY)
-    {
-        opSize    = TARGET_POINTER_SIZE * 2;
-        alignment = TARGET_POINTER_SIZE;
-    }
-    else
-    {
-        assert(!"Unhandled gtOper");
-        opSize    = TARGET_POINTER_SIZE;
-        alignment = TARGET_POINTER_SIZE;
-    }
-
-    assert(opSize != 0);
-    assert(alignment != 0);
-
-    (*alignmentWB) = alignment;
-    return opSize;
-}
-
 #endif // TARGET_LOONGARCH64

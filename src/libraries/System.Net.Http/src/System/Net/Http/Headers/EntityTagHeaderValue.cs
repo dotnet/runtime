@@ -148,7 +148,7 @@ namespace System.Net.Http.Headers
 
                 int tagStartIndex = current;
                 int tagLength;
-                if (HttpRuleParser.GetQuotedStringLength(input, current, out tagLength) != HttpParseResult.Parsed)
+                if (current == input.Length || HttpRuleParser.GetQuotedStringLength(input, current, out tagLength) != HttpParseResult.Parsed)
                 {
                     return 0;
                 }

@@ -544,12 +544,12 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             useType = TYP_SHORT;
             break;
 
-#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
         case 3:
             useType = TYP_INT;
             break;
 
-#endif // !TARGET_XARCH || UNIX_AMD64_ABI || TARGET_LOONGARCH64
+#endif // !TARGET_XARCH || UNIX_AMD64_ABI
 
 #ifdef TARGET_64BIT
         case 4:
@@ -557,14 +557,14 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             useType = TYP_INT;
             break;
 
-#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
         case 5:
         case 6:
         case 7:
             useType = TYP_I_IMPL;
             break;
 
-#endif // !TARGET_XARCH || UNIX_AMD64_ABI || TARGET_LOONGARCH64
+#endif // !TARGET_XARCH || UNIX_AMD64_ABI
 #endif // TARGET_64BIT
 
         case TARGET_POINTER_SIZE:
@@ -756,7 +756,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     useType         = TYP_UNKNOWN;
                 }
 
-#elif defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
                 // Otherwise we pass this struct by value on the stack
                 // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
@@ -784,7 +784,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             howToPassStruct = SPK_ByValue;
             useType         = TYP_STRUCT;
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
             // Otherwise we pass this struct by reference to a copy
             // setup wbPassType and useType indicate that this is passed using one register (by reference to a copy)
@@ -909,7 +909,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
     }
-#elif TARGET_LOONGARCH64
+#elif defined(TARGET_LOONGARCH64)
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
         uint32_t floatFieldFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(clsHnd);
@@ -925,6 +925,24 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
             useType           = TYP_STRUCT;
         }
     }
+
+#elif defined(TARGET_RISCV64)
+    if (structSize <= (TARGET_POINTER_SIZE * 2))
+    {
+        uint32_t floatFieldFlags = info.compCompHnd->getRISCV64PassStructInRegisterFlags(clsHnd);
+
+        if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+        {
+            howToReturnStruct = SPK_PrimitiveType;
+            useType           = (structSize > 4) ? TYP_DOUBLE : TYP_FLOAT;
+        }
+        else if (floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE))
+        {
+            howToReturnStruct = SPK_ByValue;
+            useType           = TYP_STRUCT;
+        }
+    }
+
 #endif
     if (TargetOS::IsWindows && !TargetArchitecture::IsArm32 && callConvIsInstanceMethodCallConv(callConv) &&
         !isNativePrimitiveStructType(clsHnd))
@@ -1067,7 +1085,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 howToReturnStruct = SPK_ByReference;
                 useType           = TYP_UNKNOWN;
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
                 // On LOONGARCH64 struct that is 1-16 bytes is returned by value in one/two register(s)
                 howToReturnStruct = SPK_ByValue;
@@ -1266,17 +1284,6 @@ void DisplayNowayAssertMap()
 }
 
 #endif // MEASURE_NOWAY
-
-/*****************************************************************************
- * variables to keep track of how many iterations we go in a dataflow pass
- */
-
-#if DATAFLOW_ITER
-
-unsigned CSEiterCount; // counts the # of iteration for the CSE dataflow
-unsigned CFiterCount;  // counts the # of iteration for the Const Folding dataflow
-
-#endif // DATAFLOW_ITER
 
 #if MEASURE_BLOCK_SIZE
 size_t genFlowNodeSize;
@@ -1616,14 +1623,6 @@ void Compiler::compShutdown()
     fprintf(fout, "--------------------------------------------------\n");
 
 #endif // COUNT_LOOPS
-
-#if DATAFLOW_ITER
-
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "Total number of iterations in the CSE dataflow loop is %5u\n", CSEiterCount);
-    fprintf(fout, "Total number of iterations in the  CF dataflow loop is %5u\n", CFiterCount);
-
-#endif // DATAFLOW_ITER
 
 #if MEASURE_NODE_SIZE
 
@@ -2270,6 +2269,8 @@ void Compiler::compSetProcessor()
         info.genCPU = CPU_X86;
 #elif defined(TARGET_LOONGARCH64)
     info.genCPU                   = CPU_LOONGARCH64;
+#elif defined(TARGET_RISCV64)
+    info.genCPU = CPU_RISCV64;
 #endif
 
     //
@@ -3274,10 +3275,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 #endif // FEATURE_CFI_SUPPORT
 
-#ifdef TARGET_LOONGARCH64
-    // Hot/cold splitting is not being tested on LoongArch64.
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     opts.compProcedureSplitting = false;
-#endif // TARGET_LOONGARCH64
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #ifdef DEBUG
     opts.compProcedureSplittingEH = opts.compProcedureSplitting;
@@ -4029,7 +4029,7 @@ _SetMinOpts:
     fgCanRelocateEHRegions = true;
 }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 // Function compRsvdRegCheck:
 //  given a curState to use for calculating the total frame size
 //  it will return true if the REG_OPT_RSVD should be reserved so
@@ -4076,6 +4076,10 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 
 #elif defined(TARGET_LOONGARCH64)
     JITDUMP(" Returning true (LOONGARCH64)\n\n");
+    return true; // just always assume we'll need it, for now
+
+#elif defined(TARGET_RISCV64)
+    JITDUMP(" Returning true (RISCV64)\n\n");
     return true; // just always assume we'll need it, for now
 
 #else  // TARGET_ARM
@@ -4201,7 +4205,7 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     return false;
 #endif // TARGET_ARM
 }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 //------------------------------------------------------------------------
 // compGetTieringName: get a string describing tiered compilation settings
@@ -4741,6 +4745,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_EARLY_LIVENESS, &Compiler::fgEarlyLiveness);
 
+    // Promote struct locals based on primitive access patterns
+    //
+    DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
+
     // Run a simple forward substitution pass.
     //
     DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
@@ -5022,8 +5030,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Dominator and reachability sets are no longer valid.
     // The loop table is no longer valid.
-    fgDomsComputed    = false;
-    optLoopTableValid = false;
+    fgDomsComputed            = false;
+    optLoopTableValid         = false;
+    optLoopsRequirePreHeaders = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
@@ -5031,6 +5040,15 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Expand runtime lookups (an optimization but we'd better run it in tier0 too)
     DoPhase(this, PHASE_EXPAND_RTLOOKUPS, &Compiler::fgExpandRuntimeLookups);
+
+    // Partially inline static initializations
+    DoPhase(this, PHASE_EXPAND_STATIC_INIT, &Compiler::fgExpandStaticInit);
+
+    if (TargetOS::IsWindows)
+    {
+        // Currently this is only applicable for Windows
+        DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
+    }
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -6735,6 +6753,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     compGenTreeID    = 0;
     compStatementID  = 0;
     compBasicBlockID = 0;
+#endif
+
+#ifdef TARGET_ARM64
+    info.compNeedsConsecutiveRegisters = false;
 #endif
 
     /* Initialize emitter */
@@ -9624,9 +9646,8 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
         switch (op)
         {
             case GT_LCL_VAR:
-            case GT_LCL_VAR_ADDR:
             case GT_LCL_FLD:
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
                 if (tree->gtFlags & GTF_VAR_DEF)
@@ -9925,9 +9946,8 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             }
             break;
 
-            case GT_OBJ:
             case GT_STORE_OBJ:
-                if (tree->AsObj()->GetLayout()->HasGCPtr())
+                if (tree->AsBlk()->GetLayout()->HasGCPtr())
                 {
                     chars += printf("[BLK_HASGCPTR]");
                 }
@@ -9937,13 +9957,13 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:
 
-                if (tree->gtFlags & GTF_BLK_VOLATILE)
+                if (tree->gtFlags & GTF_IND_VOLATILE)
                 {
-                    chars += printf("[BLK_VOLATILE]");
+                    chars += printf("[IND_VOLATILE]");
                 }
-                if (tree->AsBlk()->IsUnaligned())
+                if (tree->gtFlags & GTF_IND_UNALIGNED)
                 {
-                    chars += printf("[BLK_UNALIGNED]");
+                    chars += printf("[IND_UNALIGNED]");
                 }
                 break;
 
@@ -10304,7 +10324,7 @@ var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 //
 void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
-    assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
+    assert(tree->OperIs(GT_FIELD, GT_IND, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
     assert(fgAddrCouldBeNull(tree->gtGetOp1()));
