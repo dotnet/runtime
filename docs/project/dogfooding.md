@@ -26,6 +26,14 @@ dotnet add package System.Data.OleDb -v 8.0-preview.5.22226.4
 
 To use daily builds of the entire runtime, follow the steps given in the rest of this document instead.
 
+## Configuring upstream feeds in ADO
+
+If you're using private Azure DevOps feeds for your projects, you might need to add the preview feed through the Azure-specific feed URI format, which is `azure-feed://organization/optionalProject/feed@view`. In this case, you can add the .NET development package feed as follows:
+
+```
+azure-feed://dnceng/public/dotnet8@Local
+```
+
 ## Install prerequisites
 
 1. Acquire the latest development .NET SDK by downloading and extracting a zip/tarball or using an installer from the [installers and binaries table in dotnet/installer](https://github.com/dotnet/installer#installers-and-binaries) (for example, https://aka.ms/dotnet/8.0/daily/dotnet-sdk-win-x64.zip).
@@ -177,8 +185,8 @@ $ bin\Debug\net8.0\win-x64\publish\App.exe
 | **Linux-musl (arm)** | <br>[tar.gz][linux-musl-arm-targz-8.0.X] ([Checksum][linux-musl-arm-targz-checksum-8.0.X]) |
 | **Linux-musl (arm64)** | <br>[tar.gz][linux-musl-arm64-targz-8.0.X] ([Checksum][linux-musl-arm64-targz-checksum-8.0.X]) |
 | **Dpkg Based Systems (x64)** | <br>[Runtime-Deps][deb-runtime-deps-8.0.X] ([Checksum][deb-runtime-deps-checksum-8.0.X])<br>[Host][deb-host-8.0.X] ([Checksum][deb-host-checksum-8.0.X])<br>[App Hosts][deb-apphost-pack-8.0.X] ([Checksum][deb-apphost-pack-checksum-8.0.X])<br>[Host FX Resolver][deb-hostfxr-8.0.X] ([Checksum][deb-hostfxr-checksum-8.0.X])<br>[Targeting Pack][deb-targeting-pack-8.0.X] ([Checksum][deb-targeting-pack-checksum-8.0.X])<br>[Shared Framework][deb-sharedfx-8.0.X] ([Checksum][deb-sharedfx-checksum-8.0.X]) |
-| **CentOS 7 (x64)** | <br>[Runtime-Deps][centos-7-runtime-deps-8.0.X] ([Checksum][centos-7-runtime-deps-checksum-8.0.X])<br>[Host][centos-7-host-8.0.X] ([Checksum][centos-7-host-checksum-8.0.X])<br>[App Hosts][centos-7-apphost-pack-8.0.X] ([Checksum][centos-7-apphost-pack-checksum-8.0.X])<br>[Host FX Resolver][centos-7-hostfxr-8.0.X] ([Checksum][centos-7-hostfxr-checksum-8.0.X])<br>[Targeting Pack][centos-7-targeting-pack-8.0.X] ([Checksum][centos-7-targeting-pack-checksum-8.0.X])<br>[Shared Framework][centos-7-sharedfx-8.0.X] ([Checksum][centos-7-sharedfx-checksum-8.0.X]) |
-| **RHEL 7.2 (x64)** | <br>[Host][rhel7-host-8.0.X] ([Checksum][rhel7-host-checksum-8.0.X])<br>[App Hosts][rhel7-apphost-pack-8.0.X] ([Checksum][rhel7-apphost-pack-checksum-8.0.X])<br>[Host FX Resolver][rhel7-hostfxr-8.0.X] ([Checksum][rhel7-hostfxr-checksum-8.0.X])<br>[Targeting Pack][rhel7-targeting-pack-8.0.X] ([Checksum][rhel7-targeting-pack-checksum-8.0.X])<br>[Shared Framework][rhel7-sharedfx-8.0.X] ([Checksum][rhel7-sharedfx-checksum-8.0.X]) |
+| **CentOS 8 (x64)** | <br>[Runtime-Deps][centos-8-runtime-deps-8.0.X] ([Checksum][centos-8-runtime-deps-checksum-8.0.X])<br>[Host][centos-8-host-8.0.X] ([Checksum][centos-8-host-checksum-8.0.X])<br>[App Hosts][centos-8-apphost-pack-8.0.X] ([Checksum][centos-8-apphost-pack-checksum-8.0.X])<br>[Host FX Resolver][centos-8-hostfxr-8.0.X] ([Checksum][centos-8-hostfxr-checksum-8.0.X])<br>[Targeting Pack][centos-8-targeting-pack-8.0.X] ([Checksum][centos-8-targeting-pack-checksum-8.0.X])<br>[Shared Framework][centos-8-sharedfx-8.0.X] ([Checksum][centos-8-sharedfx-checksum-8.0.X]) |
+| **RHEL 8 (x64)** | <br>[Host][rhel8-host-8.0.X] ([Checksum][rhel8-host-checksum-8.0.X])<br>[App Hosts][rhel8-apphost-pack-8.0.X] ([Checksum][rhel8-apphost-pack-checksum-8.0.X])<br>[Host FX Resolver][rhel8-hostfxr-8.0.X] ([Checksum][rhel8-hostfxr-checksum-8.0.X])<br>[Targeting Pack][rhel8-targeting-pack-8.0.X] ([Checksum][rhel8-targeting-pack-checksum-8.0.X])<br>[Shared Framework][rhel8-sharedfx-8.0.X] ([Checksum][rhel8-sharedfx-checksum-8.0.X]) |
 | **Fedora 27 (x64)** | <br>[Runtime-Deps][fedora-27-runtime-deps-8.0.X] ([Checksum][fedora-27-runtime-deps-checksum-8.0.X])<br>[Host][fedora-27-host-8.0.X] ([Checksum][fedora-27-host-checksum-8.0.X])<br>[App Hosts][fedora-27-apphost-pack-8.0.X] ([Checksum][fedora-27-apphost-pack-checksum-8.0.X])<br>[Host FX Resolver][fedora-27-hostfxr-8.0.X] ([Checksum][fedora-27-hostfxr-checksum-8.0.X])<br>[Targeting Pack][fedora-27-targeting-pack-8.0.X] ([Checksum][fedora-27-targeting-pack-checksum-8.0.X])<br>[Shared Framework][fedora-27-sharedfx-8.0.X] ([Checksum][fedora-27-sharedfx-checksum-8.0.X]) |
 | **SLES 12 (x64)** | <br>[Runtime-Deps][sles-12-runtime-deps-8.0.X] ([Checksum][sles-12-runtime-deps-checksum-8.0.X])<br>[Host][sles-12-host-8.0.X] ([Checksum][sles-12-host-checksum-8.0.X])<br>[App Hosts][sles-12-apphost-pack-8.0.X] ([Checksum][sles-12-apphost-pack-checksum-8.0.X])<br>[Host FX Resolver][sles-12-hostfxr-8.0.X] ([Checksum][sles-12-hostfxr-checksum-8.0.X])<br>[Targeting Pack][sles-12-targeting-pack-8.0.X] ([Checksum][sles-12-targeting-pack-checksum-8.0.X])<br>[Shared Framework][sles-12-sharedfx-8.0.X] ([Checksum][sles-12-sharedfx-checksum-8.0.X]) |
 | **OpenSUSE 42 (x64)** | <br>[Runtime-Deps][OpenSUSE-42-runtime-deps-8.0.X] ([Checksum][OpenSUSE-42-runtime-deps-checksum-8.0.X])<br>[Host][OpenSUSE-42-host-8.0.X] ([Checksum][OpenSUSE-42-host-checksum-8.0.X])<br>[App Hosts][OpenSUSE-42-apphost-pack-8.0.X] ([Checksum][OpenSUSE-42-apphost-pack-checksum-8.0.X])<br>[Host FX Resolver][OpenSUSE-42-hostfxr-8.0.X] ([Checksum][OpenSUSE-42-hostfxr-checksum-8.0.X])<br>[Targeting Pack][OpenSUSE-42-targeting-pack-8.0.X] ([Checksum][OpenSUSE-42-targeting-pack-checksum-8.0.X])<br>[Shared Framework][OpenSUSE-42-sharedfx-8.0.X] ([Checksum][OpenSUSE-42-sharedfx-checksum-8.0.X]) |
@@ -275,35 +283,35 @@ $ bin\Debug\net8.0\win-x64\publish\App.exe
 [deb-targeting-pack-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-targeting-pack-x64.deb
 [deb-targeting-pack-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-targeting-pack-x64.deb.sha512
 
-[rhel7-badge-8.0.X]: https://aka.ms/dotnet/8.0/daily/sharedfx_rhel.7-x64_Release_version_badge.svg?no-cache
-[rhel7-version-8.0.X]: https://aka.ms/dotnet/8.0/daily/runtime-productVersion.txt
-[rhel7-runtime-deps-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-deps-centos.7-x64.rpm
-[rhel7-runtime-deps-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-deps-centos.7-x64.rpm.sha512
-[rhel7-apphost-pack-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-apphost-pack-x64.rpm
-[rhel7-apphost-pack-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-apphost-pack-x64.rpm.sha512
-[rhel7-host-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-host-x64.rpm
-[rhel7-host-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-host-x64.rpm.sha512
-[rhel7-hostfxr-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-hostfxr-x64.rpm
-[rhel7-hostfxr-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-hostfxr-x64.rpm.sha512
-[rhel7-sharedfx-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-x64.rpm
-[rhel7-sharedfx-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-x64.rpm.sha512
-[rhel7-targeting-pack-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-targeting-pack-x64.rpm
-[rhel7-targeting-pack-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-targeting-pack-x64.rpm.sha512
+[rhel8-badge-8.0.X]: https://aka.ms/dotnet/8.0/daily/sharedfx_rhel.8-x64_Release_version_badge.svg?no-cache
+[rhel8-version-8.0.X]: https://aka.ms/dotnet/8.0/daily/runtime-productVersion.txt
+[rhel8-runtime-deps-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-deps-centos.8-x64.rpm
+[rhel8-runtime-deps-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-deps-centos.8-x64.rpm.sha512
+[rhel8-apphost-pack-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-apphost-pack-x64.rpm
+[rhel8-apphost-pack-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-apphost-pack-x64.rpm.sha512
+[rhel8-host-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-host-x64.rpm
+[rhel8-host-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-host-x64.rpm.sha512
+[rhel8-hostfxr-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-hostfxr-x64.rpm
+[rhel8-hostfxr-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-hostfxr-x64.rpm.sha512
+[rhel8-sharedfx-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-x64.rpm
+[rhel8-sharedfx-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-x64.rpm.sha512
+[rhel8-targeting-pack-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-targeting-pack-x64.rpm
+[rhel8-targeting-pack-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-targeting-pack-x64.rpm.sha512
 
-[centos-7-badge-8.0.X]: https://aka.ms/dotnet/8.0/daily/sharedfx_centos.7-x64_Release_version_badge.svg?no-cache
-[centos-7-version-8.0.X]: https://aka.ms/dotnet/8.0/daily/runtime-productVersion.txt
-[centos-7-runtime-deps-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-deps-centos.7-x64.rpm
-[centos-7-runtime-deps-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-deps-centos.7-x64.rpm.sha512
-[centos-7-apphost-pack-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-apphost-pack-x64.rpm
-[centos-7-apphost-pack-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-apphost-pack-x64.rpm.sha512
-[centos-7-host-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-host-x64.rpm
-[centos-7-host-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-host-x64.rpm.sha512
-[centos-7-hostfxr-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-hostfxr-x64.rpm
-[centos-7-hostfxr-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-hostfxr-x64.rpm.sha512
-[centos-7-sharedfx-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-x64.rpm
-[centos-7-sharedfx-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-x64.rpm.sha512
-[centos-7-targeting-pack-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-targeting-pack-x64.rpm
-[centos-7-targeting-pack-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-targeting-pack-x64.rpm.sha512
+[centos-8-badge-8.0.X]: https://aka.ms/dotnet/8.0/daily/sharedfx_centos.8-x64_Release_version_badge.svg?no-cache
+[centos-8-version-8.0.X]: https://aka.ms/dotnet/8.0/daily/runtime-productVersion.txt
+[centos-8-runtime-deps-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-deps-centos.8-x64.rpm
+[centos-8-runtime-deps-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-deps-centos.8-x64.rpm.sha512
+[centos-8-apphost-pack-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-apphost-pack-x64.rpm
+[centos-8-apphost-pack-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-apphost-pack-x64.rpm.sha512
+[centos-8-host-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-host-x64.rpm
+[centos-8-host-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-host-x64.rpm.sha512
+[centos-8-hostfxr-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-hostfxr-x64.rpm
+[centos-8-hostfxr-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-hostfxr-x64.rpm.sha512
+[centos-8-sharedfx-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-x64.rpm
+[centos-8-sharedfx-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-x64.rpm.sha512
+[centos-8-targeting-pack-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-targeting-pack-x64.rpm
+[centos-8-targeting-pack-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-targeting-pack-x64.rpm.sha512
 
 [fedora-27-badge-8.0.X]: https://aka.ms/dotnet/8.0/daily/sharedfx_fedora.27-x64_Release_version_badge.svg?no-cache
 [fedora-27-version-8.0.X]: https://aka.ms/dotnet/8.0/daily/runtime-productVersion.txt

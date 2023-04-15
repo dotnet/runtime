@@ -3,6 +3,7 @@
 
 using System;
 using AutoGen;
+using Xunit;
 
 // We were receiving an assert on IA64 because the code we were using to determine if a range
 // check statically fails was invalid.
@@ -288,7 +289,8 @@ namespace AutoGen
             }
             return 100;
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Program prog = new Program();
             int rc = prog.Run();
