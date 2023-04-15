@@ -23,25 +23,7 @@ namespace System.Net.Security
             TlsCipherSuite = cipherSuite;
             KeyExchKeySize = 0;
 
-            ulong data = cipherSuite switch
-            {
-<#
-foreach (TlsCipherSuite val in enumValues)
-{
-    TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
-#>
-                TlsCipherSuite.<#= val #> =>
-                    (ulong)ExchangeAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm) #> << (64 - (16 * 1)) |
-                    (ulong)CipherAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.CipherAlgorithm) #> << (64 - (16 * 2)) |
-                    (ulong)<#= data.CipherAlgorithmStrength #> << (64 - (16 * 3)) |
-                    (ulong)HashAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.MACAlgorithm) #>  << (64 - (16 * 4)),
-
-<#
-}
-#>
-                _ => 0
-            };
-
+            ulong data = GetPackedData(cipherSuite);
             Debug.Assert(data != 0, $"No mapping found for cipherSuite {cipherSuite}");
 
             KeyExchangeAlg = (int)(data >> (64 - (16 * 1)) & 0xFFFF);
@@ -68,6 +50,28 @@ foreach (TlsCipherSuite val in enumValues)
                         return 512;
                     default:
                         throw new ArgumentOutOfRangeException(nameof(hash));
+                }
+            }
+
+            static ulong GetPackedData(TlsCipherSuite cipherSuite)
+            {
+                switch (cipherSuite)
+                {
+<#
+foreach (TlsCipherSuite val in enumValues)
+{
+    TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
+#>
+                    case TlsCipherSuite.<#= val #>: return
+                        /* KeyExchangeAlg */ (ulong)ExchangeAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm) #> << (64 - (16 * 1)) |
+                        /* DataCipherAlg */ (ulong)CipherAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.CipherAlgorithm) #> << (64 - (16 * 2)) |
+                        /* DataKeySize */ (ulong)<#= data.CipherAlgorithmStrength #> << (64 - (16 * 3)) |
+                        /* DataHashAlg */ (ulong)HashAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.MACAlgorithm) #>  << (64 - (16 * 4));
+
+<#
+}
+#>
+                    default: return 0;
                 }
             }
         }
