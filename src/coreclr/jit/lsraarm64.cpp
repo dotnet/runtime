@@ -1812,7 +1812,7 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
 //    matches with the tracking `consecutiveRegistersLocation`. For Def, it will check
 //    the underlying `GenTree*` to see if the tree that produced it had consecutive
 //    registers requirement.
-// 
+//
 //
 // Arguments:
 //    consecutiveRegistersLocation - The most recent location where consecutive

@@ -5394,11 +5394,7 @@ void LinearScan::allocateRegisters()
                             regMaskTP copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
                             regMaskTP assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
 
-                            // For consecutive register, it doesn't matter what the assigned register was.
-                            // We have just assigned it `copyRegMask` and that's the one in-use, and not the
-                            // one that was assigned previously.
-
-                            regsInUseThisLocation |= copyRegMask;
+                            regsInUseThisLocation |= copyRegMask | assignedRegMask;
                             if (currentRefPosition.lastUse)
                             {
                                 if (currentRefPosition.delayRegFree)
@@ -5509,11 +5505,7 @@ void LinearScan::allocateRegisters()
                             assignConsecutiveRegisters(&currentRefPosition, copyReg);
                         }
 
-                        // For consecutive register, it doesn't matter what the assigned register was.
-                        // We have just assigned it `copyRegMask` and that's the one in-use, and not the
-                        // one that was assigned previously.
-
-                        regsInUseThisLocation |= copyRegMask;
+                        regsInUseThisLocation |= copyRegMask | assignedRegMask;
                     }
                     else
 #endif
@@ -12087,7 +12079,8 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
 
 #ifdef DEBUG
 #ifdef TARGET_ARM64
-    if (!refPosition->needsConsecutive && refPosition->isLiveAtConsecutiveRegistersLoc(linearScan->consecutiveRegistersLocation))
+    if (!refPosition->needsConsecutive &&
+        refPosition->isLiveAtConsecutiveRegistersLoc(linearScan->consecutiveRegistersLocation))
     {
         // If a method has consecutive registers and we are assigning to refPositions that are not part
         // of consecutive registers, but are live at the same location, skip the limit stress for them,
