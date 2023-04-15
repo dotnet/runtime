@@ -104,8 +104,9 @@ ClrDataStackWalk::GetContext(
         }
         else
         {
-            *(PT_CONTEXT)contextBuf = m_context;
-            UpdateContextFromRegDisp(&m_regDisp, (PT_CONTEXT)contextBuf);
+            T_CONTEXT tmpContext = m_context;
+            UpdateContextFromRegDisp(&m_regDisp, &tmpContext);
+            CopyMemory(contextBuf, &tmpContext, contextBufSize);
             status = S_OK;
         }
     }
@@ -154,7 +155,7 @@ ClrDataStackWalk::SetContext2(
     {
         // Copy the context to local state so
         // that its lifetime extends beyond this call.
-        m_context = *(PT_CONTEXT)context;
+        CopyMemory(&m_context, context, contextSize);
         m_thread->FillRegDisplay(&m_regDisp, &m_context);
         m_frameIter.ResetRegDisp(&m_regDisp, (flags & CLRDATA_STACK_SET_CURRENT_CONTEXT) != 0);
         m_stackPrev = (TADDR)GetRegdisplaySP(&m_regDisp);
@@ -660,7 +661,7 @@ ClrDataFrame::GetContext(
 
     EX_TRY
     {
-        *(PT_CONTEXT)contextBuf = m_context;
+        CopyMemory(contextBuf, &m_context, contextBufSize);
         status = S_OK;
     }
     EX_CATCH
