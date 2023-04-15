@@ -7351,7 +7351,6 @@ GenTreeVecCon* Compiler::gtNewVconNode(var_types type)
 GenTreeVecCon* Compiler::gtNewVconNode(var_types type, void* data)
 {
     GenTreeVecCon* vecCon = new (this, GT_CNS_VEC) GenTreeVecCon(type);
-    memset(&vecCon->gtSimdVal, 0, sizeof(simd_t));
     memcpy(&vecCon->gtSimdVal, data, genTypeSize(type));
     return vecCon;
 }
