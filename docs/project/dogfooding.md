@@ -26,6 +26,14 @@ dotnet add package System.Data.OleDb -v 8.0-preview.5.22226.4
 
 To use daily builds of the entire runtime, follow the steps given in the rest of this document instead.
 
+## Configuring upstream feeds in ADO
+
+If you're using private Azure DevOps feeds for your projects, you might need to add the preview feed through the Azure-specific feed URI format, which is `azure-feed://organization/optionalProject/feed@view`. In this case, you can add the .NET development package feed as follows:
+
+```
+azure-feed://dnceng/public/dotnet8@Local
+```
+
 ## Install prerequisites
 
 1. Acquire the latest development .NET SDK by downloading and extracting a zip/tarball or using an installer from the [installers and binaries table in dotnet/installer](https://github.com/dotnet/installer#installers-and-binaries) (for example, https://aka.ms/dotnet/8.0/daily/dotnet-sdk-win-x64.zip).

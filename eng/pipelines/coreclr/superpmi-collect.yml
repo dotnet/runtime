@@ -49,6 +49,7 @@ extends:
             testBuildPlatforms:
             - linux_x64
             - windows_x64
+            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
       # superpmi-collect-job that targets macOS/arm64 depends on coreclr binaries produced by the macOS/x64 job
       # We don't collect osx-x64 (it's essentially the same as linux-x64). If we did, we'd add osx_x64 in the
@@ -61,6 +62,7 @@ extends:
           - osx_x64
           jobParameters:
             testGroup: outerloop
+            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
