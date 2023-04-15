@@ -4548,7 +4548,7 @@ COPY_VALUE_CLASS:
                             for (size_t i = 0; i < size; i += sizeof(Object*))
                             {
                                 X86EmitCall(NewExternalCodeLabel((LPVOID)JIT_ByRefWriteBarrier), 0);
-                                total += sizeof(DWORD*);
+                                total += sizeof(Object*);
                             }
                         }
                         else
@@ -4560,7 +4560,7 @@ COPY_VALUE_CLASS:
                             {
                                 HALF_SIZE_T skip =  cur->val_serie[__i].skip;
                                 HALF_SIZE_T nptrs = cur->val_serie[__i].nptrs;
-                                total += nptrs*sizeof (DWORD*);
+                                total += nptrs*sizeof (Object*);
                                 do
                                 {
                                     AMD64_ONLY(_ASSERTE(fNeedScratchArea));
