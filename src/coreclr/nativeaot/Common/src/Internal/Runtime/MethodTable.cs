@@ -1338,7 +1338,8 @@ namespace Internal.Runtime
         {
             get
             {
-                return (EETypeElementType)((_uFlags & (uint)EETypeFlags.ElementTypeMask) >> (byte)EETypeFlags.ElementTypeShift);
+                return (EETypeElementType)((_uFlags >> (byte)EETypeFlags.ElementTypeShift) &
+                    ((uint)EETypeFlags.ElementTypeMask >> (byte)EETypeFlags.ElementTypeShift));
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
