@@ -17932,6 +17932,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_blendvps:
         case INS_blendvpd:
         case INS_pblendvb:
+        case INS_vpabsq:
         case INS_vpsllvd:
         case INS_vpsllvq:
         case INS_vpsrlvd:
