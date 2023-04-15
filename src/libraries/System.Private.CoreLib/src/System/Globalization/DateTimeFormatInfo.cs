@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Globalization
 {
@@ -80,6 +82,11 @@ namespace System.Globalization
         private string? timeSeparator;            // derived from long time (whidbey expects, arrowhead doesn't)
         private string? monthDayPattern;
         private string? dateTimeOffsetPattern;
+
+        private byte[]? amDesignatorUtf8;
+        private byte[]? pmDesignatorUtf8;
+        private byte[]? timeSeparatorUtf8;
+        private byte[]? dateSeparatorUtf8;
 
         private const string rfc1123Pattern = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
 
@@ -360,7 +367,16 @@ namespace System.Globalization
 
                 ClearTokenHashTable();
                 amDesignator = value;
+                amDesignatorUtf8 = null;
             }
+        }
+
+        internal ReadOnlySpan<TChar> AMDesignatorTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(AMDesignator) :
+                MemoryMarshal.Cast<byte, TChar>(amDesignatorUtf8 ??= Encoding.UTF8.GetBytes(AMDesignator));
         }
 
         public Calendar Calendar
@@ -597,7 +613,16 @@ namespace System.Globalization
 
                 ClearTokenHashTable();
                 dateSeparator = value;
+                dateSeparatorUtf8 = null;
             }
+        }
+
+        internal ReadOnlySpan<TChar> DateSeparatorTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(DateSeparator) :
+                MemoryMarshal.Cast<byte, TChar>(dateSeparatorUtf8 ??= Encoding.UTF8.GetBytes(DateSeparator));
         }
 
         public DayOfWeek FirstDayOfWeek
@@ -791,7 +816,16 @@ namespace System.Globalization
 
                 ClearTokenHashTable();
                 pmDesignator = value;
+                pmDesignatorUtf8 = null;
             }
+        }
+
+        internal ReadOnlySpan<TChar> PMDesignatorTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(PMDesignator) :
+                MemoryMarshal.Cast<byte, TChar>(pmDesignatorUtf8 ??= Encoding.UTF8.GetBytes(PMDesignator));
         }
 
         public string RFC1123Pattern => rfc1123Pattern;
@@ -966,7 +1000,16 @@ namespace System.Globalization
 
                 ClearTokenHashTable();
                 timeSeparator = value;
+                timeSeparatorUtf8 = null;
             }
+        }
+
+        internal ReadOnlySpan<TChar> TimeSeparatorTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(TimeSeparator) :
+                MemoryMarshal.Cast<byte, TChar>(timeSeparatorUtf8 ??= Encoding.UTF8.GetBytes(TimeSeparator));
         }
 
         public string UniversalSortableDateTimePattern => universalSortableDateTimePattern;
@@ -1712,6 +1755,15 @@ namespace System.Globalization
         internal string DecimalSeparator =>
             _decimalSeparator ??=
             new NumberFormatInfo(_cultureData.UseUserOverride ? CultureData.GetCultureData(_cultureData.CultureName, false) : _cultureData).NumberDecimalSeparator;
+
+        private byte[]? _decimalSeparatorUtf8;
+        internal ReadOnlySpan<TChar> DecimalSeparatorTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(DecimalSeparator) :
+                MemoryMarshal.Cast<byte, TChar>(_decimalSeparatorUtf8 ??= Encoding.UTF8.GetBytes(DecimalSeparator));
+        }
 
         // Positive TimeSpan Pattern
         private string? _fullTimeSpanPositivePattern;

@@ -45,6 +45,10 @@
                           Description="Shared build tasks for mobile platform development."/>
       <_ComponentResources Include="wasm-tools" Title=".NET WebAssembly Build Tools"
                           Description="Build tools for WebAssembly ahead-of-time (AoT) compilation and native linking."/>
+      <_ComponentResources Include="wasm-experimental" Title=".NET WebAssembly Experimental Tools"
+                          Description=".NET WebAssembly experimental tooling"/>
+      <_ComponentResources Include="wasi-experimental" Title=".NET Wasi Experimental"
+                          Description=".NET Experimental SDK and tooling for WASI"/>
       <_ComponentResources Include="microsoft-net-runtime-android" Title=".NET Android Build Tools"
                           Description="Build tools for Android compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-android-aot" Title=".NET Android Build Tools (AoT)"

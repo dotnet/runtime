@@ -3731,6 +3731,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				arm_neon_neg (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1);
 			}
 			break;
+		case OP_ARM64_BIC:
+			arm_neon_bic (code, get_vector_size_macro (ins), dreg, sreg1, sreg2);
+			break;
+		case OP_BSL:
+			arm_neon_mov (code, NEON_TMP_REG, sreg1);
+			arm_neon_bsl (code, get_vector_size_macro (ins), NEON_TMP_REG, sreg2, ins->sreg3);
+			arm_neon_mov (code, dreg, NEON_TMP_REG);
+			break;
 		case OP_XBINOP:
 			switch (ins->inst_c0) {
 			case OP_IMAX:
@@ -3912,8 +3920,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		// case OP_XCONCAT:
 		// 	arm_neon_ext_16b(code, dreg, sreg1, sreg2, 8);
 		// 	break;
-		
-			/* BRANCH */
+		case OP_ARM64_USHL: {
+			arm_neon_ushl (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
+			break;
+		}
+		case OP_ARM64_EXT_IMM: {
+			if (get_vector_size_macro (ins) == VREG_LOW)
+				arm_neon_ext_8b (code, dreg, sreg1, sreg2, ins->inst_c0);
+			else
+				arm_neon_ext_16b (code, dreg, sreg1, sreg2, ins->inst_c0);
+			break;
+		}
+		/* BRANCH */
 		case OP_BR:
 			mono_add_patch_info_rel (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb, MONO_R_ARM64_B);
 			arm_b (code, code);
