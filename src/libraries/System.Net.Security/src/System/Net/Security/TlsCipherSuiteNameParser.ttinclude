@@ -83,6 +83,7 @@ public enum CipherAlgorithmTypeIndex
     Aes,
     Rc4,
 }
+
 public enum ExchangeAlgorithmTypeIndex
 {
     None,
@@ -90,6 +91,7 @@ public enum ExchangeAlgorithmTypeIndex
     RsaKeyX,
     DiffieHellman,
 }
+
 public enum HashAlgorithmTypeIndex
 {
     None,
@@ -98,6 +100,16 @@ public enum HashAlgorithmTypeIndex
     Sha256,
     Sha384,
     Sha512
+}
+
+public enum CipherAlgorithmStrengthIndex
+{
+    Zero,
+    Forty,
+    FiftySix,
+    OneTwentyEight,
+    OneSixtyEight,
+    TwoFiftySix
 }
 
 internal static class EnumHelpers
