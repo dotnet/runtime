@@ -23,8 +23,9 @@ namespace System.Net.Security
             TlsCipherSuite = cipherSuite;
             KeyExchKeySize = 0;
 
-            Debug.Assert(s_cipherToIndex.IndexOf((int)cipherSuite) > -1, $"No mapping found for cipherSuite {cipherSuite}");
-            ulong data = s_encodedNumber[s_cipherToIndex[(int)cipherSuite + 1]];
+            int index = (int)cipherSuite * 2;
+            Debug.Assert(s_cipherToIndex.IndexOf(index) > -1, $"No mapping found for cipherSuite {cipherSuite}");
+            ulong data = s_encodedNumber[s_cipherToIndex[index + 1]];
 
             KeyExchangeAlg = (int)(data >> (64 - (16 * 1)) & 0xFFFF);
             DataCipherAlg = (int)(data >> (64 - (16 * 2)) & 0xFFFF);
