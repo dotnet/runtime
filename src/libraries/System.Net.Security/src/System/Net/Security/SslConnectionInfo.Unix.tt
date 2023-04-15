@@ -29,10 +29,10 @@ namespace System.Net.Security
             int data2 = GetPackedData2(cipherSuite);
             Debug.Assert(data2 != 0, $"No mapping found for cipherSuite {cipherSuite}");
 
-            KeyExchangeAlg = (data1 >> (64 - (16 * 1)) & 0xFFFF);
-            DataCipherAlg = (data1 >> (64 - (16 * 2)) & 0xFFFF);
-            DataKeySize = (data2 >> (64 - (16 * 3)) & 0xFFFF);
-            DataHashAlg = (data2 >> (64 - (16 * 4)) & 0xFFFF);
+            KeyExchangeAlg = (data1 >> (32 - (16 * 1)) & 0xFFFF);
+            DataCipherAlg = (data1 >> (32 - (16 * 2)) & 0xFFFF);
+            DataKeySize = (data2 >> (32 - (16 * 3)) & 0xFFFF);
+            DataHashAlg = (data2 >> (32 - (16 * 4)) & 0xFFFF);
             DataHashKeySize = GetHashSize((HashAlgorithmType)DataHashAlg);
 
             static int GetHashSize(HashAlgorithmType hash)
@@ -66,8 +66,8 @@ foreach (TlsCipherSuite val in enumValues)
     TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
 #>
                     case TlsCipherSuite.<#= val #>: return
-                        /* KeyExchangeAlg */ (int)ExchangeAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm) #> << (64 - (16 * 1)) |
-                        /* DataCipherAlg */ (int)CipherAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.CipherAlgorithm) #> << (64 - (16 * 2));
+                        /* KeyExchangeAlg */ (int)ExchangeAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm) #> << (32 - (16 * 1)) |
+                        /* DataCipherAlg */ (int)CipherAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.CipherAlgorithm) #> << (32 - (16 * 2));
 
 <#
 }
@@ -86,8 +86,8 @@ foreach (TlsCipherSuite val in enumValues)
     TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
 #>
                     case TlsCipherSuite.<#= val #>: return
-                        /* DataKeySize */ (int)<#= data.CipherAlgorithmStrength #> << (64 - (16 * 3)) |
-                        /* DataHashAlg */ (int)HashAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.MACAlgorithm) #>  << (64 - (16 * 4));
+                        /* DataKeySize */ (int)<#= data.CipherAlgorithmStrength #> << (32 - (16 * 3)) |
+                        /* DataHashAlg */ (int)HashAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.MACAlgorithm) #>  << (32 - (16 * 4));
 
 <#
 }
