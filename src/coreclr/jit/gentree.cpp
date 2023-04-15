@@ -7892,6 +7892,11 @@ GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags in
     indir->gtFlags |= indirFlags;
     indir->SetIndirExceptionFlags(this);
 
+    if ((indirFlags & GTF_IND_VOLATILE) != 0)
+    {
+        indir->gtFlags |= GTF_ORDER_SIDEEFF;
+    }
+
     return indir->AsIndir();
 }
 
@@ -7917,9 +7922,8 @@ GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
     dst->gtFlags |= GTF_DONT_CSE;
 
 #if defined(FEATURE_SIMD) && !defined(TARGET_X86)
-    // TODO-CQ: x86 Windows supports multi-reg returns but not SIMD multi-reg returns
-
-    if (varTypeIsSIMD(dst->gtType))
+    // TODO-Cleanup: enable on Windows x86.
+    if (varTypeIsSIMD(dst))
     {
         // We want to track SIMD assignments as being intrinsics since they
         // are functionally SIMD `mov` instructions and are more efficient
@@ -8227,21 +8231,7 @@ GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVo
     {
         // TODO-Cleanup: similar logic already exists in "gtNewAssignNode",
         // however, it is not enabled for x86. Fix that and delete this code.
-        GenTreeLclVarCommon* dstLclNode = nullptr;
-
-        if (dst->OperIs(GT_LCL_VAR))
-        {
-            dstLclNode = dst->AsLclVar();
-        }
-        else if (dst->OperIsBlk() && dst->AsIndir()->Addr()->IsLclVarAddr())
-        {
-            dstLclNode = dst->AsIndir()->Addr()->AsLclFld();
-        }
-
-        if ((dstLclNode != nullptr) && varTypeIsStruct(lvaGetDesc(dstLclNode)))
-        {
-            setLclRelatedToSIMDIntrinsic(dstLclNode);
-        }
+        SetOpLclRelatedToSIMDIntrinsic(dst);
     }
 #endif // FEATURE_SIMD
 
@@ -18873,22 +18863,13 @@ FieldSeq::FieldSeq(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fiel
 // as used by a SIMD intrinsic, and if so, set that local var appropriately.
 //
 // Arguments:
-//     op - The tree, to be an operand of a new GT_SIMD node, to check.
+//     op - The tree, to be an operand of a new SIMD-related node, to check.
 //
 void Compiler::SetOpLclRelatedToSIMDIntrinsic(GenTree* op)
 {
-    if (op == nullptr)
-    {
-        return;
-    }
-
-    if (op->OperIs(GT_LCL_VAR))
+    if ((op != nullptr) && op->OperIs(GT_LCL_VAR))
     {
         setLclRelatedToSIMDIntrinsic(op);
-    }
-    else if (op->OperIsBlk() && op->AsIndir()->Addr()->IsLclVarAddr())
-    {
-        setLclRelatedToSIMDIntrinsic(op->AsIndir()->Addr());
     }
 }
 

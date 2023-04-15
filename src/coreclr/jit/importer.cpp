@@ -10798,15 +10798,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 lclTyp   = TypeHandleToVarType(resolvedToken.hClass, &layout);
                 tiRetVal = verMakeTypeInfo(resolvedToken.hClass);
 
-                if (lclTyp != TYP_STRUCT)
-                {
-                    goto LDIND;
-                }
-
                 op1 = impPopStack().val;
                 assertImp((genActualType(op1) == TYP_I_IMPL) || op1->TypeIs(TYP_BYREF));
 
-                op1 = gtNewBlkIndir(layout, op1, impPrefixFlagsToIndirFlags(prefixFlags));
+                op1 = gtNewLoadValueNode(lclTyp, layout, op1, impPrefixFlagsToIndirFlags(prefixFlags));
                 impPushOnStack(op1, tiRetVal);
                 break;
             }
