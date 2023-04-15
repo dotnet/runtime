@@ -23,8 +23,8 @@ namespace System.Net.Security
             TlsCipherSuite = cipherSuite;
             KeyExchKeySize = 0;
 
-            Debug.Assert(s_cipherToIndex.IndexOf((int)cipherSuite) > -1, $"No mapping found for cipherSuite {cipherSuite}");
-            ulong data = s_encodedNumber[s_cipherToIndex[(int)cipherSuite + 1]];
+            ulong data = GetPackedData(cipherSuite);
+            Debug.Assert(data != 0, $"No mapping found for cipherSuite {cipherSuite}");
 
             KeyExchangeAlg = (int)(data >> (64 - (16 * 1)) & 0xFFFF);
             DataCipherAlg = (int)(data >> (64 - (16 * 2)) & 0xFFFF);
@@ -52,37 +52,28 @@ namespace System.Net.Security
                         throw new ArgumentOutOfRangeException(nameof(hash));
                 }
             }
+
+            static ulong GetPackedData(TlsCipherSuite cipherSuite)
+            {
+                switch (cipherSuite)
+                {
+<#
+foreach (TlsCipherSuite val in enumValues)
+{
+    TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
+#>
+                    case TlsCipherSuite.<#= val #>: return
+                        /* KeyExchangeAlg */ (ulong)ExchangeAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm) #> << (64 - (16 * 1)) |
+                        /* DataCipherAlg */ (ulong)CipherAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.CipherAlgorithm) #> << (64 - (16 * 2)) |
+                        /* DataKeySize */ (ulong)<#= data.CipherAlgorithmStrength #> << (64 - (16 * 3)) |
+                        /* DataHashAlg */ (ulong)HashAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.MACAlgorithm) #>  << (64 - (16 * 4));
+
+<#
+}
+#>
+                    default: return 0;
+                }
+            }
         }
-
-        private static ReadOnlySpan<int> s_cipherToIndex => new[]
-        {
-<#
-int i = 0;
-foreach (TlsCipherSuite val in enumValues)
-{
-    TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
-#>
-            (int)TlsCipherSuite.<#= val #>, <#= i++ #>,
-<#
-}
-#>
-        };
-
-        private static ReadOnlySpan<ulong> s_encodedNumber => new[]
-        {
-<#
-foreach (TlsCipherSuite val in enumValues)
-{
-    TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
-#>
-            /* KeyExchangeAlg */ (ulong)ExchangeAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm) #> << (64 - (16 * 1)) |
-            /* DataCipherAlg */ (ulong)CipherAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.CipherAlgorithm) #> << (64 - (16 * 2)) |
-            /* DataKeySize */ (ulong)<#= data.CipherAlgorithmStrength #> << (64 - (16 * 3)) |
-            /* DataHashAlg */ (ulong)HashAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.MACAlgorithm) #>  << (64 - (16 * 4)),
-
-<#
-}
-#>
-        };
     }
 }
