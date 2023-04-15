@@ -7,7 +7,7 @@
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <GCStressIncompatible>true</GCStressIncompatible>
     <EventSourceSupport Condition="'$(TestBuildMode)' == 'nativeaot'">true</EventSourceSupport>
-    <EnableNativeEventPipe Condition="'$(TestBuildMode)' == 'nativeaot'">true</EnableNativeEventPipe>
+    <EnableNativeEventPipe Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsWindows)' == 'true'">true</EnableNativeEventPipe>
     <IncludeOOBLibraries Condition="'$(TestBuildMode)' == 'nativeaot'">true</IncludeOOBLibraries>
     <NativeAotIncompatible>false</NativeAotIncompatible>
   </PropertyGroup>
