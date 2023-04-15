@@ -5,6 +5,7 @@
     <CLRTestKind>SharedLibrary</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsTestProject>false</IsTestProject>
+    <NativeAotIncompatible>false</NativeAotIncompatible>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(GitHubRepositoryName)' == 'runtime'">
