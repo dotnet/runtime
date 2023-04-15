@@ -777,18 +777,12 @@ void Compiler::fgDfsReversePostorder()
     // is the ArrayStack built-in size. Round up to a power of two, and cap at 64 to
     // avoid excessive initial allocation.
 
-#if 0
     unsigned initialCapacity = 6 * fgBBcount / 10;
     assert(ArrayStack<DfsBlockEntry>::builtinSize > 0);
     initialCapacity = max(initialCapacity, ArrayStack<DfsBlockEntry>::builtinSize);
     // round up to nearest power of 2. e.g., 127 => 128, 128 => 128.
     initialCapacity = genFindHighestBit((initialCapacity << 1) - 1);
     initialCapacity = min(initialCapacity, 64);
-#endif // 0
-
-    // WIP: just use builtinSize and verify no TP change (maybe slight improvement since we share the stack
-    // between invocations)
-    unsigned initialCapacity = ArrayStack<DfsBlockEntry>::builtinSize;
 
     ArrayStack<DfsBlockEntry> stack(getAllocator(CMK_ArrayStack), initialCapacity);
 
