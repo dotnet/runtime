@@ -488,35 +488,35 @@ namespace System.Xml
             return readCount;
         }
 
-        private Task ProcessReaderEventAsync()
+        private async Task ProcessReaderEventAsync()
         {
             if (_replayCache)
             {
                 // if in replay mode, do nothing since nodes have been validated already
                 // If NodeType == XmlNodeType.EndElement && if manageNamespaces, may need to pop namespace scope, since scope is not popped in ReadAheadForMemberType
 
-                return Task.CompletedTask;
+                return;
             }
 
             switch (_coreReader.NodeType)
             {
                 case XmlNodeType.Element:
-
-                    return ProcessElementEventAsync();
+                    await ProcessElementEventAsync().ConfigureAwait(false);
+                    break;
 
                 case XmlNodeType.Whitespace:
                 case XmlNodeType.SignificantWhitespace:
-                    _validator.ValidateWhitespace(GetStringValue);
+                    _validator.ValidateWhitespace(await GetValueAsync().ConfigureAwait(false));
                     break;
 
                 case XmlNodeType.Text:          // text inside a node
                 case XmlNodeType.CDATA:         // <![CDATA[...]]>
-                    _validator.ValidateText(GetStringValue);
+                    _validator.ValidateText(await GetValueAsync().ConfigureAwait(false));
                     break;
 
                 case XmlNodeType.EndElement:
-
-                    return ProcessEndElementEventAsync();
+                    await ProcessEndElementEventAsync().ConfigureAwait(false);
+                    break;
 
                 case XmlNodeType.EntityReference:
                     throw new InvalidOperationException();
@@ -532,8 +532,6 @@ namespace System.Xml
                 default:
                     break;
             }
-
-            return Task.CompletedTask;
         }
 
         private async Task ProcessElementEventAsync()
@@ -867,12 +865,12 @@ namespace System.Xml
 
                         case XmlNodeType.Text:
                         case XmlNodeType.CDATA:
-                            _validator.ValidateText(GetStringValue);
+                            _validator.ValidateText(await GetValueAsync().ConfigureAwait(false));
                             break;
 
                         case XmlNodeType.Whitespace:
                         case XmlNodeType.SignificantWhitespace:
-                            _validator.ValidateWhitespace(GetStringValue);
+                            _validator.ValidateWhitespace(await GetValueAsync().ConfigureAwait(false));
                             break;
 
                         case XmlNodeType.Comment:
