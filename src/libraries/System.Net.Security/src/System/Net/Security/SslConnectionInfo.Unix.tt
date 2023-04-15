@@ -8,7 +8,10 @@
 <#@ output extension=".cs" #>
 <#@ include file="TlsCipherSuiteNameParser.ttinclude" #><#@
     include file="TlsCipherSuite.cs" #>
-<# Array enumValues = typeof(TlsCipherSuite).GetEnumValues(); #>
+<# Array tlsEnumValues = typeof(TlsCipherSuite).GetEnumValues(); #>
+<# Array exchangeEnumValues = typeof(ExchangeAlgorithmTypeIndex).GetEnumValues(); #>
+<# Array cipherEnumValues = typeof(CipherAlgorithmTypeIndex).GetEnumValues(); #>
+<# Array hasEnumValues = typeof(HashAlgorithmTypeIndex).GetEnumValues(); #>
 
 
 using System.Diagnostics;
@@ -23,16 +26,13 @@ namespace System.Net.Security
             TlsCipherSuite = cipherSuite;
             KeyExchKeySize = 0;
 
-            int data1 = GetPackedData1(cipherSuite);
-            Debug.Assert(data1 != 0, $"No mapping found for cipherSuite {cipherSuite}");
+            int data = GetPackedData(cipherSuite);
+            Debug.Assert(data != 0, $"No mapping found for cipherSuite {cipherSuite}");
 
-            int data2 = GetPackedData2(cipherSuite);
-            Debug.Assert(data2 != 0, $"No mapping found for cipherSuite {cipherSuite}");
-
-            KeyExchangeAlg = (data1 >> (32 - (16 * 1)) & 0xFFFF);
-            DataCipherAlg = (data1 >> (32 - (16 * 2)) & 0xFFFF);
-            DataKeySize = (data2 >> (32 - (16 * 3)) & 0xFFFF);
-            DataHashAlg = (data2 >> (32 - (16 * 4)) & 0xFFFF);
+            KeyExchangeAlg = (int)s_exchangeAlgorithmTypes[(data >> (32 - (8 * 1)) & 0xFF)];
+            DataCipherAlg = (int)s_cipherEnumValues[(data >> (32 - (8 * 2)) & 0xFF)];
+            DataKeySize = (data >> (32 - (8 * 3)) & 0xFF);
+            DataHashAlg = (int)s_hasEnumValues[(data >> (32 - (8 * 4)) & 0xFF)];
             DataHashKeySize = GetHashSize((HashAlgorithmType)DataHashAlg);
 
             static int GetHashSize(HashAlgorithmType hash)
@@ -55,45 +55,50 @@ namespace System.Net.Security
                         throw new ArgumentOutOfRangeException(nameof(hash));
                 }
             }
+        }
 
-            static int GetPackedData1(TlsCipherSuite cipherSuite)
-            {
-                switch (cipherSuite)
-                {
-<#
-foreach (TlsCipherSuite val in enumValues)
+        private static ReadOnlySpan<int> s_exchangeAlgorithmTypes =>
+            new[] { <#
+foreach (ExchangeAlgorithmTypeIndex val in exchangeEnumValues)
 {
-    TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
-#>
-                    case TlsCipherSuite.<#= val #>: return
-                        /* KeyExchangeAlg */ (int)ExchangeAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm) #> << (32 - (16 * 1)) |
-                        /* DataCipherAlg */ (int)CipherAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.CipherAlgorithm) #> << (32 - (16 * 2));
+#>(int)ExchangeAlgorithmType.<#= val #>, <#
+}
+#>};
 
+        private static ReadOnlySpan<int> s_cipherEnumValues =>
+            new[] {<#
+foreach (CipherAlgorithmTypeIndex val in cipherEnumValues)
+{
+#>(int)CipherAlgorithmType.<#= val #>, <#
+}
+#>};
+
+        private static ReadOnlySpan<int> s_hasEnumValues =>
+            new[] { <#
+foreach (HashAlgorithmTypeIndex val in hasEnumValues)
+{
+#>(int)HashAlgorithmType.<#= val #>, <#
+}
+#>};
+
+        private static int GetPackedData(TlsCipherSuite cipherSuite)
+        {
+            switch (cipherSuite)
+            {
+<#
+foreach (TlsCipherSuite val in tlsEnumValues)
+{
+TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
+byte exchangeAlgorithmType =  (byte)Enum.Parse<ExchangeAlgorithmTypeIndex>(EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm));
+byte cipherAlgorithmType =  (byte)Enum.Parse<CipherAlgorithmTypeIndex>(EnumHelpers.ToFrameworkName(data.CipherAlgorithm));
+byte hashAlgorithmType =  (byte)Enum.Parse<HashAlgorithmTypeIndex>(EnumHelpers.ToFrameworkName(data.MACAlgorithm));
+byte cipherAlgorithmStrength = (byte)data.CipherAlgorithmStrength;
+#>
+                case TlsCipherSuite.<#= val #>: return <#= exchangeAlgorithmType #> << (32 - (8 * 1)) | <#= cipherAlgorithmType #> << (32 - (8 * 2)) | <#= hashAlgorithmType #> << (32 - (8 * 3)) | <#= cipherAlgorithmStrength #> << (32 - (8 * 4));
 <#
 }
 #>
-                    default: return 0;
-                }
-            }
-
-            static int GetPackedData2(TlsCipherSuite cipherSuite)
-            {
-                switch (cipherSuite)
-                {
-<#
-foreach (TlsCipherSuite val in enumValues)
-{
-    TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
-#>
-                    case TlsCipherSuite.<#= val #>: return
-                        /* DataKeySize */ (int)<#= data.CipherAlgorithmStrength #> << (32 - (16 * 3)) |
-                        /* DataHashAlg */ (int)HashAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.MACAlgorithm) #>  << (32 - (16 * 4));
-
-<#
-}
-#>
-                    default: return 0;
-                }
+                default: return 0;
             }
         }
     }
