@@ -4542,7 +4542,6 @@ COPY_VALUE_CLASS:
 
                         SSIZE_T cnt = (SSIZE_T) pArrayOpScript->m_gcDesc->GetNumSeries();
 
-                        _ASSERTE(cnt < 0 || cnt == 1);
                         if (cnt == 1)
                         {
                             // all pointers
