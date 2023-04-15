@@ -139,7 +139,8 @@ namespace System.Buffers.Text
                     break;
 
                 default:
-                    return FormattingHelpers.TryFormatThrowFormatException(out bytesWritten);
+                    ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+                    goto case 'D'; // unreachable
             }
 
             // At this point, the low byte of flags contains the minimum required length

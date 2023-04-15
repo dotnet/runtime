@@ -1804,13 +1804,13 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/call/call05_small/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_dynamic/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_dynamic_il/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_large/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_large_il/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_small/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_small_il/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh06_dynamic/**">
@@ -3622,6 +3622,9 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/VolatileTest_op_mul/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
+            <Issue>Allocates large contiguous array that is not consistently available</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/interactions/switchinfinally_d/**">
             <Issue>needs triage</Issue>

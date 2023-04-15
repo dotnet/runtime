@@ -7118,6 +7118,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_Vector64_GetElement:
 #else
             case NI_Vector256_GetElement:
+            case NI_Vector512_GetElement:
 #endif
             {
                 return EvaluateSimdGetElement(this, type, baseType, arg0VN, GetConstantInt32(arg1VN));

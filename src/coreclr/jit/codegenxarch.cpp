@@ -5634,6 +5634,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_SSE41_X64_Extract:
                         case NI_AVX_ExtractVector128:
                         case NI_AVX2_ExtractVector128:
+                        case NI_AVX512F_ExtractVector128:
                         case NI_AVX512F_ExtractVector256:
                         {
                             // These intrinsics are "ins reg/mem, xmm, imm8"

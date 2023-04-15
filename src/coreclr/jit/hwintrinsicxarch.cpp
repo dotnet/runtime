@@ -1602,6 +1602,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_GetElement:
         case NI_Vector256_GetElement:
+        case NI_Vector512_GetElement:
         {
             assert(sig->numArgs == 2);
 
@@ -2411,6 +2412,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_ToScalar:
         case NI_Vector256_ToScalar:
+        case NI_Vector512_ToScalar:
         {
             assert(sig->numArgs == 1);
 
@@ -2528,6 +2530,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_WithElement:
         case NI_Vector256_WithElement:
+        case NI_Vector512_WithElement:
         {
             assert(sig->numArgs == 3);
             GenTree* indexOp = impStackTop(1).val;

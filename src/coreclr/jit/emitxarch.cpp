@@ -11241,7 +11241,7 @@ void emitter::emitDispIns(
 
         case IF_RWR_RRD_RRD:
         {
-            assert(IsVexEncodableInstruction(ins));
+            assert(IsVexOrEvexEncodableInstruction(ins));
             assert(IsThreeOperandAVXInstruction(ins));
             regNumber reg2 = id->idReg2();
             regNumber reg3 = id->idReg3();

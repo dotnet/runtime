@@ -3920,8 +3920,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		// case OP_XCONCAT:
 		// 	arm_neon_ext_16b(code, dreg, sreg1, sreg2, 8);
 		// 	break;
-		
-			/* BRANCH */
+		case OP_ARM64_USHL: {
+			arm_neon_ushl (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
+			break;
+		}
+		case OP_ARM64_EXT_IMM: {
+			if (get_vector_size_macro (ins) == VREG_LOW)
+				arm_neon_ext_8b (code, dreg, sreg1, sreg2, ins->inst_c0);
+			else
+				arm_neon_ext_16b (code, dreg, sreg1, sreg2, ins->inst_c0);
+			break;
+		}
+		/* BRANCH */
 		case OP_BR:
 			mono_add_patch_info_rel (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb, MONO_R_ARM64_B);
 			arm_b (code, code);

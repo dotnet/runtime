@@ -23,7 +23,8 @@ namespace System
           IComparable<Half>,
           IEquatable<Half>,
           IBinaryFloatingPointIeee754<Half>,
-          IMinMaxValue<Half>
+          IMinMaxValue<Half>,
+          IUtf8SpanFormattable
     {
         private const NumberStyles DefaultParseStyle = NumberStyles.Float | NumberStyles.AllowThousands;
 
@@ -537,6 +538,12 @@ namespace System
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatHalf(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+        }
+
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        {
+            return Number.TryFormatHalf(this, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
         }
 
         //
