@@ -2501,6 +2501,8 @@ public:
 
     GenTreeVecCon* gtNewVconNode(var_types type);
 
+    GenTreeVecCon* gtNewVconNode(var_types type, void* data);
+
     GenTree* gtNewAllBitsSetConNode(var_types type);
 
     GenTree* gtNewZeroConNode(var_types type);
