@@ -23,13 +23,16 @@ namespace System.Net.Security
             TlsCipherSuite = cipherSuite;
             KeyExchKeySize = 0;
 
-            ulong data = GetPackedData(cipherSuite);
-            Debug.Assert(data != 0, $"No mapping found for cipherSuite {cipherSuite}");
+            int data1 = GetPackedData1(cipherSuite);
+            Debug.Assert(data1 != 0, $"No mapping found for cipherSuite {cipherSuite}");
 
-            KeyExchangeAlg = (int)(data >> (64 - (16 * 1)) & 0xFFFF);
-            DataCipherAlg = (int)(data >> (64 - (16 * 2)) & 0xFFFF);
-            DataKeySize = (int)(data >> (64 - (16 * 3)) & 0xFFFF);
-            DataHashAlg = (int)(data >> (64 - (16 * 4)) & 0xFFFF);
+            int data2 = GetPackedData2(cipherSuite);
+            Debug.Assert(data2 != 0, $"No mapping found for cipherSuite {cipherSuite}");
+
+            KeyExchangeAlg = (data1 >> (64 - (16 * 1)) & 0xFFFF);
+            DataCipherAlg = (data1 >> (64 - (16 * 2)) & 0xFFFF);
+            DataKeySize = (data2 >> (64 - (16 * 3)) & 0xFFFF);
+            DataHashAlg = (data2 >> (64 - (16 * 4)) & 0xFFFF);
             DataHashKeySize = GetHashSize((HashAlgorithmType)DataHashAlg);
 
             static int GetHashSize(HashAlgorithmType hash)
@@ -53,7 +56,7 @@ namespace System.Net.Security
                 }
             }
 
-            static ulong GetPackedData(TlsCipherSuite cipherSuite)
+            static int GetPackedData1(TlsCipherSuite cipherSuite)
             {
                 switch (cipherSuite)
                 {
@@ -63,10 +66,28 @@ foreach (TlsCipherSuite val in enumValues)
     TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
 #>
                     case TlsCipherSuite.<#= val #>: return
-                        /* KeyExchangeAlg */ (ulong)ExchangeAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm) #> << (64 - (16 * 1)) |
-                        /* DataCipherAlg */ (ulong)CipherAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.CipherAlgorithm) #> << (64 - (16 * 2)) |
-                        /* DataKeySize */ (ulong)<#= data.CipherAlgorithmStrength #> << (64 - (16 * 3)) |
-                        /* DataHashAlg */ (ulong)HashAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.MACAlgorithm) #>  << (64 - (16 * 4));
+                        /* KeyExchangeAlg */ (int)ExchangeAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm) #> << (64 - (16 * 1)) |
+                        /* DataCipherAlg */ (int)CipherAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.CipherAlgorithm) #> << (64 - (16 * 2));
+
+<#
+}
+#>
+                    default: return 0;
+                }
+            }
+
+            static int GetPackedData2(TlsCipherSuite cipherSuite)
+            {
+                switch (cipherSuite)
+                {
+<#
+foreach (TlsCipherSuite val in enumValues)
+{
+    TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
+#>
+                    case TlsCipherSuite.<#= val #>: return
+                        /* DataKeySize */ (int)<#= data.CipherAlgorithmStrength #> << (64 - (16 * 3)) |
+                        /* DataHashAlg */ (int)HashAlgorithmType.<#= EnumHelpers.ToFrameworkName(data.MACAlgorithm) #>  << (64 - (16 * 4));
 
 <#
 }
