@@ -363,10 +363,12 @@ namespace Internal.Runtime
             {
                 return _uBaseSize;
             }
+#if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 _uBaseSize = value;
             }
+#endif
         }
 
         internal uint BaseSize
@@ -516,7 +518,8 @@ namespace Internal.Runtime
         {
             get
             {
-                return ElementType == EETypeElementType.SzArray;
+                Debug.Assert(IsArray);
+                return BaseSize == SZARRAY_BASE_SIZE;
             }
         }
 

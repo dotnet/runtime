@@ -360,10 +360,8 @@ namespace System
                     return CorElementType.ELEMENT_TYPE_BYREF;
                 else if (IsPointer)
                     return CorElementType.ELEMENT_TYPE_PTR;
-                else if (IsSzArray)
-                    return CorElementType.ELEMENT_TYPE_SZARRAY;
                 else if (IsArray)
-                    return CorElementType.ELEMENT_TYPE_ARRAY;
+                    return IsSzArray ? CorElementType.ELEMENT_TYPE_SZARRAY : CorElementType.ELEMENT_TYPE_ARRAY;
                 else
                     return CorElementType.ELEMENT_TYPE_CLASS;
 
