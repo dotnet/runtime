@@ -1107,13 +1107,13 @@ bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const st
 #endif
 }
 
-#if defined(FEATURE_STATIC_HOST)
+#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
 extern void initialize_static_createdump();
 #endif
 
 void pal::initialize_createdump()
 {
-#if defined(FEATURE_STATIC_HOST)
+#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
     initialize_static_createdump();
 #endif
 }
