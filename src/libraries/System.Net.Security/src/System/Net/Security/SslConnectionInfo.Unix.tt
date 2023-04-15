@@ -11,7 +11,7 @@
 <# Array tlsEnumValues = typeof(TlsCipherSuite).GetEnumValues(); #>
 <# Array exchangeEnumValues = typeof(ExchangeAlgorithmTypeIndex).GetEnumValues(); #>
 <# Array cipherEnumValues = typeof(CipherAlgorithmTypeIndex).GetEnumValues(); #>
-<# Array hasEnumValues = typeof(HashAlgorithmTypeIndex).GetEnumValues(); #>
+<# Array hashEnumValues = typeof(HashAlgorithmTypeIndex).GetEnumValues(); #>
 
 
 using System.Diagnostics;
@@ -32,7 +32,7 @@ namespace System.Net.Security
             KeyExchangeAlg = (int)s_exchangeAlgorithmTypes[(data >> (32 - (8 * 1)) & 0xFF)];
             DataCipherAlg = (int)s_cipherEnumValues[(data >> (32 - (8 * 2)) & 0xFF)];
             DataKeySize = (data >> (32 - (8 * 3)) & 0xFF);
-            DataHashAlg = (int)s_hasEnumValues[(data >> (32 - (8 * 4)) & 0xFF)];
+            DataHashAlg = (int)s_hashEnumValues[(data >> (32 - (8 * 4)) & 0xFF)];
             DataHashKeySize = GetHashSize((HashAlgorithmType)DataHashAlg);
 
             static int GetHashSize(HashAlgorithmType hash)
@@ -73,9 +73,9 @@ foreach (CipherAlgorithmTypeIndex val in cipherEnumValues)
 }
 #>};
 
-        private static ReadOnlySpan<int> s_hasEnumValues =>
+        private static ReadOnlySpan<int> s_hashEnumValues =>
             new[] { <#
-foreach (HashAlgorithmTypeIndex val in hasEnumValues)
+foreach (HashAlgorithmTypeIndex val in hashEnumValues)
 {
 #>(int)HashAlgorithmType.<#= val #>, <#
 }
@@ -91,10 +91,10 @@ foreach (TlsCipherSuite val in tlsEnumValues)
 TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
 byte exchangeAlgorithmType =  (byte)Enum.Parse<ExchangeAlgorithmTypeIndex>(EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm));
 byte cipherAlgorithmType =  (byte)Enum.Parse<CipherAlgorithmTypeIndex>(EnumHelpers.ToFrameworkName(data.CipherAlgorithm));
-byte hashAlgorithmType =  (byte)Enum.Parse<HashAlgorithmTypeIndex>(EnumHelpers.ToFrameworkName(data.MACAlgorithm));
 byte cipherAlgorithmStrength = (byte)data.CipherAlgorithmStrength;
+byte hashAlgorithmType =  (byte)Enum.Parse<HashAlgorithmTypeIndex>(EnumHelpers.ToFrameworkName(data.MACAlgorithm));
 #>
-                case TlsCipherSuite.<#= val #>: return <#= exchangeAlgorithmType #> << (32 - (8 * 1)) | <#= cipherAlgorithmType #> << (32 - (8 * 2)) | <#= hashAlgorithmType #> << (32 - (8 * 3)) | <#= cipherAlgorithmStrength #> << (32 - (8 * 4));
+                case TlsCipherSuite.<#= val #>: return <#= exchangeAlgorithmType #> << (32 - (8 * 1)) | <#= cipherAlgorithmType #> << (32 - (8 * 2)) | <#= cipherAlgorithmStrength #> << (32 - (8 * 3)) | <#= hashAlgorithmType #> << (32 - (8 * 4));
 <#
 }
 #>
