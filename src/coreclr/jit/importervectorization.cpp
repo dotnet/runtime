@@ -432,7 +432,7 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVar*   data,
             indirCmp = impExpandHalfConstEqualsSWAR(gtClone(data)->AsLclVar(), cnsData, len, dataOffset, cmpMode);
         }
 #if defined(FEATURE_HW_INTRINSICS)
-        else
+        else if (IsBaselineSimdIsaSupported())
         {
             indirCmp = impExpandHalfConstEqualsSIMD(gtClone(data)->AsLclVar(), cnsData, len, dataOffset, cmpMode);
         }
