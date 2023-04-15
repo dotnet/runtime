@@ -17,7 +17,7 @@ namespace System.Buffers.Text
         //
         private static bool TryFormatDateTimeL(DateTime value, Span<byte> destination, out int bytesWritten)
         {
-            if (((IUtf8SpanFormattable)value).TryFormat(destination, out bytesWritten, "r", CultureInfo.InvariantCulture))
+            if (value.TryFormat(destination, out bytesWritten, "r", CultureInfo.InvariantCulture))
             {
                 Debug.Assert(bytesWritten == 29);
                 Ascii.ToLowerInPlace(destination.Slice(0, bytesWritten), out bytesWritten);
