@@ -7061,6 +7061,7 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeCol
 
 GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
 {
+    assert(genActualType(type) == type);
     return new (this, GT_CNS_INT) GenTreeIntCon(type, value);
 }
 
@@ -7389,7 +7390,8 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
     }
 #endif // FEATURE_SIMD
 
-    switch (genActualType(type))
+    type = genActualType(type);
+    switch (type)
     {
         case TYP_INT:
         case TYP_REF:
