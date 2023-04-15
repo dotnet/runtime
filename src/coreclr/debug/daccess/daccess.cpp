@@ -7896,7 +7896,7 @@ void DacStackReferenceWalker::WalkStack()
     // Get the current thread's context and set that as the filter context
     if (mThread->GetFilterContext() == NULL && mThread->GetProfilerFilterContext() == NULL)
     {
-        mDac->m_pTarget->GetThreadContext(mThread->GetOSThreadId(), CONTEXT_FULL, sizeof(ctx), (BYTE*)&ctx);
+        mDac->m_pTarget->GetThreadContext(mThread->GetOSThreadId(), CONTEXT_FULL, sizeof(DT_CONTEXT), (BYTE*)&ctx);
         mThread->SetProfilerFilterContext(&ctx);
         contextHolder.Activate(mThread);
     }

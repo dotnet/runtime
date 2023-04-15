@@ -770,7 +770,7 @@ namespace System
             int charCount;
             bool formatted = typeof(TChar) == typeof(char) ?
                 fraction.TryFormat(MemoryMarshal.Cast<TChar, char>(chars), out charCount, fractionFormat, CultureInfo.InvariantCulture) :
-                ((IUtf8SpanFormattable)fraction).TryFormat(MemoryMarshal.Cast<TChar, byte>(chars), out charCount, fractionFormat, CultureInfo.InvariantCulture);
+                fraction.TryFormat(MemoryMarshal.Cast<TChar, byte>(chars), out charCount, fractionFormat, CultureInfo.InvariantCulture);
             Debug.Assert(charCount != 0);
             result.Append(chars.Slice(0, charCount));
         }
