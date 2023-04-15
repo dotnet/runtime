@@ -4546,7 +4546,7 @@ COPY_VALUE_CLASS:
                         if (cnt == 1)
                         {
                             // all pointers
-                            for (size_t i = 0; i < size; i += sizeof(DWORD*))
+                            for (size_t i = 0; i < size; i += sizeof(Object*))
                             {
                                 X86EmitCall(NewExternalCodeLabel((LPVOID)JIT_ByRefWriteBarrier), 0);
                                 total += sizeof(DWORD*);

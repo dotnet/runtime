@@ -20,7 +20,7 @@ public class Program
 {
     public static int Main()
     {
-        var vr4 = new S0[,] { { new S0(new C0()) } };
+        GC.KeepAlive(new S0[,] { { new S0(new C0()) } });
         return 100;
     }
 }
