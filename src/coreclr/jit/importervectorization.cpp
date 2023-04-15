@@ -116,7 +116,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         // or baseline has no SIMD support
         return nullptr;
     }
-    assert(simdSize >= 16);
+    assert((byteLen >= simdSize) && (simdSize >= 16));
 
     WCHAR cnsValue[MaxPossibleUnrollSize]    = {};
     WCHAR toLowerMask[MaxPossibleUnrollSize] = {};
