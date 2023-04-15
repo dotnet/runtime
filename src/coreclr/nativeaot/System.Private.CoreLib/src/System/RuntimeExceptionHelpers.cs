@@ -248,6 +248,19 @@ namespace System
                     outputMessage = message;
                 }
 
+                if (outputMessage != null)
+                {
+                    // Try to save the exception stack trace in a buffer on the stack.  If the exception is too large, we'll truncate it.
+                    const int MaxStack = 1024;
+                    Span<char> exceptionStack = stackalloc char[MaxStack];
+
+                    int length = Math.Max(MaxStack, outputMessage.Length);
+                    outputMessage.AsSpan().Slice(0, length).CopyTo(exceptionStack);
+                    // Fill the rest of the buffer with nulls
+                    if (length < MaxStack)
+                        exceptionStack.Slice(length).Clear();
+                }
+
                 Internal.Console.Error.Write(prefix);
                 if (outputMessage != null)
                     Internal.Console.Error.Write(outputMessage);
