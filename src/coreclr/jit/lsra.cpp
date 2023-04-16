@@ -12253,6 +12253,30 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         // When we allocate for USE, we see that the register is busy at current location
         // and we end up with that candidate is no longer available.
         regMaskTP busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
+#ifdef TARGET_ARM64
+        if (needsConsecutiveRegisters && refPosition->isFirstRefPositionOfConsecutiveRegisters())
+        {
+            // For consecutive registers refpositions, go through the subsequent refpositions
+            // and mark the registers assigned to them as busy (at this location). This is
+            // to prevent assigning such a register to the first refposition, whose consecutive
+            // register gets busy for subsequent refposition because of a copy involved.
+            // If (I3, I5 and I6) are three intervals that needs consecutive registers (v0, v1, v2)
+            // but if they are present in (v0, v2, v1), for I5, we will insert a copy from v2->v1
+            // and need to keep both v1 and v2 live. Now, this becomes problem while assigning to
+            // I6 because, there v2 is also busy, because the value of I5 is getting copied from v2.
+            RefPosition* consecutiveRefPosition = linearScan->getNextConsecutiveRefPosition(refPosition);
+            while (consecutiveRefPosition != nullptr)
+            {
+                assert(consecutiveRefPosition->isIntervalRef());
+                Interval* interval = consecutiveRefPosition->getInterval();
+                if (interval->isActive)
+                {
+                    busyRegs |= genRegMask(interval->physReg);
+                }
+                consecutiveRefPosition = linearScan->getNextConsecutiveRefPosition(consecutiveRefPosition);
+            }
+        }
+#endif
         candidates &= ~busyRegs;
 
 #ifdef DEBUG
