@@ -220,7 +220,7 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<float> CompareOrdered(Vector256<float> left, Vector256<float> right) => Compare(left, right, FloatComparisonMode.OrderedNonSignaling);
         /// <summary>
         /// __m256 _mm256_cmpunord_ps (__m256 a,  __m256 b)
-        ///   CMPPS ymm1, ymm2/m256, imm8(3)
+        ///   VCMPPS ymm1, ymm2/m256, imm8(3)
         /// The above native signature does not exist. We provide this additional overload for completeness.
         /// </summary>
         public static Vector256<float> CompareUnordered(Vector256<float> left, Vector256<float> right) => Compare(left, right, FloatComparisonMode.UnorderedNonSignaling);
@@ -303,7 +303,7 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> CompareOrdered(Vector256<double> left, Vector256<double> right) => Compare(left, right, FloatComparisonMode.OrderedNonSignaling);
         /// <summary>
         /// __m256d _mm256_cmpunord_pd (__m256d a,  __m256d b)
-        ///   CMPPD ymm1, ymm2/m256, imm8(3)
+        ///   VCMPPD ymm1, ymm2/m256, imm8(3)
         /// The above native signature does not exist. We provide this additional overload for completeness.
         /// </summary>
         public static Vector256<double> CompareUnordered(Vector256<double> left, Vector256<double> right) => Compare(left, right, FloatComparisonMode.UnorderedNonSignaling);
