@@ -163,7 +163,7 @@ void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount,
     LIMITED_METHOD_CONTRACT;
 
     void * typeId = RedhawkGCInterface::GetLastAllocEEType();
-    const WCHAR * name = nullptr;
+    WCHAR * name = nullptr;
 
     if (typeId != nullptr)
     {

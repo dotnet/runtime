@@ -2480,9 +2480,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #if defined(TARGET_XARCH)
                 // We can't guarantee that all overloads for the xplat intrinsics can be
                 // handled by the AltJit, so limit only the platform specific intrinsics
-                assert((NI_Vector256_Xor + 1) == NI_X86Base_BitScanForward);
+                assert((NI_Vector512_Xor + 1) == NI_X86Base_BitScanForward);
 
-                if (ni < NI_Vector256_Xor)
+                if (ni < NI_Vector512_Xor)
 #elif defined(TARGET_ARM64)
                 // We can't guarantee that all overloads for the xplat intrinsics can be
                 // handled by the AltJit, so limit only the platform specific intrinsics
