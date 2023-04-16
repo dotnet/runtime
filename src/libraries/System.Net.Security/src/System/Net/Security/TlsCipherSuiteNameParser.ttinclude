@@ -102,39 +102,8 @@ public enum HashAlgorithmTypeIndex
     Sha512
 }
 
-public enum CipherAlgorithmStrengthIndex
-{
-    Zero,
-    Forty,
-    FiftySix,
-    OneTwentyEight,
-    OneSixtyEight,
-    TwoFiftySix
-}
-
 internal static class EnumHelpers
 {
-    public static string CipherAlgorithmStrengthIndexToName(int val)
-    {
-        switch (val)
-        {
-            case 0:
-                return "Zero";
-            case 40:
-                return "Forty";
-            case 56:
-                return "FiftySix";
-            case 128:
-                return "OneTwentyEight";
-            case 168:
-                return "OneSixtyEight";
-            case 256:
-                return "TwoFiftySix";
-            default:
-                throw new Exception($"CipherAlgorithmStrengthIndexToName does not contain `{val}`.");
-        }
-    }
-
     public static string ToFrameworkName(ExchangeAlgorithmType val)
     {
         switch (val)
