@@ -86,13 +86,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   VCMPPS xmm1, xmm2, xmm3/m128, imm8(0)
         /// </summary>
         public static Vector128<float> CompareEqual(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// __m128 _mm_cmpeq_ps (__m128 a,  __m128 b)
-        ///    CMPPS xmm1,       xmm2/m128, imm8(0)
-        ///   VCMPPS xmm1, xmm2, xmm3/m128, imm8(0)
-        /// </summary>
-        public static Vector128<float> CompareEqual(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128 _mm_cmpgt_ps (__m128 a,  __m128 b)
         ///    CMPPS xmm1,       xmm2/m128, imm8(1)   ; with swapped operands

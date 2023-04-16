@@ -577,7 +577,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   VCOMISD xmm1, xmm2/m64{sae}   ; ZF=0 || PF=1
         /// </summary>
         public static bool CompareScalarOrderedNotEqual(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
-        
+
         /// <summary>
         /// __m128d _mm_cmpunord_sd (__m128d a,  __m128d b)
         ///    CMPDS xmm1,       xmm2/m64, imm8(3)
