@@ -29,7 +29,7 @@ namespace System.Net.Security
             ReadOnlySpan<int> hashKeySize =
                 new[] { 0, 128, 160, 256, 384, 512 };
 
-            ushort data = GetPackedData(cipherSuite);
+            int data = GetPackedData(cipherSuite);
             Debug.Assert(data != 0, $"No mapping found for cipherSuite {cipherSuite}");
 
             KeyExchangeAlg = exchangeAlgorithmTypes[(data >> 12) & 0xF];
@@ -38,7 +38,7 @@ namespace System.Net.Security
             DataHashAlg = hashEnumValues[data & 0xF];
             DataHashKeySize = hashKeySize[data & 0xF];
 
-            static ushort GetPackedData(TlsCipherSuite cipherSuite)
+            static int GetPackedData(TlsCipherSuite cipherSuite)
             {
                 switch (cipherSuite)
                 {
