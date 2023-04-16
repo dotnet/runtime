@@ -808,6 +808,17 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<double> Shuffle(Vector512<double> value, Vector512<double> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m512 _mm512_sqrt_ps (__m512 a)
+        ///   VSQRTPS zmm1 {k1}{z}, zmm2/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<float> Sqrt(Vector512<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_sqrt_pd (__m512d a)
+        ///   VSQRTPD zmm1 {k1}{z}, zmm2/m512/m64bcst{er}
+        /// </summary>
+        public static Vector512<double> Sqrt(Vector512<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// void _mm512_storeu_si512 (__m512i * mem_addr, __m512i a)
         ///   VMOVDQU32 m512 {k1}{z}, zmm1
         /// </summary>

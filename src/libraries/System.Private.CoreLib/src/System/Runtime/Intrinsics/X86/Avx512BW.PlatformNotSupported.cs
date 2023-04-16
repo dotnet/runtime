@@ -423,5 +423,11 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPSUBUSW zmm1 {k1}{z}, zmm2, zmm3/m128
         /// </summary>
         public static Vector512<ushort> SubtractSaturate(Vector512<ushort> left, Vector512<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_sad_epu8 (__m512i a, __m512i b)
+        ///   VPSADBW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> SumAbsoluteDifferences(Vector512<byte> left, Vector512<byte> right) { throw new PlatformNotSupportedException(); }
     }
 }

@@ -4477,6 +4477,7 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<short> SubtractSaturate(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<sbyte> SubtractSaturate(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ushort> SubtractSaturate(System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> SumAbsoluteDifferences(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
         public new abstract partial class VL : System.Runtime.Intrinsics.X86.Avx512F.VL
         {
             internal VL() { }
@@ -4674,6 +4675,8 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<int> Shuffle(System.Runtime.Intrinsics.Vector512<int> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> Shuffle(System.Runtime.Intrinsics.Vector512<float> value, System.Runtime.Intrinsics.Vector512<float> right, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<uint> Shuffle(System.Runtime.Intrinsics.Vector512<uint> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> Sqrt(System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> Sqrt(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
         public unsafe static void Store(byte* address, System.Runtime.Intrinsics.Vector512<byte> source) { }
         public unsafe static void Store(double* address, System.Runtime.Intrinsics.Vector512<double> source) { }
         public unsafe static void Store(short* address, System.Runtime.Intrinsics.Vector512<short> source) { }
