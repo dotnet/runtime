@@ -196,18 +196,13 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
     consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);                            \
     overallResult |= availableRegistersMask;
 
-    DWORD regAvailableStartIndex = 0, regAvailableEndIndex = 0;
-
-    // If we don't find consecutive registers, also track which registers we can pick so
-    // as to reduce the number of registers we will have to spill, to accomodate the
-    // request of the consecutive registers.
-    regMaskTP registersNeededMask = (1ULL << registersNeeded) - 1;
+    unsigned regAvailableStartIndex = 0, regAvailableEndIndex = 0;
 
     do
     {
         // From LSB, find the first available register (bit `1`)
-        BitScanForward64(&regAvailableStartIndex, static_cast<DWORD64>(currAvailableRegs));
-        regMaskTP startMask = (1ULL << regAvailableStartIndex) - 1;
+        regAvailableStartIndex = BitOperations::BitScanForward(static_cast<DWORD64>(currAvailableRegs));
+        regMaskTP startMask    = (1ULL << regAvailableStartIndex) - 1;
 
         // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
         regMaskTP maskProcessed = ~(currAvailableRegs | startMask);
@@ -224,7 +219,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         }
         else
         {
-            BitScanForward64(&regAvailableEndIndex, static_cast<DWORD64>(maskProcessed));
+            regAvailableEndIndex = BitOperations::BitScanForward(static_cast<DWORD64>(maskProcessed));
         }
         regMaskTP endMask = (1ULL << regAvailableEndIndex) - 1;
 
@@ -330,13 +325,13 @@ regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP consecutiveC
     assert((registersNeeded >= 2) && (registersNeeded <= 4));
     regMaskTP consecutiveResultForBusy = RBM_NONE;
     regMaskTP unprocessedRegs          = consecutiveCandidates;
-    DWORD     regAvailableStartIndex = 0, regAvailableEndIndex = 0;
+    unsigned  regAvailableStartIndex = 0, regAvailableEndIndex = 0;
     int       maxSpillRegs        = registersNeeded;
     regMaskTP registersNeededMask = (1ULL << registersNeeded) - 1;
     do
     {
         // From LSB, find the first available register (bit `1`)
-        BitScanForward64(&regAvailableStartIndex, static_cast<DWORD64>(unprocessedRegs));
+        regAvailableStartIndex = BitOperations::BitScanForward(static_cast<DWORD64>(unprocessedRegs));
 
         // For the current range, find how many registers are free vs. busy
         regMaskTP maskForCurRange        = RBM_NONE;
@@ -421,77 +416,77 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
     assert(compiler->info.compNeedsConsecutiveRegisters);
     assert(refPosition->isFirstRefPositionOfConsecutiveRegisters());
     regMaskTP freeCandidates = allCandidates & m_AvailableRegs;
-    if (freeCandidates == RBM_NONE)
-    {
-        return freeCandidates;
-    }
 
     *busyCandidates = RBM_NONE;
     regMaskTP    overallResult;
     unsigned int registersNeeded = refPosition->regCount;
 
-    regMaskTP consecutiveResultForFree = filterConsecutiveCandidates(freeCandidates, registersNeeded, &overallResult);
-    if (consecutiveResultForFree != RBM_NONE)
+    if (freeCandidates != RBM_NONE)
     {
-        // One last time, check if subsequent RefPositions (all RefPositions except the first for which
-        // we assigned above) already have consecutive registers assigned. If yes, and if one of the
-        // register out of the `consecutiveResult` is available for the first RefPosition, then just use
-        // that. This will avoid unnecessary copies.
+        regMaskTP consecutiveResultForFree =
+            filterConsecutiveCandidates(freeCandidates, registersNeeded, &overallResult);
 
-        regNumber firstRegNum  = REG_NA;
-        regNumber prevRegNum   = REG_NA;
-        int       foundCount   = 0;
-        regMaskTP foundRegMask = RBM_NONE;
-
-        RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(refPosition);
-        assert(consecutiveRefPosition != nullptr);
-
-        for (unsigned int i = 1; i < registersNeeded; i++)
+        if (consecutiveResultForFree != RBM_NONE)
         {
-            Interval* interval     = consecutiveRefPosition->getInterval();
-            consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+            // One last time, check if subsequent RefPositions (all RefPositions except the first for which
+            // we assigned above) already have consecutive registers assigned. If yes, and if one of the
+            // register out of the `consecutiveResult` is available for the first RefPosition, then just use
+            // that. This will avoid unnecessary copies.
 
-            if (!interval->isActive)
+            regNumber firstRegNum  = REG_NA;
+            regNumber prevRegNum   = REG_NA;
+            int       foundCount   = 0;
+            regMaskTP foundRegMask = RBM_NONE;
+
+            RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(refPosition);
+            assert(consecutiveRefPosition != nullptr);
+
+            for (unsigned int i = 1; i < registersNeeded; i++)
             {
+                Interval* interval     = consecutiveRefPosition->getInterval();
+                consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+
+                if (!interval->isActive)
+                {
+                    foundRegMask = RBM_NONE;
+                    foundCount   = 0;
+                    continue;
+                }
+
+                regNumber currRegNum = interval->assignedReg->regNum;
+                if ((prevRegNum == REG_NA) || (prevRegNum == REG_PREV(currRegNum)) ||
+                    ((prevRegNum == REG_FP_LAST) && (currRegNum == REG_FP_FIRST)))
+                {
+                    foundRegMask |= genRegMask(currRegNum);
+                    if (prevRegNum == REG_NA)
+                    {
+                        firstRegNum = currRegNum;
+                    }
+                    prevRegNum = currRegNum;
+                    foundCount++;
+                    continue;
+                }
+
                 foundRegMask = RBM_NONE;
                 foundCount   = 0;
-                continue;
+                break;
             }
 
-            regNumber currRegNum = interval->assignedReg->regNum;
-            if ((prevRegNum == REG_NA) || (prevRegNum == REG_PREV(currRegNum)) ||
-                ((prevRegNum == REG_FP_LAST) && (currRegNum == REG_FP_FIRST)))
+            if (foundCount != 0)
             {
-                foundRegMask |= genRegMask(currRegNum);
-                if (prevRegNum == REG_NA)
+                assert(firstRegNum != REG_NA);
+                regMaskTP remainingRegsMask = ((1ULL << (registersNeeded - foundCount)) - 1) << (firstRegNum - 1);
+
+                if ((overallResult & remainingRegsMask) != RBM_NONE)
                 {
-                    firstRegNum = currRegNum;
+                    // If remaining registers are available, then just set the firstRegister mask
+                    consecutiveResultForFree = 1ULL << (firstRegNum - 1);
                 }
-                prevRegNum = currRegNum;
-                foundCount++;
-                continue;
             }
 
-            foundRegMask = RBM_NONE;
-            foundCount   = 0;
-            break;
+            return consecutiveResultForFree;
         }
-
-        if (foundCount != 0)
-        {
-            assert(firstRegNum != REG_NA);
-            regMaskTP remainingRegsMask = ((1ULL << (registersNeeded - foundCount)) - 1) << (firstRegNum - 1);
-
-            if ((overallResult & remainingRegsMask) != RBM_NONE)
-            {
-                // If remaining registers are available, then just set the firstRegister mask
-                consecutiveResultForFree = 1ULL << (firstRegNum - 1);
-            }
-        }
-
-        return consecutiveResultForFree;
     }
-
     // There are registers available but they are not consecutive.
     // Here are some options to address them:
     //

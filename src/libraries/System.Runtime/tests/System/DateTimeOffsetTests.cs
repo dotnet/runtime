@@ -1474,19 +1474,19 @@ namespace System.Tests
 
                 // Just the right amount of space, succeeds
                 Span<byte> actual = new byte[expectedString.Length];
-                Assert.True(((IUtf8SpanFormattable)expected).TryFormat(actual, out int charsWritten, default, null));
-                Assert.Equal(expectedString.Length, charsWritten);
+                Assert.True(expected.TryFormat(actual, out int bytesWritten, default, null));
+                Assert.Equal(expectedString.Length, bytesWritten);
                 Assert.Equal(expectedString, Encoding.UTF8.GetString(actual));
 
                 // Too little space, fails
                 actual = new byte[expectedString.Length - 1];
-                Assert.False(((IUtf8SpanFormattable)expected).TryFormat(actual, out charsWritten, default, null));
-                Assert.Equal(0, charsWritten);
+                Assert.False(expected.TryFormat(actual, out bytesWritten, default, null));
+                Assert.Equal(0, bytesWritten);
 
                 // More than enough space, succeeds
                 actual = new byte[expectedString.Length + 1];
-                Assert.True(((IUtf8SpanFormattable)expected).TryFormat(actual, out charsWritten, default, null));
-                Assert.Equal(expectedString.Length, charsWritten);
+                Assert.True(expected.TryFormat(actual, out bytesWritten, default, null));
+                Assert.Equal(expectedString.Length, bytesWritten);
                 Assert.Equal(expectedString, Encoding.UTF8.GetString(actual.Slice(0, expectedString.Length)));
                 Assert.Equal(0, actual[actual.Length - 1]);
             }
@@ -1512,10 +1512,10 @@ namespace System.Tests
             {
                 var destination = new byte[expected.Length];
 
-                Assert.False(((IUtf8SpanFormattable)dateTimeOffset).TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
+                Assert.False(dateTimeOffset.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
 
-                Assert.True(((IUtf8SpanFormattable)dateTimeOffset).TryFormat(destination, out int charsWritten, format, provider));
-                Assert.Equal(destination.Length, charsWritten);
+                Assert.True(dateTimeOffset.TryFormat(destination, out int bytesWritten, format, provider));
+                Assert.Equal(destination.Length, bytesWritten);
                 Assert.Equal(expected, Encoding.UTF8.GetString(destination));
             }
         }

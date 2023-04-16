@@ -126,7 +126,7 @@ fi
 
       <BashCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
 <![CDATA[
-if [ -z ${CLRTestExpectedExitCode+x} ]%3B then export CLRTestExpectedExitCode=$(CLRTestExitCode)%3B fi
+export CLRTestExpectedExitCode=$(CLRTestExitCode)
 echo BEGIN EXECUTION]]>
       </BashCLRTestExitCodePrep>
 

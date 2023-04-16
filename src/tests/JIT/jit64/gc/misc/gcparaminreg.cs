@@ -8,10 +8,12 @@
 // actually process the address of the local, rather than the local.
 
 using System;
+using Xunit;
 
-class test
+public class test
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int i = 0;
         i += ParamInReg();

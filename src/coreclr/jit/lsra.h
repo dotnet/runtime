@@ -792,9 +792,6 @@ private:
 #elif defined(TARGET_ARM64)
     static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
-    // LsraLimitFPSetForConsecutive is used for stress mode and gives few extra registers to satisfy
-    // the requirements for allocating consecutive registers.
-    static const regMaskTP LsraLimitFPSetForConsecutive = (RBM_V3 | RBM_V5 | RBM_V7);
 #elif defined(TARGET_X86)
     static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
@@ -2006,8 +2003,12 @@ private:
     int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount);
 #ifdef TARGET_ARM64
     int BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode = nullptr);
-#endif
+#endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
+
+#ifdef DEBUG
+    LsraLocation consecutiveRegistersLocation;
+#endif // DEBUG
 
     int BuildPutArgStk(GenTreePutArgStk* argNode);
 #if FEATURE_ARG_SPLIT

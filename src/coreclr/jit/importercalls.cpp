@@ -2480,9 +2480,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #if defined(TARGET_XARCH)
                 // We can't guarantee that all overloads for the xplat intrinsics can be
                 // handled by the AltJit, so limit only the platform specific intrinsics
-                assert((NI_Vector256_Xor + 1) == NI_X86Base_BitScanForward);
+                assert((NI_Vector512_Xor + 1) == NI_X86Base_BitScanForward);
 
-                if (ni < NI_Vector256_Xor)
+                if (ni < NI_Vector512_Xor)
 #elif defined(TARGET_ARM64)
                 // We can't guarantee that all overloads for the xplat intrinsics can be
                 // handled by the AltJit, so limit only the platform specific intrinsics
@@ -2827,7 +2827,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 var_types resultType = JITtype2varType(sig->retType);
                 if (resultType == TYP_STRUCT)
                 {
-                    retNode = gtNewObjNode(sig->retTypeClass, lclVarAddr);
+                    retNode = gtNewBlkIndir(typGetObjLayout(sig->retTypeClass), lclVarAddr);
                 }
                 else
                 {
@@ -5175,8 +5175,7 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
             GenTree* obj = thisPtr;
 
             assert(obj->TypeGet() == TYP_BYREF || obj->TypeGet() == TYP_I_IMPL);
-            obj = gtNewObjNode(pConstrainedResolvedToken->hClass, obj);
-            obj->gtFlags |= GTF_EXCEPT;
+            obj = gtNewBlkIndir(typGetObjLayout(pConstrainedResolvedToken->hClass), obj);
 
             CorInfoType jitTyp = info.compCompHnd->asCorInfoType(pConstrainedResolvedToken->hClass);
             if (impIsPrimitive(jitTyp))
@@ -8895,7 +8894,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     {
         if (varTypeIsStruct(elemType))
         {
-            arrElem = gtNewObjNode(sig->retTypeClass, arrElem);
+            arrElem = gtNewBlkIndir(typGetObjLayout(sig->retTypeClass), arrElem);
         }
         else
         {
