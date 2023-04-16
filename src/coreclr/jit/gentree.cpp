@@ -19390,6 +19390,23 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
                 intrinsic = NI_AVX512F_And;
+
+                if (varTypeIsIntegral(simdBaseType))
+                {
+                    intrinsic = NI_AVX512F_And;
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+                {
+                    intrinsic = NI_AVX512DQ_And;
+                }
+                else
+                {
+                    // Since this is a bitwise operation, we can still support it by lying
+                    // about the type and doing the operation using a supported instruction
+
+                    intrinsic       = NI_AVX512F_And;
+                    simdBaseJitType = (simdBaseType == TYP_DOUBLE) ? CORINFO_TYPE_LONG : CORINFO_TYPE_INT;
+                }
             }
             else if (simdSize == 32)
             {
@@ -19409,7 +19426,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     // about the type and doing the operation using a supported instruction
 
                     intrinsic       = NI_AVX_And;
-                    simdBaseJitType = CORINFO_TYPE_FLOAT;
+                    simdBaseJitType = varTypeIsLong(simdBaseType) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
                 }
             }
             else if (simdBaseType == TYP_FLOAT)
@@ -19429,6 +19446,23 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
                 intrinsic = NI_AVX512F_AndNot;
+
+                if (varTypeIsIntegral(simdBaseType))
+                {
+                    intrinsic = NI_AVX512F_AndNot;
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+                {
+                    intrinsic = NI_AVX512DQ_AndNot;
+                }
+                else
+                {
+                    // Since this is a bitwise operation, we can still support it by lying
+                    // about the type and doing the operation using a supported instruction
+
+                    intrinsic       = NI_AVX512F_AndNot;
+                    simdBaseJitType = (simdBaseType == TYP_DOUBLE) ? CORINFO_TYPE_LONG : CORINFO_TYPE_INT;
+                }
             }
             else if (simdSize == 32)
             {
@@ -19448,7 +19482,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     // about the type and doing the operation using a supported instruction
 
                     intrinsic       = NI_AVX_AndNot;
-                    simdBaseJitType = CORINFO_TYPE_FLOAT;
+                    simdBaseJitType = varTypeIsLong(simdBaseType) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
                 }
             }
             else if (simdBaseType == TYP_FLOAT)
@@ -19696,6 +19730,23 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
                 intrinsic = NI_AVX512F_Or;
+
+                if (varTypeIsIntegral(simdBaseType))
+                {
+                    intrinsic = NI_AVX512F_Or;
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+                {
+                    intrinsic = NI_AVX512DQ_Or;
+                }
+                else
+                {
+                    // Since this is a bitwise operation, we can still support it by lying
+                    // about the type and doing the operation using a supported instruction
+
+                    intrinsic       = NI_AVX512F_Or;
+                    simdBaseJitType = (simdBaseType == TYP_DOUBLE) ? CORINFO_TYPE_LONG : CORINFO_TYPE_INT;
+                }
             }
             else if (simdSize == 32)
             {
@@ -19715,7 +19766,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     // about the type and doing the operation using a supported instruction
 
                     intrinsic       = NI_AVX_Or;
-                    simdBaseJitType = CORINFO_TYPE_FLOAT;
+                    simdBaseJitType = varTypeIsLong(simdBaseType) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
                 }
             }
             else if (simdBaseType == TYP_FLOAT)
@@ -19775,6 +19826,23 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
                 intrinsic = NI_AVX512F_Xor;
+
+                if (varTypeIsIntegral(simdBaseType))
+                {
+                    intrinsic = NI_AVX512F_Xor;
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+                {
+                    intrinsic = NI_AVX512DQ_Xor;
+                }
+                else
+                {
+                    // Since this is a bitwise operation, we can still support it by lying
+                    // about the type and doing the operation using a supported instruction
+
+                    intrinsic       = NI_AVX512F_Xor;
+                    simdBaseJitType = (simdBaseType == TYP_DOUBLE) ? CORINFO_TYPE_LONG : CORINFO_TYPE_INT;
+                }
             }
             else if (simdSize == 32)
             {
@@ -19794,7 +19862,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     // about the type and doing the operation using a supported instruction
 
                     intrinsic       = NI_AVX_Xor;
-                    simdBaseJitType = CORINFO_TYPE_FLOAT;
+                    simdBaseJitType = varTypeIsLong(simdBaseType) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
                 }
             }
             else if (simdBaseType == TYP_FLOAT)
@@ -22496,7 +22564,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 //
                 // var tmp1 = Avx.ConvertToVector128Single(op1).ToVector256Unsafe();
                 // var tmp2 = Avx.ConvertToVector128Single(op2);
-                // return Avx.InsertVector128(tmp1, tmp2, 1);
+                // return tmp1.WithUpper(tmp2);
 
                 CorInfoType opBaseJitType = CORINFO_TYPE_DOUBLE;
 
