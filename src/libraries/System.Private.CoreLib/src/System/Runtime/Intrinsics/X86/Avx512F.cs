@@ -311,6 +311,17 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<int> ConvertToVector512Int32WithTruncation(Vector512<float> value) => ConvertToVector512Int32WithTruncation(value);
 
         /// <summary>
+        /// __m512 _mm512_div_ps (__m512 a, __m512 b)
+        ///   VDIVPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<float> Divide(Vector512<float> left, Vector512<float> right) => Divide(left, right);
+        /// <summary>
+        /// __m512d _mm512_div_pd (__m512d a, __m512d b)
+        ///   VDIVPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
+        /// </summary>
+        public static Vector512<double> Divide(Vector512<double> left, Vector512<double> right) => Divide(left, right);
+
+        /// <summary>
         /// __m512i _mm512_load_si512 (__m512i const * mem_addr)
         ///   VMOVDQA32 zmm1 {k1}{z}, m512
         /// </summary>
@@ -411,6 +422,38 @@ namespace System.Runtime.Intrinsics.X86
         ///   VMOVUPD zmm1 {k1}{z}, m512
         /// </summary>
         public static unsafe Vector512<double> LoadVector512(double* address) => LoadVector512(address);
+
+        /// <summary>
+        /// __m512i _mm512_mul_epi32 (__m512i a, __m512i b)
+        ///   VPMULDQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> Multiply(Vector512<int> left, Vector512<int> right) => Multiply(left, right);
+        /// <summary>
+        /// __m512i _mm512_mul_epu32 (__m512i a, __m512i b)
+        ///   VPMULUDQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> Multiply(Vector512<uint> left, Vector512<uint> right) => Multiply(left, right);
+        /// <summary>
+        /// __m512 _mm512_mul_ps (__m512 a, __m512 b)
+        ///   VMULPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<float> Multiply(Vector512<float> left, Vector512<float> right) => Multiply(left, right);
+        /// <summary>
+        /// __m512d _mm512_mul_pd (__m512d a, __m512d b)
+        ///   VMULPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
+        /// </summary>
+        public static Vector512<double> Multiply(Vector512<double> left, Vector512<double> right) => Multiply(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_mullo_epi32 (__m512i a, __m512i b)
+        ///   VPMULLD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> MultiplyLow(Vector512<int> left, Vector512<int> right) => MultiplyLow(left, right);
+        /// <summary>
+        /// __m512i _mm512_mullo_epi32 (__m512i a, __m512i b)
+        ///   VPMULLD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> MultiplyLow(Vector512<uint> left, Vector512<uint> right) => MultiplyLow(left, right);
 
         /// <summary>
         /// __m512i _mm512_or_si512 (__m512i a, __m512i b)

@@ -1962,8 +1962,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsLong(simdBaseType))
             {
-                // TODO-XARCH-CQ: We should support long/ulong multiplication
-                break;
+                assert((simdSize == 16) || (simdSize == 32));
+
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
+                {
+                    // TODO-XARCH-CQ: We should support long/ulong multiplication
+                    break;
+                }
             }
 
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;

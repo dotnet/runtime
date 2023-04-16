@@ -21,6 +21,27 @@ namespace System.Runtime.Intrinsics.X86
             internal VL() { }
 
             public static new bool IsSupported { [Intrinsic] get { return false; } }
+
+            /// <summary>
+            /// __m128i _mm_mullo_epi64 (__m128i a, __m128i b)
+            ///   VPMULLQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<long> MultiplyLow(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_mullo_epi64 (__m128i a, __m128i b)
+            ///   VPMULLQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<ulong> MultiplyLow(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_mullo_epi64 (__m256i a, __m256i b)
+            ///   VPMULLQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<long> MultiplyLow(Vector256<long> left, Vector256<long> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_mullo_epi64 (__m256i a, __m256i b)
+            ///   VPMULLQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<ulong> MultiplyLow(Vector256<ulong> left, Vector256<ulong> right) { throw new PlatformNotSupportedException(); }
         }
 
         public new abstract class X64 : Avx512F.X64
@@ -51,6 +72,17 @@ namespace System.Runtime.Intrinsics.X86
         ///   VANDNPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
         /// </summary>
         public static Vector512<double> AndNot(Vector512<double> left, Vector512<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_mullo_epi64 (__m512i a, __m512i b)
+        ///   VPMULLQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> MultiplyLow(Vector512<long> left, Vector512<long> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_mullo_epi64 (__m512i a, __m512i b)
+        ///   VPMULLQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> MultiplyLow(Vector512<ulong> left, Vector512<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m512 _mm512_or_ps (__m512 a, __m512 b)

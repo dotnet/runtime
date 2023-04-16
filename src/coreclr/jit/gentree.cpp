@@ -19704,6 +19704,16 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     break;
                 }
 
+                case TYP_LONG:
+                case TYP_ULONG:
+                {
+                    assert((simdSize == 16) || (simdSize == 32));
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ_VL));
+
+                    intrinsic = NI_AVX512DQ_VL_MultiplyLow;
+                    break;
+                }
+
                 case TYP_FLOAT:
                 {
                     if (simdSize == 32)

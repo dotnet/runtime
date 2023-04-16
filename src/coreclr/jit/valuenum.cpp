@@ -7100,6 +7100,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE_Divide:
             case NI_SSE2_Divide:
             case NI_AVX_Divide:
+            case NI_AVX512F_Divide:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_DIV, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7370,6 +7371,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE_Divide:
             case NI_SSE2_Divide:
             case NI_AVX_Divide:
+            case NI_AVX512F_Divide:
 #endif
             {
                 // Handle `x / 1 == x`.
@@ -7404,6 +7406,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE41_MultiplyLow:
             case NI_AVX_Multiply:
             case NI_AVX2_MultiplyLow:
+            case NI_AVX512F_Multiply:
+            case NI_AVX512F_MultiplyLow:
+            case NI_AVX512BW_MultiplyLow:
+            case NI_AVX512DQ_MultiplyLow:
+            case NI_AVX512DQ_VL_MultiplyLow:
 #endif
             {
                 if (!varTypeIsFloating(baseType))

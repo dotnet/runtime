@@ -149,6 +149,45 @@ namespace System.Runtime.Intrinsics.X86
         public static new unsafe Vector512<ushort> LoadVector512(ushort* address) => LoadVector512(address);
 
         /// <summary>
+        /// __m512i _mm512_madd_epi16 (__m512i a, __m512i b)
+        ///   VPMADDWD zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<int> MultiplyAddAdjacent(Vector512<short> left, Vector512<short> right) => MultiplyAddAdjacent(left, right);
+        /// <summary>
+        /// __m512i _mm512_maddubs_epi16 (__m512i a, __m512i b)
+        ///   VPMADDUBSW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<short> MultiplyAddAdjacent(Vector512<byte> left, Vector512<sbyte> right) => MultiplyAddAdjacent(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_mulhi_epi16 (__m512i a, __m512i b)
+        ///   VPMULHW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<short> MultiplyHigh(Vector512<short> left, Vector512<short> right) => MultiplyHigh(left, right);
+        /// <summary>
+        /// __m512i _mm512_mulhi_epu16 (__m512i a, __m512i b)
+        ///   VPMULHUW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> MultiplyHigh(Vector512<ushort> left, Vector512<ushort> right) => MultiplyHigh(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_mulhrs_epi16 (__m512i a, __m512i b)
+        ///   VPMULHRSW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<short> MultiplyHighRoundScale(Vector512<short> left, Vector512<short> right) => MultiplyHighRoundScale(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_mullo_epi16 (__m512i a, __m512i b)
+        ///   VPMULLW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<short> MultiplyLow(Vector512<short> left, Vector512<short> right) => MultiplyLow(left, right);
+        /// <summary>
+        /// __m512i _mm512_mullo_epi16 (__m512i a, __m512i b)
+        ///   VPMULLW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> MultiplyLow(Vector512<ushort> left, Vector512<ushort> right) => MultiplyLow(left, right);
+
+        /// <summary>
         /// void _mm512_storeu_epi8 (__m512i * mem_addr, __m512i a)
         ///   VMOVDQU8 m512 {k1}{z}, zmm1
         /// </summary>
