@@ -389,6 +389,47 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector512<double> LoadAlignedVector512(double* address) => LoadAlignedVector512(address);
 
         /// <summary>
+        /// __m512i _mm512_stream_load_si512 (__m512i const* mem_addr)
+        ///   VMOVNTDQA zmm1, m512
+        /// </summary>
+        public static unsafe Vector512<sbyte> LoadAlignedVector512NonTemporal(sbyte* address) => LoadAlignedVector512NonTemporal(address);
+        /// <summary>
+        /// __m512i _mm512_stream_load_si512 (__m512i const* mem_addr)
+        ///   VMOVNTDQA zmm1, m512
+        /// </summary>
+        public static unsafe Vector512<byte> LoadAlignedVector512NonTemporal(byte* address) => LoadAlignedVector512NonTemporal(address);
+        /// <summary>
+        /// __m512i _mm512_stream_load_si512 (__m512i const* mem_addr)
+        ///   VMOVNTDQA zmm1, m512
+        /// </summary>
+        public static unsafe Vector512<short> LoadAlignedVector512NonTemporal(short* address) => LoadAlignedVector512NonTemporal(address);
+        /// <summary>
+        /// __m512i _mm512_stream_load_si512 (__m512i const* mem_addr)
+        ///   VMOVNTDQA zmm1, m512
+        /// </summary>
+        public static unsafe Vector512<ushort> LoadAlignedVector512NonTemporal(ushort* address) => LoadAlignedVector512NonTemporal(address);
+        /// <summary>
+        /// __m512i _mm512_stream_load_si512 (__m512i const* mem_addr)
+        ///   VMOVNTDQA zmm1, m512
+        /// </summary>
+        public static unsafe Vector512<int> LoadAlignedVector512NonTemporal(int* address) => LoadAlignedVector512NonTemporal(address);
+        /// <summary>
+        /// __m512i _mm512_stream_load_si512 (__m512i const* mem_addr)
+        ///   VMOVNTDQA zmm1, m512
+        /// </summary>
+        public static unsafe Vector512<uint> LoadAlignedVector512NonTemporal(uint* address) => LoadAlignedVector512NonTemporal(address);
+        /// <summary>
+        /// __m512i _mm512_stream_load_si512 (__m512i const* mem_addr)
+        ///   VMOVNTDQA zmm1, m512
+        /// </summary>
+        public static unsafe Vector512<long> LoadAlignedVector512NonTemporal(long* address) => LoadAlignedVector512NonTemporal(address);
+        /// <summary>
+        /// __m512i _mm512_stream_load_si512 (__m512i const* mem_addr)
+        ///   VMOVNTDQA zmm1, m512
+        /// </summary>
+        public static unsafe Vector512<ulong> LoadAlignedVector512NonTemporal(ulong* address) => LoadAlignedVector512NonTemporal(address);
+
+        /// <summary>
         /// __m512i _mm512_loadu_si512 (__m512i const * mem_addr)
         ///   VMOVDQU32 zmm1 {k1}{z}, m512
         /// </summary>

@@ -37,6 +37,7 @@
     <Compile Include="ConvertToVector512UInt64.UInt16.cs" />
     <Compile Include="ConvertToVector512UInt64.UInt32.cs" />
     <Compile Include="LoadAlignedVector512.cs" />
+    <Compile Include="LoadAlignedVector512NonTemporal.cs" />
     <Compile Include="Store.cs" />
     <Compile Include="StoreAligned.cs" />
     <Compile Include="StoreAlignedNonTemporal.cs" />
