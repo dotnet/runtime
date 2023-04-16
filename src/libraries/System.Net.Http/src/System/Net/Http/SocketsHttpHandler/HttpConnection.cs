@@ -1079,7 +1079,7 @@ namespace System.Net.Http
             {
                 ReadOnlySpan<byte> reasonBytes = line.Slice(MinStatusLineLength + 1);
                 string? knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
-                if (knownReasonPhrase != null && ByteArrayHelpers.EqualsOrdinalAscii(knownReasonPhrase, reasonBytes))
+                if (knownReasonPhrase != null && Ascii.Equals(reasonBytes, knownReasonPhrase))
                 {
                     response.SetReasonPhraseWithoutValidation(knownReasonPhrase);
                 }

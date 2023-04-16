@@ -31,7 +31,7 @@ namespace System.Net.Http
             static string GetOrAddCachedValue([NotNull] ref string? cache, HeaderDescriptor descriptor, ReadOnlySpan<byte> value, Encoding? encoding)
             {
                 string? lastValue = cache;
-                if (lastValue is null || !ByteArrayHelpers.EqualsOrdinalAscii(lastValue, value))
+                if (lastValue is null || !Ascii.Equals(value, lastValue))
                 {
                     cache = lastValue = descriptor.GetHeaderValue(value, encoding);
                 }

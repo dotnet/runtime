@@ -70,8 +70,6 @@
              Link="ProductionCode\System\Net\Http\DelegatingHandler.cs" />
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
              Link="ProductionCode\System\IO\DelegatingStream.cs" />
-    <Compile Include="..\..\src\System\Net\Http\ByteArrayHelpers.cs"
-             Link="ProductionCode\System\Net\Http\ByteArrayHelpers.cs" />
     <Compile Include="..\..\src\System\Net\Http\EmptyContent.cs"
              Link="ProductionCode\System\Net\Http\EmptyContent.cs" />
     <Compile Include="..\..\src\System\Net\Http\EmptyReadStream.cs"
