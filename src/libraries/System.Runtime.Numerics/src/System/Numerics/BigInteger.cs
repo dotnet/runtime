@@ -354,6 +354,10 @@ namespace System.Numerics
             {
                 int unalignedBytes = byteCount % 4;
                 int dwordCount = byteCount / 4 + (unalignedBytes == 0 ? 0 : 1);
+
+                if (dwordCount > MaxLength)
+                    ThrowHelper.ThrowOverflowException();
+
                 uint[] val = new uint[dwordCount];
                 int byteCountMinus1 = byteCount - 1;
 
@@ -493,16 +497,16 @@ namespace System.Numerics
         /// <param name="negative">The bool indicating the sign of the value.</param>
         private BigInteger(ReadOnlySpan<uint> value, bool negative)
         {
-            if (value.Length > MaxLength)
-            {
-                ThrowHelper.ThrowOverflowException();
-            }
-
             int len;
 
             // Try to conserve space as much as possible by checking for wasted leading span entries
             // sometimes the span has leading zeros from bit manipulation operations & and ^
             for (len = value.Length; len > 0 && value[len - 1] == 0; len--);
+
+            if (len > MaxLength)
+            {
+                ThrowHelper.ThrowOverflowException();
+            }
 
             if (len == 0)
             {
@@ -533,16 +537,17 @@ namespace System.Numerics
         /// <param name="value"></param>
         private BigInteger(Span<uint> value)
         {
-            if (value.Length > MaxLength)
-            {
-                ThrowHelper.ThrowOverflowException();
-            }
 
             int dwordCount = value.Length;
             bool isNegative = dwordCount > 0 && ((value[dwordCount - 1] & kuMaskHighBit) == kuMaskHighBit);
 
             // Try to conserve space as much as possible by checking for wasted leading span entries
             while (dwordCount > 0 && value[dwordCount - 1] == 0) dwordCount--;
+
+            if (dwordCount > MaxLength)
+            {
+                ThrowHelper.ThrowOverflowException();
+            }
 
             if (dwordCount == 0)
             {
@@ -622,7 +627,9 @@ namespace System.Numerics
 
         public static BigInteger MinusOne { get { return s_bnMinusOneInt; } }
 
-        internal static int MaxLength => Array.MaxLength / sizeof(uint);
+        // Supported length should not exceeding int.MaxValue of bits. This
+        // value ((1<<26)-1) is less than Array.MaxLength of bytes and uints
+        internal static int MaxLength => int.MaxValue / kcbitUint;
 
         public bool IsPowerOfTwo
         {
@@ -3152,7 +3159,7 @@ namespace System.Numerics
                 Debug.Assert(_bits.Length > 1 || _bits[0] >= kuMaskHighBit);
                 // Wasted space: leading zeros could have been truncated
                 Debug.Assert(_bits[_bits.Length - 1] != 0);
-                // Arrays larger than this can't fit into a Span<byte>
+                // Arrays larger than this can't fit bit-counting functions
                 Debug.Assert(_bits.Length <= MaxLength);
             }
             else
