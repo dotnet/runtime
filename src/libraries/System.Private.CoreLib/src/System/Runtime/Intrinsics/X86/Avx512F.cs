@@ -31,6 +31,48 @@ namespace System.Runtime.Intrinsics.X86
             ///   VPABSQ ymm1 {k1}{z}, ymm2/m256/m64bcst
             /// </summary>
             public static Vector256<ulong> Abs(Vector256<long> value) => Abs(value);
+
+            /// <summary>
+            /// __m128i _mm_max_epi64 (__m128i a, __m128i b)
+            ///   VPMAXSQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<long> Max(Vector128<long> left, Vector128<long> right) => Max(left, right);
+            /// <summary>
+            /// __m128i _mm_max_epu64 (__m128i a, __m128i b)
+            ///   VPMAXUQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<ulong> Max(Vector128<ulong> left, Vector128<ulong> right) => Max(left, right);
+            /// <summary>
+            /// __m256i _mm256_max_epi64 (__m256i a, __m256i b)
+            ///   VPMAXSQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<long> Max(Vector256<long> left, Vector256<long> right) => Max(left, right);
+            /// <summary>
+            /// __m256i _mm256_max_epu64 (__m256i a, __m256i b)
+            ///   VPMAXUQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<ulong> Max(Vector256<ulong> left, Vector256<ulong> right) => Max(left, right);
+
+            /// <summary>
+            /// __m128i _mm_min_epi64 (__m128i a, __m128i b)
+            ///   VPMINSQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<long> Min(Vector128<long> left, Vector128<long> right) => Min(left, right);
+            /// <summary>
+            /// __m128i _mm_min_epu64 (__m128i a, __m128i b)
+            ///   VPMINUQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<ulong> Min(Vector128<ulong> left, Vector128<ulong> right) => Min(left, right);
+            /// <summary>
+            /// __m256i _mm256_min_epi64 (__m256i a, __m256i b)
+            ///   VPMINSQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<long> Min(Vector256<long> left, Vector256<long> right) => Min(left, right);
+            /// <summary>
+            /// __m256i _mm256_min_epu64 (__m256i a, __m256i b)
+            ///   VPMINUQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<ulong> Min(Vector256<ulong> left, Vector256<ulong> right) => Min(left, right);
         }
 
         [Intrinsic]
@@ -479,6 +521,68 @@ namespace System.Runtime.Intrinsics.X86
         ///   VMOVUPD zmm1 {k1}{z}, m512
         /// </summary>
         public static unsafe Vector512<double> LoadVector512(double* address) => LoadVector512(address);
+
+        /// <summary>
+        /// __m512i _mm512_max_epi32 (__m512i a, __m512i b)
+        ///   VPMAXSD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> Max(Vector512<int> left, Vector512<int> right) => Max(left, right);
+        /// <summary>
+        /// __m512i _mm512_max_epu32 (__m512i a, __m512i b)
+        ///   VPMAXUD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> Max(Vector512<uint> left, Vector512<uint> right) => Max(left, right);
+        /// <summary>
+        /// __m512i _mm512_max_epi64 (__m512i a, __m512i b)
+        ///   VPMAXSQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> Max(Vector512<long> left, Vector512<long> right) => Max(left, right);
+        /// <summary>
+        /// __m512i _mm512_max_epu64 (__m512i a, __m512i b)
+        ///   VPMAXUQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> Max(Vector512<ulong> left, Vector512<ulong> right) => Max(left, right);
+        /// <summary>
+        /// __m512 _mm512_max_ps (__m512 a, __m512 b)
+        ///   VMAXPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{sae}
+        /// </summary>
+        public static Vector512<float> Max(Vector512<float> left, Vector512<float> right) => Max(left, right);
+        /// <summary>
+        /// __m512d _mm512_max_pd (__m512d a, __m512d b)
+        ///   VMAXPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{sae}
+        /// </summary>
+        public static Vector512<double> Max(Vector512<double> left, Vector512<double> right) => Max(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_min_epi32 (__m512i a, __m512i b)
+        ///   VPMINSD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> Min(Vector512<int> left, Vector512<int> right) => Min(left, right);
+        /// <summary>
+        /// __m512i _mm512_min_epu32 (__m512i a, __m512i b)
+        ///   VPMINUD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> Min(Vector512<uint> left, Vector512<uint> right) => Min(left, right);
+        /// <summary>
+        /// __m512i _mm512_min_epi64 (__m512i a, __m512i b)
+        ///   VPMINSQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> Min(Vector512<long> left, Vector512<long> right) => Min(left, right);
+        /// <summary>
+        /// __m512i _mm512_min_epu64 (__m512i a, __m512i b)
+        ///   VPMINUQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> Min(Vector512<ulong> left, Vector512<ulong> right) => Min(left, right);
+        /// <summary>
+        /// __m512 _mm512_min_ps (__m512 a, __m512 b)
+        ///   VMINPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{sae}
+        /// </summary>
+        public static Vector512<float> Min(Vector512<float> left, Vector512<float> right) => Min(left, right);
+        /// <summary>
+        /// __m512d _mm512_min_pd (__m512d a, __m512d b)
+        ///   VMINPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{sae}
+        /// </summary>
+        public static Vector512<double> Min(Vector512<double> left, Vector512<double> right) => Min(left, right);
 
         /// <summary>
         /// __m512i _mm512_mul_epi32 (__m512i a, __m512i b)

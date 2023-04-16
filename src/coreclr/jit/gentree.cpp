@@ -18966,6 +18966,12 @@ bool GenTree::isCommutativeHWIntrinsic() const
             {
                 return false;
             }
+
+            case NI_AVX512F_Max:
+            case NI_AVX512F_Min:
+            {
+                return !varTypeIsFloating(node->GetSimdBaseType());
+            }
 #endif // TARGET_XARCH
 
             default:
@@ -21979,6 +21985,10 @@ GenTree* Compiler::gtNewSimdMaxNode(
             {
                 intrinsic = NI_AVX2_Max;
             }
+            else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+            {
+                intrinsic = NI_AVX512F_VL_Max;
+            }
         }
     }
     else
@@ -22068,7 +22078,6 @@ GenTree* Compiler::gtNewSimdMaxNode(
                 if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
                 {
                     intrinsic = NI_SSE41_Max;
-                    break;
                 }
                 break;
             }
@@ -22076,6 +22085,10 @@ GenTree* Compiler::gtNewSimdMaxNode(
             case TYP_LONG:
             case TYP_ULONG:
             {
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                {
+                    intrinsic = NI_AVX512F_VL_Max;
+                }
                 break;
             }
 
@@ -22166,6 +22179,10 @@ GenTree* Compiler::gtNewSimdMinNode(
             {
                 intrinsic = NI_AVX2_Min;
             }
+            else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+            {
+                intrinsic = NI_AVX512F_VL_Min;
+            }
         }
     }
     else
@@ -22251,7 +22268,6 @@ GenTree* Compiler::gtNewSimdMinNode(
                 if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
                 {
                     intrinsic = NI_SSE41_Min;
-                    break;
                 }
                 break;
             }
@@ -22259,6 +22275,10 @@ GenTree* Compiler::gtNewSimdMinNode(
             case TYP_LONG:
             case TYP_ULONG:
             {
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                {
+                    intrinsic = NI_AVX512F_VL_Min;
+                }
                 break;
             }
 

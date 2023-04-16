@@ -148,6 +148,48 @@ namespace System.Runtime.Intrinsics.X86
         public static new unsafe Vector512<ushort> LoadVector512(ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m512i _mm512_max_epi8 (__m512i a, __m512i b)
+        ///   VPMAXSB zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<sbyte> Max(Vector512<sbyte> left, Vector512<sbyte> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_max_epu8 (__m512i a, __m512i b)
+        ///   VPMAXUB zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<byte> Max(Vector512<byte> left, Vector512<byte> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_max_epi16 (__m512i a, __m512i b)
+        ///   VPMAXSW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<short> Max(Vector512<short> left, Vector512<short> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_max_epu16 (__m512i a, __m512i b)
+        ///   VPMAXUW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> Max(Vector512<ushort> left, Vector512<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_min_epi8 (__m512i a, __m512i b)
+        ///   VPMINSB zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<sbyte> Min(Vector512<sbyte> left, Vector512<sbyte> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_min_epu8 (__m512i a, __m512i b)
+        ///   VPMINUB zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<byte> Min(Vector512<byte> left, Vector512<byte> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_min_epi16 (__m512i a, __m512i b)
+        ///   VPMINSW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<short> Min(Vector512<short> left, Vector512<short> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_min_epu16 (__m512i a, __m512i b)
+        ///   VPMINUW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> Min(Vector512<ushort> left, Vector512<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m512i _mm512_madd_epi16 (__m512i a, __m512i b)
         ///   VPMADDWD zmm1 {k1}{z}, zmm2, zmm3/m512
         /// </summary>
