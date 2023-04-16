@@ -9,20 +9,21 @@
  ******************************************************************************/
 
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86._Avx1.handwritten
+namespace JIT.HardwareIntrinsics.X86._Avx512F.handwritten
 {
     public static partial class Program
     {
         [Fact]
-        public static void ConvertToVector256SingleInt32()
+        public static void ConvertToVector512UInt64SByte()
         {
-            var test = new SimpleUnaryOpTest__ConvertToVector256SingleInt32();
+            var test = new SimpleUnaryOpTest__ConvertToVector512UInt64SByte();
 
             if (test.IsSupported)
             {
@@ -84,50 +85,50 @@ namespace JIT.HardwareIntrinsics.X86._Avx1.handwritten
         }
     }
 
-    public sealed unsafe class SimpleUnaryOpTest__ConvertToVector256SingleInt32
+    public sealed unsafe class SimpleUnaryOpTest__ConvertToVector512UInt64SByte
     {
-        private static readonly int LargestVectorSize = 32;
+        private const int VectorSize = 64;
 
-        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector256<Int32>>() / sizeof(Int32);
-        private static readonly int RetElementCount = Unsafe.SizeOf<Vector256<Single>>() / sizeof(Single);
+        private const int Op1ElementCount = 16 / sizeof(SByte);
+        private const int RetElementCount = VectorSize / sizeof(UInt64);
 
-        private static Int32[] _data = new Int32[Op1ElementCount];
+        private static SByte[] _data = new SByte[Op1ElementCount];
 
-        private static Vector256<Int32> _clsVar;
+        private static Vector128<SByte> _clsVar;
 
-        private Vector256<Int32> _fld;
+        private Vector128<SByte> _fld;
 
-        private SimpleUnaryOpTest__DataTable<Single, Int32> _dataTable;
+        private SimpleUnaryOpTest__DataTable<Int64, SByte> _dataTable;
 
-        static SimpleUnaryOpTest__ConvertToVector256SingleInt32()
+        static SimpleUnaryOpTest__ConvertToVector512UInt64SByte()
         {
             var random = new Random();
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (int)(random.Next(int.MinValue, int.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Int32>, byte>(ref _clsVar), ref Unsafe.As<Int32, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector256<Int32>>());
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar), ref Unsafe.As<SByte, byte>(ref _data[0]), 16);
         }
 
-        public SimpleUnaryOpTest__ConvertToVector256SingleInt32()
+        public SimpleUnaryOpTest__ConvertToVector512UInt64SByte()
         {
             Succeeded = true;
 
             var random = new Random();
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (int)(random.Next(int.MinValue, int.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Int32>, byte>(ref _fld), ref Unsafe.As<Int32, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector256<Int32>>());
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld), ref Unsafe.As<SByte, byte>(ref _data[0]), 16);
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (int)(random.Next(int.MinValue, int.MaxValue)); }
-            _dataTable = new SimpleUnaryOpTest__DataTable<Single, Int32>(_data, new Single[RetElementCount], LargestVectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
+            _dataTable = new SimpleUnaryOpTest__DataTable<Int64, SByte>(_data, new Int64[RetElementCount], VectorSize);
         }
 
-        public bool IsSupported => Avx.IsSupported;
+        public bool IsSupported => Avx512F.IsSupported;
 
         public bool Succeeded { get; set; }
 
         public void RunBasicScenario_UnsafeRead()
         {
-            var result = Avx.ConvertToVector256Single(
-                Unsafe.Read<Vector256<Int32>>(_dataTable.inArrayPtr)
+            var result = Avx512F.ConvertToVector512UInt64(
+                Unsafe.Read<Vector128<SByte>>(_dataTable.inArrayPtr)
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -136,8 +137,8 @@ namespace JIT.HardwareIntrinsics.X86._Avx1.handwritten
 
         public void RunBasicScenario_Load()
         {
-            var result = Avx.ConvertToVector256Single(
-                Avx.LoadVector256((Int32*)(_dataTable.inArrayPtr))
+            var result = Avx512F.ConvertToVector512UInt64(
+                Sse2.LoadVector128((SByte*)(_dataTable.inArrayPtr))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -146,8 +147,8 @@ namespace JIT.HardwareIntrinsics.X86._Avx1.handwritten
 
         public void RunBasicScenario_LoadAligned()
         {
-            var result = Avx.ConvertToVector256Single(
-                Avx.LoadAlignedVector256((Int32*)(_dataTable.inArrayPtr))
+            var result = Avx512F.ConvertToVector512UInt64(
+                Sse2.LoadAlignedVector128((SByte*)(_dataTable.inArrayPtr))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -156,40 +157,40 @@ namespace JIT.HardwareIntrinsics.X86._Avx1.handwritten
 
         public void RunReflectionScenario_UnsafeRead()
         {
-            var result = typeof(Avx).GetMethod(nameof(Avx.ConvertToVector256Single), new Type[] { typeof(Vector256<Int32>) })
+            var result = typeof(Avx512F).GetMethod(nameof(Avx512F.ConvertToVector512UInt64), new Type[] { typeof(Vector128<SByte>) })
                                      .Invoke(null, new object[] {
-                                        Unsafe.Read<Vector256<Int32>>(_dataTable.inArrayPtr)
+                                        Unsafe.Read<Vector128<SByte>>(_dataTable.inArrayPtr)
                                      });
 
-            Unsafe.Write(_dataTable.outArrayPtr, (Vector256<Single>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, (Vector512<UInt64>)(result));
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_Load()
         {
-            var result = typeof(Avx).GetMethod(nameof(Avx.ConvertToVector256Single), new Type[] { typeof(Vector256<Int32>) })
+            var result = typeof(Avx512F).GetMethod(nameof(Avx512F.ConvertToVector512UInt64), new Type[] { typeof(Vector128<SByte>) })
                                      .Invoke(null, new object[] {
-                                        Avx.LoadVector256((Int32*)(_dataTable.inArrayPtr))
+                                        Sse2.LoadVector128((SByte*)(_dataTable.inArrayPtr))
                                      });
 
-            Unsafe.Write(_dataTable.outArrayPtr, (Vector256<Single>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, (Vector512<UInt64>)(result));
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_LoadAligned()
         {
-            var result = typeof(Avx).GetMethod(nameof(Avx.ConvertToVector256Single), new Type[] { typeof(Vector256<Int32>) })
+            var result = typeof(Avx512F).GetMethod(nameof(Avx512F.ConvertToVector512UInt64), new Type[] { typeof(Vector128<SByte>) })
                                      .Invoke(null, new object[] {
-                                        Avx.LoadAlignedVector256((Int32*)(_dataTable.inArrayPtr))
+                                        Sse2.LoadAlignedVector128((SByte*)(_dataTable.inArrayPtr))
                                      });
 
-            Unsafe.Write(_dataTable.outArrayPtr, (Vector256<Single>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, (Vector512<UInt64>)(result));
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
         public void RunClsVarScenario()
         {
-            var result = Avx.ConvertToVector256Single(
+            var result = Avx512F.ConvertToVector512UInt64(
                 _clsVar
             );
 
@@ -199,8 +200,8 @@ namespace JIT.HardwareIntrinsics.X86._Avx1.handwritten
 
         public void RunLclVarScenario_UnsafeRead()
         {
-            var firstOp = Unsafe.Read<Vector256<Int32>>(_dataTable.inArrayPtr);
-            var result = Avx.ConvertToVector256Single(firstOp);
+            var firstOp = Unsafe.Read<Vector128<SByte>>(_dataTable.inArrayPtr);
+            var result = Avx512F.ConvertToVector512UInt64(firstOp);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(firstOp, _dataTable.outArrayPtr);
@@ -208,8 +209,8 @@ namespace JIT.HardwareIntrinsics.X86._Avx1.handwritten
 
         public void RunLclVarScenario_Load()
         {
-            var firstOp = Avx.LoadVector256((Int32*)(_dataTable.inArrayPtr));
-            var result = Avx.ConvertToVector256Single(firstOp);
+            var firstOp = Sse2.LoadVector128((SByte*)(_dataTable.inArrayPtr));
+            var result = Avx512F.ConvertToVector512UInt64(firstOp);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(firstOp, _dataTable.outArrayPtr);
@@ -217,8 +218,8 @@ namespace JIT.HardwareIntrinsics.X86._Avx1.handwritten
 
         public void RunLclVarScenario_LoadAligned()
         {
-            var firstOp = Avx.LoadAlignedVector256((Int32*)(_dataTable.inArrayPtr));
-            var result = Avx.ConvertToVector256Single(firstOp);
+            var firstOp = Sse2.LoadAlignedVector128((SByte*)(_dataTable.inArrayPtr));
+            var result = Avx512F.ConvertToVector512UInt64(firstOp);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(firstOp, _dataTable.outArrayPtr);
@@ -226,8 +227,8 @@ namespace JIT.HardwareIntrinsics.X86._Avx1.handwritten
 
         public void RunLclFldScenario()
         {
-            var test = new SimpleUnaryOpTest__ConvertToVector256SingleInt32();
-            var result = Avx.ConvertToVector256Single(test._fld);
+            var test = new SimpleUnaryOpTest__ConvertToVector512UInt64SByte();
+            var result = Avx512F.ConvertToVector512UInt64(test._fld);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld, _dataTable.outArrayPtr);
@@ -235,7 +236,7 @@ namespace JIT.HardwareIntrinsics.X86._Avx1.handwritten
 
         public void RunFldScenario()
         {
-            var result = Avx.ConvertToVector256Single(_fld);
+            var result = Avx512F.ConvertToVector512UInt64(_fld);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld, _dataTable.outArrayPtr);
@@ -255,31 +256,31 @@ namespace JIT.HardwareIntrinsics.X86._Avx1.handwritten
             }
         }
 
-        private void ValidateResult(Vector256<Int32> firstOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(Vector128<SByte> firstOp, void* result, [CallerMemberName] string method = "")
         {
-            Int32[] inArray = new Int32[Op1ElementCount];
-            Single[] outArray = new Single[RetElementCount];
+            SByte[] inArray = new SByte[Op1ElementCount];
+            Int64[] outArray = new Int64[RetElementCount];
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<Int32, byte>(ref inArray[0]), firstOp);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector256<Single>>());
+            Unsafe.WriteUnaligned(ref Unsafe.As<SByte, byte>(ref inArray[0]), firstOp);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
 
             ValidateResult(inArray, outArray, method);
         }
 
         private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
         {
-            Int32[] inArray = new Int32[Op1ElementCount];
-            Single[] outArray = new Single[RetElementCount];
+            SByte[] inArray = new SByte[Op1ElementCount];
+            Int64[] outArray = new Int64[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int32, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<Vector256<Int32>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector256<Single>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), 16);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
 
             ValidateResult(inArray, outArray, method);
         }
 
-        private void ValidateResult(Int32[] firstOp, Single[] result, [CallerMemberName] string method = "")
+        private void ValidateResult(SByte[] firstOp, Int64[] result, [CallerMemberName] string method = "")
         {
-            if (result[0] != (Single)(firstOp[0]))
+            if (result[0] != firstOp[0])
             {
                 Succeeded = false;
             }
@@ -287,7 +288,7 @@ namespace JIT.HardwareIntrinsics.X86._Avx1.handwritten
             {
                 for (var i = 1; i < RetElementCount; i++)
                 {
-                    if (result[i] != (Single)(firstOp[i]))
+                    if (result[i] != firstOp[i])
                     {
                         Succeeded = false;
                         break;
@@ -297,7 +298,7 @@ namespace JIT.HardwareIntrinsics.X86._Avx1.handwritten
 
             if (!Succeeded)
             {
-                Console.WriteLine($"{nameof(Avx)}.{nameof(Avx.ConvertToVector256Single)}(Vector256<Int32>): {method} failed:");
+                Console.WriteLine($"{nameof(Avx512F)}.{nameof(Avx512F.ConvertToVector512UInt64)}<Int64>(Vector128<SByte>): {method} failed:");
                 Console.WriteLine($"  firstOp: ({string.Join(", ", firstOp)})");
                 Console.WriteLine($"   result: ({string.Join(", ", result)})");
                 Console.WriteLine();

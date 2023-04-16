@@ -166,6 +166,151 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ulong> AndNot(Vector512<ulong> left, Vector512<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m256i _mm512_cvtpd_epi32 (__m512d a)
+        ///   VCVTPD2DQ ymm1 {k1}{z}, zmm2/m512/m64bcst{er}
+        /// </summary>
+        public static Vector256<int> ConvertToVector256Int32(Vector512<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m256 _mm512_cvtpd_ps (__m512d a)
+        ///   VCVTPD2PS ymm1,         zmm2/m512
+        ///   VCVTPD2PS ymm1 {k1}{z}, zmm2/m512/m64bcst{er}
+        /// </summary>
+        public static Vector256<float> ConvertToVector256Single(Vector512<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m256i _mm512_cvttpd_epi32 (__m512d a)
+        ///   VCVTTPD2DQ ymm1 {k1}{z}, zmm2/m512/m64bcst{sae}
+        /// </summary>
+        public static Vector256<int> ConvertToVector256Int32WithTruncation(Vector512<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512d _mm512_cvtepi32_pd (__m256i a)
+        ///   VCVTDQ2PD zmm1 {k1}{z}, ymm2/m256/m32bcst
+        /// </summary>
+        public static Vector512<double> ConvertToVector512Double(Vector256<int> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_cvtps_pd (__m256 a)
+        ///   VCVTPS2PD zmm1 {k1}{z}, ymm2/m256/m32bcst{sae}
+        /// </summary>
+        public static Vector512<double> ConvertToVector512Double(Vector256<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepi8_epi32 (__m128i a)
+        ///   VPMOVSXBD zmm1 {k1}{z}, xmm2/m128
+        /// </summary>
+        public static Vector512<int> ConvertToVector512Int32(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepu8_epi32 (__m128i a)
+        ///   VPMOVZXBD zmm1 {k1}{z}, xmm2/m128
+        /// </summary>
+        public static Vector512<int> ConvertToVector512Int32(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepi16_epi32 (__m128i a)
+        ///   VPMOVSXWD zmm1 {k1}{z}, ymm2/m256
+        /// </summary>
+        public static Vector512<int> ConvertToVector512Int32(Vector256<short> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepu16_epi32 (__m128i a)
+        ///   VPMOVZXWD zmm1 {k1}{z}, ymm2/m256
+        /// </summary>
+        public static Vector512<int> ConvertToVector512Int32(Vector256<ushort> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtps_epi32 (__m512 a)
+        ///   VCVTPS2DQ zmm1 {k1}{z}, zmm2/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<int> ConvertToVector512Int32(Vector512<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepi8_epi64 (__m128i a)
+        ///   VPMOVSXBQ zmm1 {k1}{z}, xmm2/m64
+        /// </summary>
+        public static Vector512<long> ConvertToVector512Int64(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepu8_epi64 (__m128i a)
+        ///   VPMOVZXBQ zmm1 {k1}{z}, xmm2/m64
+        /// </summary>
+        public static Vector512<long> ConvertToVector512Int64(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepi16_epi64 (__m128i a)
+        ///   VPMOVSXWQ zmm1 {k1}{z}, xmm2/m128
+        /// </summary>
+        public static Vector512<long> ConvertToVector512Int64(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepu16_epi64 (__m128i a)
+        ///   VPMOVZXWQ zmm1 {k1}{z}, xmm2/m128
+        /// </summary>
+        public static Vector512<long> ConvertToVector512Int64(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepi32_epi64 (__m128i a)
+        ///   VPMOVSXDQ zmm1 {k1}{z}, ymm2/m256
+        /// </summary>
+        public static Vector512<long> ConvertToVector512Int64(Vector256<int> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepu32_epi64 (__m128i a)
+        ///   VPMOVZXDQ zmm1 {k1}{z}, ymm2/m256
+        /// </summary>
+        public static Vector512<long> ConvertToVector512Int64(Vector256<uint> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_cvtepi32_ps (__m512i a)
+        ///   VCVTDQ2PS zmm1 {k1}{z}, zmm2/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<float> ConvertToVector512Single(Vector512<int> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepi8_epi32 (__m128i a)
+        ///   VPMOVSXBD zmm1 {k1}{z}, xmm2/m128
+        /// </summary>
+        public static Vector512<uint> ConvertToVector512UInt32(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepu8_epi32 (__m128i a)
+        ///   VPMOVZXBD zmm1 {k1}{z}, xmm2/m128
+        /// </summary>
+        public static Vector512<uint> ConvertToVector512UInt32(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepi16_epi32 (__m128i a)
+        ///   VPMOVSXWD zmm1 {k1}{z}, ymm2/m256
+        /// </summary>
+        public static Vector512<uint> ConvertToVector512UInt32(Vector256<short> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepu16_epi32 (__m128i a)
+        ///   VPMOVZXWD zmm1 {k1}{z}, ymm2/m256
+        /// </summary>
+        public static Vector512<uint> ConvertToVector512UInt32(Vector256<ushort> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepi8_epi64 (__m128i a)
+        ///   VPMOVSXBQ zmm1 {k1}{z}, xmm2/m64
+        /// </summary>
+        public static Vector512<ulong> ConvertToVector512UInt64(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepu8_epi64 (__m128i a)
+        ///   VPMOVZXBQ zmm1 {k1}{z}, xmm2/m64
+        /// </summary>
+        public static Vector512<ulong> ConvertToVector512UInt64(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepi16_epi64 (__m128i a)
+        ///   VPMOVSXWQ zmm1 {k1}{z}, xmm2/m128
+        /// </summary>
+        public static Vector512<ulong> ConvertToVector512UInt64(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepu16_epi64 (__m128i a)
+        ///   VPMOVZXWQ zmm1 {k1}{z}, xmm2/m128
+        /// </summary>
+        public static Vector512<ulong> ConvertToVector512UInt64(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepi32_epi64 (__m128i a)
+        ///   VPMOVSXDQ zmm1 {k1}{z}, ymm2/m256
+        /// </summary>
+        public static Vector512<ulong> ConvertToVector512UInt64(Vector256<int> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cvtepu32_epi64 (__m128i a)
+        ///   VPMOVZXDQ zmm1 {k1}{z}, ymm2/m256
+        /// </summary>
+        public static Vector512<ulong> ConvertToVector512UInt64(Vector256<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_cvttps_epi32 (__m512 a)
+        ///   VCVTTPS2DQ zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}
+        /// </summary>
+        public static Vector512<int> ConvertToVector512Int32WithTruncation(Vector512<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m512i _mm512_load_si512 (__m512i const * mem_addr)
         ///   VMOVDQA32 zmm1 {k1}{z}, m512
         /// </summary>

@@ -11,6 +11,10 @@
     <Compile Include="HandwrittenProgram.cs" />
     <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
 
+    <Compile Include="ConvertToVector512Int16.Byte.cs" />
+    <Compile Include="ConvertToVector512Int16.SByte.cs" />
+    <Compile Include="ConvertToVector512UInt16.Byte.cs" />
+    <Compile Include="ConvertToVector512UInt16.SByte.cs" />
     <Compile Include="Store.cs" />
   </ItemGroup>
 </Project>
