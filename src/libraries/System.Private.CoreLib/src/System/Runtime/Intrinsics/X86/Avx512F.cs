@@ -31,6 +31,37 @@ namespace System.Runtime.Intrinsics.X86
         }
 
         /// <summary>
+        /// __m512i _mm512_add_epi32 (__m512i a, __m512i b)
+        ///   VPADDD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> Add(Vector512<int> left, Vector512<int> right) => Add(left, right);
+        /// <summary>
+        /// __m512i _mm512_add_epi32 (__m512i a, __m512i b)
+        ///   VPADDD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> Add(Vector512<uint> left, Vector512<uint> right) => Add(left, right);
+        /// <summary>
+        /// __m512i _mm512_add_epi64 (__m512i a, __m512i b)
+        ///   VPADDQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> Add(Vector512<long> left, Vector512<long> right) => Add(left, right);
+        /// <summary>
+        /// __m512i _mm512_add_epi64 (__m512i a, __m512i b)
+        ///   VPADDQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> Add(Vector512<ulong> left, Vector512<ulong> right) => Add(left, right);
+        /// <summary>
+        /// __m512d _mm512_add_pd (__m512d a, __m512d b)
+        ///   VADDPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
+        /// </summary>
+        public static Vector512<double> Add(Vector512<double> left, Vector512<double> right) => Add(left, right);
+        /// <summary>
+        /// __m512 _mm512_add_ps (__m512 a, __m512 b)
+        ///   VADDPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<float> Add(Vector512<float> left, Vector512<float> right) => Add(left, right);
+
+        /// <summary>
         /// __m512i _mm512_and_si512 (__m512i a, __m512i b)
         ///   VPANDD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
         /// </summary>
@@ -407,6 +438,37 @@ namespace System.Runtime.Intrinsics.X86
         ///   VMOVNTPD m512, zmm1
         /// </summary>
         public static unsafe void StoreAlignedNonTemporal(double* address, Vector512<double> source) => StoreAlignedNonTemporal(address, source);
+
+        /// <summary>
+        /// __m512i _mm512_sub_epi32 (__m512i a, __m512i b)
+        ///   VPSUBD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> Subtract(Vector512<int> left, Vector512<int> right) => Subtract(left, right);
+        /// <summary>
+        /// __m512i _mm512_sub_epi32 (__m512i a, __m512i b)
+        ///   VPSUBD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> Subtract(Vector512<uint> left, Vector512<uint> right) => Subtract(left, right);
+        /// <summary>
+        /// __m512i _mm512_sub_epi64 (__m512i a, __m512i b)
+        ///   VPSUBQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> Subtract(Vector512<long> left, Vector512<long> right) => Subtract(left, right);
+        /// <summary>
+        /// __m512i _mm512_sub_epi64 (__m512i a, __m512i b)
+        ///   VPSUBQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> Subtract(Vector512<ulong> left, Vector512<ulong> right) => Subtract(left, right);
+        /// <summary>
+        /// __m512 _mm512_sub_ps (__m512 a, __m512 b)
+        ///   VSUBPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<float> Subtract(Vector512<float> left, Vector512<float> right) => Subtract(left, right);
+        /// <summary>
+        /// __m512d _mm512_sub_pd (__m512d a, __m512d b)
+        ///   VSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
+        /// </summary>
+        public static Vector512<double> Subtract(Vector512<double> left, Vector512<double> right) => Subtract(left, right);
 
         /// <summary>
         /// __m512i _mm512_xor_si512 (__m512i a, __m512i b)

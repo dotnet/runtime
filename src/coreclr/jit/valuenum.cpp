@@ -7049,6 +7049,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_Add:
             case NI_AVX_Add:
             case NI_AVX2_Add:
+            case NI_AVX512F_Add:
+            case NI_AVX512BW_Add:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_ADD, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7229,6 +7231,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_Subtract:
             case NI_AVX_Subtract:
             case NI_AVX2_Subtract:
+            case NI_AVX512F_Subtract:
+            case NI_AVX512BW_Subtract:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_SUB, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7272,6 +7276,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_Add:
             case NI_AVX_Add:
             case NI_AVX2_Add:
+            case NI_AVX512F_Add:
+            case NI_AVX512BW_Add:
 #endif
             {
                 if (varTypeIsFloating(baseType))
@@ -7492,6 +7498,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_Subtract:
             case NI_AVX_Subtract:
             case NI_AVX2_Subtract:
+            case NI_AVX512F_Subtract:
+            case NI_AVX512BW_Subtract:
 #endif
             {
                 if (varTypeIsFloating(baseType))
@@ -7584,6 +7592,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_Subtract:
             case NI_AVX_Subtract:
             case NI_AVX2_Subtract:
+            case NI_AVX512F_Subtract:
+            case NI_AVX512BW_Subtract:
 #endif
             {
                 if (varTypeIsFloating(baseType))

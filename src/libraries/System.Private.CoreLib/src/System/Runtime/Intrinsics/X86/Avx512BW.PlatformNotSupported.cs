@@ -31,6 +31,27 @@ namespace System.Runtime.Intrinsics.X86
         }
 
         /// <summary>
+        /// __m512i _mm512_add_epi8 (__m512i a, __m512i b)
+        ///   VPADDB zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<sbyte> Add(Vector512<sbyte> left, Vector512<sbyte> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_add_epi8 (__m512i a, __m512i b)
+        ///   VPADDB zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<byte> Add(Vector512<byte> left, Vector512<byte> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_add_epi16 (__m512i a, __m512i b)
+        ///   VPADDW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<short> Add(Vector512<short> left, Vector512<short> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_add_epi16 (__m512i a, __m512i b)
+        ///   VPADDW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> Add(Vector512<ushort> left, Vector512<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m512i _mm512_loadu_epi8 (__m512i const * mem_addr)
         ///   VMOVDQU8 zmm1 {k1}{z}, m512
         /// </summary>
@@ -71,5 +92,26 @@ namespace System.Runtime.Intrinsics.X86
         ///   VMOVDQU16 m512 {k1}{z}, zmm1
         /// </summary>
         public static new unsafe void Store(ushort* address, Vector512<ushort> source) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_sub_epi8 (__m512i a, __m512i b)
+        ///   VPSUBB zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<sbyte> Subtract(Vector512<sbyte> left, Vector512<sbyte> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_sub_epi8 (__m512i a, __m512i b)
+        ///   VPSUBB zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<byte> Subtract(Vector512<byte> left, Vector512<byte> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_sub_epi16 (__m512i a, __m512i b)
+        ///   VPSUBW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<short> Subtract(Vector512<short> left, Vector512<short> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_sub_epi16 (__m512i a, __m512i b)
+        ///   VPSUBW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> Subtract(Vector512<ushort> left, Vector512<ushort> right) { throw new PlatformNotSupportedException(); }
     }
 }
