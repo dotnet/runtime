@@ -758,10 +758,10 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 	// Scalars wider than 2×XLEN bits are passed by reference
 	if (aligned_size > sizeof (host_mgreg_t) * 2) {
 		if (cinfo->next_arg > RISCV_A7) {
+			ainfo->offset = cinfo->stack_usage;
 			ainfo->storage = ArgVtypeByRefOnStack;
 			cinfo->stack_usage += aligned_size;
 			ainfo->slot_size = aligned_size;
-			ainfo->offset = cinfo->stack_usage;
 		} else {
 			ainfo->storage = ArgVtypeByRef;
 			ainfo->reg = cinfo->next_arg;
@@ -774,18 +774,18 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 	else if (aligned_size == sizeof (host_mgreg_t) * 2) {
 		// If no argument registers are available, the scalar is passed on the stack by value
 		if (cinfo->next_arg > RISCV_A7) {
+			ainfo->offset = cinfo->stack_usage;
 			ainfo->storage = ArgVtypeOnStack;
 			cinfo->stack_usage += sizeof (host_mgreg_t) * 2;
 			ainfo->slot_size = sizeof (host_mgreg_t) * 2;
-			ainfo->offset = cinfo->stack_usage;
 		}
 		// If exactly one register is available, the low-order XLEN bits are
 		// passed in the register and the high-order XLEN bits are passed on the stack
 		else if (cinfo->next_arg == RISCV_A7) {
+			ainfo->offset = cinfo->stack_usage;
 			ainfo->storage = ArgVtypeInMixed;
 			cinfo->stack_usage += sizeof (host_mgreg_t);
 			ainfo->slot_size = sizeof (host_mgreg_t);
-			ainfo->offset = cinfo->stack_usage;
 
 			ainfo->reg = cinfo->next_arg;
 			ainfo->size = sizeof (host_mgreg_t);
@@ -1388,7 +1388,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 
 /**
  * mono_arch_emit_call:
- * 	we process all Args of a function call
+* 	move all Args to corresponding reg/stack in Caller
  *  (return, parameters)
  */
 void
@@ -1505,7 +1505,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			break;
 		}
 		case ArgVtypeInIReg:
-		case ArgVtypeByRef: {
+		case ArgVtypeByRef: 
+		case ArgVtypeOnStack: {
 			MonoInst *ins;
 			guint32 align;
 			guint32 size;
@@ -1579,7 +1580,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			load->inst_basereg = src->dreg;
 			load->inst_offset = i;
 			MONO_ADD_INS (cfg->cbb, load);
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, op_load, RISCV_FP, -ainfo->offset + i, load->dreg);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, op_load==OP_LOADI8_MEMBASE ? OP_STOREI8_MEMBASE_REG : OP_STOREI4_MEMBASE_REG, RISCV_SP, ainfo->offset + i, load->dreg);
 		}
 		break;
 	case ArgVtypeByRef: {
