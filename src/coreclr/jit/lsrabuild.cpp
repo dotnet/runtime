@@ -423,10 +423,6 @@ void LinearScan::checkConflictingDefUse(RefPosition* useRP)
     {
         if (!isSingleRegister(newAssignment) || !theInterval->hasInterferingUses)
         {
-#ifdef TARGET_ARM64
-            if (!compiler->info.compNeedsConsecutiveRegisters ||
-                !defRP->isLiveAtConsecutiveRegistersLoc(consecutiveRegistersLocation))
-#endif
             {
                 defRP->registerAssignment = newAssignment;
             }
@@ -1897,7 +1893,22 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                 if ((newRefPosition->registerAssignment != oldAssignment) && (newRefPosition->refType == RefTypeUse) &&
                     !interval->isLocalVar)
                 {
-                    checkConflictingDefUse(newRefPosition);
+#ifdef TARGET_ARM64
+                    RefPosition* defRefPos = interval->firstRefPosition;
+                    assert(defRefPos->treeNode != nullptr);
+                    if (defRefPos->isLiveAtConsecutiveRegistersLoc(consecutiveRegistersLocation))
+                    {
+                        // If a method has consecutive registers and we are assigning to use refPosition whose
+                        // definition
+                        // was from a location that has consecutive registers, skip the limit stress for them,
+                        // because there are high chances that many registers are busy for consecutive requirements and
+                        // marked as "delayRegFree" state. We do not have enough remaining for other refpositions.
+                    }
+                    else
+#endif // TARGET_ARM64
+                    {
+                        checkConflictingDefUse(newRefPosition);
+                    }
                 }
             }
         }
