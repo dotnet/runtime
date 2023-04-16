@@ -4402,6 +4402,8 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Avx512BW() { }
         public static new bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector512<ushort> Abs(System.Runtime.Intrinsics.Vector512<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<byte> Abs(System.Runtime.Intrinsics.Vector512<sbyte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> Add(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> Add(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<sbyte> Add(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
@@ -4474,6 +4476,8 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Avx512F() { }
         public static new bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector512<uint> Abs(System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ulong> Abs(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Add(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> Add(System.Runtime.Intrinsics.Vector512<int> left, System.Runtime.Intrinsics.Vector512<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> Add(System.Runtime.Intrinsics.Vector512<long> left, System.Runtime.Intrinsics.Vector512<long> right) { throw null; }
@@ -4572,6 +4576,9 @@ namespace System.Runtime.Intrinsics.X86
         {
             internal VL() { }
             public static bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<ulong> Abs(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+
+            public static System.Runtime.Intrinsics.Vector256<ulong> Abs(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
         }
         public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx2.X64
         {

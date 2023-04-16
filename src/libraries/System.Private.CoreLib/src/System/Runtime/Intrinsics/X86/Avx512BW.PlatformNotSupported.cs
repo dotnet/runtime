@@ -31,6 +31,17 @@ namespace System.Runtime.Intrinsics.X86
         }
 
         /// <summary>
+        /// __m512i _mm512_abs_epi8 (__m512i a)
+        ///   VPABSB zmm1 {k1}{z}, zmm2/m512
+        /// </summary>
+        public static Vector512<byte> Abs(Vector512<sbyte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_abs_epi16 (__m512i a)
+        ///   VPABSW zmm1 {k1}{z}, zmm2/m512
+        /// </summary>
+        public static Vector512<ushort> Abs(Vector512<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m512i _mm512_add_epi8 (__m512i a, __m512i b)
         ///   VPADDB zmm1 {k1}{z}, zmm2, zmm3/m512
         /// </summary>

@@ -20,6 +20,17 @@ namespace System.Runtime.Intrinsics.X86
             internal VL() { }
 
             public static bool IsSupported { get => IsSupported; }
+
+            /// <summary>
+            /// __m128i _mm_abs_epi64 (__m128i a)
+            ///   VPABSQ xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<ulong> Abs(Vector128<long> value) => Abs(value);
+            /// <summary>
+            /// __m256i _mm256_abs_epi64 (__m128i a)
+            ///   VPABSQ ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<ulong> Abs(Vector256<long> value) => Abs(value);
         }
 
         [Intrinsic]
@@ -29,6 +40,17 @@ namespace System.Runtime.Intrinsics.X86
 
             public static new bool IsSupported { get => IsSupported; }
         }
+
+        /// <summary>
+        /// __m512i _mm512_abs_epi32 (__m512i a)
+        ///   VPABSD zmm1 {k1}{z}, zmm2/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> Abs(Vector512<int> value) => Abs(value);
+        /// <summary>
+        /// __m512i _mm512_abs_epi64 (__m512i a)
+        ///   VPABSQ zmm1 {k1}{z}, zmm2/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> Abs(Vector512<long> value) => Abs(value);
 
         /// <summary>
         /// __m512i _mm512_add_epi32 (__m512i a, __m512i b)
