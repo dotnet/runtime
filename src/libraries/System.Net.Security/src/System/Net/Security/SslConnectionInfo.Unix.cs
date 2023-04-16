@@ -17,6 +17,7 @@ namespace System.Net.Security
         private void MapCipherSuite(TlsCipherSuite cipherSuite)
         {
             TlsCipherSuite = cipherSuite;
+            KeyExchKeySize = 0;
             ReadOnlySpan<int> keyExchangeAlgs =
                 new[] { (int)ExchangeAlgorithmType.None, (int)ExchangeAlgorithmType.RsaSign, (int)ExchangeAlgorithmType.RsaKeyX, (int)ExchangeAlgorithmType.DiffieHellman, };
             ReadOnlySpan<int> dataCipherAlgs =
