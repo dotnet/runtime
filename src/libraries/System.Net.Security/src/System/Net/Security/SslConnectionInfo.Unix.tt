@@ -10,8 +10,8 @@
     include file="TlsCipherSuite.cs" #>
 <# Array tlsEnumValues = typeof(TlsCipherSuite).GetEnumValues(); #>
 <# Array exchangeEnumValues = typeof(ExchangeAlgorithmTypeIndex).GetEnumValues(); #>
-<# Array cipherEnumValues = typeof(CipherAlgorithmTypeIndex).GetEnumValues(); #>
-<# Array hashEnumValues = typeof(HashAlgorithmTypeIndex).GetEnumValues(); #>
+<# Array dataCipherAlgs = typeof(CipherAlgorithmTypeIndex).GetEnumValues(); #>
+<# Array dataHashAlgs = typeof(HashAlgorithmTypeIndex).GetEnumValues(); #>
 
 
 using System.Diagnostics;
@@ -24,62 +24,64 @@ namespace System.Net.Security
         private void MapCipherSuite(TlsCipherSuite cipherSuite)
         {
             TlsCipherSuite = cipherSuite;
-            KeyExchKeySize = 0;
-            ReadOnlySpan<int> exchangeAlgorithmTypes =
+            ReadOnlySpan<int> keyExchangeAlgs =
                 new[] { <#
-    foreach (ExchangeAlgorithmTypeIndex val in exchangeEnumValues)
-    {
+foreach (ExchangeAlgorithmTypeIndex val in exchangeEnumValues)
+{
     #>(int)ExchangeAlgorithmType.<#= val #>, <#
-    }
+}
     #>};
-            ReadOnlySpan<int> cipherEnumValues =
+            ReadOnlySpan<int> dataCipherAlgs =
                 new[] { <#
-    foreach (CipherAlgorithmTypeIndex val in cipherEnumValues)
-    {
+foreach (CipherAlgorithmTypeIndex val in dataCipherAlgs)
+{
     #>(int)CipherAlgorithmType.<#= val #>, <#
-    }
+}
     #>};
 <#
 ReadOnlySpan<int> strengths = new[] { 0, 40, 56, 128, 168, 256 };
 #>
-            ReadOnlySpan<int> cipherStrengthEnumValues =
+            ReadOnlySpan<int> dataKeySizes =
                 new[] { <#= string.Join(", ", strengths.ToArray()) #> };
-            ReadOnlySpan<int> hashEnumValues =
+            ReadOnlySpan<int> dataHashAlgs =
                 new[] { <#
-foreach (HashAlgorithmTypeIndex val in hashEnumValues)
+foreach (HashAlgorithmTypeIndex val in dataHashAlgs)
 {
     #>(int)HashAlgorithmType.<#= val #>, <#
 }
     #>};
-            ReadOnlySpan<int> hashKeySize =
+            ReadOnlySpan<int> dataHashKeySizes =
                 new[] { 0, 128, 160, 256, 384, 512 };
 
             int data = GetPackedData(cipherSuite);
             Debug.Assert(data != 0, $"No mapping found for cipherSuite {cipherSuite}");
 
-            KeyExchangeAlg = exchangeAlgorithmTypes[(data >> 12) & 0xF];
-            DataCipherAlg = cipherEnumValues[(data >> 8) & 0xF];
-            DataKeySize = cipherStrengthEnumValues[(data >> 4) & 0xF];
-            DataHashAlg = hashEnumValues[data & 0xF];
-            DataHashKeySize = hashKeySize[data & 0xF];
+            KeyExchangeAlg = keyExchangeAlgs[(data >> 12) & 0xF];
+            DataCipherAlg = dataCipherAlgs[(data >> 8) & 0xF];
+            DataKeySize = dataKeySizes[(data >> 4) & 0xF];
+            DataHashAlg = dataHashAlgs[data & 0xF];
+            DataHashKeySize = dataHashKeySizes[data & 0xF];
 
             static int GetPackedData(TlsCipherSuite cipherSuite)
             {
                 switch (cipherSuite)
                 {
-    <#
-    foreach (TlsCipherSuite val in tlsEnumValues)
-    {
+<#
+foreach (TlsCipherSuite val in tlsEnumValues)
+{
     TlsCipherSuiteData data = new CipherSuiteNameData(val.ToString()).Data;
-    byte exchangeAlgorithmType =  (byte)Enum.Parse<ExchangeAlgorithmTypeIndex>(EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm));
-    byte cipherAlgorithmType =  (byte)Enum.Parse<CipherAlgorithmTypeIndex>(EnumHelpers.ToFrameworkName(data.CipherAlgorithm));
-    byte cipherAlgorithmStrength = (byte)strengths.IndexOf(data.CipherAlgorithmStrength);
-    byte hashAlgorithmType =  (byte)Enum.Parse<HashAlgorithmTypeIndex>(EnumHelpers.ToFrameworkName(data.MACAlgorithm));
-    #>
+    int exchangeAlgorithmType =  (int)Enum.Parse<ExchangeAlgorithmTypeIndex>(EnumHelpers.ToFrameworkName(data.KeyExchangeAlgorithm));
+    int cipherAlgorithmType =  (int)Enum.Parse<CipherAlgorithmTypeIndex>(EnumHelpers.ToFrameworkName(data.CipherAlgorithm));
+    int cipherAlgorithmStrength = (int)strengths.IndexOf(data.CipherAlgorithmStrength);
+    int hashAlgorithmType =  (int)Enum.Parse<HashAlgorithmTypeIndex>(EnumHelpers.ToFrameworkName(data.MACAlgorithm));
+
+    if (cipherAlgorithmStrength == -1)
+        throw new Exception($"Value '{data.CipherAlgorithmStrength}' is not found in 'strengths' array.");
+#>
                     case TlsCipherSuite.<#= val #>: return <#= exchangeAlgorithmType #> << 12 | <#= cipherAlgorithmType #> << 8 | <#= cipherAlgorithmStrength #> << 4 | <#= hashAlgorithmType #>;
-    <#
-    }
-    #>
+<#
+}
+#>
                     default: return 0;
                 }
             }
