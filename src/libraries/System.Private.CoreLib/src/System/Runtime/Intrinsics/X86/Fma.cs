@@ -221,8 +221,8 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<float> MultiplySubtractNegatedScalar(Vector128<float> a, Vector128<float> b, Vector128<float> c) => MultiplySubtractNegatedScalar(a, b, c);
         /// <summary>
         /// __m128d _mm_fnmsub_sd (__m128d a, __m128d b, __m128d c)
-        ///   VFNMSUBSD xmm1,         xmm2, xmm3/m32
-        ///   VFNMSUBSD xmm1 {k1}{z}, xmm2, xmm3/m32{er}
+        ///   VFNMSUBSD xmm1,         xmm2, xmm3/m64
+        ///   VFNMSUBSD xmm1 {k1}{z}, xmm2, xmm3/m64{er}
         /// </summary>
         public static Vector128<double> MultiplySubtractNegatedScalar(Vector128<double> a, Vector128<double> b, Vector128<double> c) => MultiplySubtractNegatedScalar(a, b, c);
     }
