@@ -4561,6 +4561,9 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<ulong> ConvertToVector512UInt64(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> Divide(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Divide(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> DuplicateEvenIndexed(System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> DuplicateEvenIndexed(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> DuplicateOddIndexed(System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector512<byte> LoadAlignedVector512(byte* address) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector512<double> LoadAlignedVector512(double* address) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector512<short> LoadAlignedVector512(short* address) { throw null; }

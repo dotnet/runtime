@@ -322,6 +322,22 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<double> Divide(Vector512<double> left, Vector512<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m512 _mm512_moveldup_ps (__m512 a)
+        ///   VMOVSLDUP zmm1 {k1}{z}, zmm2/m512
+        /// </summary>
+        public static Vector512<float> DuplicateEvenIndexed(Vector512<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_movedup_pd (__m512d a)
+        ///   VMOVDDUP zmm1 {k1}{z}, zmm2/m512
+        /// </summary>
+        public static Vector512<double> DuplicateEvenIndexed(Vector512<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_movehdup_ps (__m512 a)
+        ///   VMOVSHDUP zmm1 {k1}{z}, zmm2/m512
+        /// </summary>
+        public static Vector512<float> DuplicateOddIndexed(Vector512<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m512i _mm512_load_si512 (__m512i const * mem_addr)
         ///   VMOVDQA32 zmm1 {k1}{z}, m512
         /// </summary>
