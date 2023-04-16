@@ -19566,7 +19566,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             }
 
             assert(!varTypeIsByte(simdBaseType));
-            assert((op != GT_RSH) || (!varTypeIsUnsigned(simdBaseType) && !varTypeIsLong(simdBaseType)));
 
             // "over shifting" is platform specific behavior. We will match the C# behavior
             // this requires we mask with (sizeof(T) * 8) - 1 which ensures the shift cannot
@@ -19597,7 +19596,16 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 }
                 else if (op == GT_RSH)
                 {
-                    intrinsic = NI_AVX2_ShiftRightArithmetic;
+                    if (varTypeIsLong(simdBaseType))
+                    {
+                        assert(varTypeIsSigned(simdBaseType));
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                        intrinsic = NI_AVX512F_VL_ShiftRightArithmetic;
+                    }
+                    else
+                    {
+                        intrinsic = NI_AVX2_ShiftRightArithmetic;
+                    }
                 }
                 else
                 {
@@ -19611,7 +19619,16 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             }
             else if (op == GT_RSH)
             {
-                intrinsic = NI_SSE2_ShiftRightArithmetic;
+                if (varTypeIsLong(simdBaseType))
+                {
+                    assert(varTypeIsSigned(simdBaseType));
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                    intrinsic = NI_AVX512F_VL_ShiftRightArithmetic;
+                }
+                else
+                {
+                    intrinsic = NI_SSE2_ShiftRightArithmetic;
+                }
             }
             else
             {

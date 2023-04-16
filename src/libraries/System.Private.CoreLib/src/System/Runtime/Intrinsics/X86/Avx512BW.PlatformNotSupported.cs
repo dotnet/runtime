@@ -251,6 +251,84 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ushort> PackUnsignedSaturate(Vector512<int> left, Vector512<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m512i _mm512_sll_epi16 (__m512i a, __m128i count)
+        ///   VPSLLW zmm1 {k1}{z}, zmm2, xmm3/m128
+        /// </summary>
+        public static Vector512<short> ShiftLeftLogical(Vector512<short> value, Vector128<short> count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_sll_epi16 (__m512i a, __m128i count)
+        ///   VPSLLW zmm1 {k1}{z}, zmm2, xmm3/m128
+        /// </summary>
+        public static Vector512<ushort> ShiftLeftLogical(Vector512<ushort> value, Vector128<ushort> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_slli_epi16 (__m512i a, int imm8)
+        ///   VPSLLW zmm1 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector512<short> ShiftLeftLogical(Vector512<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_slli_epi16 (__m512i a, int imm8)
+        ///   VPSLLW zmm1 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector512<ushort> ShiftLeftLogical(Vector512<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_bslli_epi128 (__m512i a, const int imm8)
+        ///   VPSLLDQ zmm1, zmm2/m512, imm8
+        /// </summary>
+        public static Vector512<sbyte> ShiftLeftLogical128BitLane(Vector512<sbyte> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_bslli_epi128 (__m512i a, const int imm8)
+        ///   VPSLLDQ zmm1, zmm2/m512, imm8
+        /// </summary>
+        public static Vector512<byte> ShiftLeftLogical128BitLane(Vector512<byte> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// _mm512_sra_epi16 (__m512i a, __m128i count)
+        ///   VPSRAW zmm1 {k1}{z}, zmm2, xmm3/m128
+        /// </summary>
+        public static Vector512<short> ShiftRightArithmetic(Vector512<short> value, Vector128<short> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_srai_epi16 (__m512i a, int imm8)
+        ///   VPSRAW zmm1 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector512<short> ShiftRightArithmetic(Vector512<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_srl_epi16 (__m512i a, __m128i count)
+        ///   VPSRLW zmm1 {k1}{z}, zmm2, xmm3/m128
+        /// </summary>
+        public static Vector512<short> ShiftRightLogical(Vector512<short> value, Vector128<short> count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_srl_epi16 (__m512i a, __m128i count)
+        ///   VPSRLW zmm1 {k1}{z}, zmm2, xmm3/m128
+        /// </summary>
+        public static Vector512<ushort> ShiftRightLogical(Vector512<ushort> value, Vector128<ushort> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_srli_epi16 (__m512i a, int imm8)
+        ///   VPSRLW zmm1 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector512<short> ShiftRightLogical(Vector512<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_srli_epi16 (__m512i a, int imm8)
+        ///   VPSRLW zmm1 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector512<ushort> ShiftRightLogical(Vector512<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_bsrli_epi128 (__m512i a, const int imm8)
+        ///   VPSRLDQ zmm1, zmm2/m128, imm8
+        /// </summary>
+        public static Vector512<sbyte> ShiftRightLogical128BitLane(Vector512<sbyte> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_bsrli_epi128 (__m512i a, const int imm8)
+        ///   VPSRLDQ zmm1, zmm2/m128, imm8
+        /// </summary>
+        public static Vector512<byte> ShiftRightLogical128BitLane(Vector512<byte> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// void _mm512_storeu_epi8 (__m512i * mem_addr, __m512i a)
         ///   VMOVDQU8 m512 {k1}{z}, zmm1
         /// </summary>

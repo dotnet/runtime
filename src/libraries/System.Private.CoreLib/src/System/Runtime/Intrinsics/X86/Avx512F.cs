@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.X86
@@ -73,6 +74,28 @@ namespace System.Runtime.Intrinsics.X86
             ///   VPMINUQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
             /// </summary>
             public static Vector256<ulong> Min(Vector256<ulong> left, Vector256<ulong> right) => Min(left, right);
+
+            /// <summary>
+            /// __m128i _mm_sra_epi64 (__m128i a, __m128i count)
+            ///   VPSRAQ xmm1 {k1}{z}, xmm2, xmm3/m128
+            /// </summary>
+            public static Vector128<long> ShiftRightArithmetic(Vector128<long> value, Vector128<long> count) => ShiftRightArithmetic(value, count);
+            /// <summary>
+            /// __m256i _mm256_sra_epi64 (__m256i a, __m128i count)
+            ///   VPSRAQ ymm1 {k1}{z}, ymm2, xmm3/m128
+            /// </summary>
+            public static Vector256<long> ShiftRightArithmetic(Vector256<long> value, Vector128<long> count) => ShiftRightArithmetic(value, count);
+
+            /// <summary>
+            /// __128i _mm_srai_epi64 (__m128i a, int imm8)
+            ///   VPSRAQ xmm1 {k1}{z}, xmm2, imm8
+            /// </summary>
+            public static Vector128<long> ShiftRightArithmetic(Vector128<long> value, [ConstantExpected] byte count) => ShiftRightArithmetic(value, count);
+            /// <summary>
+            /// __m256i _mm256_srai_epi64 (__m256i a, int imm8)
+            ///   VPSRAQ ymm1 {k1}{z}, ymm2, imm8
+            /// </summary>
+            public static Vector256<long> ShiftRightArithmetic(Vector256<long> value, [ConstantExpected] byte count) => ShiftRightArithmetic(value, count);
         }
 
         [Intrinsic]
@@ -656,6 +679,112 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPORQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
         /// </summary>
         public static Vector512<ulong> Or(Vector512<ulong> left, Vector512<ulong> right) => Or(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_sll_epi32 (__m512i a, __m128i count)
+        ///   VPSLLD zmm1 {k1}{z}, zmm2, xmm3/m128
+        /// </summary>
+        public static Vector512<int> ShiftLeftLogical(Vector512<int> value, Vector128<int> count) => ShiftLeftLogical(value, count);
+        /// <summary>
+        /// __m512i _mm512_sll_epi32 (__m512i a, __m128i count)
+        ///   VPSLLD zmm1 {k1}{z}, zmm2, xmm3/m128
+        /// </summary>
+        public static Vector512<uint> ShiftLeftLogical(Vector512<uint> value, Vector128<uint> count) => ShiftLeftLogical(value, count);
+        /// <summary>
+        /// __m512i _mm512_sll_epi64 (__m512i a, __m128i count)
+        ///   VPSLLQ zmm1 {k1}{z}, zmm2, xmm3/m128
+        /// </summary>
+        public static Vector512<long> ShiftLeftLogical(Vector512<long> value, Vector128<long> count) => ShiftLeftLogical(value, count);
+        /// <summary>
+        /// __m512i _mm512_sll_epi64 (__m512i a, __m128i count)
+        ///   VPSLLQ zmm1 {k1}{z}, zmm2, xmm3/m128
+        /// </summary>
+        public static Vector512<ulong> ShiftLeftLogical(Vector512<ulong> value, Vector128<ulong> count) => ShiftLeftLogical(value, count);
+
+        /// <summary>
+        /// __m512i _mm512_slli_epi32 (__m512i a, int imm8)
+        ///   VPSLLD zmm1 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector512<int> ShiftLeftLogical(Vector512<int> value, [ConstantExpected] byte count) => ShiftLeftLogical(value, count);
+        /// <summary>
+        /// __m512i _mm512_slli_epi32 (__m512i a, int imm8)
+        ///   VPSLLD zmm1 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector512<uint> ShiftLeftLogical(Vector512<uint> value, [ConstantExpected] byte count) => ShiftLeftLogical(value, count);
+        /// <summary>
+        /// __m512i _mm512_slli_epi64 (__m512i a, int imm8)
+        ///   VPSLLQ zmm1 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector512<long> ShiftLeftLogical(Vector512<long> value, [ConstantExpected] byte count) => ShiftLeftLogical(value, count);
+        /// <summary>
+        /// __m512i _mm512_slli_epi64 (__m512i a, int imm8)
+        ///   VPSLLQ zmm1 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector512<ulong> ShiftLeftLogical(Vector512<ulong> value, [ConstantExpected] byte count) => ShiftLeftLogical(value, count);
+
+        /// <summary>
+        /// _mm512_sra_epi32 (__m512i a, __m128i count)
+        ///   VPSRAD zmm1 {k1}{z}, zmm2, xmm3/m128
+        /// </summary>
+        public static Vector512<int> ShiftRightArithmetic(Vector512<int> value, Vector128<int> count) => ShiftRightArithmetic(value, count);
+        /// <summary>
+        /// _mm512_sra_epi64 (__m512i a, __m128i count)
+        ///   VPSRAQ zmm1 {k1}{z}, zmm2, xmm3/m128
+        /// </summary>
+        public static Vector512<long> ShiftRightArithmetic(Vector512<long> value, Vector128<long> count) => ShiftRightArithmetic(value, count);
+
+        /// <summary>
+        /// __m512i _mm512_srai_epi32 (__m512i a, int imm8)
+        ///   VPSRAD zmm1 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector512<int> ShiftRightArithmetic(Vector512<int> value, [ConstantExpected] byte count) => ShiftRightArithmetic(value, count);
+        /// <summary>
+        /// __m512i _mm512_srai_epi64 (__m512i a, int imm8)
+        ///   VPSRAQ zmm1 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector512<long> ShiftRightArithmetic(Vector512<long> value, [ConstantExpected] byte count) => ShiftRightArithmetic(value, count);
+
+        /// <summary>
+        /// __m512i _mm512_srl_epi32 (__m512i a, __m128i count)
+        ///   VPSRLD zmm1 {k1}{z}, zmm2, xmm3/m128
+        /// </summary>
+        public static Vector512<int> ShiftRightLogical(Vector512<int> value, Vector128<int> count) => ShiftRightLogical(value, count);
+        /// <summary>
+        /// __m512i _mm512_srl_epi32 (__m512i a, __m128i count)
+        ///   VPSRLD zmm1 {k1}{z}, zmm2, xmm3/m128
+        /// </summary>
+        public static Vector512<uint> ShiftRightLogical(Vector512<uint> value, Vector128<uint> count) => ShiftRightLogical(value, count);
+        /// <summary>
+        /// __m512i _mm512_srl_epi64 (__m512i a, __m128i count)
+        ///   VPSRLQ zmm1 {k1}{z}, zmm2, xmm3/m128
+        /// </summary>
+        public static Vector512<long> ShiftRightLogical(Vector512<long> value, Vector128<long> count) => ShiftRightLogical(value, count);
+        /// <summary>
+        /// __m512i _mm512_srl_epi64 (__m512i a, __m128i count)
+        ///   VPSRLQ zmm1 {k1}{z}, zmm2, xmm3/m128
+        /// </summary>
+        public static Vector512<ulong> ShiftRightLogical(Vector512<ulong> value, Vector128<ulong> count) => ShiftRightLogical(value, count);
+
+        /// <summary>
+        /// __m512i _mm512_srli_epi32 (__m512i a, int imm8)
+        ///   VPSRLD zmm1 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector512<int> ShiftRightLogical(Vector512<int> value, [ConstantExpected] byte count) => ShiftRightLogical(value, count);
+        /// <summary>
+        /// __m512i _mm512_srli_epi32 (__m512i a, int imm8)
+        ///   VPSRLD zmm1 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector512<uint> ShiftRightLogical(Vector512<uint> value, [ConstantExpected] byte count) => ShiftRightLogical(value, count);
+        /// <summary>
+        /// __m512i _mm512_srli_epi64 (__m512i a, int imm8)
+        ///   VPSRLQ zmm1 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector512<long> ShiftRightLogical(Vector512<long> value, [ConstantExpected] byte count) => ShiftRightLogical(value, count);
+        /// <summary>
+        /// __m512i _mm512_srli_epi64 (__m512i a, int imm8)
+        ///   VPSRLQ zmm1 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector512<ulong> ShiftRightLogical(Vector512<ulong> value, [ConstantExpected] byte count) => ShiftRightLogical(value, count);
 
         /// <summary>
         /// void _mm512_storeu_si512 (__m512i * mem_addr, __m512i a)

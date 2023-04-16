@@ -790,6 +790,24 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         }
 #endif // TARGET_XARCH
 
+#if defined(TARGET_XARCH)
+        case NI_VectorT128_ShiftRightArithmetic:
+        case NI_VectorT128_op_RightShift:
+        case NI_VectorT256_ShiftRightArithmetic:
+        case NI_VectorT256_op_RightShift:
+        {
+            if (varTypeIsLong(simdBaseType))
+            {
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
+                {
+                    // TODO-XARCH-CQ: We should support long/ulong arithmetic shift
+                    return nullptr;
+                }
+            }
+            break;
+        }
+#endif // TARGET_XARCH
+
         default:
         {
             // Most intrinsics have some path that works even if only SSE2/AdvSimd is available
