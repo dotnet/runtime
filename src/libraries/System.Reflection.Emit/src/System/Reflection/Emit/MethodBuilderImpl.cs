@@ -21,7 +21,7 @@ namespace System.Reflection.Emit
         private readonly TypeBuilderImpl _declaringType;
         internal DllImportData? _dllImportData;
 
-        internal List<CustomAttributeWrapper> _customAttributes = new();
+        internal List<CustomAttributeWrapper>? _customAttributes;
 
         internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
             Type[]? parameterTypes, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
@@ -56,6 +56,7 @@ namespace System.Reflection.Emit
         {
             if (!IsPseudoCustomAttribute(con.ReflectedType!.FullName!, con, binaryAttribute))
             {
+                _customAttributes ??= new List<CustomAttributeWrapper>();
                 _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
             }
         }

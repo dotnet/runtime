@@ -5,16 +5,19 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit
 {
-    internal sealed class CustomAttributeWrapper
+    internal readonly struct CustomAttributeWrapper
     {
-        internal ConstructorInfo constructorInfo;
-        internal byte[] binaryAttribute;
+        private readonly ConstructorInfo _constructorInfo;
+        private readonly byte[] _binaryAttribute;
 
         public CustomAttributeWrapper(ConstructorInfo constructorInfo, ReadOnlySpan<byte> binaryAttribute)
         {
-            this.constructorInfo = constructorInfo;
-            this.binaryAttribute = binaryAttribute.ToArray();
+            _constructorInfo = constructorInfo;
+            _binaryAttribute = binaryAttribute.ToArray();
         }
+
+        public ConstructorInfo Ctor => _constructorInfo;
+        public byte[] Data => _binaryAttribute;
     }
 
     internal struct CustomAttributeInfo

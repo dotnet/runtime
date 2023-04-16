@@ -16,7 +16,7 @@ namespace System.Reflection.Emit
         private readonly Assembly _coreAssembly;
         private ModuleBuilderImpl? _module;
 
-        internal List<CustomAttributeWrapper> _customAttributes = new();
+        internal List<CustomAttributeWrapper>? _customAttributes;
 
         internal AssemblyBuilderImpl(AssemblyName name, Assembly coreAssembly, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
@@ -130,7 +130,10 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute) =>
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
+        {
+            _customAttributes ??= new List<CustomAttributeWrapper>();
             _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+        }
     }
 }

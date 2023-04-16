@@ -19,7 +19,7 @@ namespace System.Reflection.Emit
         private readonly Dictionary<Type, TypeReferenceHandle> _typeReferences = new();
         private Dictionary<string, ModuleReferenceHandle>? _moduleReferences;
         private readonly List<TypeBuilderImpl> _typeDefinitions = new();
-        private readonly List<CustomAttributeWrapper> _customAttributes = new();
+        private List<CustomAttributeWrapper>? _customAttributes;
         private int _nextMethodDefRowId = 1;
         private int _nextFieldDefRowId = 1;
         private bool _coreTypesFullPopulated;
@@ -93,7 +93,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        internal void AppendMetadata(MetadataBuilder metadata, AssemblyDefinitionHandle assemblyHandle, List<CustomAttributeWrapper> assemblyAttributes)
+        internal void AppendMetadata(MetadataBuilder metadata, AssemblyDefinitionHandle assemblyHandle, List<CustomAttributeWrapper>? assemblyAttributes)
         {
             // Add module metadata
             ModuleDefinitionHandle moduleHandle = metadata.AddModule(
@@ -168,12 +168,15 @@ namespace System.Reflection.Emit
             return handle;
         }
 
-        private void WriteCustomAttributes(MetadataBuilder metadata, List<CustomAttributeWrapper> customAttributes, EntityHandle parent)
+        private void WriteCustomAttributes(MetadataBuilder metadata, List<CustomAttributeWrapper>? customAttributes, EntityHandle parent)
         {
-            foreach (CustomAttributeWrapper customAttribute in customAttributes)
+            if (customAttributes != null)
             {
-                metadata.AddCustomAttribute(parent, GetConstructorHandle(metadata, customAttribute.constructorInfo),
-                    metadata.GetOrAddBlob(customAttribute.binaryAttribute));
+                foreach (CustomAttributeWrapper customAttribute in customAttributes)
+                {
+                    metadata.AddCustomAttribute(parent, GetConstructorHandle(metadata, customAttribute.Ctor),
+                        metadata.GetOrAddBlob(customAttribute.Data));
+                }
             }
         }
 
@@ -234,8 +237,11 @@ namespace System.Reflection.Emit
         }
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
         protected override MethodInfo GetArrayMethodCore(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute) =>
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
+        {
+            _customAttributes ??= new List<CustomAttributeWrapper>();
             _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+        }
         public override int GetSignatureMetadataToken(SignatureHelper signature) => throw new NotImplementedException();
     }
 }

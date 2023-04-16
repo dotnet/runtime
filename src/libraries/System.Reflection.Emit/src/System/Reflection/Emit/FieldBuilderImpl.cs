@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 
 namespace System.Reflection.Emit
@@ -14,7 +15,7 @@ namespace System.Reflection.Emit
         private FieldAttributes _attributes;
         private readonly Type _fieldType;
 
-        internal List<CustomAttributeWrapper> _customAttributes = new();
+        internal List<CustomAttributeWrapper>? _customAttributes;
 
         internal FieldBuilderImpl(TypeBuilderImpl typeBuilder, string fieldName, Type type, FieldAttributes attributes)
         {
@@ -30,6 +31,7 @@ namespace System.Reflection.Emit
         {
             if (!IsPseudoAttribute(con.ReflectedType!.FullName!, binaryAttribute))
             {
+                _customAttributes ??= new List<CustomAttributeWrapper>();
                 _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
             }
         }
@@ -39,7 +41,7 @@ namespace System.Reflection.Emit
             switch (attributeName)
             {
                 case "System.Runtime.InteropServices.FieldOffsetAttribute":
-                   Debug.Assert(binaryAttribute.Length == 6);
+                   Debug.Assert(binaryAttribute.Length >= 6);
                     _offset = (int)binaryAttribute[2];
                     _offset |= ((int)binaryAttribute[3]) << 8;
                     _offset |= ((int)binaryAttribute[4]) << 16;

@@ -21,7 +21,7 @@ namespace System.Reflection.Emit
 
         internal List<MethodBuilderImpl> _methodDefinitions = new();
         internal List<FieldBuilderImpl> _fieldDefinitions = new();
-        internal List<CustomAttributeWrapper> _customAttributes = new();
+        internal List<CustomAttributeWrapper>? _customAttributes;
 
         internal TypeBuilderImpl(string fullName, TypeAttributes typeAttributes,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, ModuleBuilderImpl module, PackingSize packingSize, int typeSize)
@@ -78,6 +78,7 @@ namespace System.Reflection.Emit
         {
             if (!IsPseudoCustomAttribute(con.ReflectedType!.FullName!, con, binaryAttribute))
             {
+                _customAttributes ??= new List<CustomAttributeWrapper>();
                 _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
             }
         }
