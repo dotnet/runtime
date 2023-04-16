@@ -4478,6 +4478,14 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<sbyte> SubtractSaturate(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ushort> SubtractSaturate(System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ushort> SumAbsoluteDifferences(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<byte> UnpackHigh(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<short> UnpackHigh(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<sbyte> UnpackHigh(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> UnpackHigh(System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<byte> UnpackLow(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<short> UnpackLow(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<sbyte> UnpackLow(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> UnpackLow(System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
         public new abstract partial class VL : System.Runtime.Intrinsics.X86.Avx512F.VL
         {
             internal VL() { }
@@ -4713,6 +4721,18 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<float> Subtract(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<uint> Subtract(System.Runtime.Intrinsics.Vector512<uint> left, System.Runtime.Intrinsics.Vector512<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> Subtract(System.Runtime.Intrinsics.Vector512<ulong> left, System.Runtime.Intrinsics.Vector512<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> UnpackHigh(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<int> UnpackHigh(System.Runtime.Intrinsics.Vector512<int> left, System.Runtime.Intrinsics.Vector512<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> UnpackHigh(System.Runtime.Intrinsics.Vector512<long> left, System.Runtime.Intrinsics.Vector512<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> UnpackHigh(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<uint> UnpackHigh(System.Runtime.Intrinsics.Vector512<uint> left, System.Runtime.Intrinsics.Vector512<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ulong> UnpackHigh(System.Runtime.Intrinsics.Vector512<ulong> left, System.Runtime.Intrinsics.Vector512<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> UnpackLow(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<int> UnpackLow(System.Runtime.Intrinsics.Vector512<int> left, System.Runtime.Intrinsics.Vector512<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> UnpackLow(System.Runtime.Intrinsics.Vector512<long> left, System.Runtime.Intrinsics.Vector512<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> UnpackLow(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<uint> UnpackLow(System.Runtime.Intrinsics.Vector512<uint> left, System.Runtime.Intrinsics.Vector512<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ulong> UnpackLow(System.Runtime.Intrinsics.Vector512<ulong> left, System.Runtime.Intrinsics.Vector512<ulong> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> Xor(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> Xor(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> Xor(System.Runtime.Intrinsics.Vector512<int> left, System.Runtime.Intrinsics.Vector512<int> right) { throw null; }

@@ -1003,6 +1003,68 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<double> Subtract(Vector512<double> left, Vector512<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m512i _mm512_unpackhi_epi32 (__m512i a, __m512i b)
+        ///   VPUNPCKHDQ zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> UnpackHigh(Vector512<int> left, Vector512<int> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_unpackhi_epi32 (__m512i a, __m512i b)
+        ///   VPUNPCKHDQ zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> UnpackHigh(Vector512<uint> left, Vector512<uint> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_unpackhi_epi64 (__m512i a, __m512i b)
+        ///   VPUNPCKHQDQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> UnpackHigh(Vector512<long> left, Vector512<long> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_unpackhi_epi64 (__m512i a, __m512i b)
+        ///   VPUNPCKHQDQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> UnpackHigh(Vector512<ulong> left, Vector512<ulong> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_unpackhi_ps (__m512 a, __m512 b)
+        ///   VUNPCKHPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> UnpackHigh(Vector512<float> left, Vector512<float> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_unpackhi_pd (__m512d a, __m512d b)
+        ///   VUNPCKHPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> UnpackHigh(Vector512<double> left, Vector512<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_unpacklo_epi32 (__m512i a, __m512i b)
+        ///   VPUNPCKLDQ zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> UnpackLow(Vector512<int> left, Vector512<int> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_unpacklo_epi32 (__m512i a, __m512i b)
+        ///   VPUNPCKLDQ zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> UnpackLow(Vector512<uint> left, Vector512<uint> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_unpacklo_epi64 (__m512i a, __m512i b)
+        ///   VPUNPCKLQDQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> UnpackLow(Vector512<long> left, Vector512<long> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_unpacklo_epi64 (__m512i a, __m512i b)
+        ///   VPUNPCKLQDQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> UnpackLow(Vector512<ulong> left, Vector512<ulong> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_unpacklo_ps (__m512 a, __m512 b)
+        ///   VUNPCKLPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> UnpackLow(Vector512<float> left, Vector512<float> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_unpacklo_pd (__m512d a, __m512d b)
+        ///   VUNPCKLPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> UnpackLow(Vector512<double> left, Vector512<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m512i _mm512_xor_si512 (__m512i a, __m512i b)
         ///   VPXORD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
         /// </summary>

@@ -42,5 +42,7 @@
     <Compile Include="Store.cs" />
     <Compile Include="StoreAligned.cs" />
     <Compile Include="StoreAlignedNonTemporal.cs" />
+    <Compile Include="UnpackHigh.cs" />
+    <Compile Include="UnpackLow.cs" />
   </ItemGroup>
 </Project>

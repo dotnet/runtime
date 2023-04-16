@@ -430,5 +430,47 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPSADBW zmm1 {k1}{z}, zmm2, zmm3/m512
         /// </summary>
         public static Vector512<ushort> SumAbsoluteDifferences(Vector512<byte> left, Vector512<byte> right) => SumAbsoluteDifferences(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_unpackhi_epi8 (__m512i a, __m512i b)
+        ///   VPUNPCKHBW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<sbyte> UnpackHigh(Vector512<sbyte> left, Vector512<sbyte> right) => UnpackHigh(left, right);
+        /// <summary>
+        /// __m512i _mm512_unpackhi_epi8 (__m512i a, __m512i b)
+        ///   VPUNPCKHBW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<byte> UnpackHigh(Vector512<byte> left, Vector512<byte> right) => UnpackHigh(left, right);
+        /// <summary>
+        /// __m512i _mm512_unpackhi_epi16 (__m512i a, __m512i b)
+        ///   VPUNPCKHWD zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<short> UnpackHigh(Vector512<short> left, Vector512<short> right) => UnpackHigh(left, right);
+        /// <summary>
+        /// __m512i _mm512_unpackhi_epi16 (__m512i a, __m512i b)
+        ///   VPUNPCKHWD zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> UnpackHigh(Vector512<ushort> left, Vector512<ushort> right) => UnpackHigh(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_unpacklo_epi8 (__m512i a, __m512i b)
+        ///   VPUNPCKLBW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<sbyte> UnpackLow(Vector512<sbyte> left, Vector512<sbyte> right) => UnpackLow(left, right);
+        /// <summary>
+        /// __m512i _mm512_unpacklo_epi8 (__m512i a, __m512i b)
+        ///   VPUNPCKLBW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<byte> UnpackLow(Vector512<byte> left, Vector512<byte> right) => UnpackLow(left, right);
+        /// <summary>
+        /// __m512i _mm512_unpacklo_epi16 (__m512i a, __m512i b)
+        ///   VPUNPCKLWD zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<short> UnpackLow(Vector512<short> left, Vector512<short> right) => UnpackLow(left, right);
+        /// <summary>
+        /// __m512i _mm512_unpacklo_epi16 (__m512i a, __m512i b)
+        ///   VPUNPCKLWD zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> UnpackLow(Vector512<ushort> left, Vector512<ushort> right) => UnpackLow(left, right);
     }
 }
