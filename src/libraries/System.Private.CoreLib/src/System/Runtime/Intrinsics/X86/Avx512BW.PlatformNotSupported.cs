@@ -229,6 +229,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ushort> MultiplyLow(Vector512<ushort> left, Vector512<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m512i _mm512_packs_epi16 (__m512i a, __m512i b)
+        ///   VPACKSSWB zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<sbyte> PackSignedSaturate(Vector512<short> left, Vector512<short> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_packs_epi32 (__m512i a, __m512i b)
+        ///   VPACKSSDW zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<short> PackSignedSaturate(Vector512<int> left, Vector512<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_packus_epi16 (__m512i a, __m512i b)
+        ///   VPACKUSWB zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<byte> PackUnsignedSaturate(Vector512<short> left, Vector512<short> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_packus_epi32 (__m512i a, __m512i b)
+        ///   VPACKUSDW zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<ushort> PackUnsignedSaturate(Vector512<int> left, Vector512<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// void _mm512_storeu_epi8 (__m512i * mem_addr, __m512i a)
         ///   VMOVDQU8 m512 {k1}{z}, zmm1
         /// </summary>
