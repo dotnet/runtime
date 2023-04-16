@@ -8620,9 +8620,7 @@ private:
         return getBaseJitTypeAndSizeOfSIMDType(typeHnd, nullptr);
     }
 
-    // Pops and returns GenTree node from importers type stack.
-    // Normalizes TYP_STRUCT value in case of GT_CALL, GT_RET_EXPR and arg nodes.
-    GenTree* impSIMDPopStack(var_types type, bool expectAddr = false, CORINFO_CLASS_HANDLE structType = nullptr);
+    GenTree* impSIMDPopStack();
 
     void setLclRelatedToSIMDIntrinsic(GenTree* tree);
     bool areFieldsContiguous(GenTree* op1, GenTree* op2);
