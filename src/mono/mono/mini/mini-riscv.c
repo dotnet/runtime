@@ -2604,6 +2604,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_IREM_IMM:
 		case OP_LREM_UN_IMM:
+		case OP_IDIV_IMM:
 			mono_decompose_op_imm (cfg, bb, ins);
 			break;
 
