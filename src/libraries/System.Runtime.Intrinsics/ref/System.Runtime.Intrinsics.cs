@@ -4408,6 +4408,10 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<short> Add(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<sbyte> Add(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ushort> Add(System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<byte> AddSaturate(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<short> AddSaturate(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<sbyte> AddSaturate(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> AddSaturate(System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
         public new unsafe static System.Runtime.Intrinsics.Vector512<byte> LoadVector512(byte* address) { throw null; }
         public new unsafe static System.Runtime.Intrinsics.Vector512<short> LoadVector512(short* address) { throw null; }
         public new unsafe static System.Runtime.Intrinsics.Vector512<sbyte> LoadVector512(sbyte* address) { throw null; }
@@ -4420,6 +4424,10 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<short> Subtract(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<sbyte> Subtract(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ushort> Subtract(System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<byte> SubtractSaturate(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<short> SubtractSaturate(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<sbyte> SubtractSaturate(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> SubtractSaturate(System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
         public new abstract partial class VL : System.Runtime.Intrinsics.X86.Avx512F.VL
         {
             internal VL() { }

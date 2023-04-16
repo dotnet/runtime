@@ -64,6 +64,27 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ushort> Add(Vector512<ushort> left, Vector512<ushort> right) => Add(left, right);
 
         /// <summary>
+        /// __m512i _mm512_adds_epi8 (__m512i a, __m512i b)
+        ///   VPADDSB zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<sbyte> AddSaturate(Vector512<sbyte> left, Vector512<sbyte> right) => AddSaturate(left, right);
+        /// <summary>
+        /// __m512i _mm512_adds_epu8 (__m512i a, __m512i b)
+        ///   VPADDUSB zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<byte> AddSaturate(Vector512<byte> left, Vector512<byte> right) => AddSaturate(left, right);
+        /// <summary>
+        /// __m512i _mm512_adds_epi16 (__m512i a, __m512i b)
+        ///   VPADDSW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<short> AddSaturate(Vector512<short> left, Vector512<short> right) => AddSaturate(left, right);
+        /// <summary>
+        /// __m512i _mm512_adds_epu16 (__m512i a, __m512i b)
+        ///   VPADDUSW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> AddSaturate(Vector512<ushort> left, Vector512<ushort> right) => AddSaturate(left, right);
+
+        /// <summary>
         /// __m512i _mm512_loadu_epi8 (__m512i const * mem_addr)
         ///   VMOVDQU8 zmm1 {k1}{z}, m512
         /// </summary>
@@ -125,5 +146,26 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPSUBW zmm1 {k1}{z}, zmm2, zmm3/m512
         /// </summary>
         public static Vector512<ushort> Subtract(Vector512<ushort> left, Vector512<ushort> right) => Subtract(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_subs_epi8 (__m512i a, __m512i b)
+        ///   VPSUBSB zmm1 {k1}{z}, zmm2, zmm3/m128
+        /// </summary>
+        public static Vector512<sbyte> SubtractSaturate(Vector512<sbyte> left, Vector512<sbyte> right) => SubtractSaturate(left, right);
+        /// <summary>
+        /// __m512i _mm512_subs_epi16 (__m512i a, __m512i b)
+        ///   VPSUBSW zmm1 {k1}{z}, zmm2, zmm3/m128
+        /// </summary>
+        public static Vector512<short> SubtractSaturate(Vector512<short> left, Vector512<short> right) => SubtractSaturate(left, right);
+        /// <summary>
+        /// __m512i _mm512_subs_epu8 (__m512i a, __m512i b)
+        ///   VPSUBUSB zmm1 {k1}{z}, zmm2, zmm3/m128
+        /// </summary>
+        public static Vector512<byte> SubtractSaturate(Vector512<byte> left, Vector512<byte> right) => SubtractSaturate(left, right);
+        /// <summary>
+        /// __m512i _mm512_subs_epu16 (__m512i a, __m512i b)
+        ///   VPSUBUSW zmm1 {k1}{z}, zmm2, zmm3/m128
+        /// </summary>
+        public static Vector512<ushort> SubtractSaturate(Vector512<ushort> left, Vector512<ushort> right) => SubtractSaturate(left, right);
     }
 }
