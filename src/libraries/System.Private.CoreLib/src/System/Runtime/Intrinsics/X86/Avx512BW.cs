@@ -330,6 +330,39 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<byte> ShiftRightLogical128BitLane(Vector512<byte> value, [ConstantExpected] byte numBytes) => ShiftRightLogical128BitLane(value, numBytes);
 
         /// <summary>
+        /// __m512i _mm512_shuffle_epi8 (__m512i a, __m512i b)
+        ///   VPSHUFB zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<sbyte> Shuffle(Vector512<sbyte> value, Vector512<sbyte> mask) => Shuffle(value, mask);
+        /// <summary>
+        /// __m512i _mm512_shuffle_epi8 (__m512i a, __m512i b)
+        ///   VPSHUFB zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<byte> Shuffle(Vector512<byte> value, Vector512<byte> mask) => Shuffle(value, mask);
+
+        /// <summary>
+        /// __m512i _mm512_shufflehi_epi16 (__m512i a, const int imm8)
+        ///   VPSHUFHW zmm1 {k1}{z}, zmm2/m512, imm8
+        /// </summary>
+        public static Vector512<short> ShuffleHigh(Vector512<short> value, [ConstantExpected] byte control) => ShuffleHigh(value, control);
+        /// <summary>
+        /// __m512i _mm512_shufflehi_epi16 (__m512i a, const int imm8)
+        ///   VPSHUFHW zmm1 {k1}{z}, zmm2/m512, imm8
+        /// </summary>
+        public static Vector512<ushort> ShuffleHigh(Vector512<ushort> value, [ConstantExpected] byte control) => ShuffleHigh(value, control);
+
+        /// <summary>
+        /// __m512i _mm512_shufflelo_epi16 (__m512i a, const int imm8)
+        ///   VPSHUFLW zmm1 {k1}{z}, zmm2/m512, imm8
+        /// </summary>
+        public static Vector512<short> ShuffleLow(Vector512<short> value, [ConstantExpected] byte control) => ShuffleLow(value, control);
+        /// <summary>
+        /// __m512i _mm512_shufflelo_epi16 (__m512i a, const int imm8)
+        ///   VPSHUFLW zmm1 {k1}{z}, zmm2/m512, imm8
+        /// </summary>
+        public static Vector512<ushort> ShuffleLow(Vector512<ushort> value, [ConstantExpected] byte control) => ShuffleLow(value, control);
+
+        /// <summary>
         /// void _mm512_storeu_epi8 (__m512i * mem_addr, __m512i a)
         ///   VMOVDQU8 m512 {k1}{z}, zmm1
         /// </summary>

@@ -787,6 +787,27 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ulong> ShiftRightLogical(Vector512<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m512i _mm512_shuffle_epi32 (__m512i a, const int imm8)
+        ///   VPSHUFD zmm1 {k1}{z}, zmm2/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<int> Shuffle(Vector512<int> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_shuffle_epi32 (__m512i a, const int imm8)
+        ///   VPSHUFD zmm1 {k1}{z}, zmm2/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<uint> Shuffle(Vector512<uint> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_shuffle_ps (__m512 a, __m512 b, const int imm8)
+        ///   VSHUFPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<float> Shuffle(Vector512<float> value, Vector512<float> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_shuffle_pd (__m512d a, __m512d b, const int imm8)
+        ///   VSHUFPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<double> Shuffle(Vector512<double> value, Vector512<double> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// void _mm512_storeu_si512 (__m512i * mem_addr, __m512i a)
         ///   VMOVDQU32 m512 {k1}{z}, zmm1
         /// </summary>
