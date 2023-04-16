@@ -18,9 +18,15 @@ namespace System.Text.Tests
         private static void Assert_NotEqual(byte left, byte right)
         {
             // Equals
+            // (byte, byte)
+            Assert.False(Ascii.Equals(new byte[] { left }, new byte[] { right })); // non-vectorized code path
+            Assert.False(Ascii.Equals(Enumerable.Repeat(left, 100).ToArray(), Enumerable.Repeat(right, 100).ToArray())); // vectorized code path
             // (byte, char)
-            Assert.False(Ascii.Equals(new byte[] { left }, new char[] { (char)right })); // non-vectorized code path
-            Assert.False(Ascii.Equals(Enumerable.Repeat(left, 100).ToArray(), Enumerable.Repeat((char)right, 100).ToArray())); // vectorized code path
+            Assert.False(Ascii.Equals(new byte[] { left }, new char[] { (char)right }));
+            Assert.False(Ascii.Equals(Enumerable.Repeat(left, 100).ToArray(), Enumerable.Repeat((char)right, 100).ToArray()));
+            // (char, char)
+            Assert.False(Ascii.Equals(new char[] { (char)left }, new char[] { (char)right }));
+            Assert.False(Ascii.Equals(Enumerable.Repeat((char)left, 100).ToArray(), Enumerable.Repeat((char)right, 100).ToArray()));
 
             // EqualsIgnoreCase
             // (byte, byte)
@@ -51,7 +57,9 @@ namespace System.Text.Tests
         [MemberData(nameof(ExactlyTheSame_TestData))]
         public static void ExactlyTheSame_ReturnsTrue(string left, string right)
         {
+            Assert.True(Ascii.Equals(Encoding.ASCII.GetBytes(left), Encoding.ASCII.GetBytes(right)));
             Assert.True(Ascii.Equals(Encoding.ASCII.GetBytes(left), right));
+            Assert.True(Ascii.Equals(left, right));
 
             Assert.True(Ascii.EqualsIgnoreCase(Encoding.ASCII.GetBytes(left), Encoding.ASCII.GetBytes(right)));
             Assert.True(Ascii.EqualsIgnoreCase(left, right));
@@ -82,7 +90,9 @@ namespace System.Text.Tests
         [MemberData(nameof(Different_TestData))]
         public static void Different_ReturnsFalse(string left, string right)
         {
+            Assert.False(Ascii.Equals(Encoding.ASCII.GetBytes(left), Encoding.ASCII.GetBytes(right)));
             Assert.False(Ascii.Equals(Encoding.ASCII.GetBytes(left), right));
+            Assert.False(Ascii.Equals(left, right));
 
             Assert.False(Ascii.EqualsIgnoreCase(Encoding.ASCII.GetBytes(left), Encoding.ASCII.GetBytes(right)));
             Assert.False(Ascii.EqualsIgnoreCase(left, right));

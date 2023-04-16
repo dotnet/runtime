@@ -149,6 +149,134 @@ namespace System.Text
             return true;
         }
 
+        /// <inheritdoc cref="Equals(ReadOnlySpan{byte}, ReadOnlySpan{char})"/>
+        public static bool Equals(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
+            => left.Length == right.Length && Equals<byte>(left, right);
+
+        /// <inheritdoc cref="Equals(ReadOnlySpan{byte}, ReadOnlySpan{char})"/>
+        public static bool Equals(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
+            => left.Length == right.Length && Equals<ushort>(MemoryMarshal.Cast<char, ushort>(left), MemoryMarshal.Cast<char, ushort>(right));
+
+        private static bool Equals<T>(ReadOnlySpan<T> left, ReadOnlySpan<T> right) where T : unmanaged, INumberBase<T>
+        {
+            if (!Vector128.IsHardwareAccelerated || right.Length < Vector128<T>.Count)
+            {
+                for (int i = 0; i < right.Length; i++)
+                {
+                    uint valueA = uint.CreateTruncating(left[i]);
+                    uint valueB = uint.CreateTruncating(right[i]);
+
+                    if (valueA != valueB)
+                    {
+                        return false;
+                    }
+
+                    if (!UnicodeUtility.IsAsciiCodePoint(valueA) || !UnicodeUtility.IsAsciiCodePoint(valueB))
+                    {
+                        return false;
+                    }
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated && right.Length >= Vector256<T>.Count)
+            {
+                ref T currentLeftSearchSpace = ref MemoryMarshal.GetReference(left);
+                ref T oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, left.Length - Vector256<T>.Count);
+                ref T currentRightSearchSpace = ref MemoryMarshal.GetReference(right);
+                ref T oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, right.Length - Vector256<T>.Count);
+
+                Vector256<T> leftValues;
+                Vector256<T> rightValues;
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
+                {
+                    leftValues = Vector256.LoadUnsafe(ref currentLeftSearchSpace);
+                    rightValues = Vector256.LoadUnsafe(ref currentRightSearchSpace);
+
+                    if (Vector256.Equals(leftValues, rightValues) != Vector256<T>.AllBitsSet)
+                    {
+                        return false;
+                    }
+
+                    if (rightValues.AsByte().ExtractMostSignificantBits() != 0 || leftValues.ExtractMostSignificantBits() != 0)
+                    {
+                        return false;
+                    }
+
+                    currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, Vector256<T>.Count);
+                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, Vector256<T>.Count);
+                }
+                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+
+                // If any elements remain, process the last vector in the search space.
+                if ((uint)right.Length % Vector256<T>.Count != 0)
+                {
+                    rightValues = Vector256.LoadUnsafe(ref oneVectorAwayFromRightEnd);
+                    leftValues = Vector256.LoadUnsafe(ref oneVectorAwayFromLeftEnd);
+
+                    if (Vector256.Equals(leftValues, rightValues) != Vector256<T>.AllBitsSet)
+                    {
+                        return false;
+                    }
+
+                    if (rightValues.AsByte().ExtractMostSignificantBits() != 0 || leftValues.ExtractMostSignificantBits() != 0)
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                ref T currentLeftSearchSpace = ref MemoryMarshal.GetReference(left);
+                ref T oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, left.Length - Vector128<T>.Count);
+                ref T currentRightSearchSpace = ref MemoryMarshal.GetReference(right);
+                ref T oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, right.Length - Vector128<T>.Count);
+
+                Vector128<T> leftValues;
+                Vector128<T> rightValues;
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
+                {
+                    leftValues = Vector128.LoadUnsafe(ref currentLeftSearchSpace);
+                    rightValues = Vector128.LoadUnsafe(ref currentRightSearchSpace);
+
+                    if (Vector128.Equals(leftValues, rightValues) != Vector128<T>.AllBitsSet)
+                    {
+                        return false;
+                    }
+
+                    if (VectorContainsAnyNonAsciiData(leftValues) || VectorContainsAnyNonAsciiData(rightValues))
+                    {
+                        return false;
+                    }
+
+                    currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, Vector128<T>.Count);
+                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, Vector128<T>.Count);
+                }
+                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+
+                // If any elements remain, process the last vector in the search space.
+                if ((uint)right.Length % Vector128<T>.Count != 0)
+                {
+                    rightValues = Vector128.LoadUnsafe(ref oneVectorAwayFromRightEnd);
+                    leftValues = Vector128.LoadUnsafe(ref oneVectorAwayFromLeftEnd);
+
+                    if (Vector128.Equals(leftValues, rightValues) != Vector128<T>.AllBitsSet)
+                    {
+                        return false;
+                    }
+
+                    if (VectorContainsAnyNonAsciiData(leftValues) || VectorContainsAnyNonAsciiData(rightValues))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Determines whether the provided buffers contain equal ASCII characters, ignoring case considerations.
         /// </summary>
@@ -167,16 +295,16 @@ namespace System.Text
         public static bool EqualsIgnoreCase(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
             => left.Length == right.Length && SequenceEqualIgnoreCase(right, left);
 
-        private static bool SequenceEqualIgnoreCase<TText, TValue>(ReadOnlySpan<TText> text, ReadOnlySpan<TValue> value)
-            where TText : unmanaged, INumberBase<TText>
-            where TValue : unmanaged, INumberBase<TValue>
+        private static bool SequenceEqualIgnoreCase<TLeft, TRight>(ReadOnlySpan<TLeft> left, ReadOnlySpan<TRight> right)
+            where TLeft : unmanaged, INumberBase<TLeft>
+            where TRight : unmanaged, INumberBase<TRight>
         {
-            Debug.Assert(text.Length == value.Length);
+            Debug.Assert(left.Length == right.Length);
 
-            for (int i = 0; i < text.Length; i++)
+            for (int i = 0; i < left.Length; i++)
             {
-                uint valueA = uint.CreateTruncating(text[i]);
-                uint valueB = uint.CreateTruncating(value[i]);
+                uint valueA = uint.CreateTruncating(left[i]);
+                uint valueB = uint.CreateTruncating(right[i]);
 
                 if (!UnicodeUtility.IsAsciiCodePoint(valueA) || !UnicodeUtility.IsAsciiCodePoint(valueB))
                 {
