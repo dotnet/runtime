@@ -84,6 +84,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ushort> AddSaturate(Vector512<ushort> left, Vector512<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m512i _mm512_alignr_epi8 (__m512i a, __m512i b, const int count)
+        ///   VPALIGNR zmm1 {k1}{z}, zmm2, zmm3/m512, imm8
+        /// </summary>
+        public static Vector512<sbyte> AlignRight(Vector512<sbyte> left, Vector512<sbyte> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_alignr_epi8 (__m512i a, __m512i b, const int count)
+        ///   VPALIGNR zmm1 {k1}{z}, zmm2, zmm3/m512, imm8
+        /// </summary>
+        public static Vector512<byte> AlignRight(Vector512<byte> left, Vector512<byte> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_avg_epu8 (__m512i a, __m512i b)
+        ///   VPAVGB zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<byte> Average(Vector512<byte> left, Vector512<byte> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_avg_epu16 (__m512i a, __m512i b)
+        ///   VPAVGW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> Average(Vector512<ushort> left, Vector512<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m512i _mm512_loadu_epi8 (__m512i const * mem_addr)
         ///   VMOVDQU8 zmm1 {k1}{z}, m512
         /// </summary>
