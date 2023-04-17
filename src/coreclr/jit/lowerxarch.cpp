@@ -6856,7 +6856,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX512BW_ShiftLeftLogical:
                 case NI_AVX512BW_ShiftRightArithmetic:
                 case NI_AVX512BW_ShiftRightLogical:
-                case NI_AVX512BW_Shuffle:
                 case NI_AVX512BW_ShuffleHigh:
                 case NI_AVX512BW_ShuffleLow:
                 {
@@ -7548,15 +7547,35 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
+                        case NI_AVX2_Shuffle:
+                        {
+                            if (varTypeIsByte(simdBaseType))
+                            {
+                                // byte and sbyte are: pshufb ymm1, ymm2, ymm3/m256
+                                assert(!isCommutative);
+
+                                bool supportsRegOptional = false;
+
+                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                                {
+                                    MakeSrcContained(node, op2);
+                                }
+                                else if (supportsRegOptional)
+                                {
+                                    MakeSrcRegOptional(node, op2);
+                                }
+                                break;
+                            }
+                            FALLTHROUGH;
+                        }
+
                         case NI_SSE2_Shuffle:
                         case NI_SSE2_ShuffleHigh:
                         case NI_SSE2_ShuffleLow:
                         case NI_AVX2_Permute4x64:
-                        case NI_AVX2_Shuffle:
                         case NI_AVX2_ShuffleHigh:
                         case NI_AVX2_ShuffleLow:
                         case NI_AVX512F_Shuffle:
-                        case NI_AVX512BW_Shuffle:
                         case NI_AVX512BW_ShuffleHigh:
                         case NI_AVX512BW_ShuffleLow:
                         {
