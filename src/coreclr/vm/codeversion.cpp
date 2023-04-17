@@ -194,11 +194,13 @@ void NativeCodeVersionNode::SetGCCoverageInfo(PTR_GCCoverageInfo gcCover)
 
 NativeCodeVersion::NativeCodeVersion(PTR_NativeCodeVersionNode pVersionNode) :
     m_storageKind(pVersionNode != NULL ? StorageKind::Explicit : StorageKind::Unknown),
+    m_flags(None),
     m_pVersionNode(pVersionNode)
 {}
 
 NativeCodeVersion::NativeCodeVersion(PTR_MethodDesc pMethod) :
-    m_storageKind(pMethod != NULL ? StorageKind::Synthetic : StorageKind::Unknown)
+    m_storageKind(pMethod != NULL ? StorageKind::Synthetic : StorageKind::Unknown),
+    m_flags(None)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     m_synthetic.m_pMethodDesc = pMethod;
@@ -281,6 +283,30 @@ BOOL NativeCodeVersion::IsActiveChildVersion() const
         }
         return pMethodVersioningState->IsDefaultVersionActiveChild();
     }
+}
+
+void NativeCodeVersion::SetShouldSkipInstrumentation()
+{
+    LIMITED_METHOD_CONTRACT;
+    m_flags = (NativeCodeVersionFlag)(m_flags | ShouldSkipInstrumentationFlag);
+}
+
+bool NativeCodeVersion::ShouldSkipInstrumentation() const
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_flags & ShouldSkipInstrumentationFlag;
+}
+
+void NativeCodeVersion::SetInstrumented()
+{
+    LIMITED_METHOD_CONTRACT;
+    m_flags = (NativeCodeVersionFlag)(m_flags | InstrumentedFlag);
+}
+
+bool NativeCodeVersion::IsInstrumented() const
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_flags & InstrumentedFlag;
 }
 
 PTR_MethodDescVersioningState NativeCodeVersion::GetMethodDescVersioningState() const

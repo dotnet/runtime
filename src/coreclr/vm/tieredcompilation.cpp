@@ -284,10 +284,16 @@ void TieredCompilationManager::AsyncPromoteToTier1(
 #ifdef FEATURE_PGO
     if (g_pConfig->TieredPGO())
     {
+        NativeCodeVersion::OptimizationTier currentTier = currentNativeCodeVersion.GetOptimizationTier();
         if (currentNativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
             g_pConfig->TieredPGO_InstrumentOnlyHotCode())
         {
-            if (ExecutionManager::IsReadyToRunCode(currentNativeCodeVersion.GetNativeCode()))
+            if (currentNativeCodeVersion.ShouldSkipInstrumentation())
+            {
+                // Skip instrumentation on explicit request
+                nextTier = NativeCodeVersion::OptimizationTier1;
+            }
+            else if (ExecutionManager::IsReadyToRunCode(currentNativeCodeVersion.GetNativeCode()))
             {
                 // We definitely don't want to use unoptimized instrumentation tier for hot R2R:
                 // 1) It will produce a lot of new compilations for small methods which were inlined in R2R
@@ -313,6 +319,14 @@ void TieredCompilationManager::AsyncPromoteToTier1(
                 // NOTE: we might consider using OptimizationTier1Instrumented if the previous Tier0
                 // made it to Tier1-OSR.
             }
+        }
+        else if (currentTier == NativeCodeVersion::OptimizationTier1Instrumented &&
+            !currentNativeCodeVersion.IsInstrumented())
+        {
+            // JIT didn't ask for PGO schemes (too simple to instrument?) and the current tier has optimizations
+            // enabled - it means it's already the final tier, no need to promote further. Call counting stubs
+            // are also expected to be removed by this point.
+            return;
         }
     }
 #endif

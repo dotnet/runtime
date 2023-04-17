@@ -12129,6 +12129,25 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
         codeSize = m_ILHeader->GetCodeSize();
     }
 
+    if (m_pMethodBeingCompiled->IsVersionable())
+    {
+        CodeVersionManager* pCodeVersionManager = m_pMethodBeingCompiled->GetCodeVersionManager();
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(m_pMethodBeingCompiled);
+        NativeCodeVersion currentVersion = ilVersion.GetActiveNativeCodeVersion(m_pMethodBeingCompiled);
+
+        if ((currentVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier::OptimizationTier0) ||
+            (currentVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier::OptimizationTier1))
+        {
+            // Current tier is not marked as instrumented, but it requested the schemas so it means it doesn't
+            // need to be re-instrumented in future and can be promoted straight to Tier1 if hot enough.
+            currentVersion.SetShouldSkipInstrumentation();
+        }
+
+        // Leave a note that this method is properly instrumented
+        currentVersion.SetInstrumented();
+    }
+
 #ifdef FEATURE_PGO
     hr = PgoManager::allocPgoInstrumentationBySchema(m_pMethodBeingCompiled, pSchema, countSchemaItems, pInstrumentationData);
 #else

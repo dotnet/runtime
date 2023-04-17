@@ -106,7 +106,20 @@ public:
     PTR_NativeCodeVersionNode AsNode() const;
 #endif
 
+    void SetShouldSkipInstrumentation();
+    bool ShouldSkipInstrumentation() const;
+
+    void SetInstrumented();
+    bool IsInstrumented() const;
+
 private:
+
+    enum NativeCodeVersionFlag : UINT16
+    {
+        None = 0,
+        ShouldSkipInstrumentationFlag = 1,
+        InstrumentedFlag = 2,
+    };
 
 #ifndef FEATURE_CODE_VERSIONING
     PTR_MethodDesc m_pMethodDesc;
@@ -122,7 +135,7 @@ private:
     BOOL IsActiveChildVersion() const;
     PTR_MethodDescVersioningState GetMethodDescVersioningState() const;
 
-    enum StorageKind
+    enum StorageKind : UINT16
     {
         Unknown,
         Explicit,
@@ -130,6 +143,7 @@ private:
     };
 
     StorageKind m_storageKind;
+    NativeCodeVersionFlag m_flags;
     union
     {
         PTR_NativeCodeVersionNode m_pVersionNode;
@@ -694,7 +708,7 @@ public:
 
 inline NativeCodeVersion::NativeCodeVersion()
 #ifdef FEATURE_CODE_VERSIONING
-    : m_storageKind(StorageKind::Unknown), m_pVersionNode(PTR_NULL)
+    : m_storageKind(StorageKind::Unknown), m_flags(None), m_pVersionNode(PTR_NULL)
 #else
     : m_pMethodDesc(PTR_NULL)
 #endif
@@ -707,7 +721,7 @@ inline NativeCodeVersion::NativeCodeVersion()
 
 inline NativeCodeVersion::NativeCodeVersion(const NativeCodeVersion & rhs)
 #ifdef FEATURE_CODE_VERSIONING
-    : m_storageKind(rhs.m_storageKind), m_pVersionNode(rhs.m_pVersionNode)
+    : m_storageKind(rhs.m_storageKind), m_flags(None), m_pVersionNode(rhs.m_pVersionNode)
 #else
     : m_pMethodDesc(rhs.m_pMethodDesc)
 #endif
