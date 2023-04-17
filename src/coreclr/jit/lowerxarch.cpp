@@ -7580,7 +7580,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512BW_ShuffleLow:
                         {
                             // These intrinsics have op2 as an imm and op1 as a reg/mem
-                            assert(!varTypeIsFloating(simdBaseType));
 
                             if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
                             {
