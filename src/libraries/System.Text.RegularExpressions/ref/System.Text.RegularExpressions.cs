@@ -354,7 +354,7 @@ namespace System.Text.RegularExpressions
         protected internal int runtrackpos;
         protected internal RegexRunner() { }
         protected void Capture(int capnum, int start, int end) { }
-        protected static bool CharInClass(char ch, string charClass) { throw null; }
+        public static bool CharInClass(char ch, string charClass) { throw null; }
         protected static bool CharInSet(char ch, string @set, string category) { throw null; }
         protected void CheckTimeout() { }
         protected void Crawl(int i) { }

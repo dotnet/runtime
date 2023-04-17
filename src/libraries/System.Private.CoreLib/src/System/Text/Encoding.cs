@@ -733,6 +733,25 @@ namespace System.Text
             }
         }
 
+        // TODO https://github.com/dotnet/runtime/issues/84425: Make this public.
+        /// <summary>Encodes into a span of bytes a set of characters from the specified read-only span if the destination is large enough.</summary>
+        /// <param name="chars">The span containing the set of characters to encode.</param>
+        /// <param name="bytes">The byte span to hold the encoded bytes.</param>
+        /// <param name="bytesWritten">Upon successful completion of the operation, the number of bytes encoded into <paramref name="bytes"/>.</param>
+        /// <returns><see langword="true"/> if all of the characters were encoded into the destination; <see langword="false"/> if the destination was too small to contain all the encoded bytes.</returns>
+        internal virtual bool TryGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
+        {
+            int required = GetByteCount(chars);
+            if (required <= bytes.Length)
+            {
+                bytesWritten = GetBytes(chars, bytes);
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
         // Returns the number of characters produced by decoding the given byte
         // array.
         //

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 //permutations for  (((class_s.a+class_s.b)+class_s.c)+class_s.d)
 //(((class_s.a+class_s.b)+class_s.c)+class_s.d)
 //(class_s.d+((class_s.a+class_s.b)+class_s.c))
@@ -35,7 +36,8 @@ namespace CseTest
     public class Test_Main
     {
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int ret = 100;
             class_s s = new class_s();

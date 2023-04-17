@@ -6265,6 +6265,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
 // Standard unary operators
 #ifdef TARGET_ARM64
         case GT_CNEG_LT:
+        case GT_CINCCC:
 #endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
@@ -6593,17 +6594,14 @@ bool GenTree::OperRequiresAsgFlag()
     {
         return true;
     }
+
 #ifdef FEATURE_HW_INTRINSICS
     if (gtOper == GT_HWINTRINSIC)
     {
-        GenTreeHWIntrinsic* hwIntrinsicNode = this->AsHWIntrinsic();
-        if (hwIntrinsicNode->OperIsMemoryStore())
-        {
-            // A MemoryStore operation is an assignment
-            return true;
-        }
+        return AsHWIntrinsic()->OperRequiresAsgFlag();
     }
 #endif // FEATURE_HW_INTRINSICS
+
     if (gtOper == GT_CALL)
     {
         // If the call has return buffer argument, it produced a definition and hence
@@ -6630,6 +6628,13 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp)
 
         case GT_INTRINSIC:
             return comp->IsIntrinsicImplementedByUserCall(this->AsIntrinsic()->gtIntrinsicName);
+
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+        {
+            return AsHWIntrinsic()->OperRequiresCallFlag();
+        }
+#endif // FEATURE_HW_INTRINSICS
 
 #if FEATURE_FIXED_OUT_ARGS && !defined(TARGET_64BIT)
         case GT_LSH:
@@ -6816,18 +6821,21 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
         case GT_HWINTRINSIC:
         {
             GenTreeHWIntrinsic* hwIntrinsicNode = this->AsHWIntrinsic();
-            assert(hwIntrinsicNode != nullptr);
+
             if (hwIntrinsicNode->OperIsMemoryLoadOrStore())
             {
-                // This operation contains an implicit indirection
-                //   it could throw a null reference exception.
-                //
+                assert((gtFlags & GTF_IND_NONFAULTING) == 0);
+
+                // TODO-CQ: We should use comp->fgAddrCouldBeNull on the address operand
+                // to determine if this can actually produce an NRE or not
+
                 return ExceptionSetFlags::NullReferenceException;
             }
 
             return ExceptionSetFlags::None;
         }
 #endif // FEATURE_HW_INTRINSICS
+
         default:
             if (gtOverflowEx())
             {
@@ -7348,6 +7356,13 @@ GenTreeVecCon* Compiler::gtNewVconNode(var_types type)
     return vecCon;
 }
 
+GenTreeVecCon* Compiler::gtNewVconNode(var_types type, void* data)
+{
+    GenTreeVecCon* vecCon = new (this, GT_CNS_VEC) GenTreeVecCon(type);
+    memcpy(&vecCon->gtSimdVal, data, genTypeSize(type));
+    return vecCon;
+}
+
 GenTree* Compiler::gtNewAllBitsSetConNode(var_types type)
 {
 #ifdef FEATURE_SIMD
@@ -7383,9 +7398,9 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
 #ifdef FEATURE_SIMD
     if (varTypeIsSIMD(type))
     {
-        GenTreeVecCon* allBitsSet = gtNewVconNode(type);
-        allBitsSet->gtSimdVal     = simd_t::Zero();
-        return allBitsSet;
+        GenTreeVecCon* vecCon = gtNewVconNode(type);
+        vecCon->gtSimdVal     = simd_t::Zero();
+        return vecCon;
     }
 #endif // FEATURE_SIMD
 
@@ -9508,6 +9523,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
 // Standard unary operators
 #ifdef TARGET_ARM64
         case GT_CNEG_LT:
+        case GT_CINCCC:
 #endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
@@ -12099,6 +12115,10 @@ void Compiler::gtDispTree(GenTree*     tree,
             printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
         }
 #ifdef TARGET_ARM64
+        else if (tree->OperIs(GT_CINCCC))
+        {
+            printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
+        }
         else if (tree->OperIs(GT_CCMP))
         {
             printf(" cond=%s flags=%s", tree->AsCCMP()->gtCondition.Name(),
@@ -16296,6 +16316,17 @@ bool Compiler::gtSplitTree(
                 return false;
             }
 
+            if (user->OperIs(GT_CALL))
+            {
+                for (CallArg& callArg : user->AsCall()->gtArgs.Args())
+                {
+                    if ((&callArg.EarlyNodeRef() == useInf.Use) && (callArg.GetLateNode() != nullptr))
+                    {
+                        return false;
+                    }
+                }
+            }
+
             return true;
         }
 
@@ -18985,6 +19016,7 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX2_ConvertToInt32:
         case NI_AVX2_ConvertToUInt32:
         case NI_AVX2_ExtractVector128:
+        case NI_AVX512F_ExtractVector128:
         case NI_AVX512F_ExtractVector256:
         case NI_AVX512F_ConvertToVector128Int16:
         case NI_AVX512F_ConvertToVector128Int32:
@@ -21547,7 +21579,11 @@ GenTree* Compiler::gtNewSimdGetElementNode(
             unreached();
     }
 
-    if (simdSize == 32)
+    if (simdSize == 64)
+    {
+        intrinsicId = NI_Vector512_GetElement;
+    }
+    else if (simdSize == 32)
     {
         intrinsicId = NI_Vector256_GetElement;
     }
@@ -23884,7 +23920,11 @@ GenTree* Compiler::gtNewSimdWithElementNode(
             unreached();
     }
 
-    if (simdSize == 32)
+    if (simdSize == 64)
+    {
+        hwIntrinsicID = NI_Vector512_WithElement;
+    }
+    else if (simdSize == 32)
     {
         hwIntrinsicID = NI_Vector256_WithElement;
     }
@@ -24250,6 +24290,84 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
 }
 
 //------------------------------------------------------------------------
+// OperIsMemoryStoreOrBarrier: Does this HWI node have memory store or barrier semantics?
+//
+// Return Value:
+//    Whether "this" is a store or memory barrier.
+//
+bool GenTreeHWIntrinsic::OperIsMemoryStoreOrBarrier() const
+{
+    if (OperIsMemoryStore())
+    {
+        return true;
+    }
+#if defined(TARGET_XARCH)
+    NamedIntrinsic intrinsicId = GetHWIntrinsicId();
+
+    if (HWIntrinsicInfo::HasSpecialSideEffect_Barrier(intrinsicId))
+    {
+        return true;
+    }
+#endif // TARGET_XARCH
+    else
+    {
+        return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+// OperRequiresAsgFlag : Check whether the operation requires GTF_ASG flag regardless
+//                       of the children's flags.
+//
+bool GenTreeHWIntrinsic::OperRequiresAsgFlag() const
+{
+    // A MemoryStore operation is an assignment and barriers, while they
+    // don't technically do an assignment are modeled the same as
+    // GT_MEMORYBARRIER which tracks itself as requiring the GT_ASG flag
+    return OperIsMemoryStoreOrBarrier();
+}
+
+//------------------------------------------------------------------------------
+// OperRequiresCallFlag : Check whether the operation requires GTF_CALL flag regardless
+//                        of the children's flags.
+//
+bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
+{
+    NamedIntrinsic intrinsicId = GetHWIntrinsicId();
+
+    if (HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
+    {
+        switch (intrinsicId)
+        {
+#if defined(TARGET_XARCH)
+            case NI_X86Base_Pause:
+            case NI_SSE_Prefetch0:
+            case NI_SSE_Prefetch1:
+            case NI_SSE_Prefetch2:
+            case NI_SSE_PrefetchNonTemporal:
+            {
+                return true;
+            }
+#endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+            case NI_ArmBase_Yield:
+            {
+                return true;
+            }
+#endif // TARGET_ARM64
+
+            default:
+            {
+                break;
+            }
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // GetLayout: Get the layout for this TYP_STRUCT HWI node.
 //
 // Arguments:
@@ -24323,6 +24441,63 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
            (op1->GetSimdBaseType() == op2->GetSimdBaseType()) && (op1->GetSimdSize() == op2->GetSimdSize()) &&
            (op1->GetAuxiliaryType() == op2->GetAuxiliaryType()) && (op1->GetOtherReg() == op2->GetOtherReg()) &&
            OperandsAreEqual(op1, op2);
+}
+
+void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
+{
+    SetHWIntrinsicId(intrinsicId);
+
+    if (OperIsMemoryStore())
+    {
+        gtFlags |= (GTF_ASG | GTF_GLOB_REF | GTF_EXCEPT);
+    }
+    else if (OperIsMemoryLoad())
+    {
+        gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
+    }
+    else if (HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
+    {
+        switch (intrinsicId)
+        {
+#if defined(TARGET_XARCH)
+            case NI_SSE_StoreFence:
+            case NI_SSE2_LoadFence:
+            case NI_SSE2_MemoryFence:
+            case NI_X86Serialize_Serialize:
+            {
+                // Mark as an assignment and global reference, much as is done for GT_MEMORYBARRIER
+                gtFlags |= (GTF_ASG | GTF_GLOB_REF);
+                break;
+            }
+
+            case NI_X86Base_Pause:
+            case NI_SSE_Prefetch0:
+            case NI_SSE_Prefetch1:
+            case NI_SSE_Prefetch2:
+            case NI_SSE_PrefetchNonTemporal:
+            {
+                // Mark as a call and global reference, much as is done for GT_KEEPALIVE
+                gtFlags |= (GTF_CALL | GTF_GLOB_REF);
+                break;
+            }
+#endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+            case NI_ArmBase_Yield:
+            {
+                // Mark as a call and global reference, much as is done for GT_KEEPALIVE
+                gtFlags |= (GTF_CALL | GTF_GLOB_REF);
+                break;
+            }
+#endif // TARGET_ARM64
+
+            default:
+            {
+                assert(!"Unexpected hwintrinsic side-effect");
+                break;
+            }
+        }
+    }
 }
 #endif // FEATURE_HW_INTRINSICS
 

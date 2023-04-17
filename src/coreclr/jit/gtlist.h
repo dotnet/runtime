@@ -245,8 +245,12 @@ GTNODE(SELECTCC         , GenTreeOpCC        ,0,GTK_BINOP|DBK_NOTHIR)
 // operands and sets the condition flags according to the result. Otherwise
 // sets the condition flags to the specified immediate value.
 GTNODE(CCMP             , GenTreeCCMP        ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+// Maps to arm64 cinc instruction. It returns the operand incremented by one when the condition is true.
+// Otherwise returns the unchanged operand. Optimises for patterns such as, result = condition ? op1 + 1 : op1
+GTNODE(CINC             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
+// Variant of CINC that reuses flags computed by a previous node with the specified condition.
+GTNODE(CINCCC           , GenTreeOpCC        ,0,GTK_UNOP|DBK_NOTHIR)
 #endif
-
 
 //-----------------------------------------------------------------------------
 //  Other nodes that look like unary/binary operators:

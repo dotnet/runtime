@@ -474,15 +474,19 @@ ShadowUpdateDisabled
 CheckCardTable
         ; Branch to Exit if the reference is not in the Gen0 heap
         ;
-        adr      x12,  wbs_ephemeral_low
-        ldp      x12,  x16, [x12]
+        ldr      x12,  wbs_ephemeral_low
         cbz      x12,  SkipEphemeralCheck
-
         cmp      x15,  x12
-        blo      Exit
 
-        cmp      x15,  x16
-        bhi      Exit
+        ldr      x12,  wbs_ephemeral_high
+
+        ; Compare against the upper bound if the previous comparison indicated
+        ; that the destination address is greater than or equal to the lower
+        ; bound. Otherwise, set the C flag (specified by the 0x2) so that the
+        ; branch to exit is taken.
+        ccmp     x15,  x12, #0x2, hs
+
+        bhs      Exit
 
 SkipEphemeralCheck
         ; Check if we need to update the card table
