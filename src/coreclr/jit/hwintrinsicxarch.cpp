@@ -2005,8 +2005,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Negate:
         case NI_Vector256_Negate:
+        case NI_Vector512_Negate:
         case NI_Vector128_op_UnaryNegation:
         case NI_Vector256_op_UnaryNegation:
+        case NI_Vector512_op_UnaryNegation:
         {
             assert(sig->numArgs == 1);
 
@@ -2067,6 +2069,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_op_UnaryPlus:
         case NI_Vector256_op_UnaryPlus:
+        case NI_Vector512_op_UnaryPlus:
         {
             assert(sig->numArgs == 1);
             retNode = impSIMDPopStack(retType);
@@ -2246,6 +2249,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Sqrt:
         case NI_Vector256_Sqrt:
+        case NI_Vector512_Sqrt:
         {
             assert(sig->numArgs == 1);
 

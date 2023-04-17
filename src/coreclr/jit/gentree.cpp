@@ -23069,6 +23069,11 @@ GenTree* Compiler::gtNewSimdSqrtNode(var_types type, GenTree* op1, CorInfoType s
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
         intrinsic = NI_AVX_Sqrt;
     }
+    if (simdSize == 64)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+        intrinsic = NI_AVX512F_Sqrt;
+    }
     else if (simdBaseType == TYP_FLOAT)
     {
         intrinsic = NI_SSE_Sqrt;
@@ -23408,6 +23413,10 @@ GenTree* Compiler::gtNewSimdUnOpNode(
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                 assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+            }
+            if (simdSize == 64)
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
             }
             op2 = gtNewZeroConNode(type);
 
