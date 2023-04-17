@@ -1915,8 +1915,9 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
             {
                 MaxUnrollSize = 128;
             }
-            else if (comp->compOpportunisticallyDependsOn(InstructionSet_Vector256))
+            else if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
+                // We need AVX2 for NI_Vector256_op_Equality, fallback to Vector128 if only AVX is available
                 MaxUnrollSize = 64;
             }
 #endif
