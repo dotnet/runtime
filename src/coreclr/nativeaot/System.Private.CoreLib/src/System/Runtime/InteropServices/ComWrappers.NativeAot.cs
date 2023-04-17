@@ -174,7 +174,7 @@ namespace System.Runtime.InteropServices
 
                 // If we observe the destroy sentinel, then this release
                 // must destroy the wrapper.
-                if (RefCount == DestroySentinel)
+                if (curr == DestroySentinel)
                     Destroy();
 
                 return GetTrackerCount(RefCount);
@@ -806,11 +806,6 @@ namespace System.Runtime.InteropServices
         {
             ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
             uint refcount = wrapper->Release();
-            if (wrapper->RefCount == 0)
-            {
-                wrapper->Destroy();
-            }
-
             return refcount;
         }
 
