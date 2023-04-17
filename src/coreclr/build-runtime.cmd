@@ -65,13 +65,12 @@ set __UnprocessedBuildArgs=
 set __BuildNative=1
 set __RestoreOptData=1
 set __HostArch=
-set __HostArch2=
 set __PgoOptDataPath=
 set __CMakeArgs=
 set __Ninja=1
 set __RequestedBuildComponents=
 set __OutputRid=
-set __ForceArchDir=
+set __ExplicitHostArch=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -128,8 +127,7 @@ if [!__PassThroughArgs!]==[] (
     set "__PassThroughArgs=%__PassThroughArgs% %1"
 )
 
-if /i "%1" == "-hostarch"            (set __HostArch=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "-forcearchdir"        (set __ForceArchDir=1&shift&goto Arg_Loop)
+if /i "%1" == "-hostarch"            (set __HostArch=%2&set __ExplicitHostArch=1&shift&shift&goto Arg_Loop)
 if /i "%1" == "-os"                  (set __TargetOS=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-outputrid"           (set __OutputRid=%2&shift&shift&goto Arg_Loop)
 
@@ -219,11 +217,8 @@ set "__ArtifactsIntermediatesDir=%__RepoRootDir%\artifacts\obj\coreclr\"
 if "%__Ninja%"=="0" (set "__IntermediatesDir=%__IntermediatesDir%\ide")
 set "__PackagesBinDir=%__BinDir%\.nuget"
 
-
-if NOT "%__HostArch%" == "%__TargetArch%" set __ForceArchDir=1
-
-if "%__ForceArchDir%" == "1" set __BinDir=%__BinDir%\%__HostArch%
-if "%__ForceArchDir%" == "1" set __IntermediatesDir=%__IntermediatesDir%\%__HostArch%
+if "%__ExplicitHostArch%" == "1" set __BinDir=%__BinDir%\%__HostArch%
+if "%__ExplicitHostArch%" == "1" set __IntermediatesDir=%__IntermediatesDir%\%__HostArch%
 
 REM Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"

@@ -161,6 +161,56 @@ namespace Internal.Runtime.InteropServices
         }
 
         /// <summary>
+        /// Native hosting entry point for loading an assembly from a byte array
+        /// </summary>
+        /// <param name="assembly">Bytes of the assembly to load</param>
+        /// <param name="assemblyByteLength">Byte length of the assembly to load</param>
+        /// <param name="symbols">Optional. Bytes of the symbols for the assembly</param>
+        /// <param name="symbolsByteLength">Optional. Byte length of the symbols for the assembly</param>
+        /// <param name="loadContext">Extensibility parameter (currently unused)</param>
+        /// <param name="reserved">Extensibility parameter (currently unused)</param>
+        [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnmanagedCallersOnly]
+        public static unsafe int LoadAssemblyBytes(byte* assembly, nint assemblyByteLength, byte* symbols, nint symbolsByteLength, IntPtr loadContext, IntPtr reserved)
+        {
+            if (!IsSupported)
+                return HostFeatureDisabled;
+
+            try
+            {
+                ArgumentNullException.ThrowIfNull(assembly);
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(assemblyByteLength);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(assemblyByteLength, int.MaxValue);
+                ArgumentOutOfRangeException.ThrowIfNotEqual(loadContext, IntPtr.Zero);
+                ArgumentOutOfRangeException.ThrowIfNotEqual(reserved, IntPtr.Zero);
+
+                ReadOnlySpan<byte> assemblySpan = new ReadOnlySpan<byte>(assembly, (int)assemblyByteLength);
+                ReadOnlySpan<byte> symbolsSpan = default;
+                if (symbols != null && symbolsByteLength > 0)
+                {
+                    symbolsSpan = new ReadOnlySpan<byte>(symbols, (int)symbolsByteLength);
+                }
+
+                LoadAssemblyBytesLocal(assemblySpan, symbolsSpan);
+            }
+            catch (Exception e)
+            {
+                return e.HResult;
+            }
+
+            return 0;
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "The same feature switch applies to GetFunctionPointer and this function. We rely on the warning from GetFunctionPointer.")]
+            static void LoadAssemblyBytesLocal(ReadOnlySpan<byte> assemblyBytes, ReadOnlySpan<byte> symbolsBytes) => AssemblyLoadContext.Default.InternalLoad(assemblyBytes, symbolsBytes);
+        }
+
+        /// <summary>
         /// Native hosting entry point for creating a native delegate
         /// </summary>
         /// <param name="typeNameNative">Assembly qualified type name</param>

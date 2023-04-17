@@ -102,6 +102,27 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<nint>   Negate(Vector128<nint>   value) { throw new PlatformNotSupportedException(); }
         public static Vector128<nuint>  Negate(Vector128<nuint>  value) { throw new PlatformNotSupportedException(); }
 
+        // Extended integer arithmetic
+
+        public static Vector128<short>  MultiplyWideningLower(Vector128<sbyte>  left, Vector128<sbyte>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> MultiplyWideningLower(Vector128<byte>   left, Vector128<byte>   right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    MultiplyWideningLower(Vector128<short>  left, Vector128<short>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   MultiplyWideningLower(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   MultiplyWideningLower(Vector128<int>    left, Vector128<int>    right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  MultiplyWideningLower(Vector128<uint>   left, Vector128<uint>   right) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<short>  MultiplyWideningUpper(Vector128<sbyte>  left, Vector128<sbyte>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> MultiplyWideningUpper(Vector128<byte>   left, Vector128<byte>   right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    MultiplyWideningUpper(Vector128<short>  left, Vector128<short>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   MultiplyWideningUpper(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   MultiplyWideningUpper(Vector128<int>    left, Vector128<int>    right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  MultiplyWideningUpper(Vector128<uint>   left, Vector128<uint>   right) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<short>  AddPairwiseWidening(Vector128<sbyte>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> AddPairwiseWidening(Vector128<byte>   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    AddPairwiseWidening(Vector128<short>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   AddPairwiseWidening(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
         // Bit shifts
 
         public static Vector128<sbyte>  ShiftLeft(Vector128<sbyte>  value, int count) { throw new PlatformNotSupportedException(); }

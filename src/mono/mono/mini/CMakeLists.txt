@@ -410,7 +410,7 @@ if(NOT DISABLE_SHARED_LIBS)
     # if components are disabled, link the fallback stubs into the runtime
     target_sources(monosgen-shared PRIVATE "${mono-components-stub-objects}")
   endif()
-  install(TARGETS monosgen-shared LIBRARY)
+  install_with_stripped_symbols(monosgen-shared TARGETS lib)
   if(HOST_WIN32 AND TARGET_AMD64)
     add_library(monosgen-shared-dac SHARED "mini-windows-dlldac.c")
     target_link_libraries(monosgen-shared-dac PRIVATE monoapi eglib_api)
@@ -452,9 +452,7 @@ if(NOT DISABLE_SHARED_LIBS)
           FRAMEWORK_VERSION C
           MACOSX_FRAMEWORK_IDENTIFIER net.dot.mono-framework
         )
-        install(TARGETS ${frameworkconfig}
-          FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        )
+        install_with_stripped_symbols(${frameworkconfig} TARGETS ${CMAKE_INSTALL_LIBDIR})
       endforeach()
     endif()
   endif()
@@ -567,8 +565,5 @@ if(NOT DISABLE_EXECUTABLES)
     target_sources(mono-sgen PRIVATE ${mono_validate_apis_source})
   endif()
 
-  install(TARGETS mono-sgen RUNTIME)
-  if(HOST_WIN32)
-    install(FILES $<TARGET_PDB_FILE:mono-sgen> DESTINATION bin OPTIONAL)
-  endif()
+  install_with_stripped_symbols(mono-sgen TARGETS bin)
 endif()

@@ -80,16 +80,6 @@ namespace System.Runtime
 
         private static unsafe object IsInstanceOfClass_Helper(MethodTable* pTargetType, object obj, MethodTable* pObjType)
         {
-            if (pTargetType->IsCloned)
-            {
-                pTargetType = pTargetType->CanonicalEEType;
-            }
-
-            if (pObjType->IsCloned)
-            {
-                pObjType = pObjType->CanonicalEEType;
-            }
-
             // if the EETypes pointers match, we're done
             if (pObjType == pTargetType)
             {
@@ -139,9 +129,6 @@ namespace System.Runtime
                     return null;
                 }
 
-                if (pObjType->IsCloned)
-                    pObjType = pObjType->CanonicalEEType;
-
                 if (pObjType == pTargetType)
                 {
                     return obj;
@@ -180,7 +167,6 @@ namespace System.Runtime
             MethodTable* pObjType = obj.GetMethodTable();
 
             Debug.Assert(pTargetType->IsArray, "IsInstanceOfArray called with non-array MethodTable");
-            Debug.Assert(!pTargetType->IsCloned, "cloned array types are disallowed");
 
             // if the types match, we are done
             if (pObjType == pTargetType)
@@ -193,8 +179,6 @@ namespace System.Runtime
             {
                 return null;
             }
-
-            Debug.Assert(!pObjType->IsCloned, "cloned array types are disallowed");
 
             // compare the array types structurally
 
@@ -269,23 +253,11 @@ namespace System.Runtime
             Debug.Assert(!pTargetType->IsParameterizedType, "did not expect parameterized type");
             Debug.Assert(pTargetType->IsInterface, "IsInstanceOfInterface called with non-interface MethodTable");
 
-            // This can happen with generic interface types
-            // Debug.Assert(!pTargetType->IsCloned, "cloned interface types are disallowed");
-
-            // canonicalize target type
-            if (pTargetType->IsCloned)
-                pTargetType = pTargetType->CanonicalEEType;
-
             int numInterfaces = pObjType->NumInterfaces;
             EEInterfaceInfo* interfaceMap = pObjType->InterfaceMap;
             for (int i = 0; i < numInterfaces; i++)
             {
                 MethodTable* pInterfaceType = interfaceMap[i].InterfaceType;
-
-                // canonicalize the interface type
-                if (pInterfaceType->IsCloned)
-                    pInterfaceType = pInterfaceType->CanonicalEEType;
-
                 if (pInterfaceType == pTargetType)
                 {
                     return true;
@@ -860,20 +832,14 @@ namespace System.Runtime
             Debug.Assert(!pBaseType->IsArray, "did not expect array type");
             Debug.Assert(!pBaseType->IsInterface, "did not expect interface type");
             Debug.Assert(!pBaseType->IsParameterizedType, "did not expect parameterType");
-            Debug.Assert(pBaseType->IsCanonical || pBaseType->IsCloned || pBaseType->IsGenericTypeDefinition, "unexpected MethodTable");
-            Debug.Assert(pDerivedType->IsCanonical || pDerivedType->IsCloned || pDerivedType->IsGenericTypeDefinition, "unexpected MethodTable");
+            Debug.Assert(pBaseType->IsCanonical || pBaseType->IsGenericTypeDefinition, "unexpected MethodTable");
+            Debug.Assert(pDerivedType->IsCanonical || pDerivedType->IsGenericTypeDefinition, "unexpected MethodTable");
 
             // If a generic type definition reaches this function, then the function should return false unless the types are equivalent.
             // This works as the NonClonedNonArrayBaseType of a GenericTypeDefinition is always null.
 
-            if (pBaseType->IsCloned)
-                pBaseType = pBaseType->CanonicalEEType;
-
             do
             {
-                if (pDerivedType->IsCloned)
-                    pDerivedType = pDerivedType->CanonicalEEType;
-
                 if (pDerivedType == pBaseType)
                     return true;
 
@@ -894,15 +860,6 @@ namespace System.Runtime
         [RuntimeExport("RhTypeCast_AreTypesEquivalent")]
         public static unsafe bool AreTypesEquivalent(MethodTable* pType1, MethodTable* pType2)
         {
-            if (pType1 == pType2)
-                return true;
-
-            if (pType1->IsCloned)
-                pType1 = pType1->CanonicalEEType;
-
-            if (pType2->IsCloned)
-                pType2 = pType2->CanonicalEEType;
-
             if (pType1 == pType2)
                 return true;
 
@@ -938,12 +895,6 @@ namespace System.Runtime
 
             MethodTable* pObjType = obj.GetMethodTable();
 
-            if (pTargetType->IsCloned)
-                pTargetType = pTargetType->CanonicalEEType;
-
-            if (pObjType->IsCloned)
-                pObjType = pObjType->CanonicalEEType;
-
             if (pObjType == pTargetType)
                 return true;
 
@@ -956,9 +907,6 @@ namespace System.Runtime
                 pObjType = pObjType->NonClonedNonArrayBaseType;
                 if (pObjType == null)
                     return false;
-
-                if (pObjType->IsCloned)
-                    pObjType = pObjType->CanonicalEEType;
 
                 if (pObjType == pTargetType)
                     return true;

@@ -38,7 +38,6 @@
       <_CoreClrBuildArg Condition="'$(PgoInstrument)' == 'true'" Include="-pgoinstrument" />
       <_CoreClrBuildArg Condition="'$(NativeOptimizationDataSupported)' == 'true' and '$(NoPgoOptimize)' != 'true' and '$(PgoInstrument)' != 'true'" Include="-pgodatapath &quot;$(PgoPackagePath)&quot;" />
       <_CoreClrBuildArg Condition="'$(HostArchitecture)' != ''" Include="-hostarch $(HostArchitecture)" />
-      <_CoreClrBuildArg Condition="('$(HostArchitecture)' == '' or '$(HostArchitecture)' == '$(TargetArchitecture)') and '$(ClrCrossComponentsSubset)' == 'true'" Include="-forcearchdir" />
       <_CoreClrBuildArg Condition="'$(EnableNativeSanitizers)' != ''" Include="-fsanitize $(EnableNativeSanitizers)" />
       <_CoreClrBuildArg Include="-outputrid $(OutputRid)" />
     </ItemGroup>

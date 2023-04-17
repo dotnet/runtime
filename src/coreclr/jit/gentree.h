@@ -510,9 +510,9 @@ enum GenTreeFlags : unsigned int
 
     GTF_JCMP_EQ                 = 0x80000000, // GTF_JCMP_EQ  -- Branch on equal rather than not equal
     GTF_JCMP_TST                = 0x40000000, // GTF_JCMP_TST -- Use bit test instruction rather than compare against zero instruction
-#if defined(TARGET_LOONGARCH64)
-    GTF_JCMP_MASK               = 0x3E000000, // For LoongArch64, Using the five bits[29:25] to encoding the GenCondition:code.
-#endif
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    GTF_JCMP_MASK               = 0x3E000000, // For LoongArch64 and RISCV64, Using the five bits[29:25] to encoding the GenCondition:code.
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     GTF_RET_MERGED              = 0x80000000, // GT_RETURN -- This is a return generated during epilog merging.
 
@@ -571,9 +571,6 @@ enum GenTreeFlags : unsigned int
     GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
-
-    GTF_SIMDASHW_OP             = 0x80000000, // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
-                                              //                   rather than from gtGetStructHandleForHWSIMD.
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
@@ -1218,7 +1215,7 @@ public:
 
     static bool OperIsBlk(genTreeOps gtOper)
     {
-        return (gtOper == GT_BLK) || (gtOper == GT_OBJ) || OperIsStoreBlk(gtOper);
+        return (gtOper == GT_BLK) || OperIsStoreBlk(gtOper);
     }
 
     bool OperIsBlk() const
@@ -1550,8 +1547,8 @@ public:
     // OperIsIndir() returns true also for indirection nodes such as GT_BLK, etc. as well as GT_NULLCHECK.
     static bool OperIsIndir(genTreeOps gtOper)
     {
-        static_assert_no_msg(AreContiguous(GT_IND, GT_STOREIND, GT_OBJ, GT_STORE_OBJ, GT_BLK, GT_STORE_BLK,
-                                           GT_STORE_DYN_BLK, GT_NULLCHECK));
+        static_assert_no_msg(
+            AreContiguous(GT_IND, GT_STOREIND, GT_STORE_OBJ, GT_BLK, GT_STORE_BLK, GT_STORE_DYN_BLK, GT_NULLCHECK));
         return (GT_IND <= gtOper) && (gtOper <= GT_NULLCHECK);
     }
 
@@ -1694,7 +1691,7 @@ public:
         }
 #endif
 #if defined(TARGET_ARM64)
-        if (OperIs(GT_CCMP))
+        if (OperIs(GT_CCMP, GT_CINCCC))
         {
             return true;
         }
@@ -4054,6 +4051,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_EXPANDED_EARLY          = 0x08000000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
     GTF_CALL_M_HAS_LATE_DEVIRT_INFO    = 0x10000000, // this call has late devirtualzation info
     GTF_CALL_M_LDVIRTFTN_INTERFACE     = 0x20000000, // ldvirtftn on an interface type
+    GTF_CALL_M_EXP_TLS_ACCESS          = 0x40000000, // this call is a helper for access TLS marked field
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -4337,7 +4335,7 @@ struct CallArgABIInformation
         , StructIntRegs(0)
         , StructFloatRegs(0)
 #endif
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         , StructFloatFieldType()
 #endif
         , ArgType(TYP_UNDEF)
@@ -4377,7 +4375,7 @@ public:
     unsigned                                            StructFloatRegs;
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR StructDesc;
 #endif // UNIX_AMD64_ABI
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // For LoongArch64's ABI, the struct which has float field(s) and no more than two fields
     // may be passed by float register(s).
     // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
@@ -5164,7 +5162,7 @@ struct GenTreeCall final : public GenTree
     bool HasMultiRegRetVal() const
     {
 #ifdef FEATURE_MULTIREG_RET
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         return (gtType == TYP_STRUCT) && (gtReturnTypeDesc.GetReturnRegCount() > 1);
 #else
 
@@ -5394,6 +5392,21 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_EXP_RUNTIME_LOOKUP) != 0;
     }
 
+    void SetExpTLSFieldAccess()
+    {
+        gtCallMoreFlags |= GTF_CALL_M_EXP_TLS_ACCESS;
+    }
+
+    void ClearExpTLSFieldAccess()
+    {
+        gtCallMoreFlags &= ~GTF_CALL_M_EXP_TLS_ACCESS;
+    }
+
+    bool IsExpTLSFieldAccess() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_EXP_TLS_ACCESS) != 0;
+    }
+
     void SetExpandedEarly()
     {
         gtCallMoreFlags |= GTF_CALL_M_EXPANDED_EARLY;
@@ -5484,11 +5497,14 @@ struct GenTreeCall final : public GenTree
         return mayUseDispatcher && shouldUseDispatcher ? CFGCallKind::Dispatch : CFGCallKind::ValidateAndCall;
     }
 
-    GenTreeCallFlags     gtCallMoreFlags;    // in addition to gtFlags
-    gtCallTypes          gtCallType : 3;     // value from the gtCallTypes enumeration
-    var_types            gtReturnType : 5;   // exact return type
-    CORINFO_CLASS_HANDLE gtRetClsHnd;        // The return type handle of the call if it is a struct; always available
-    void*                gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
+    GenTreeCallFlags     gtCallMoreFlags;  // in addition to gtFlags
+    gtCallTypes          gtCallType : 3;   // value from the gtCallTypes enumeration
+    var_types            gtReturnType : 5; // exact return type
+    CORINFO_CLASS_HANDLE gtRetClsHnd;      // The return type handle of the call if it is a struct; always available
+    union {
+        void*                gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
+        CORINFO_CLASS_HANDLE gtInitClsHnd;       // Used by static init helpers, represents a class they init
+    };
 
     union {
         // only used for CALLI unmanaged calls (CT_INDIRECT)
@@ -6158,11 +6174,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                        IntrinsicNodeBuilder&& nodeBuilder,
                        NamedIntrinsic         hwIntrinsicID,
                        CorInfoType            simdBaseJitType,
-                       unsigned               simdSize,
-                       bool                   isSimdAsHWIntrinsic)
+                       unsigned               simdSize)
         : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, std::move(nodeBuilder), simdBaseJitType, simdSize)
     {
-        Initialize(hwIntrinsicID, isSimdAsHWIntrinsic);
+        Initialize(hwIntrinsicID);
     }
 
     template <typename... Operands>
@@ -6171,11 +6186,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                        NamedIntrinsic hwIntrinsicID,
                        CorInfoType    simdBaseJitType,
                        unsigned       simdSize,
-                       bool           isSimdAsHWIntrinsic,
                        Operands... operands)
         : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, allocator, simdBaseJitType, simdSize, operands...)
     {
-        Initialize(hwIntrinsicID, isSimdAsHWIntrinsic);
+        Initialize(hwIntrinsicID);
     }
 
 #if DEBUGGABLE_GENTREE
@@ -6187,11 +6201,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryLoad(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryStore(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryLoadOrStore() const;
+    bool OperIsMemoryStoreOrBarrier() const;
 
-    bool IsSimdAsHWIntrinsic() const
-    {
-        return (gtFlags & GTF_SIMDASHW_OP) != 0;
-    }
+    bool OperRequiresAsgFlag() const;
+    bool OperRequiresCallFlag() const;
 
     unsigned GetResultOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
 
@@ -6286,28 +6299,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);
 
-    void Initialize(NamedIntrinsic intrinsicId, bool isSimdAsHWIntrinsic)
-    {
-        SetHWIntrinsicId(intrinsicId);
-
-        bool isStore = OperIsMemoryStore();
-        bool isLoad  = OperIsMemoryLoad();
-
-        if (isStore || isLoad)
-        {
-            gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
-
-            if (isStore)
-            {
-                gtFlags |= GTF_ASG;
-            }
-        }
-
-        if (isSimdAsHWIntrinsic)
-        {
-            gtFlags |= GTF_SIMDASHW_OP;
-        }
-    }
+    void Initialize(NamedIntrinsic intrinsicId);
 };
 #endif // FEATURE_HW_INTRINSICS
 
@@ -7363,30 +7355,6 @@ protected:
     {
     }
 #endif // DEBUGGABLE_GENTREE
-};
-
-// gtObj  -- 'object' (GT_OBJ).
-//
-// This node is used for block values that may have GC pointers.
-
-struct GenTreeObj : public GenTreeBlk
-{
-    GenTreeObj(var_types type, GenTree* addr, ClassLayout* layout) : GenTreeBlk(GT_OBJ, type, addr, layout)
-    {
-        noway_assert(GetLayout()->GetClassHandle() != NO_CLASS_HANDLE);
-    }
-
-    GenTreeObj(var_types type, GenTree* addr, GenTree* data, ClassLayout* layout)
-        : GenTreeBlk(GT_STORE_OBJ, type, addr, data, layout)
-    {
-        noway_assert(GetLayout()->GetClassHandle() != NO_CLASS_HANDLE);
-    }
-
-#if DEBUGGABLE_GENTREE
-    GenTreeObj() : GenTreeBlk()
-    {
-    }
-#endif
 };
 
 // GenTreeStoreDynBlk  -- 'dynamic block store' (GT_STORE_DYN_BLK).

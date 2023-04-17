@@ -55,10 +55,6 @@ handle_arguments_local() {
             __ShiftArgs=1
             ;;
 
-        forcearchdir|-forcearchdir)
-            __ForceArchDir=1
-            ;;
-
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
             ;;
@@ -104,7 +100,6 @@ __UseNinja=0
 __VerboseBuild=0
 __CMakeArgs=""
 __RequestedBuildComponents=""
-__ForceArchDir=0
 
 source "$__ProjectRoot"/_build-commons.sh
 
@@ -121,7 +116,7 @@ __IntermediatesDir="$__ArtifactsIntermediatesDir/$__ConfigTriplet"
 
 export __IntermediatesDir __ArtifactsIntermediatesDir
 
-if [[ "$__TargetArch" != "$__HostArch" || $__ForceArchDir == 1 ]]; then
+if [[ "$__ExplicitHostArch" == 1 ]]; then
     __IntermediatesDir="$__IntermediatesDir/$__HostArch"
     __BinDir="$__BinDir/$__HostArch"
 fi

@@ -257,6 +257,7 @@
     <Compile Include="Fakes\HttpTelemetry.cs" />
     <Compile Include="Fakes\MacProxy.cs" Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'" />
     <Compile Include="Headers\AltSvcHeaderParserTest.cs" />
+    <Compile Include="Headers\AuthenticationHeaderParserTest.cs" />
     <Compile Include="Headers\AuthenticationHeaderValueTest.cs" />
     <Compile Include="Headers\ByteArrayHeaderParserTest.cs" />
     <Compile Include="Headers\CacheControlHeaderParserTest.cs" />
@@ -264,6 +265,7 @@
     <Compile Include="Headers\ContentDispositionHeaderValueTest.cs" />
     <Compile Include="Headers\ContentRangeHeaderValueTest.cs" />
     <Compile Include="Headers\DateHeaderParserTest.cs" />
+    <Compile Include="Headers\EntityTagHeaderParserTest.cs" />
     <Compile Include="Headers\EntityTagHeaderValueTest.cs" />
     <Compile Include="Headers\GenericHeaderParserTest\AuthenticationParserTest.cs" />
     <Compile Include="Headers\GenericHeaderParserTest\ContentRangeParserTest.cs" />
@@ -397,6 +399,8 @@
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs"
              Link="Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeInterop.cs"
              Link="WinHttpHandler\UnitTests\FakeInterop.cs" />
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeRegistry.cs"

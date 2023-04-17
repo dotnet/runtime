@@ -33,7 +33,7 @@ steps:
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ci ${{ parameters.archType }} $(buildConfigUpper) $(_nativeSanitizersArg) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) $(librariesConfigurationArg)
       displayName: Build Tests
   - ${{ if ne(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper) $(_nativeSanitizersArg) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) $(librariesConfigurationArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper) $(_nativeSanitizersArg) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) $(librariesConfigurationArg)
       displayName: Build Tests
 
 

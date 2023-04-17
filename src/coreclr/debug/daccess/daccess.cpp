@@ -5450,6 +5450,8 @@ ClrDataAccess::Initialize(void)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_ARM64;
     #elif defined(TARGET_LOONGARCH64)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_LOONGARCH64;
+    #elif defined(TARGET_RISCV64)
+        CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_RISCV64;
     #else
         #error Unknown Processor.
     #endif
@@ -7894,7 +7896,7 @@ void DacStackReferenceWalker::WalkStack()
     // Get the current thread's context and set that as the filter context
     if (mThread->GetFilterContext() == NULL && mThread->GetProfilerFilterContext() == NULL)
     {
-        mDac->m_pTarget->GetThreadContext(mThread->GetOSThreadId(), CONTEXT_FULL, sizeof(ctx), (BYTE*)&ctx);
+        mDac->m_pTarget->GetThreadContext(mThread->GetOSThreadId(), CONTEXT_FULL, sizeof(DT_CONTEXT), (BYTE*)&ctx);
         mThread->SetProfilerFilterContext(&ctx);
         contextHolder.Activate(mThread);
     }

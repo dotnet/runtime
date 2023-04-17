@@ -36,8 +36,14 @@
     <IlcSdkPath>{IlcSdkPath}</IlcSdkPath>
     <IlcFrameworkPath>{IlcFrameworkPath}</IlcFrameworkPath>
     <IlcFrameworkNativePath>{IlcFrameworkNativePath}</IlcFrameworkNativePath>
+    <LinkerFlavor Condition="'$(TargetOS)' == 'linux'">lld</LinkerFlavor>
+    <SysRoot Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)') and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <CoreCLRBuildIntegrationDir>{CoreCLRBuildIntegrationDir}</CoreCLRBuildIntegrationDir>
   </PropertyGroup>
+
+  <ItemGroup>
+    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
+  </ItemGroup>
 
   <ItemGroup>
     {RuntimeHostConfigurationOptions}

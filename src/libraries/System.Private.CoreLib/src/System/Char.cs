@@ -34,7 +34,9 @@ namespace System
           ISpanFormattable,
           IBinaryInteger<char>,
           IMinMaxValue<char>,
-          IUnsignedNumber<char>
+          IUnsignedNumber<char>,
+          IUtf8SpanFormattable,
+          IUtfChar<char>
     {
         //
         // Member Variables
@@ -190,6 +192,10 @@ namespace System
             charsWritten = 0;
             return false;
         }
+
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            new Rune(this).TryEncodeToUtf8(utf8Destination, out bytesWritten);
 
         string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString(m_value);
 
@@ -2006,5 +2012,15 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static char IUnaryPlusOperators<char, char>.operator +(char value) => (char)(+value);
+
+        //
+        // IUtfChar
+        //
+
+        static char IUtfChar<char>.CastFrom(byte value) => (char)value;
+        static char IUtfChar<char>.CastFrom(char value) => value;
+        static char IUtfChar<char>.CastFrom(int value) => (char)value;
+        static char IUtfChar<char>.CastFrom(uint value) => (char)value;
+        static char IUtfChar<char>.CastFrom(ulong value) => (char)value;
     }
 }

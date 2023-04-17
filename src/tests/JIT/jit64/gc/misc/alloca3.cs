@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-internal class Test_alloca3
+public class Test_alloca3
 {
     private static int s_x = 25;
 
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         int* px = stackalloc int[s_x];
 

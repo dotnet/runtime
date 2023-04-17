@@ -119,7 +119,7 @@ namespace System.Net.Http.Headers
 
             parsedValue = null;
 
-            if (string.IsNullOrEmpty(input) || (startIndex >= input.Length))
+            if (string.IsNullOrEmpty(input) || (startIndex >= input.Length) || HttpRuleParser.ContainsNewLine(input, startIndex))
             {
                 return 0;
             }
