@@ -260,6 +260,7 @@
                             NoPgoOptimize=true;
                             CrossBuild=false;
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
+      UndefineProperties="EnableNativeSanitizers"
       Category="clr" />
   </ItemGroup>
 
@@ -273,11 +274,12 @@
                             NoPgoOptimize=true;
                             CrossBuild=false;
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
+      UndefineProperties="EnableNativeSanitizers"
       Category="clr" />
   </ItemGroup>
 
   <!-- Build the cross-arch tools of CoreCLR for the same target architecture as an unsanitized build whenever we build a sanitized coreclr build. -->
-  <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != '' and '$(EnableNativeSanitizers)' != ''">
+  <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != '' and '$(CrossBuild)' != 'true' and '$(EnableNativeSanitizers)' != ''">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
       AdditionalProperties="%(AdditionalProperties);
