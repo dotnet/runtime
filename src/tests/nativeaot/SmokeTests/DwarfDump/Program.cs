@@ -51,11 +51,11 @@ public class Program
 
         // Just count the number of warnings and errors. There are so many right now that it's not worth enumerating the list
 #if DEBUG
-        const int MinWarnings = 17000;
+        const int MinWarnings = 16500;
         const int MaxWarnings = 18500;
 #else
-        const int MinWarnings = 12000;
-        const int MaxWarnings = 13000;
+        const int MinWarnings = 9500;
+        const int MaxWarnings = 10500;
 #endif
         int count = 0;
         string line;

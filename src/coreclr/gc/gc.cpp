@@ -9633,7 +9633,10 @@ void gc_heap::remove_ro_segment (heap_segment* seg)
 #ifdef BACKGROUND_GC
     if (gc_can_use_concurrent)
     {
-        seg_clear_mark_array_bits_soh (seg);
+        if ((seg->flags & heap_segment_flags_ma_committed) || (seg->flags & heap_segment_flags_ma_pcommitted))
+        {
+            seg_clear_mark_array_bits_soh (seg);
+        }
     }
 #endif //BACKGROUND_GC
 

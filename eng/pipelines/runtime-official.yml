@@ -493,6 +493,7 @@ extends:
             - Build_android_x86_release_AllSubsets_Mono
             - Build_android_x64_release_AllSubsets_Mono
             - Build_browser_wasm_Linux_release_AllSubsets_Mono
+            - Build_wasi_wasm_linux_release_AllSubsets_Mono
             - Build_ios_arm64_release_AllSubsets_Mono
             - Build_iossimulator_x64_release_AllSubsets_Mono
             - Build_iossimulator_arm64_release_AllSubsets_Mono

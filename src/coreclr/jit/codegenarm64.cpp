@@ -4681,6 +4681,66 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForCinc: Produce code for a GT_CINC/GT_CINCCC node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForCinc(GenTreeOp* cinc)
+{
+    assert(cinc->OperIs(GT_CINC, GT_CINCCC));
+
+    GenTree* opcond = nullptr;
+    GenTree* op     = cinc->gtOp1;
+    if (cinc->OperIs(GT_CINC))
+    {
+        opcond = cinc->gtOp1;
+        op     = cinc->gtOp2;
+        genConsumeRegs(opcond);
+    }
+
+    emitter*  emit   = GetEmitter();
+    var_types opType = genActualType(op->TypeGet());
+    emitAttr  attr   = emitActualTypeSize(cinc->TypeGet());
+
+    assert(!op->isUsedFromMemory());
+    genConsumeRegs(op);
+
+    GenCondition cond;
+
+    if (cinc->OperIs(GT_CINC))
+    {
+        assert(!opcond->isContained());
+        // Condition has been generated into a register - move it into flags.
+        emit->emitIns_R_I(INS_cmp, emitActualTypeSize(opcond), opcond->GetRegNum(), 0);
+        cond = GenCondition::NE;
+    }
+    else
+    {
+        assert(cinc->OperIs(GT_CINCCC));
+        cond = cinc->AsOpCC()->gtCondition;
+    }
+    const GenConditionDesc& prevDesc  = GenConditionDesc::Get(cond);
+    regNumber               targetReg = cinc->GetRegNum();
+    regNumber               srcReg;
+
+    if (op->isContained())
+    {
+        assert(op->IsIntegralConst(0));
+        srcReg = REG_ZR;
+    }
+    else
+    {
+        srcReg = op->GetRegNum();
+    }
+
+    assert(prevDesc.oper != GT_OR && prevDesc.oper != GT_AND);
+    emit->emitIns_R_R_COND(INS_cinc, attr, targetReg, srcReg, JumpKindToInsCond(prevDesc.jumpKind1));
+    regSet.verifyRegUsed(targetReg);
+    genProduceReg(cinc);
+}
+
+//------------------------------------------------------------------------
 // genCodeForJumpCompare: Generates code for jmpCompare statement.
 //
 // A GT_JCMP node is created when a comparison and conditional branch

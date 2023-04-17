@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 struct S
 {
@@ -24,15 +25,9 @@ class C
     }
 }
 
-class Test_test1
+public class Test_test1
 {
-    public static int Main()
-    {
-        test1();
-        test2();
-        return (100);
-    }
-
+    [Fact]
     public static void test1()
     {
         C c = new C();
@@ -40,6 +35,7 @@ class Test_test1
         foo(c.s1);
     }
 
+    [Fact]
     public static void test2()
     {
         C c = new C();
@@ -48,7 +44,7 @@ class Test_test1
         foo(s);
     }
 
-    public static void foo(S s)
+    private static void foo(S s)
     {
         Console.WriteLine(s.O1);
         Console.WriteLine(s.O2);
