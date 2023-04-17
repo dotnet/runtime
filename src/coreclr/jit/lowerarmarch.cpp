@@ -158,8 +158,18 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 //
 bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const
 {
+#ifdef DEBUG
     // The node we're checking should be one of the two child nodes
-    assert((parentNode->gtGetOp1() == childNode) || (parentNode->gtGetOp2() == childNode));
+    if (parentNode->OperIsBinary())
+    {
+        assert((parentNode->gtGetOp1() == childNode) || (parentNode->gtGetOp2() == childNode));
+    }
+    else
+    {
+        assert(parentNode->OperIsUnary());
+        assert((parentNode->gtGetOp1() == childNode));
+    }
+#endif
 
     // We cannot contain if the parent node
     // * is contained
@@ -173,7 +183,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
     if (!varTypeIsIntegral(parentNode))
         return false;
 
-    if (parentNode->gtGetOp1()->isContained() || parentNode->gtGetOp2()->isContained())
+    if (parentNode->gtGetOp1()->isContained() || (parentNode->OperIsBinary() && parentNode->gtGetOp2()->isContained()))
         return false;
 
     if (parentNode->OperMayOverflow() && parentNode->gtOverflow())
@@ -252,7 +262,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
             return false;
         }
 
-        if (parentNode->OperIs(GT_ADD, GT_SUB, GT_AND))
+        if (parentNode->OperIs(GT_ADD, GT_SUB, GT_AND, GT_NEG))
         {
             // These operations can still report flags
 
@@ -2539,6 +2549,10 @@ void Lowering::ContainCheckNeg(GenTreeOp* neg)
         {
             MakeSrcContained(neg, childNode);
         }
+    }
+    else if (childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ) && IsContainableBinaryOp(neg, childNode))
+    {
+        MakeSrcContained(neg, childNode);
     }
 }
 
