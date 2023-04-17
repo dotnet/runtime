@@ -364,6 +364,50 @@ void LinearScan::updateSpillCost(regNumber reg, Interval* interval)
 }
 
 //------------------------------------------------------------------------
+// updateRegsFreeBusyState: Update various register masks and global state to track
+//   registers that are free and busy.
+//
+// Arguments:
+//    refPosition -
+//    assignedRegMask -
+//    copyRegMask -
+//    regsToFree -
+//    delayRegsToFree -
+//
+// Notes:
+//    compFloatingPointUsed is only required to be set if it is possible that we
+//    will use floating point callee-save registers.
+//    It is unlikely, if an internal register is the only use of floating point,
+//    that it will select a callee-save register.  But to be safe, we restrict
+//    the set of candidates if compFloatingPointUsed is not already set.
+void LinearScan::updateRegsFreeBusyState(RefPosition& refPosition,
+                                         regMaskTP    regsBusy,
+                                         regMaskTP*   regsToFree,
+                                         regMaskTP* delayRegsToFree DEBUG_ARG(Interval* interval)
+                                             DEBUG_ARG(regNumber assignedReg))
+{
+    regsInUseThisLocation |= regsBusy;
+    if (refPosition.lastUse)
+    {
+        if (refPosition.delayRegFree)
+        {
+            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED, interval, assignedReg));
+            *delayRegsToFree |= regsBusy;
+            regsInUseNextLocation |= regsBusy;
+        }
+        else
+        {
+            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE, interval, assignedReg));
+            *regsToFree |= regsBusy;
+        }
+    }
+    else if (refPosition.delayRegFree)
+    {
+        regsInUseNextLocation |= regsBusy;
+    }
+}
+
+//------------------------------------------------------------------------
 // internalFloatRegCandidates: Return the set of registers that are appropriate
 //                             for use as internal float registers.
 //
@@ -5405,30 +5449,18 @@ void LinearScan::allocateRegisters()
                             regMaskTP copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
                             regMaskTP assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
 
-                            regsInUseThisLocation |= copyRegMask | assignedRegMask;
-                            if (currentRefPosition.lastUse)
-                            {
-                                if (currentRefPosition.delayRegFree)
-                                {
-                                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED, currentInterval,
-                                                                    assignedRegister));
-                                    delayRegsToFree |= copyRegMask | assignedRegMask;
-                                    regsInUseNextLocation |= copyRegMask | assignedRegMask;
-                                }
-                                else
-                                {
-                                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE, currentInterval,
-                                                                    assignedRegister));
-                                    regsToFree |= copyRegMask | assignedRegMask;
-                                }
-                            }
-                            else
+                            // For consecutive register, although it shouldn't matter what the assigned register was,
+                            // because we have just assigned it `copyReg` and that's the one in-use, and not the
+                            // one that was assigned previously. However, in situation where an upper-vector restore
+                            // happened to be restored in assignedReg, we would need assignedReg to stay alive because
+                            // we will copy the entire vector value from it to the `copyReg`.
+
+                            updateRegsFreeBusyState(currentRefPosition, assignedRegMask | copyRegMask, &regsToFree,
+                                                    &delayRegsToFree DEBUG_ARG(currentInterval)
+                                                        DEBUG_ARG(assignedRegister));
+                            if (!currentRefPosition.lastUse)
                             {
                                 copyRegsToFree |= copyRegMask;
-                                if (currentRefPosition.delayRegFree)
-                                {
-                                    regsInUseNextLocation |= copyRegMask | assignedRegMask;
-                                }
                             }
 
                             // If this is a tree temp (non-localVar) interval, we will need an explicit move.
@@ -5515,36 +5547,18 @@ void LinearScan::allocateRegisters()
                             // registers.
                             assignConsecutiveRegisters(&currentRefPosition, copyReg);
                         }
-
-                        regsInUseThisLocation |= copyRegMask | assignedRegMask;
                     }
-                    else
 #endif
-                    {
-                        regsInUseThisLocation |= copyRegMask | assignedRegMask;
-                    }
-                    if (currentRefPosition.lastUse)
-                    {
-                        if (currentRefPosition.delayRegFree)
-                        {
-                            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED, currentInterval,
-                                                            assignedRegister));
-                            delayRegsToFree |= copyRegMask | assignedRegMask;
-                            regsInUseNextLocation |= copyRegMask | assignedRegMask;
-                        }
-                        else
-                        {
-                            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE, currentInterval, assignedRegister));
-                            regsToFree |= copyRegMask | assignedRegMask;
-                        }
-                    }
-                    else
+                    // For consecutive register, although it shouldn't matter what the assigned register was,
+                    // because we have just assigned it `copyReg` and that's the one in-use, and not the
+                    // one that was assigned previously. However, in situation where an upper-vector restore
+                    // happened to be restored in assignedReg, we would need assignedReg to stay alive because
+                    // we will copy the entire vector value from it to the `copyReg`.
+                    updateRegsFreeBusyState(currentRefPosition, assignedRegMask | copyRegMask, &regsToFree,
+                                            &delayRegsToFree DEBUG_ARG(currentInterval) DEBUG_ARG(assignedRegister));
+                    if (!currentRefPosition.lastUse)
                     {
                         copyRegsToFree |= copyRegMask;
-                        if (currentRefPosition.delayRegFree)
-                        {
-                            regsInUseNextLocation |= copyRegMask | assignedRegMask;
-                        }
                     }
 
                     // If this is a tree temp (non-localVar) interval, we will need an explicit move.
