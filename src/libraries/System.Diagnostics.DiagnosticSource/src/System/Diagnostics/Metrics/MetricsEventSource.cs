@@ -413,7 +413,7 @@ namespace System.Diagnostics.Metrics
 
             private static void TransmitMetricValue(Instrument instrument, LabeledAggregationStatistics stats, string sessionId)
             {
-                if (stats.AggregationStatistics is RateStatistics rateStats)
+                if (stats.AggregationStatistics is CounterStatistics rateStats)
                 {
                     if (rateStats.IsMonotonic)
                     {

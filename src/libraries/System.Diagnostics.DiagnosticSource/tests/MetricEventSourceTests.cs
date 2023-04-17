@@ -56,16 +56,12 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
-            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
-            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "", "", "5", "17");
-            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "", "", "10", "27");
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "10"), ("7", "17"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "", "", "-33", "-40");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "", "", "", "-11");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "", "", "-33", "-73");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "", "", "-11", "-33");
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("-33", "-33"), ("-40", "-73"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "-11"), ("-11", "-22"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
@@ -101,16 +97,12 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", c.Unit, "5", "12");
-            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, "", "7", "7");
-            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "", c.Unit, "5", "17");
-            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, "10", "27", "51");
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, "33", "40");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, "", "11", "11");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, "33", "73");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, "11", "33", "66");
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
@@ -160,16 +152,12 @@ namespace System.Diagnostics.Metrics.Tests
 
                 AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
                 AssertInitialEnumerationCompleteEventPresent(events);
-                AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
-                AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
-                AssertCounterValueEventsPresent(events, meter.Name, c.Name, "", "", "5", "17");
-                AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "", "", "10", "27");
+                AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
+                AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "10"), ("7", "17"));
                 AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
                 AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-                AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "", "", "33", "40");
-                AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "", "", "", "-11");
-                AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "", "", "33", "73");
-                AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "", "", "-11", "-33");
+                AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("33", "33"), ("40", "73"));
+                AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "-11"), ("-11", "-22"));
                 AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
             }
             finally
@@ -220,16 +208,12 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
-            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
-            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "", "", "5", "17");
-            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "", "", "10", "27");
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "10"), ("7", "17"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "", "", "-33", "-40");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "", "", "", "11");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "", "", "-33", "-73");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "", "", "11", "33");
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("-33", "-33"), ("-40", "-73"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "11"), ("11", "22"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
@@ -297,26 +281,18 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "Color=red", "", "5", "12");
-            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "Color=blue", "", "6", "13");
-            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "Color=red,Size=19", "", "", "7");
-            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "Color=blue,Size=4", "", "", "14");
-            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "Color=red", "", "5", "17");
-            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "Color=blue", "", "6", "19");
-            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "Color=red,Size=19", "", "10");
-            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "Color=blue,Size=4", "", "20");
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "Color=red", "", ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "Color=blue", "", ("6", "6"), ("13", "19"));
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "Color=red,Size=19", "", ("", "10"), ("7", "17"));
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "Color=blue,Size=4", "", ("", "20"), ("14", "34"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "Color=red,Size=19", "", "9", "18");
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "Color=blue,Size=4", "", "18", "36");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "Size=123", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "Size=124", "", "0.5=20;0.95=20;0.99=20", "0.5=27;0.95=27;0.99=27");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "Color=red", "", "-33", "40");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "Color=blue", "", "-34", "41");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "Color=red,Size=19", "", "", "-11");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "Color=blue,Size=4", "", "", "-22");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "Color=red", "", "-33", "7");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "Color=blue", "", "-34", "7");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "Color=red,Size=19", "", "-11");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "Color=blue,Size=4", "", "-22");
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "Color=red", "", ("-33", "-33"), ("40", "7"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "Color=blue", "", ("-34", "-34"), ("41", "7"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "Color=red,Size=19", "", ("", "-11"), ("-11", "-22"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "Color=blue,Size=4", "", ("", "-22"), ("-22", "-44"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
@@ -371,12 +347,12 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c3a, c1b, c2b, c3b, c2c, c3c);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterRateEventsPresent(events, meterA.Name, c3a.Name, "", "", "1", "2");
-            AssertCounterRateEventsPresent(events, meterB.Name, c1b.Name, "", "", "1", "2");
-            AssertCounterRateEventsPresent(events, meterB.Name, c2b.Name, "", "", "1", "2");
-            AssertCounterRateEventsPresent(events, meterB.Name, c3b.Name, "", "", "1", "2");
-            AssertCounterRateEventsPresent(events, meterC.Name, c3c.Name, "", "", "1", "2");
-            AssertCounterRateEventsPresent(events, meterC.Name, c3c.Name, "", "", "1", "2");
+            AssertCounterEventsPresent(events, meterA.Name, c3a.Name, "", "", ("1", "1"), ("2", "3"));
+            AssertCounterEventsPresent(events, meterB.Name, c1b.Name, "", "", ("1", "1"), ("2", "3"));
+            AssertCounterEventsPresent(events, meterB.Name, c2b.Name, "", "", ("1", "1"), ("2", "3"));
+            AssertCounterEventsPresent(events, meterB.Name, c3b.Name, "", "", ("1", "1"), ("2", "3"));
+            AssertCounterEventsPresent(events, meterC.Name, c3c.Name, "", "", ("1", "1"), ("2", "3"));
+            AssertCounterEventsPresent(events, meterC.Name, c3c.Name, "", "", ("1", "1"), ("2", "3"));
             AssertCounterEventsNotPresent(events, meterA.Name, c1a.Name, "");
             AssertCounterEventsNotPresent(events, meterA.Name, c2a.Name, "");
             AssertCounterEventsNotPresent(events, meterC.Name, c1c.Name, "");
@@ -462,16 +438,12 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", "", "5", "0", "12");
-            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "", "", "", "0", "14", "0");
-            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "", "", "5", "5", "17");
-            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "", "", "17", "17", "48", "48");
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("0", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("",  "17"), ("0", "17"), ("14", "31"), ("0", "31"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "18", "", "36", "");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "", "0.5=26;0.95=26;0.99=26", "");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "", "", "33", "0", "40");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "", "", "", "0", "22", "0");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "", "", "33", "33", "73");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "", "", "22", "22", "66", "66");
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("33", "33"), ("0", "33"), ("40", "73"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "22"), ("0", "22"), ("22", "44"), ("0", "44"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 5);
         }
 
@@ -512,16 +484,12 @@ namespace System.Diagnostics.Metrics.Tests
             }
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
-            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", c.Unit, "5", "12");
-            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, "", "7", "7");
-            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "", c.Unit, "5", "17");
-            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, "10", "27", "51");
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, "33", "40");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, "", "11", "11");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, "33", "73");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, "11", "33", "66");
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
@@ -564,16 +532,12 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterRateEventsPresent(events, meterA.Name, c.Name, "", c.Unit, "5", "12");
-            AssertCounterRateEventsPresent(events, meterA.Name, oc.Name, "", oc.Unit, "", "7", "7");
-            AssertCounterValueEventsPresent(events, meterA.Name, c.Name, "", c.Unit, "5", "17");
-            AssertCounterValueEventsPresent(events, meterA.Name, oc.Name, "", oc.Unit, "10", "27", "51");
+            AssertCounterEventsPresent(events, meterA.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meterA.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
             AssertGaugeEventsPresent(events, meterA.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meterB.Name, h.Name, "", h.Unit, "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26", "0.5=21;0.95=21;0.99=21");
-            AssertUpDownCounterRateEventsPresent(events, meterA.Name, udc.Name, "", udc.Unit, "33", "40");
-            AssertUpDownCounterRateEventsPresent(events, meterA.Name, oudc.Name, "", oudc.Unit, "", "11", "11");
-            AssertUpDownCounterValueEventsPresent(events, meterA.Name, udc.Name, "", udc.Unit, "33", "73");
-            AssertUpDownCounterValueEventsPresent(events, meterA.Name, oudc.Name, "", oudc.Unit, "11", "33", "66");
+            AssertUpDownCounterEventsPresent(events, meterA.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
+            AssertUpDownCounterEventsPresent(events, meterA.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
             AssertEndInstrumentReportingEventsPresent(events, c, oc, og, udc, oudc);
         }
@@ -662,13 +626,13 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, i, s, b, l, dec, f, d);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterRateEventsPresent(events, meter.Name, i.Name, "", "", "1234568", "1234568");
-            AssertCounterRateEventsPresent(events, meter.Name, s.Name, "", "", "21433", "21433");
-            AssertCounterRateEventsPresent(events, meter.Name, b.Name, "", "", "2", "2");
-            AssertCounterRateEventsPresent(events, meter.Name, l.Name, "", "", "123456789013", "123456789013");
-            AssertCounterRateEventsPresent(events, meter.Name, dec.Name, "", "", "123456789012346", "123456789012346");
-            AssertCounterRateEventsPresent(events, meter.Name, f.Name, "", "", "123457.7890625", "123457.7890625");
-            AssertCounterRateEventsPresent(events, meter.Name, d.Name, "", "", "87654321987655.4", "87654321987655.4");
+            AssertCounterEventsPresent(events, meter.Name, i.Name, "", "", ("1234568", "1234568"), ("1234568", "2469136"));
+            AssertCounterEventsPresent(events, meter.Name, s.Name, "", "", ("21433", "21433"), ("21433", "42866"));
+            AssertCounterEventsPresent(events, meter.Name, b.Name, "", "", ("2", "2"), ("2", "4"));
+            AssertCounterEventsPresent(events, meter.Name, l.Name, "", "", ("123456789013", "123456789013"), ("123456789013", "246913578026"));
+            AssertCounterEventsPresent(events, meter.Name, dec.Name, "", "", ("123456789012346", "123456789012346"), ("123456789012346", "246913578024692"));
+            AssertCounterEventsPresent(events, meter.Name, f.Name, "", "", ("123457.7890625", "123457.7890625"), ("123457.7890625", "246915.578125"));
+            AssertCounterEventsPresent(events, meter.Name, d.Name, "", "", ("87654321987655.4", "87654321987655.4"), ("87654321987655.4", "175308643975310.8"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
@@ -700,8 +664,8 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "Color=red", "", "5", "12");
-            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "Color=blue", "", "6", "13");
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "Color=red", "", ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "Color=blue", "", ("6", "6"), ("13", "19"));
             AssertTimeSeriesLimitPresent(events);
             AssertCounterEventsNotPresent(events, meter.Name, c.Name, "Color=green");
             AssertCounterEventsNotPresent(events, meter.Name, c.Name, "Color=yellow");
@@ -767,7 +731,7 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
             AssertObservableCallbackErrorPresent(events);
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
@@ -804,16 +768,12 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
-            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
-            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "", "", "5", "17");
-            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "", "", "10", "27");
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "10"), ("7", "17"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "", "", "33", "40");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "", "", "", "11");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "", "", "33", "73");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "", "", "11", "33");
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("33", "33"), ("40", "73"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "11"), ("11", "22"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
 
             // Now create a new listener and do everything a 2nd time. Because the listener above has been disposed the source should be
@@ -835,16 +795,12 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterRateEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
-            AssertCounterRateEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
-            AssertCounterValueEventsPresent(events, meter.Name, c.Name, "", "", "5", "17");
-            AssertCounterValueEventsPresent(events, meter.Name, oc.Name, "", "", "31", "69");
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "31"), ("7", "38"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "36", "45");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, udc.Name, "", "", "33", "40");
-            AssertUpDownCounterRateEventsPresent(events, meter.Name, oudc.Name, "", "", "", "11");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, udc.Name, "", "", "33", "73");
-            AssertUpDownCounterValueEventsPresent(events, meter.Name, oudc.Name, "", "", "44", "99");
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("33", "33"), ("40", "73"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "44"), ("11", "55"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
@@ -987,54 +943,20 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(expectedInstruments.Length, publishEvents.Length);
         }
 
-        private void AssertCounterRateEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
-            string expectedUnit, params string[] expectedRates)
+        private void AssertCounterEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
+            string expectedUnit, params (string, string)[] expected)
         {
-            AssertGenericCounterRateEventsPresent("CounterRateValuePublished", events, meterName, instrumentName, tags, expectedUnit, expectedRates);
+            AssertGenericCounterEventsPresent("CounterRateValuePublished", events, meterName, instrumentName, tags, expectedUnit, expected);
         }
 
-        private void AssertCounterValueEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
-            string expectedUnit, params string[] expectedValues)
+        private void AssertUpDownCounterEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
+            string expectedUnit, params (string, string)[] expected)
         {
-            AssertGenericCounterValueEventsPresent("CounterRateValuePublished", events, meterName, instrumentName, tags, expectedUnit, expectedValues);
+            AssertGenericCounterEventsPresent("UpDownCounterRateValuePublished", events, meterName, instrumentName, tags, expectedUnit, expected);
         }
 
-        private void AssertUpDownCounterRateEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
-            string expectedUnit, params string[] expectedRates)
-        {
-            AssertGenericCounterRateEventsPresent("UpDownCounterRateValuePublished", events, meterName, instrumentName, tags, expectedUnit, expectedRates);
-        }
-
-        private void AssertUpDownCounterValueEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
-            string expectedUnit, params string[] expectedValues)
-        {
-            AssertGenericCounterValueEventsPresent("UpDownCounterRateValuePublished", events, meterName, instrumentName, tags, expectedUnit, expectedValues);
-        }
-
-        private void AssertGenericCounterRateEventsPresent(string eventName, EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
-            string expectedUnit, params string[] expectedRates)
-        {
-            var counterEvents = events.Where(e => e.EventName == eventName).Select(e =>
-                new
-                {
-                    MeterName = e.Payload[1].ToString(),
-                    MeterVersion = e.Payload[2].ToString(),
-                    InstrumentName = e.Payload[3].ToString(),
-                    Unit = e.Payload[4].ToString(),
-                    Tags = e.Payload[5].ToString(),
-                    Rate = e.Payload[6].ToString()
-                }).ToArray();
-            var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags).ToArray();
-            Assert.True(filteredEvents.Length >= expectedRates.Length);
-            for (int i = 0; i < expectedRates.Length; i++)
-            {
-                Assert.Equal(expectedUnit, filteredEvents[i].Unit);
-                Assert.Equal(expectedRates[i], filteredEvents[i].Rate);
-            }
-        }
-
-        private void AssertGenericCounterValueEventsPresent(string eventName, EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
-            string expectedUnit, params string[] expectedValues)
+        private void AssertGenericCounterEventsPresent(string eventName, EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
+            string expectedUnit, params (string, string)[] expected)
         {
             var counterEvents = events.Where(e => e.EventName == eventName).Select(e =>
                 new
@@ -1048,12 +970,12 @@ namespace System.Diagnostics.Metrics.Tests
                     Value = e.Payload[7].ToString()
                 }).ToArray();
             var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags).ToArray();
-
-            Assert.True(filteredEvents.Length >= expectedValues.Length);
-            for (int i = 0; i < expectedValues.Length; i++)
+            Assert.True(filteredEvents.Length >= expected.Length);
+            for (int i = 0; i < expected.Length; i++)
             {
                 Assert.Equal(expectedUnit, filteredEvents[i].Unit);
-                Assert.Equal(expectedValues[i], filteredEvents[i].Value);
+                Assert.Equal(expected[i].Item1, filteredEvents[i].Rate);
+                Assert.Equal(expected[i].Item2, filteredEvents[i].Value);
             }
         }
 
