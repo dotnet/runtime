@@ -180,7 +180,8 @@ typedef struct _SOSMemoryRegion
 {
     CLRDATA_ADDRESS Start;
     CLRDATA_ADDRESS Size;
-    CLRDATA_ADDRESS ExtraData;  // API specific extra data.
+    CLRDATA_ADDRESS ExtraData;
+    int Heap;
 } SOSMemoryRegion;
 
 cpp_quote("#endif // _SOS_MemoryRegion_")

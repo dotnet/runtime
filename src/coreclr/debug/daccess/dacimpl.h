@@ -2002,9 +2002,9 @@ public:
     virtual HRESULT Init();
 
 private:
-    void AddSingleSegment(const dac_heap_segment &seg, FreeRegionKind kind);
-    void AddSegmentList(DPTR(dac_heap_segment) seg, FreeRegionKind kind);
-    void AddFreeList(DPTR(dac_region_free_list) freeList, FreeRegionKind kind);
+    void AddSingleSegment(const dac_heap_segment &seg, FreeRegionKind kind, int heap);
+    void AddSegmentList(DPTR(dac_heap_segment) seg, FreeRegionKind kind, int heap = 0);
+    void AddFreeList(DPTR(dac_region_free_list) freeList, FreeRegionKind kind, int heap = 0);
     void AddServerRegions();
 };
 

@@ -504,8 +504,8 @@ typedef struct _SOSMemoryRegion
     CLRDATA_ADDRESS Start;
     CLRDATA_ADDRESS Size;
     CLRDATA_ADDRESS ExtraData;
+    int Heap;
     } 	SOSMemoryRegion;
-
 #endif // _SOS_MemoryRegion_
 
 #ifndef __ISOSStackRefErrorEnum_INTERFACE_DEFINED__

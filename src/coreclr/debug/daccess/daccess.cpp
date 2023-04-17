@@ -8350,7 +8350,7 @@ HRESULT DacGCBookkeepingEnumerator::Init()
 
     // Cap the number of regions we will walk in case we have run into some kind of
     // memory corruption.  We shouldn't have more than a few linked card tables anyway.
-    const int maxRegions = 32;
+    int maxRegions = 32;
 
     // This loop is effectively "while (next != 0)" but with an added check to make
     // sure we don't underflow next when subtracting card_table_info_size if we encounter
@@ -8423,11 +8423,12 @@ HRESULT DacHandleTableMemoryEnumerator::Init()
     return S_OK;
 }
 
-void DacFreeRegionEnumerator::AddSingleSegment(const dac_heap_segment &curr, FreeRegionKind kind)
+void DacFreeRegionEnumerator::AddSingleSegment(const dac_heap_segment &curr, FreeRegionKind kind, int heap)
 {
     SOSMemoryRegion mem = {0};
     mem.Start = TO_CDADDR(curr.mem);
     mem.ExtraData = (CLRDATA_ADDRESS)kind;
+    mem.Heap = heap;
 
     if (curr.mem < curr.committed)
         mem.Size = TO_CDADDR(curr.committed) - mem.Start;
@@ -8436,14 +8437,14 @@ void DacFreeRegionEnumerator::AddSingleSegment(const dac_heap_segment &curr, Fre
         mRegions.Add(mem);
 }
 
-void DacFreeRegionEnumerator::AddSegmentList(DPTR(dac_heap_segment) start, FreeRegionKind kind)
+void DacFreeRegionEnumerator::AddSegmentList(DPTR(dac_heap_segment) start, FreeRegionKind kind, int heap)
 {
     int iterationMax = 2048;
 
     DPTR(dac_heap_segment) curr = start;
     while (curr != nullptr)
     {
-        AddSingleSegment(*curr, kind);
+        AddSingleSegment(*curr, kind, heap);
 
         curr = curr->next;
         if (curr == start)
@@ -8454,7 +8455,7 @@ void DacFreeRegionEnumerator::AddSegmentList(DPTR(dac_heap_segment) start, FreeR
     }
 }
 
-void DacFreeRegionEnumerator::AddFreeList(DPTR(dac_region_free_list) free_list, FreeRegionKind kind)
+void DacFreeRegionEnumerator::AddFreeList(DPTR(dac_region_free_list) free_list, FreeRegionKind kind, int heap)
 {
     if (free_list != nullptr)
     {
@@ -8497,7 +8498,6 @@ HRESULT DacFreeRegionEnumerator::Init()
             for (int i = 0; i < count_free_region_kinds; i++, regionList++)
                 AddFreeList(regionList, FreeRegionKind::FreeRegion);
 
-        
         if (g_gcDacGlobals->freeable_soh_segment != nullptr)
         {
             DPTR(DPTR(dac_heap_segment)) freeable_soh_segment_ptr(g_gcDacGlobals->freeable_soh_segment);
