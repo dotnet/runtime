@@ -1617,7 +1617,7 @@ namespace System.Globalization
         public int LCID => CultureInfo.GetCultureInfo(Name).LCID;
 
 #if TARGET_BROWSER
-        private static string GetPNSEText(string funcName) =>  $"{funcName} is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.";
+        private static string GetPNSEText(string funcName) => SR.Format(SR.PlatformNotSupported_HybridGlobalization, funcName);
 #endif
     }
 }
