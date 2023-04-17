@@ -162,4 +162,7 @@
   <data name="Argument_DllNameCannotBeEmpty" xml:space="preserve">
     <value>DllName cannot be empty.</value>
   </data>
+  <data name="ArgumentOutOfRange_ParamSequence" xml:space="preserve">
+    <value>The specified parameter index is not in range.</value>
+  </data>
 </root>

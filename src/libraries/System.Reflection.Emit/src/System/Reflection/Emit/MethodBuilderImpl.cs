@@ -3,6 +3,7 @@
 
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection.Metadata;
@@ -23,6 +24,7 @@ namespace System.Reflection.Emit
 
         internal DllImportData? _dllImportData;
         internal List<CustomAttributeWrapper>? _customAttributes;
+        internal ParameterBuilderImpl[]? _parameters;
 
         internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
             Type[]? parameterTypes, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
@@ -37,6 +39,7 @@ namespace System.Reflection.Emit
             if (parameterTypes != null)
             {
                 _parameterTypes = new Type[parameterTypes.Length];
+                _parameters = new ParameterBuilderImpl[parameterTypes.Length + 1]; // parameter 0 reserved for return type
                 for (int i = 0; i < parameterTypes.Length; i++)
                 {
                     ArgumentNullException.ThrowIfNull(_parameterTypes[i] = parameterTypes[i], nameof(parameterTypes));
@@ -51,7 +54,17 @@ namespace System.Reflection.Emit
 
         protected override bool InitLocalsCore { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names) => throw new NotImplementedException();
-        protected override ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName) => throw new NotImplementedException();
+        protected override ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName)
+        {
+            if (position > 0 && (_parameterTypes == null || position > _parameterTypes.Length))
+                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
+
+            Debug.Assert(_parameters != null);
+            attributes &= ~ParameterAttributes.ReservedMask;
+            ParameterBuilderImpl parameter = new ParameterBuilderImpl(this, position, attributes, strParamName);
+            _parameters[position] = parameter;
+            return parameter;
+        }
         protected override ILGenerator GetILGeneratorCore(int size) => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {

@@ -24,6 +24,7 @@ namespace System.Reflection.Emit
         private int _nextTypeDefRowId = 1;
         private int _nextMethodDefRowId = 1;
         private int _nextFieldDefRowId = 1;
+        private int _nextParameterRowId = 1;
         private bool _coreTypesFullyPopulated;
         private Type?[]? _coreTypes;
         private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
@@ -136,6 +137,19 @@ namespace System.Reflection.Emit
                     MethodDefinitionHandle methodHandle = AddMethodDefinition(method, method.GetMethodSignatureBlob());
                     WriteCustomAttributes(method._customAttributes, methodHandle);
                     _nextMethodDefRowId++;
+
+                    if (method._parameters != null)
+                    {
+                        foreach (ParameterBuilderImpl parameter in method._parameters)
+                        {
+                            if (parameter != null)
+                            {
+                                ParameterHandle parameterHandle = AddParameter(parameter);
+                                WriteCustomAttributes(parameter._customAttributes, parameterHandle);
+                                _nextParameterRowId++;
+                            }
+                        }
+                    }
 
                     if (method._dllImportData != null)
                     {
@@ -280,6 +294,12 @@ namespace System.Reflection.Emit
         {
             _metadataBuilder.AddMarshallingDescriptor(fieldHandle, descriptor);
         }
+
+        internal static ParameterHandle AddParameter(ParameterBuilderImpl parameter) =>
+            _metadataBuilder.AddParameter(
+                attributes: (ParameterAttributes)parameter.Attributes,
+                name: parameter.Name != null ? _metadataBuilder.GetOrAddString(parameter.Name) : default,
+                sequenceNumber: parameter.Position);
 
         private AssemblyReferenceHandle AddAssemblyReference(string name, Version? version, string? culture,
             byte[]? publicKeyToken, AssemblyNameFlags flags, AssemblyContentType contentType) =>

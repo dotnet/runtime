@@ -138,7 +138,7 @@ namespace System.Reflection.Emit.Tests
                 TypeBuilder tb = mb.DefineType(type.FullName, type.Attributes, type.BaseType);
                 typeAttributes.ForEach(tb.SetCustomAttribute);
 
-                DefineMethodsAndSetAttributes(methodAttributes, tb, type.IsInterface ? type.GetMethods() : type.GetMethods(BindingFlags.DeclaredOnly));
+                DefineMethodsAndSetAttributes(methodAttributes, tb, type.IsInterface ? type.GetMethods() : type.GetMethods(BindingFlags.DeclaredOnly), methodAttributes);
                 DefineFieldsAndSetAttributes(fieldAttributes, type.GetFields(), tb);
             }
         }
@@ -152,12 +152,19 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-        private static void DefineMethodsAndSetAttributes(List<CustomAttributeBuilder> methodAttributes, TypeBuilder tb, MethodInfo[] methods)
+        private static void DefineMethodsAndSetAttributes(List<CustomAttributeBuilder> methodAttributes, TypeBuilder tb, MethodInfo[] methods, List<CustomAttributeBuilder> paramAttributes)
         {
             foreach (var method in methods)
             {
-                MethodBuilder meb = tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, method.ReturnType, null);
+                ParameterInfo[] parameters = method.GetParameters();
+                MethodBuilder meb = tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, method.ReturnType, parameters.Select(p => p.ParameterType).ToArray());
                 methodAttributes.ForEach(meb.SetCustomAttribute);
+
+                foreach (ParameterInfo param in parameters)
+                {
+                    ParameterBuilder pb = meb.DefineParameter(param.Position + 1, param.Attributes, param.Name);
+                    paramAttributes.ForEach(pb.SetCustomAttribute);
+                }
             }
         }
 
@@ -251,7 +258,7 @@ namespace System.Reflection.Emit.Tests
                                                               new CustomAttributeBuilder(typeof(SuppressUnmanagedCodeSecurityAttribute).GetConstructor(Type.EmptyTypes), new object[] { }),
                                                               new CustomAttributeBuilder(s_guidPair.con, s_guidPair.args)
                                                             };
-                CustomAttributeBuilder[] methodAttributes = new[] { new CustomAttributeBuilder(typeof(PreserveSigAttribute).GetConstructor(Type.EmptyTypes), new object[] { }),
+                List<CustomAttributeBuilder> methodAttributes = new() { new CustomAttributeBuilder(typeof(PreserveSigAttribute).GetConstructor(Type.EmptyTypes), new object[] { }),
                                                               new CustomAttributeBuilder(typeof(SuppressUnmanagedCodeSecurityAttribute).GetConstructor(Type.EmptyTypes), new object[] { }),
                                                               new CustomAttributeBuilder(typeof(SpecialNameAttribute).GetConstructor(Type.EmptyTypes), new object[] { }),
                                                               new CustomAttributeBuilder(s_guidPair.con, s_guidPair.args),
@@ -261,12 +268,17 @@ namespace System.Reflection.Emit.Tests
                                                                       new FieldInfo[] { dllType.GetField("CharSet"), dllType.GetField("SetLastError"), dllType.GetField("CallingConvention"), dllType.GetField("BestFitMapping"),
                                                                           dllType.GetField("ThrowOnUnmappableChar") }, new object[]{ CharSet.Ansi, true, CallingConvention.FastCall, true, false }),
                                                             };
+                List<CustomAttributeBuilder> parameterAttributes = new() { new CustomAttributeBuilder(typeof(InAttribute).GetConstructor(Type.EmptyTypes), new object[] { }),
+                                                              new CustomAttributeBuilder(typeof(OutAttribute).GetConstructor(Type.EmptyTypes), new object[] { }),
+                                                              new CustomAttributeBuilder(typeof(OptionalAttribute).GetConstructor(Type.EmptyTypes), new object[] { }),
+                                                              new CustomAttributeBuilder(s_guidPair.con, s_guidPair.args),
+                                                            };
 
                 AssemblyBuilder ab = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(
                     PopulateAssemblyName(), null, typeof(string), out MethodInfo saveMethod);
                 TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes);
                 typeAttributes.ForEach(tb.SetCustomAttribute);
-                DefineMethodsAndSetAttributes(methodAttributes.ToList(), tb, type.GetMethods());
+                DefineMethodsAndSetAttributes(methodAttributes, tb, type.GetMethods(), parameterAttributes);
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
@@ -302,7 +314,7 @@ namespace System.Reflection.Emit.Tests
                     Assert.True((methodImpl & MethodImplAttributes.NoInlining) != 0); // MethodImplAttribute
                     Assert.True((methodImpl & MethodImplAttributes.AggressiveOptimization) != 0); // MethodImplAttribute
                     Assert.True((methodImpl & MethodImplAttributes.PreserveSig) != 0); // PreserveSigAttribute
-                    Assert.Equal(methodAttributes.Length - 2, methodAttributesFromDisk.Count);
+                    Assert.Equal(methodAttributes.Count - 2, methodAttributesFromDisk.Count);
 
                     for (int i = 0; i < methodAttributesFromDisk.Count; i++)
                     {
@@ -345,6 +357,35 @@ namespace System.Reflection.Emit.Tests
                             default:
                                 Assert.Fail($"Not expected attribute : {methodAttributesFromDisk[i].AttributeType.Name}");
                                 break;
+                        }
+                    }
+
+                    foreach(ParameterInfo param in method.GetParameters())
+                    {
+                        IList<CustomAttributeData>  paramAttributes = param.GetCustomAttributesData();
+
+                        Assert.Equal(4, paramAttributes.Count);
+                        Assert.True((param.Attributes & ParameterAttributes.In) != 0); // InAttribute
+                        Assert.True((param.Attributes & ParameterAttributes.Out) != 0); // OutAttribute
+                        Assert.True((param.Attributes & ParameterAttributes.Optional) != 0); // OptionalAttribute
+
+                        for (int i = 0; i < paramAttributes.Count; i++)
+                        {
+                            switch (paramAttributes[i].AttributeType.Name)
+                            {
+                                case "InAttribute":
+                                    break;
+                                case "OutAttribute":
+                                    break;
+                                case "OptionalAttribute":
+                                    break;
+                                case "GuidAttribute":
+                                    Assert.Equal(s_guidPair.args[0], paramAttributes[i].ConstructorArguments[0].Value);
+                                    break;
+                                default:
+                                    Assert.Fail($"Not expected attribute : {paramAttributes[i].AttributeType.Name}");
+                                    break;
+                            }
                         }
                     }
                 }
