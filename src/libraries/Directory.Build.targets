@@ -51,7 +51,7 @@
                                               '$(IsSourceProject)' == 'true' and
                                               Exists('$(LibrariesProjectRoot)$(MSBuildProjectName)') and
                                               !Exists('$(LibrariesProjectRoot)$(MSBuildProjectName)$([System.IO.Path]::DirectorySeparatorChar)ref') and
-                                              !$(MSBuildProjectName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
+                                              '$(IsPrivateAssembly)' != 'true'">true</IsRuntimeAndReferenceAssembly>
 
     <!-- The source of truth for these IsNETCoreApp* properties is NetCoreAppLibrary.props. -->
     <IsNETCoreAppSrc Condition="('$(IsSourceProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true') and
@@ -77,7 +77,7 @@
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
-  <Import Project="$(RepositoryEngineeringDir)intellisense.targets" Condition="'$(IsSourceProject)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)intellisense.targets" Condition="'$(IsSourceProject)' == 'true' and '$(IsPrivateAssembly)' != 'true'" />
 
   <!-- Libraries-specific binplacing properties -->
   <PropertyGroup>
