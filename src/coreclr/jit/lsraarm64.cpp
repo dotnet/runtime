@@ -420,6 +420,7 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
 #ifdef DEBUG
     if (getStressLimitRegs() != LSRA_LIMIT_NONE)
     {
+        // For stress, make only alternate registers available so we can stress the selectoin of free/busy registers.
         freeCandidates &= (RBM_V0 | RBM_V2 | RBM_V4 | RBM_V6 | RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14 | RBM_V16 |
                            RBM_V18 | RBM_V20 | RBM_V22 | RBM_V24 | RBM_V26 | RBM_V28 | RBM_V30);
     }
