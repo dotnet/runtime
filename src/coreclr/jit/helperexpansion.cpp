@@ -391,12 +391,6 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt,
     {
         assert(BasicBlock::sameEHRegion(prevBb, sizeCheckBb));
     }
-
-    if (opts.OptimizationEnabled())
-    {
-        fgReorderBlocks(/* useProfileData */ false);
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
-    }
     return true;
 }
 
@@ -674,9 +668,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
     assert(BasicBlock::sameEHRegion(prevBb, threadStaticBlockNullCondBB));
     assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
 
-    fgReorderBlocks(/* useProfileData */ false);
-    fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
-
     return true;
 }
 
@@ -704,6 +695,13 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
             result = PhaseStatus::MODIFIED_EVERYTHING;
         }
     }
+
+    if ((result == PhaseStatus::MODIFIED_EVERYTHING) && opts.OptimizationEnabled())
+    {
+        fgReorderBlocks(/* useProfileData */ false);
+        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
+    }
+
     return result;
 }
 

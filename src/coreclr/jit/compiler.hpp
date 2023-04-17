@@ -1196,16 +1196,7 @@ inline GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, G
     blkNode->gtFlags |= indirFlags;
     blkNode->SetIndirExceptionFlags(this);
 
-    // TODO-Bug: this method does not have enough information to make this determination.
-    // The local may end up (or already is) address-exposed.
-    if (addr->OperIs(GT_LCL_ADDR))
-    {
-        if (lvaIsImplicitByRefLocal(addr->AsLclVarCommon()->GetLclNum()))
-        {
-            blkNode->gtFlags |= GTF_GLOB_REF;
-        }
-    }
-    else
+    if ((indirFlags & GTF_IND_INVARIANT) == 0)
     {
         blkNode->gtFlags |= GTF_GLOB_REF;
     }
@@ -4154,6 +4145,7 @@ void GenTree::VisitOperands(TVisitor visitor)
 // Standard unary operators
 #ifdef TARGET_ARM64
         case GT_CNEG_LT:
+        case GT_CINCCC:
 #endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:

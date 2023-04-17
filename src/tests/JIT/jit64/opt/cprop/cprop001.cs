@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 public class LIM
 {
     public static int accumulator = 0;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int x;
         int a = GetInt(1);
@@ -43,7 +45,7 @@ public class LIM
     }
 
 
-    public static void Accumulate(int x)
+    internal static void Accumulate(int x)
     {
         try
         {

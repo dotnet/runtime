@@ -6257,6 +6257,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
 // Standard unary operators
 #ifdef TARGET_ARM64
         case GT_CNEG_LT:
+        case GT_CINCCC:
 #endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
@@ -7344,6 +7345,13 @@ GenTree* Compiler::gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle)
 GenTreeVecCon* Compiler::gtNewVconNode(var_types type)
 {
     GenTreeVecCon* vecCon = new (this, GT_CNS_VEC) GenTreeVecCon(type);
+    return vecCon;
+}
+
+GenTreeVecCon* Compiler::gtNewVconNode(var_types type, void* data)
+{
+    GenTreeVecCon* vecCon = new (this, GT_CNS_VEC) GenTreeVecCon(type);
+    memcpy(&vecCon->gtSimdVal, data, genTypeSize(type));
     return vecCon;
 }
 
@@ -9507,6 +9515,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
 // Standard unary operators
 #ifdef TARGET_ARM64
         case GT_CNEG_LT:
+        case GT_CINCCC:
 #endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
@@ -12098,6 +12107,10 @@ void Compiler::gtDispTree(GenTree*     tree,
             printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
         }
 #ifdef TARGET_ARM64
+        else if (tree->OperIs(GT_CINCCC))
+        {
+            printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
+        }
         else if (tree->OperIs(GT_CCMP))
         {
             printf(" cond=%s flags=%s", tree->AsCCMP()->gtCondition.Name(),
@@ -18995,6 +19008,7 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX2_ConvertToInt32:
         case NI_AVX2_ConvertToUInt32:
         case NI_AVX2_ExtractVector128:
+        case NI_AVX512F_ExtractVector128:
         case NI_AVX512F_ExtractVector256:
         case NI_AVX512F_ConvertToVector128Int16:
         case NI_AVX512F_ConvertToVector128Int32:
@@ -21557,7 +21571,11 @@ GenTree* Compiler::gtNewSimdGetElementNode(
             unreached();
     }
 
-    if (simdSize == 32)
+    if (simdSize == 64)
+    {
+        intrinsicId = NI_Vector512_GetElement;
+    }
+    else if (simdSize == 32)
     {
         intrinsicId = NI_Vector256_GetElement;
     }
@@ -23894,7 +23912,11 @@ GenTree* Compiler::gtNewSimdWithElementNode(
             unreached();
     }
 
-    if (simdSize == 32)
+    if (simdSize == 64)
+    {
+        hwIntrinsicID = NI_Vector512_WithElement;
+    }
+    else if (simdSize == 32)
     {
         hwIntrinsicID = NI_Vector256_WithElement;
     }

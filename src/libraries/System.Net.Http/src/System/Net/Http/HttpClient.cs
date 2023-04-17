@@ -599,7 +599,7 @@ namespace System.Net.Http
                         // Massage things so that the cancellation exception we propagate appropriately contains the caller's token (it's possible
                         // multiple things caused cancellation, in which case we can attribute it to the caller's token, or it's possible the
                         // exception contains the linked token source, in which case that token isn't meaningful to the caller).
-                        e = toThrow = new TaskCanceledException(oce.Message, oce.InnerException, cancellationToken);
+                        e = toThrow = new TaskCanceledException(oce.Message, oce, cancellationToken);
                     }
                 }
                 else if (cts.IsCancellationRequested && !pendingRequestsCts.IsCancellationRequested)
@@ -620,7 +620,7 @@ namespace System.Net.Http
             {
                 // If the cancellation token source was canceled, race conditions abound, and we consider the failure to be
                 // caused by the cancellation (e.g. WebException when reading from canceled response stream).
-                e = toThrow = new OperationCanceledException(cancellationToken.IsCancellationRequested ? cancellationToken : cts.Token);
+                e = toThrow = CancellationHelper.CreateOperationCanceledException(e, cancellationToken.IsCancellationRequested ? cancellationToken : cts.Token);
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);

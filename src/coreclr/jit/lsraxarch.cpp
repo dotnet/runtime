@@ -1535,7 +1535,13 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     // Lowering was expected to get rid of memmove in case of zero
                     assert(size > 0);
 
-                    const unsigned simdSize = compiler->roundDownSIMDSize(size);
+                    unsigned simdSize = compiler->roundDownSIMDSize(size);
+                    if (size <= ZMM_RECOMMENDED_THRESHOLD)
+                    {
+                        // Only use ZMM for large data due to possible CPU throttle issues
+                        simdSize = min(YMM_REGSIZE_BYTES, compiler->roundDownSIMDSize(size));
+                    }
+
                     if ((size >= simdSize) && (simdSize > 0))
                     {
                         unsigned simdRegs = size / simdSize;
@@ -2144,6 +2150,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_Vector256_CreateScalarUnsafe:
             case NI_Vector256_ToScalar:
             case NI_Vector512_CreateScalarUnsafe:
+            case NI_Vector512_ToScalar:
             {
                 assert(numArgs == 1);
 
@@ -2157,7 +2164,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     {
                         // We will either be in memory and need to be moved
                         // into a register of the appropriate size or we
-                        // are already in an XMM/YMM register and can stay
+                        // are already in an XMM/YMM/ZMM register and can stay
                         // where we are.
 
                         tgtPrefUse = BuildUse(op1);
@@ -2171,6 +2178,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             case NI_Vector128_GetElement:
             case NI_Vector256_GetElement:
+            case NI_Vector512_GetElement:
             {
                 assert(numArgs == 2);
 
@@ -2178,7 +2186,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     // If the index is not a constant or op1 is in register,
                     // we will use the SIMD temp location to store the vector.
-                    var_types requiredSimdTempType = (intrinsicId == NI_Vector128_GetElement) ? TYP_SIMD16 : TYP_SIMD32;
+
+                    var_types requiredSimdTempType = Compiler::getSIMDTypeForSize(intrinsicTree->GetSimdSize());
                     compiler->getSIMDInitTempVarNum(requiredSimdTempType);
                 }
                 break;

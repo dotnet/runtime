@@ -929,6 +929,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
 
         case NI_Vector128_GetElement:
         case NI_Vector256_GetElement:
+        case NI_Vector512_GetElement:
         {
             if (simdType == TYP_SIMD12)
             {
@@ -1085,10 +1086,9 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector128_AsVector3:
         case NI_Vector128_ToScalar:
         case NI_Vector256_ToScalar:
+        case NI_Vector512_ToScalar:
         {
             assert(varTypeIsFloating(baseType));
-
-            attr = emitTypeSize(TYP_SIMD16);
 
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
