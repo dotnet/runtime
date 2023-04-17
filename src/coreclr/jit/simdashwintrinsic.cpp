@@ -796,9 +796,9 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         case NI_VectorT256_ShiftRightArithmetic:
         case NI_VectorT256_op_RightShift:
         {
-            if (varTypeIsLong(simdBaseType))
+            if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
             {
-                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
                 {
                     // TODO-XARCH-CQ: We should support long/ulong arithmetic shift
                     return nullptr;

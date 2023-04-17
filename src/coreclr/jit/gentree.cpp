@@ -19596,7 +19596,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 }
                 else if (op == GT_RSH)
                 {
-                    if (varTypeIsLong(simdBaseType))
+                    if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
                     {
                         assert(varTypeIsSigned(simdBaseType));
                         assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
@@ -19619,7 +19619,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             }
             else if (op == GT_RSH)
             {
-                if (varTypeIsLong(simdBaseType))
+                if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
                 {
                     assert(varTypeIsSigned(simdBaseType));
                     assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
