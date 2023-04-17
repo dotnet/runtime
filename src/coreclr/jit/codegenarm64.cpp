@@ -2626,31 +2626,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
             }
         }
 
-        switch (op2->gtOper)
-        {
-            case GT_LSH:
-            {
-                opt = INS_OPTS_LSL;
-                break;
-            }
-
-            case GT_RSH:
-            {
-                opt = INS_OPTS_ASR;
-                break;
-            }
-
-            case GT_RSZ:
-            {
-                opt = INS_OPTS_LSR;
-                break;
-            }
-
-            default:
-            {
-                unreached();
-            }
-        }
+        opt = ShiftOpToInsOpts(op2->gtOper);
 
         emit->emitIns_R_R_R_I(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum(),
                               c->AsIntConCommon()->IconValue(), opt);
@@ -4545,6 +4521,15 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             }
 
             emit->emitIns_R_I(ins, cmpSize, op1Reg, intConst->IconValue());
+        }
+        else if (op2->isContained())
+        {
+            assert(op2->OperIs(GT_LSH, GT_RSH, GT_RSZ));
+            assert(op2->gtGetOp2()->IsCnsIntOrI());
+            assert(op2->gtGetOp2()->isContained());
+
+            emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), op2->gtGetOp1()->GetRegNum(),
+                                op2->gtGetOp2()->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(op2->gtOper));
         }
         else
         {
@@ -10386,6 +10371,31 @@ insCond CodeGen::JumpKindToInsCond(emitJumpKind condition)
         default:
             NO_WAY("unexpected condition type");
             return INS_COND_EQ;
+    }
+}
+
+//------------------------------------------------------------------------
+// ShiftOpToInsOpts: Convert a shift-op to a insOpts.
+//
+// Arguments:
+//    shiftOp - the shift-op
+//
+insOpts CodeGen::ShiftOpToInsOpts(genTreeOps shiftOp)
+{
+    switch (shiftOp)
+    {
+        case GT_LSH:
+            return INS_OPTS_LSL;
+
+        case GT_RSH:
+            return INS_OPTS_ASR;
+
+        case GT_RSZ:
+            return INS_OPTS_LSR;
+
+        default:
+            NO_WAY("expected a shift-op");
+            return INS_OPTS_NONE;
     }
 }
 
