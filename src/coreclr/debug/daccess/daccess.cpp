@@ -8409,7 +8409,7 @@ HRESULT DacHandleTableMemoryEnumerator::Init()
                         SOSMemoryRegion mem = {0};
                         mem.Start = curr.GetAddr();
                         mem.Size = HANDLE_SEGMENT_SIZE;
-                        mem.ExtraData = j; // heap number
+                        mem.Heap = j; // heap number
 
                         mRegions.Add(mem);
 
