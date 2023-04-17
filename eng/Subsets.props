@@ -188,6 +188,7 @@
     <SubsetName Include="publish" OnDemand="true" Description="Generate asset manifests and prepare to publish to BAR." />
     <SubsetName Include="RegenerateDownloadTable" OnDemand="true" Description="Regenerates the nightly build download table" />
     <SubsetName Include="RegenerateThirdPartyNotices" OnDemand="true" Description="Regenerates the THIRD-PARTY-NOTICES.TXT file based on other repos' TPN files." />
+    <SubsetName Include="tasks" OnDemand="true" Description="Build the repo local task projects." />
 
   </ItemGroup>
 
@@ -538,19 +539,28 @@
     <ProjectToBuild Include="$(RepositoryEngineeringDir)regenerate-download-table.proj" Pack="true" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('regeneratethirdpartynotices'))">
+  <ItemGroup Condition="$(_subset.Contains('+regeneratethirdpartynotices+'))">
     <ProjectToBuild Include="$(RepositoryEngineeringDir)regenerate-third-party-notices.proj" Pack="false" BuildInParallel="false" />
+  </ItemGroup>
+
+  <!-- Tasks-->
+  <ItemGroup Condition="$(_subset.Contains('+tasks+'))">
+    <ProjectToBuild Include="$(RepoTasksDir)tasks.proj" Pack="false" Category="tasks" />
   </ItemGroup>
 
   <!-- Set default configurations. -->
   <ItemGroup>
     <ProjectToBuild Update="@(ProjectToBuild)">
-      <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'clr' and '$(CoreCLRConfiguration)' != ''">%(AdditionalProperties);Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
-      <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'mono' and '$(MonoConfiguration)' != ''">%(AdditionalProperties);Configuration=$(MonoConfiguration)</AdditionalProperties>
-      <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'libs' and '$(LibrariesConfiguration)' != ''">%(AdditionalProperties);Configuration=$(LibrariesConfiguration)</AdditionalProperties>
-      <!-- Propagate host configuration for libs build since live host is used for testing -->
-      <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'libs' and '$(HostConfiguration)' != ''">%(AdditionalProperties);HostConfiguration=$(HostConfiguration)</AdditionalProperties>
-      <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'host' and '$(HostConfiguration)' != ''">%(AdditionalProperties);Configuration=$(HostConfiguration)</AdditionalProperties>
+      <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'clr'">%(AdditionalProperties);Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
+      <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'mono'">%(AdditionalProperties);Configuration=$(MonoConfiguration)</AdditionalProperties>
+      <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'libs'">%(AdditionalProperties);Configuration=$(LibrariesConfiguration)</AdditionalProperties>
+      <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'host'">%(AdditionalProperties);Configuration=$(HostConfiguration)</AdditionalProperties>
+      <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'tasks'">%(AdditionalProperties);Configuration=$(TasksConfiguration)</AdditionalProperties>
+
+      <!-- Propagate configurations for cross-subset builds -->
+      <AdditionalProperties>%(AdditionalProperties);LibrariesConfiguration=$(LibrariesConfiguration)</AdditionalProperties>
+      <AdditionalProperties>%(AdditionalProperties);HostConfiguration=$(HostConfiguration)</AdditionalProperties>
+      <AdditionalProperties>%(AdditionalProperties);TasksConfiguration=$(TasksConfiguration)</AdditionalProperties>
     </ProjectToBuild>
   </ItemGroup>
 
