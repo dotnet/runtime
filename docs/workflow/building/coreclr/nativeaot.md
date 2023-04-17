@@ -16,7 +16,7 @@ The Native AOT toolchain can be currently built for Linux (x64/arm64), macOS (x6
 ## Building
 
 1. [Install pre-requisites](/docs/workflow/README.md#build-requirements)
-1. Run `build[.cmd|.sh] clr.aot+libs -rc [Debug|Release]` from the repo root to build binaries for local development. This will build individual components, but not the NuGet packages and builds much faster.
+1. Run `build[.cmd|.sh] clr.aot+clr.corelib+libs -rc [Debug|Release]` from the repo root to build binaries for local development. This will build individual components, but not the NuGet packages and builds much faster.
 
 ### Using built binaries
 
