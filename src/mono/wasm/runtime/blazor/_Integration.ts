@@ -16,19 +16,21 @@ export async function loadBootConfig(config: MonoConfigInternal,) {
 
     INTERNAL.resourceLoader = resourceLoader;
 
-    mapBootConfigToMonoConfig(Module.config as MonoConfigInternal, resourceLoader, bootConfigResult.applicationEnvironment);
+    const newConfig = mapBootConfigToMonoConfig(Module.config as MonoConfigInternal, resourceLoader, bootConfigResult.applicationEnvironment);
+    Module.config = newConfig;
 }
 
 let resourcesLoaded = 0;
 let totalResources = 0;
 
-export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, resourceLoader: WebAssemblyResourceLoader, applicationEnvironment: string) {
+export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, resourceLoader: WebAssemblyResourceLoader, applicationEnvironment: string): MonoConfigInternal {
     const resources = resourceLoader.bootConfig.resources;
 
     const assets: AssetEntry[] = [];
     const environmentVariables: any = {};
 
     moduleConfig.applicationEnvironment = applicationEnvironment;
+
     moduleConfig.assets = assets;
     moduleConfig.globalizationMode = "icu";
     moduleConfig.environmentVariables = environmentVariables;
@@ -37,8 +39,10 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, reso
     moduleConfig.enableDownloadRetry = false; // disable retry downloads
     moduleConfig.mainAssemblyName = resourceLoader.bootConfig.entryAssembly;
 
-    // TODO MF: To support reading resources in JSInitializers
-    (moduleConfig as any).resources = resources;
+    moduleConfig = {
+        ...resourceLoader.bootConfig,
+        ...moduleConfig
+    };
 
     if (resourceLoader.bootConfig.startupMemoryCache !== undefined) {
         moduleConfig.startupMemoryCache = resourceLoader.bootConfig.startupMemoryCache;
@@ -171,6 +175,8 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, reso
     if (resourceLoader.bootConfig.runtimeOptions) {
         moduleConfig.runtimeOptions = [...(moduleConfig.runtimeOptions || []), ...(resourceLoader.bootConfig.runtimeOptions || [])];
     }
+
+    return moduleConfig;
 }
 
 function getICUResourceName(bootConfig: BootJsonData, culture: string | undefined): string {
