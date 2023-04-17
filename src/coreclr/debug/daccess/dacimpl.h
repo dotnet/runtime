@@ -2004,7 +2004,7 @@ public:
 private:
     void AddSingleSegment(const dac_heap_segment &seg, FreeRegionKind kind, int heap);
     void AddSegmentList(DPTR(dac_heap_segment) seg, FreeRegionKind kind, int heap = 0);
-    void AddFreeList(DPTR(dac_region_free_list) freeList, FreeRegionKind kind, int heap = 0);
+    void AddFreeList(DPTR(dac_region_free_list) freeList, FreeRegionKind kind);
     void AddServerRegions();
 };
 

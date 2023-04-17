@@ -8455,7 +8455,7 @@ void DacFreeRegionEnumerator::AddSegmentList(DPTR(dac_heap_segment) start, FreeR
     }
 }
 
-void DacFreeRegionEnumerator::AddFreeList(DPTR(dac_region_free_list) free_list, FreeRegionKind kind, int heap)
+void DacFreeRegionEnumerator::AddFreeList(DPTR(dac_region_free_list) free_list, FreeRegionKind kind)
 {
     if (free_list != nullptr)
     {
