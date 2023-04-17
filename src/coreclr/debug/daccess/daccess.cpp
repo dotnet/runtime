@@ -8350,7 +8350,7 @@ HRESULT DacGCBookkeepingEnumerator::Init()
 
     // Cap the number of regions we will walk in case we have run into some kind of
     // memory corruption.  We shouldn't have more than a few linked card tables anyway.
-    int maxRegions = 32;
+    const int maxRegions = 32;
 
     // This loop is effectively "while (next != 0)" but with an added check to make
     // sure we don't underflow next when subtracting card_table_info_size if we encounter
