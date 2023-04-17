@@ -49,6 +49,12 @@ SIMD_OP  (128, OP_XCOMPARE_FP, CMP_GE,               WTDSS,              _UNDEF,
 SIMD_OP  (128, OP_XCOMPARE_FP, CMP_LT,               WTDSS_REV,          _UNDEF,           _UNDEF,           _UNDEF,           _UNDEF,           arm_neon_fcmgt,   arm_neon_fcmgt)
 SIMD_OP  (128, OP_XCOMPARE_FP, CMP_LE,               WTDSS_REV,          _UNDEF,           _UNDEF,           _UNDEF,           _UNDEF,           arm_neon_fcmge,   arm_neon_fcmge)
 
+SIMD_OP  (128, OP_XUNOP,       OP_SIMD_FCVTL,        DS,                 _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fcvtl,   _UNDEF)
+SIMD_OP  (128, OP_XUNOP,       OP_SIMD_FCVTL2,       DS,                 _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fcvtl2,  _UNDEF) 
+SIMD_OP  (128, OP_XUNOP,       OP_ARM64_SXTL,        TDS,                arm_neon_sxtl,    arm_neon_sxtl,    arm_neon_sxtl,   _UNDEF,            _UNDEF,           _UNDEF)
+SIMD_OP  (128, OP_XUNOP,       OP_ARM64_SXTL2,       TDS,                arm_neon_sxtl2,   arm_neon_sxtl2,   arm_neon_sxtl2,  _UNDEF,            _UNDEF,           _UNDEF)
+SIMD_OP  (128, OP_XUNOP,       OP_ARM64_UXTL,        TDS,                arm_neon_uxtl,    arm_neon_uxtl,    arm_neon_uxtl,   _UNDEF,            _UNDEF,           _UNDEF)
+SIMD_OP  (128, OP_XUNOP,       OP_ARM64_UXTL2,       TDS,                arm_neon_uxtl2,   arm_neon_uxtl2,   arm_neon_uxtl2,  _UNDEF,            _UNDEF,           _UNDEF)
 SIMD_OP  (128, OP_XBINOP,      OP_IADD,              WTDSS,              arm_neon_add,     arm_neon_add,     arm_neon_add,    arm_neon_add,      _UNDEF,           _UNDEF)
 SIMD_OP  (128, OP_XBINOP,      OP_FADD,              WTDSS,              _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fadd,    arm_neon_fadd)
 SIMD_OP  (128, OP_XBINOP,      OP_ISUB,              WTDSS,              arm_neon_sub,     arm_neon_sub,     arm_neon_sub,    arm_neon_sub,      _UNDEF,           _UNDEF)
