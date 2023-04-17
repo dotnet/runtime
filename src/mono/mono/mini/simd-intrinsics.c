@@ -1235,7 +1235,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_Create:
 		case SN_Dot:
 		case SN_ExtractMostSignificantBits:
-		case SN_GetElement:
+		//case SN_GetElement:
 		case SN_GetLower:
 		case SN_GetUpper:
 		case SN_Narrow:
@@ -1569,8 +1569,19 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
-		int extract_op = type_to_xextract_op (arg0_type);
-		return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
+
+		if (args[1]->opcode == OP_ICONST) {
+			// If the index is provably a constant, we can generate vastly better code.
+			int extract_op = type_to_extract_op (arg0_type);
+			MonoInst* ret = emit_simd_ins (cfg, args [0]->klass, extract_op, args [0]->dreg, -1);
+			ret->inst_c0 = args[1]->inst_c0;
+			ret->inst_c1 = fsig->ret->type;
+			return ret;
+		} else {
+			int extract_op = type_to_xextract_op (arg0_type);
+			return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
+		}
+
 	}
 	case SN_GetLower:
 	case SN_GetUpper: {

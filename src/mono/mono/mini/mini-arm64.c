@@ -89,6 +89,7 @@ MONO_DISABLE_WARNING(4334)
 #define FP_TEMP_REG ARMREG_D16
 #define FP_TEMP_REG2 ARMREG_D17
 #define NEON_TMP_REG FP_TEMP_REG
+#define ARM64_SWITCH_PREAMBLE_LENGTH 12
 
 #define THUNK_SIZE (4 * 4)
 
@@ -922,6 +923,58 @@ guint8*
 mono_arm_emit_ldrx (guint8 *code, int rt, int rn, int imm)
 {
 	return emit_ldrx (code, rt, rn, imm);
+}
+
+static guint8* 
+emit_switch (guint8* code, int ncases, int ncaselen, int sreg)
+{
+	// Assumptions:
+	// - case selector values are nicely packed from 0 to some small integer
+	// - all cases are the same length (this pads them with NOPs if needed)
+	// - (case length + 1) is a power of two 
+
+	// The structure is as follows:
+	// adrl x16, first_case
+	// add  x16, x16, <sreg> lsl <pwr+2>
+	// br   x16
+	// first_case:
+	//    some first case code here (initialized to nops)
+	// b    end_switch
+	// first_case + 4 * (ncaselen+1):
+	//    some second case code here (initialized to nops)
+  // b    end_switch
+	// ...
+  // end_switch:
+
+	// TODO: let the last case fall through to end_switch
+	// TODO: allow for non-power-of-2 case lengths
+
+	// We add one to ncaselen to support the b instruction which must trail every case.
+	int pwr = mono_is_power_of_two (ncaselen + 1); 
+	g_assert (pwr >= 0);
+
+	guint8* first_case = code + ARM64_SWITCH_PREAMBLE_LENGTH; 
+	guint8* end_switch = first_case + (ncaselen + 1) * ncases * 4;
+	arm_adrx (code, ARMREG_IP0, first_case); // adr points to the next instruction, hence -4
+	// We shift by additional 2 bits to account for instructions taking 4 Bytes each.
+	arm_addx_shift (code, ARMREG_IP0, ARMREG_IP0, sreg, ARMSHIFT_LSL, pwr + 2); 
+	arm_brx (code, ARMREG_IP0);
+	
+	for (int i = 0; i < ncases; i++)
+	{
+		for (int j = 0; j < ncaselen; j++)
+			arm_nop (code);
+
+		arm_b (code, end_switch);
+	}
+	
+	return end_switch;
+}
+
+static guint8* 
+get_switch_case (guint8* code, int ncaselen, int ncase)
+{
+	return code + 4 * ((ncaselen + 1) * ncase) + ARM64_SWITCH_PREAMBLE_LENGTH;
 }
 
 static guint8*
@@ -3826,6 +3879,68 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				arm_neon_fdup_e (code, VREG_FULL, t, dreg, sreg1, ins->inst_c0);
 			}
 			break;
+		
+		case OP_XEXTRACT_I1:
+		case OP_XEXTRACT_I2:
+		case OP_XEXTRACT_I4:
+		case OP_XEXTRACT_I8: {
+			int num_elems = 16;
+			int elem_type = TYPE_I8;
+			gboolean is_unsigned = is_type_unsigned_macro (ins->inst_c1);
+			switch (ins->opcode) {
+			case OP_XEXTRACT_I2:
+				num_elems = 8;
+				elem_type = TYPE_I16;
+				break;
+			case OP_XEXTRACT_I4:
+				num_elems = 4;
+				elem_type = TYPE_I32;
+				break;
+			case OP_XEXTRACT_I8:
+				num_elems = 2;
+				elem_type = TYPE_I64;
+				is_unsigned = TRUE; // there is no smov for i64
+				break;
+			}
+
+			// TODO: elide switch if the selector is constant
+			guint8* switch_start = code;
+			code = emit_switch (code, num_elems, 1, sreg2);
+			for (int i = 0; i < num_elems; i++)
+			{
+				guint8* case_start = get_switch_case (switch_start, 1, i);
+				if (is_unsigned) {
+					arm_neon_umov (case_start, elem_type, dreg, sreg1, i);
+				} else {
+					arm_neon_smov (case_start, elem_type, dreg, sreg1, i);
+				}
+			}
+			break;
+		}
+
+		case OP_XEXTRACT_R4:
+		case OP_XEXTRACT_R8: {
+			int num_elems = 4;
+			int elem_type = TYPE_F32;
+			// TODO: elide switch if the selector is constant
+
+			if (ins->opcode == OP_XEXTRACT_R8) {
+				num_elems = 2;
+				elem_type = TYPE_F64;
+			}
+
+			guint8* switch_start = code;
+			code = emit_switch (code, num_elems, 1, sreg2);
+			for (int i = 0; i < num_elems; i++)
+			{
+				// TODO: solve i=0 trivially by branching directly to the end of the switch
+				// TODO: optimize f64 with a single conditional branch
+				guint8* case_start = get_switch_case (switch_start, 1, i);
+				arm_neon_fdup_e (case_start, VREG_FULL, elem_type, dreg, sreg1, i);
+			}
+			break;
+		}
+
 		case OP_INSERT_I1:
 		case OP_INSERT_I2:
 		case OP_INSERT_I4:
