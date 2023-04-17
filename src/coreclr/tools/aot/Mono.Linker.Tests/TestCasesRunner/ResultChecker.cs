@@ -400,10 +400,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Debug.Assert (origin != null);
 				if (origin?.MemberDefinition == null)
 					return false;
+				if (origin?.MemberDefinition is IAssemblyDesc asm)
+					return expectedOriginProvider is AssemblyDefinition expectedAsm && asm.GetName().Name == expectedAsm.Name.Name;
+
 				if (expectedOriginProvider is not IMemberDefinition expectedOriginMember)
 					return false;
 
-				var actualOriginToken = new AssemblyQualifiedToken (origin.Value.MemberDefinition);
+				var actualOriginToken = new AssemblyQualifiedToken (origin!.Value.MemberDefinition);
 				var expectedOriginToken = new AssemblyQualifiedToken (expectedOriginMember);
 				if (actualOriginToken.Equals (expectedOriginToken))
 					return true;

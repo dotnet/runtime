@@ -681,49 +681,52 @@ namespace ILCompiler.Dataflow
                 bool requiresDataflowProcessing = ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForMethodBody(flowAnnotations, method);
 
                 MethodIL body = flowAnnotations.ILProvider.GetMethodIL(method);
-                ILReader reader = new ILReader(body.GetILBytes());
-                while (reader.HasNext)
+                if (body != null)
                 {
-                    ILOpcode opcode = reader.ReadILOpcode();
-                    switch (opcode)
+                    ILReader reader = new ILReader(body.GetILBytes());
+                    while (reader.HasNext)
                     {
-                        case ILOpcode.newobj:
-                        case ILOpcode.ldftn:
-                        case ILOpcode.ldvirtftn:
-                        case ILOpcode.call:
-                        case ILOpcode.callvirt:
-                        case ILOpcode.jmp:
-                            {
-                                if (body.GetObject(reader.ReadILToken()) is MethodDesc referencedMethod)
-                                    requiresDataflowProcessing |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(flowAnnotations, referencedMethod);
-                            }
-                            break;
+                        ILOpcode opcode = reader.ReadILOpcode();
+                        switch (opcode)
+                        {
+                            case ILOpcode.newobj:
+                            case ILOpcode.ldftn:
+                            case ILOpcode.ldvirtftn:
+                            case ILOpcode.call:
+                            case ILOpcode.callvirt:
+                            case ILOpcode.jmp:
+                                {
+                                    if (body.GetObject(reader.ReadILToken()) is MethodDesc referencedMethod)
+                                        requiresDataflowProcessing |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(flowAnnotations, referencedMethod);
+                                }
+                                break;
 
-                        case ILOpcode.ldtoken:
-                            {
-                                object referencedObject = body.GetObject(reader.ReadILToken());
-                                if (referencedObject is FieldDesc referencedField)
-                                    requiresDataflowProcessing |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(flowAnnotations, referencedField);
-                                else if (referencedObject is MethodDesc referencedMethod)
-                                    requiresDataflowProcessing |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(flowAnnotations, referencedMethod);
-                            }
-                            break;
+                            case ILOpcode.ldtoken:
+                                {
+                                    object referencedObject = body.GetObject(reader.ReadILToken());
+                                    if (referencedObject is FieldDesc referencedField)
+                                        requiresDataflowProcessing |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(flowAnnotations, referencedField);
+                                    else if (referencedObject is MethodDesc referencedMethod)
+                                        requiresDataflowProcessing |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(flowAnnotations, referencedMethod);
+                                }
+                                break;
 
-                        case ILOpcode.ldfld:
-                        case ILOpcode.ldsfld:
-                        case ILOpcode.ldflda:
-                        case ILOpcode.ldsflda:
-                        case ILOpcode.stfld:
-                        case ILOpcode.stsfld:
-                            {
-                                if (body.GetObject(reader.ReadILToken()) is FieldDesc referencedField)
-                                    requiresDataflowProcessing |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(flowAnnotations, referencedField);
-                            }
-                            break;
+                            case ILOpcode.ldfld:
+                            case ILOpcode.ldsfld:
+                            case ILOpcode.ldflda:
+                            case ILOpcode.ldsflda:
+                            case ILOpcode.stfld:
+                            case ILOpcode.stsfld:
+                                {
+                                    if (body.GetObject(reader.ReadILToken()) is FieldDesc referencedField)
+                                        requiresDataflowProcessing |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(flowAnnotations, referencedField);
+                                }
+                                break;
 
-                        default:
-                            reader.Skip(opcode);
-                            break;
+                            default:
+                                reader.Skip(opcode);
+                                break;
+                        }
                     }
                 }
 
