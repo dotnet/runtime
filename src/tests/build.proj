@@ -527,9 +527,7 @@
 
     <PropertyGroup>
       <CrossgenDir>$(__BinDir)</CrossgenDir>
-      <CrossgenDir Condition="'$(TargetArchitecture)' == 'arm'">$(CrossgenDir)\x64</CrossgenDir>
-      <CrossgenDir Condition="'$(TargetArchitecture)' == 'arm64'">$(CrossgenDir)\x64</CrossgenDir>
-      <CrossgenDir Condition="'$(TargetArchitecture)' == 'x86'">$(CrossgenDir)\x64</CrossgenDir>
+      <CrossgenDir Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)'">$(CrossgenDir)\$(BuildArchitecture)</CrossgenDir>
 
       <CrossgenOutputDir>$(__TestIntermediatesDir)\crossgen.out</CrossgenOutputDir>
 
