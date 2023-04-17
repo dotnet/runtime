@@ -1907,10 +1907,9 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
             GenTree* lArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
             GenTree* rArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
-            ssize_t MaxUnrollSize = 16;
-#ifdef FEATURE_SIMD
-            MaxUnrollSize = 32;
-#ifdef TARGET_XARCH
+            ssize_t MaxUnrollSize = comp->IsBaselineSimdIsaSupported() ? 32 : MaxUnrollSize;
+
+#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
             if (comp->compOpportunisticallyDependsOn(InstructionSet_Vector512))
             {
                 MaxUnrollSize = 128;
@@ -1920,7 +1919,6 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                 // We need AVX2 for NI_Vector256_op_Equality, fallback to Vector128 if only AVX is available
                 MaxUnrollSize = 64;
             }
-#endif
 #endif
 
             if (cnsSize <= MaxUnrollSize)
