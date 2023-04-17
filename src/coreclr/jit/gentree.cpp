@@ -19276,13 +19276,15 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
         NamedIntrinsic intrinsic = (simdSize == 32) ? NI_AVX2_Abs : NI_SSSE3_Abs;
         return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
     }
-    else if ((compIsaSupportedDebugOnly(InstructionSet_AVX512F)) && ((simdBaseType == TYP_INT) || (simdBaseType == TYP_LONG)))
+    else if ((simdSize == 64) && ((simdBaseType == TYP_INT) || (simdBaseType == TYP_LONG)))
     {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
         NamedIntrinsic intrinsic = NI_AVX512F_Abs;
         return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
     }
-    else if ((compIsaSupportedDebugOnly(InstructionSet_AVX512BW)) && (varTypeIsSmall(simdBaseType)))
+    else if ( (simdSize == 64) && (varTypeIsSmall(simdBaseType)))
     {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
         NamedIntrinsic intrinsic = NI_AVX512BW_Abs;
         return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
     }
