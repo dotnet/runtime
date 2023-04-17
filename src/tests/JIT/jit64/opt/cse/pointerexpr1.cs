@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 //((a+ *b)+ *c)
 
 //permutations for  ((a+ *b)+ *c)
@@ -23,7 +24,8 @@ namespace CseTest
 
     public class TestClass
     {
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int a = returna(false);
             int c = returnc(false);
