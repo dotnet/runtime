@@ -5278,7 +5278,8 @@ protected:
     };
 
     void fgDfsReversePostorderHelper(BasicBlock* block,
-                                     ArrayStack<DfsBlockEntry>& stack,
+                                     unsigned    stackInitialCapacity,
+                                     //ArrayStack<DfsBlockEntry>& stack,
                                      BlockSet&   visited,
                                      unsigned&   preorderIndex,
                                      unsigned&   reversePostorderIndex);

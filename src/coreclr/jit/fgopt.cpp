@@ -784,7 +784,7 @@ void Compiler::fgDfsReversePostorder()
     initialCapacity = genFindHighestBit((initialCapacity << 1) - 1);
     initialCapacity = min(initialCapacity, 64);
 
-    ArrayStack<DfsBlockEntry> stack(getAllocator(CMK_ArrayStack), initialCapacity);
+    //ArrayStack<DfsBlockEntry> stack(getAllocator(CMK_ArrayStack), initialCapacity);
 
     unsigned preorderIndex  = 1;
     unsigned postorderIndex = 1;
@@ -795,7 +795,7 @@ void Compiler::fgDfsReversePostorder()
         if (BlockSetOps::IsMember(this, startNodes, block->bbNum) &&
             !BlockSetOps::IsMember(this, visited, block->bbNum))
         {
-            fgDfsReversePostorderHelper(block, stack, visited, preorderIndex, postorderIndex);
+            fgDfsReversePostorderHelper(block, initialCapacity, /*stack,*/ visited, preorderIndex, postorderIndex);
         }
     }
 
@@ -808,7 +808,7 @@ void Compiler::fgDfsReversePostorder()
         {
             if (!BlockSetOps::IsMember(this, visited, block->bbNum))
             {
-                fgDfsReversePostorderHelper(block, stack, visited, preorderIndex, postorderIndex);
+                fgDfsReversePostorderHelper(block, initialCapacity, /*stack,*/ visited, preorderIndex, postorderIndex);
             }
         }
     }
@@ -884,7 +884,8 @@ BlockSet_ValRet_T Compiler::fgDomFindStartNodes()
 //    evaluation stack to assign pre and post-order numbers.
 //
 void Compiler::fgDfsReversePostorderHelper(BasicBlock*                block,
-                                           ArrayStack<DfsBlockEntry>& stack,
+                                           unsigned                   stackInitialCapacity,
+                                           //ArrayStack<DfsBlockEntry>& stack,
                                            BlockSet&                  visited,
                                            unsigned&                  preorderIndex,
                                            unsigned&                  postorderIndex)
@@ -892,7 +893,8 @@ void Compiler::fgDfsReversePostorderHelper(BasicBlock*                block,
     // Assume we haven't visited this node yet (callers ensure this).
     assert(!BlockSetOps::IsMember(this, visited, block->bbNum));
 
-    stack.Reset();
+    //stack.Reset();
+    ArrayStack<DfsBlockEntry> stack(getAllocator(CMK_ArrayStack), stackInitialCapacity);
 
     // Push the first block on the stack to seed the traversal, mark it visited to avoid backtracking,
     // and give it a preorder number.
