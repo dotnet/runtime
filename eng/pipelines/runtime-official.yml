@@ -144,7 +144,7 @@ stages:
       # - windows_arm
       # - windows_arm64
       jobParameters:
-        buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig)
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: AllSubsets_Mono
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -159,7 +159,7 @@ stages:
       platforms:
       - Browser_wasm
       jobParameters:
-        buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig) /p:MonoWasmBuildVariant=perftrace
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoWasmBuildVariant=perftrace
         nameSuffix: AllSubsets_Mono_perftrace
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         runtimeVariant: perftrace
@@ -175,7 +175,7 @@ stages:
       platforms:
       - Browser_wasm
       jobParameters:
-        buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig) /p:MonoWasmBuildVariant=multithread
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoWasmBuildVariant=multithread
         nameSuffix: AllSubsets_Mono_multithread
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         runtimeVariant: multithread
