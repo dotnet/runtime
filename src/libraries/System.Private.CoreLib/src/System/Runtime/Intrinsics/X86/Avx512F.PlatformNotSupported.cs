@@ -114,7 +114,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m512i _mm512_abs_epi64 (__m512i a)
         ///   VPABSQ zmm1 {k1}{z}, zmm2/m512/m64bcst
         /// </summary>
-        public static Vector512<ulong> Abs(Vector512<long> value) { throw new PlatformNotSupportedException(); };
+        public static Vector512<ulong> Abs(Vector512<long> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m512i _mm512_add_epi32 (__m512i a, __m512i b)

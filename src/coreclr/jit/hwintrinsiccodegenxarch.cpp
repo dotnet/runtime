@@ -1810,7 +1810,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
                 // These instructions are RM_R and so we need to ensure the targetReg
                 // is passed in as the RM register and op1 is passed as the R register
 
-                op1Reg          = op1->GetRegNum();
+                op1Reg = op1->GetRegNum();
                 emit->emitIns_R_R(ins, attr, op1Reg, targetReg);
             }
             break;
