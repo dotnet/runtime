@@ -12264,6 +12264,12 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
             // but if they are present in (v0, v2, v1), for I5, we will insert a copy from v2->v1
             // and need to keep both v1 and v2 live. Now, this becomes problem while assigning to
             // I6 because, there v2 is also busy, because the value of I5 is getting copied from v2.
+            //
+            // This is somewhat conservative appoach. It is possible that we first see the register
+            // assigned to the first RefPosition and if overlaps with registers in which subsequent
+            // refPositions are live, reallocate for the first RefPosition excluding the registers
+            // that are busy for subsequent refpositions (whats being done here), but that needs another
+            // round of allocation for the same RefPosition, and it doesn't fit our existing model.
             RefPosition* consecutiveRefPosition = linearScan->getNextConsecutiveRefPosition(refPosition);
             while (consecutiveRefPosition != nullptr)
             {
