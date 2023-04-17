@@ -3904,13 +3904,13 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         // This method also set the dtfi according/parseInfo to some special pre-defined
         // formats.
         //
-        private static string ExpandPredefinedFormat(ReadOnlySpan<char> format, scoped ref DateTimeFormatInfo dtfi, scoped ref ParsingInfo parseInfo, scoped ref DateTimeResult result)
+        private static string ExpandPredefinedFormat(char format, scoped ref DateTimeFormatInfo dtfi, scoped ref ParsingInfo parseInfo, scoped ref DateTimeResult result)
         {
             //
             // Check the format to see if we need to override the dtfi to be InvariantInfo,
             // and see if we need to set up the userUniversalTime flag.
             //
-            switch (format[0])
+            switch (format)
             {
                 case 's':       // Sortable format (in local time)
                 case 'o':
@@ -3956,7 +3956,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             //
             // Expand the pre-defined format character to the real format from DateTimeFormatInfo.
             //
-            return DateTimeFormat.GetRealFormat(format, dtfi);
+            return DateTimeFormat.ExpandStandardFormatToCustomPattern(format, dtfi);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -4601,7 +4601,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     return false;
                 }
 
-                formatParam = ExpandPredefinedFormat(formatParam, ref dtfi, ref parseInfo, ref result);
+                formatParam = ExpandPredefinedFormat(formatParamChar, ref dtfi, ref parseInfo, ref result);
             }
 
             result.calendar = parseInfo.calendar;
