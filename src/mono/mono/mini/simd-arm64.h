@@ -65,7 +65,7 @@ SIMD_OP  (128, OP_XBINOP,      OP_FMAX,              WTDSS,              _UNDEF,
 SIMD_OP  (128, OP_XBINOP,      OP_IMIN,              WTDSS,              arm_neon_smin,    arm_neon_smin,    arm_neon_smin,   _SKIP,             _UNDEF,           _UNDEF)
 SIMD_OP  (128, OP_XBINOP,      OP_IMIN_UN,           WTDSS,              arm_neon_umin,    arm_neon_umin,    arm_neon_umin,   _SKIP,             _UNDEF,           _UNDEF)
 SIMD_OP  (128, OP_XBINOP,      OP_FMIN,              WTDSS,              _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fmin,    arm_neon_fmin)
-SIMD_OP  (128, OP_XBINOP,      OP_IMUL,              WTDSS,              arm_neon_mul,     arm_neon_mul,     arm_neon_mul,    arm_neon_mul,      _UNDEF,           _UNDEF)
+SIMD_OP  (128, OP_XBINOP,      OP_IMUL,              WTDSS,              arm_neon_mul,     arm_neon_mul,     arm_neon_mul,    _UNDEF,            _UNDEF,           _UNDEF)
 SIMD_OP  (128, OP_XBINOP,      OP_FMUL,              WTDSS,              _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fmul,    arm_neon_fmul)
 SIMD_OP  (128, OP_XBINOP,      OP_FDIV,              WTDSS,              _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fdiv,    arm_neon_fdiv)
 SIMD_OP  (128, OP_XBINOP_FORCEINT,    XBINOP_FORCEINT_AND,    WDSS,      arm_neon_and,     arm_neon_and,     arm_neon_and,    arm_neon_and,      arm_neon_and,     arm_neon_and)
