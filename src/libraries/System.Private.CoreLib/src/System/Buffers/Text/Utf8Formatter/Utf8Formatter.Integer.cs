@@ -29,8 +29,8 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryFormat(byte value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
-            => TryFormatUInt64(value, destination, out bytesWritten, format);
+        public static bool TryFormat(byte value, Span<byte> destination, out int bytesWritten, StandardFormat format = default) =>
+            FormattingHelpers.TryFormat(value, destination, out bytesWritten, format);
 
         /// <summary>
         /// Formats an SByte as a UTF8 string.
@@ -54,8 +54,8 @@ namespace System.Buffers.Text
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
         [CLSCompliant(false)]
-        public static bool TryFormat(sbyte value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
-            => TryFormatInt64(value, 0xff, destination, out bytesWritten, format);
+        public static bool TryFormat(sbyte value, Span<byte> destination, out int bytesWritten, StandardFormat format = default) =>
+            FormattingHelpers.TryFormat(value, destination, out bytesWritten, format);
 
         /// <summary>
         /// Formats a Unt16 as a UTF8 string.
@@ -79,8 +79,8 @@ namespace System.Buffers.Text
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
         [CLSCompliant(false)]
-        public static bool TryFormat(ushort value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
-            => TryFormatUInt64(value, destination, out bytesWritten, format);
+        public static bool TryFormat(ushort value, Span<byte> destination, out int bytesWritten, StandardFormat format = default) =>
+            FormattingHelpers.TryFormat(value, destination, out bytesWritten, format);
 
         /// <summary>
         /// Formats an Int16 as a UTF8 string.
@@ -103,8 +103,8 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryFormat(short value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
-            => TryFormatInt64(value, 0xffff, destination, out bytesWritten, format);
+        public static bool TryFormat(short value, Span<byte> destination, out int bytesWritten, StandardFormat format = default) =>
+            FormattingHelpers.TryFormat(value, destination, out bytesWritten, format);
 
         /// <summary>
         /// Formats a UInt32 as a UTF8 string.
@@ -128,8 +128,8 @@ namespace System.Buffers.Text
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
         [CLSCompliant(false)]
-        public static bool TryFormat(uint value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
-            => TryFormatUInt64(value, destination, out bytesWritten, format);
+        public static bool TryFormat(uint value, Span<byte> destination, out int bytesWritten, StandardFormat format = default) =>
+            FormattingHelpers.TryFormat(value, destination, out bytesWritten, format);
 
         /// <summary>
         /// Formats an Int32 as a UTF8 string.
@@ -152,8 +152,8 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryFormat(int value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
-            => TryFormatInt64(value, 0xffffffff, destination, out bytesWritten, format);
+        public static bool TryFormat(int value, Span<byte> destination, out int bytesWritten, StandardFormat format = default) =>
+            FormattingHelpers.TryFormat(value, destination, out bytesWritten, format);
 
         /// <summary>
         /// Formats a UInt64 as a UTF8 string.
@@ -177,8 +177,8 @@ namespace System.Buffers.Text
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
         [CLSCompliant(false)]
-        public static bool TryFormat(ulong value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
-            => TryFormatUInt64(value, destination, out bytesWritten, format);
+        public static bool TryFormat(ulong value, Span<byte> destination, out int bytesWritten, StandardFormat format = default) =>
+            FormattingHelpers.TryFormat(value, destination, out bytesWritten, format);
 
         /// <summary>
         /// Formats an Int64 as a UTF8 string.
@@ -201,7 +201,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryFormat(long value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
-            => TryFormatInt64(value, 0xffffffffffffffff, destination, out bytesWritten, format);
+        public static bool TryFormat(long value, Span<byte> destination, out int bytesWritten, StandardFormat format = default) =>
+            FormattingHelpers.TryFormat(value, destination, out bytesWritten, format);
     }
 }

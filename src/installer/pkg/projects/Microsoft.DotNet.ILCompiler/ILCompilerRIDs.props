@@ -1,5 +1,4 @@
 <Project>
-  <!-- The list of RIDs supported by ILCompiler -->
   <ItemGroup>
     <OfficialBuildRID Include="linux-arm" Platform="arm" />
     <OfficialBuildRID Include="linux-musl-arm64" Platform="arm64" />
