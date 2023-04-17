@@ -19137,6 +19137,11 @@ bool GenTree::isContainableHWIntrinsic() const
             return true;
         }
 
+        case NI_AVX2_BroadcastScalarToVector256:
+        {
+            return true;
+        }
+
         default:
         {
             return false;
@@ -19270,6 +19275,18 @@ bool GenTree::isEvexCompatibleHWIntrinsic()
 #else
     return false;
 #endif
+}
+
+//------------------------------------------------------------------------
+// isEmbBroadcastHWIntrinsic: Checks if the intrinsic is a embedded broadcast compatible inintrsic.
+//
+// Return Value:
+// true if the intrisic node lowering instruction is embedded broadcast compatible.
+//
+bool GenTree::isEmbBroadcastHWIntrinsic()
+{
+    assert(gtOper == GT_HWINTRINSIC);
+    return HWIntrinsicInfo::IsEmbBroadcastCompatible(AsHWIntrinsic()->GetHWIntrinsicId());
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,

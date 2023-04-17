@@ -1630,70 +1630,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_FMA_MultiplyAddScalar:
             LowerFusedMultiplyAdd(node);
             break;
-#if defined(TARGET_XARCH)
-        case NI_AVX2_Add:
-        case NI_AVX_Add:
-        {
-            if (!(comp->canUseEvexEncoding()) || !(comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL)))
-            {
-                //  the changes below is EVEX exclusive, if not using EVEX, break early, and lower as usual.
-                break;
-            }
-            GenTree*  op1          = node->Op(1);
-            GenTree*  op2          = node->Op(2);
-            var_types simdBaseType = node->GetSimdBaseType();
-            // look for pre-processed scalar operand first.
-            if (op1->OperIs(GT_LCL_VAR) && op1->TypeGet() == TYP_FLOAT)
-            {
-                node->Op(1) = op2;
-                node->Op(2) = op1;
-                node->SetEmbeddedBroadcast();
-                // RUIHAN: should we make op2 contained here, or in contained check later?
-                MakeSrcContained(node, node->Op(2));
-            }
-            else if (op2->OperIs(GT_LCL_VAR) && op2->TypeGet() == TYP_FLOAT)
-            {
-                node->SetEmbeddedBroadcast();
-                MakeSrcContained(node, node->Op(2));
-            }
-            // RUIHAN: no need to consider the case for both op1 and op2 are CnsVec
-            //         in this situation, two constant vector will be merged beforehand.
-            //         even I am wondering if we need to consider if op1 is CnsVec or not,
-            //         seems CnsVec will be swap op2 already.
-            if (!node->WithEmbeddedBroadcast() && (op1->IsCnsVec() || op2->IsCnsVec()))
-            {
-                // if no Create(LCL_VAR) is pre-processed before lowering Add,
-                // seek for EmbBroadcast opportunities when one of the operaneds is CnsVec.
-                GenTree* VecCns = op2->IsCnsVec() ? op2 : op1;
-                if (VecCns == op1)
-                {
-                    node->Op(1) = op2;
-                    node->Op(2) = op1;
-                }
-                if (VecCns->IsCreatedFromScalar())
-                {
-                    switch (simdBaseType)
-                    {
-                        case TYP_FLOAT:
-                        {
-                            float    cns       = static_cast<float>(VecCns->AsVecCon()->gtSimd32Val.f32[0]);
-                            GenTree* ScalarCns = comp->gtNewDconNode(cns, simdBaseType);
-                            BlockRange().Remove(op2);
-                            BlockRange().InsertAfter(node->Op(1), ScalarCns);
-                            node->Op(2) = ScalarCns;
-                            node->SetEmbeddedBroadcast();
-                            MakeSrcContained(node, node->Op(2));
-                        }
-                        break;
 
-                        default:
-                            break;
-                    }
-                }
-            }
-            break;
-        }
-#endif
         default:
             break;
     }
@@ -2429,52 +2366,36 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 //   var tmp1 = Vector128.CreateScalarUnsafe(op1);
                 //   return Avx2.BroadcastScalarToVector256(tmp1);
 
-                // try to handle the case: Vector256.Add(vec, Vector256.Create(x))
-                if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
-                {
-                    if (op1->OperIs(GT_LCL_VAR) && op1->TypeIs(TYP_FLOAT))
-                    {
-                        LIR::Use Use;
-                        bool     foundUse                  = BlockRange().TryGetUse(node, &Use);
-                        GenTree* NodeMayEnableEmbBroadcast = nullptr;
-                        if (foundUse)
-                        {
-                            NodeMayEnableEmbBroadcast = Use.User();
-                        }
-                        if (foundUse && NodeMayEnableEmbBroadcast->OperIs(GT_HWINTRINSIC))
-                        {
-                            NamedIntrinsic EBId = NodeMayEnableEmbBroadcast->AsHWIntrinsic()->GetHWIntrinsicId();
-                            if (EBId == NI_AVX_Add || EBId == NI_AVX2_Add)
-                            {
-                                GenTree* EBOp1 = NodeMayEnableEmbBroadcast->AsHWIntrinsic()->Op(1);
-                                GenTree* EBOp2 = NodeMayEnableEmbBroadcast->AsHWIntrinsic()->Op(2);
-                                if (EBOp1 == node)
-                                {
-                                    BlockRange().Remove(EBOp1);
-                                    const unsigned op1LclNum = op1->AsLclVar()->GetLclNum();
-                                    // RUIHAN: what type of reason should we put here?
-                                    comp->lvaSetVarDoNotEnregister(
-                                        op1LclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-                                    NodeMayEnableEmbBroadcast->AsHWIntrinsic()->Op(1) = op1;
-                                }
-                                else if (EBOp2 == node)
-                                {
-                                    BlockRange().Remove(EBOp2);
-                                    const unsigned op1LclNum = op1->AsLclVar()->GetLclNum();
-                                    comp->lvaSetVarDoNotEnregister(
-                                        op1LclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-                                    NodeMayEnableEmbBroadcast->AsHWIntrinsic()->Op(2) = op1;
-                                }
-                                return op1->gtNext;
-                            }
-                        }
-                    }
-                }
+
                 tmp1 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, simdBaseJitType, 16);
                 LowerNode(tmp1);
 
                 node->ResetHWIntrinsicId(NI_AVX2_BroadcastScalarToVector256, tmp1);
-
+                
+                // if AVX512 is supported, seek for optimization opportunities using embedded broadcast.
+                // contain the broadcast intrinsics in the embeddebd broadcast compatible intrinsics
+                // at codegen phase, directly emit the operend on "Create" node instead of a series of broadcast.
+                if(comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                {
+                    LIR::Use use;
+                    bool foundUse = BlockRange().TryGetUse(node, &use);
+                    GenTree* CreateUser = nullptr;
+                    if(foundUse && use.User()->OperIs(GT_HWINTRINSIC) && 
+                    use.User()->AsHWIntrinsic()->isEmbBroadcastHWIntrinsic())
+                    {
+                        CreateUser = use.User();
+                    }
+                    // RUIHAN: Should we contain this 2 lowered intrinsics or contain the original "Create"
+                    if(CreateUser != nullptr && op1->OperIs(GT_LCL_VAR))
+                    {          
+                        const unsigned opLclNum = op1->AsLclVar()->GetLclNum();
+                        comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+                        MakeSrcContained(tmp1, op1);
+                        MakeSrcContained(node, tmp1);
+                        MakeSrcContained(CreateUser, node);
+                    }
+                }
+                
                 return LowerNode(node);
             }
 
@@ -7087,36 +7008,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     break;
                 }
 
-                case NI_AVX_Add:
-                case NI_AVX2_Add:
-                {
-                    if (parentNode->WithEmbeddedBroadcast())
-                    {
-                        supportsGeneralLoads = true;
-                    }
-                    else
-                    {
-                        assert(!supportsSIMDScalarLoads);
-
-                        if (!comp->canUseVexEncoding())
-                        {
-                            assert(!supportsUnalignedSIMDLoads);
-                            supportsAlignedSIMDLoads = true;
-                        }
-                        else
-                        {
-                            supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
-                            supportsUnalignedSIMDLoads = true;
-                        }
-
-                        const unsigned expectedSize = genTypeSize(parentNode->TypeGet());
-                        const unsigned operandSize  = genTypeSize(childNode->TypeGet());
-
-                        supportsGeneralLoads = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
-                    }
-                    break;
-                }
-
                 default:
                 {
                     assert(!supportsSIMDScalarLoads);
@@ -7635,6 +7526,11 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         {
             // These are only containable as part of a store
             return false;
+        }
+
+        case NI_AVX2_BroadcastScalarToVector256:
+        {
+            return true;
         }
 
         default:
