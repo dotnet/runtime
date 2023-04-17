@@ -105,8 +105,7 @@ namespace System.Globalization
 
 
         private static string GetPNSE(CompareOptions options) =>
-            $"CompareOptions = {options} are not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.";
-
+            Sr.Format(SR.PlatformNotSupported_HybridGlobalizationWithCompareOptions, options);
 
         private static bool CompareOptionsNotSupportedForCulture(CompareOptions options, string cultureName) =>
             (options == CompareOptions.IgnoreKanaType &&
@@ -114,8 +113,7 @@ namespace System.Globalization
             (options == CompareOptions.None &&
             (cultureName.Split('-')[0] == "ja"));
 
-
         private static string GetPNSEForCulture(CompareOptions options, string cultureName) =>
-            $"CompareOptions = {options} are not supported for culture = {cultureName} when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.";
+            Sr.Format(SR.PlatformNotSupported_HybridGlobalizationWithCompareOptions, options, cultureName);
     }
 }
