@@ -116,306 +116,306 @@ namespace System.Formats.Asn1
         internal static ReadOnlySpan<byte> GetContents(ReadOnlySpan<char> value)
         {
             ReadOnlySpan<byte> DSA =
-                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x38, 0x04, 0x01, };
+                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x38, 0x04, 0x01 },
             ReadOnlySpan<byte> DSAWithSha1 =
-                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x38, 0x04, 0x03, };
+                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x38, 0x04, 0x03 },
             ReadOnlySpan<byte> EC =
-                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x02, 0x01, };
+                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x02, 0x01 },
             ReadOnlySpan<byte> EcPrimeField =
-                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x01, 0x01, };
+                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x01, 0x01 },
             ReadOnlySpan<byte> EcChar2Field =
-                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x01, 0x02, };
+                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x01, 0x02 },
             ReadOnlySpan<byte> Secp256r1 =
-                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07, };
+                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07 },
             ReadOnlySpan<byte> ECDSAWithSha1 =
-                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x01, };
+                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x01 },
             ReadOnlySpan<byte> ECDSAWithSha256 =
-                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x02, };
+                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x02 },
             ReadOnlySpan<byte> ECDSAWithSha384 =
-                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x03, };
+                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x03 },
             ReadOnlySpan<byte> ECDSAWithSha512 =
-                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x04, };
+                new byte[] { 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x04 },
             ReadOnlySpan<byte> RSA =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x01, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x01 },
             ReadOnlySpan<byte> RSAWithSha1 =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x05, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x05 },
             ReadOnlySpan<byte> RSAOAEP =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x07, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x07 },
             ReadOnlySpan<byte> MGF1 =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x08, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x08 },
             ReadOnlySpan<byte> OaepPSpecified =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x09, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x09 },
             ReadOnlySpan<byte> RSAPSS =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0A, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0A },
             ReadOnlySpan<byte> RSAWithSha256 =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0B, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0B },
             ReadOnlySpan<byte> RSAWithSha384 =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0C, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0C },
             ReadOnlySpan<byte> RSAWithSha512 =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0D, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0D },
             ReadOnlySpan<byte> PbeWithMD5AndDESCBC =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x05, 0x03, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x05, 0x03 },
             ReadOnlySpan<byte> PbeWithSha1AndDESCBC =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x05, 0x0A, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x05, 0x0A },
             ReadOnlySpan<byte> PbeWithSha1AndRC2CBC =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x05, 0x0B, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x05, 0x0B },
             ReadOnlySpan<byte> Pbkdf2 =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x05, 0x0C, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x05, 0x0C },
             ReadOnlySpan<byte> PasswordBasedEncryptionScheme2 =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x05, 0x0D, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x05, 0x0D },
             ReadOnlySpan<byte> Pkcs7Data =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x07, 0x01, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x07, 0x01 },
             ReadOnlySpan<byte> Pkcs7SignedData =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x07, 0x02, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x07, 0x02 },
             ReadOnlySpan<byte> Pkcs7EnvelopedData =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x07, 0x03, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x07, 0x03 },
             ReadOnlySpan<byte> Pkcs7EncryptedData =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x07, 0x06, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x07, 0x06 },
             ReadOnlySpan<byte> Pkcs9EmailAddress =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x01, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x01 },
             ReadOnlySpan<byte> Pkcs9ContentType =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x03, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x03 },
             ReadOnlySpan<byte> Pkcs9MessageDigest =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x04, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x04 },
             ReadOnlySpan<byte> Pkcs9SigningTime =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x05, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x05 },
             ReadOnlySpan<byte> Pkcs9CounterSigner =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x06, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x06 },
             ReadOnlySpan<byte> Pkcs9Challenge =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x07, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x07 },
             ReadOnlySpan<byte> Pkcs9ExtensionRequest =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x0E, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x0E },
             ReadOnlySpan<byte> Pkcs9SMimeCapabilities =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x0F, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x0F },
             ReadOnlySpan<byte> TstInfo =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x10, 0x01, 0x04, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x10, 0x01, 0x04 },
             ReadOnlySpan<byte> SigningCertificateAttr =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x10, 0x02, 0x0C, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x10, 0x02, 0x0C },
             ReadOnlySpan<byte> SignatureTimeStampAttr =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x10, 0x02, 0x0E, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x10, 0x02, 0x0E },
             ReadOnlySpan<byte> SigningCertificateV2Attr =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x10, 0x02, 0x2F, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x10, 0x02, 0x2F },
             ReadOnlySpan<byte> Pkcs9FriendlyName =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x14, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x14 },
             ReadOnlySpan<byte> LocalKeyId =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x15, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x15 },
             ReadOnlySpan<byte> Pkcs12X509CertType =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x16, 0x01, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x16, 0x01 },
             ReadOnlySpan<byte> Pkcs12TripleDes =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x0C, 0x01, 0x03, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x0C, 0x01, 0x03 },
             ReadOnlySpan<byte> Pkcs12Rc2Cbc128 =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x0C, 0x01, 0x05, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x0C, 0x01, 0x05 },
             ReadOnlySpan<byte> Pkcs12Rc2Cbc40 =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x0C, 0x01, 0x06, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x0C, 0x01, 0x06 },
             ReadOnlySpan<byte> Pkcs12KeyBag =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x0C, 0x0A, 0x01, 0x01, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x0C, 0x0A, 0x01, 0x01 },
             ReadOnlySpan<byte> Pkcs12ShroudedKeyBag =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x0C, 0x0A, 0x01, 0x02, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x0C, 0x0A, 0x01, 0x02 },
             ReadOnlySpan<byte> Pkcs12CertBag =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x0C, 0x0A, 0x01, 0x03, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x0C, 0x0A, 0x01, 0x03 },
             ReadOnlySpan<byte> Pkcs12SecretBag =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x0C, 0x0A, 0x01, 0x05, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x0C, 0x0A, 0x01, 0x05 },
             ReadOnlySpan<byte> Pkcs12SafeContentsBag =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x0C, 0x0A, 0x01, 0x06, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x0C, 0x0A, 0x01, 0x06 },
             ReadOnlySpan<byte> MD5 =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x05, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x05 },
             ReadOnlySpan<byte> HMACSHA1 =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x07, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x07 },
             ReadOnlySpan<byte> HMACSHA256 =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x09, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x09 },
             ReadOnlySpan<byte> HMACSHA384 =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x0A, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x0A },
             ReadOnlySpan<byte> HMACSHA512 =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x0B, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x0B },
             ReadOnlySpan<byte> RC2CBC =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x03, 0x02, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x03, 0x02 },
             ReadOnlySpan<byte> TripleDESCBC =
-                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x03, 0x07, };
+                new byte[] { 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x03, 0x07 },
             ReadOnlySpan<byte> Pkcs12KeyProviderName =
-                new byte[] { 0x2B, 0x06, 0x01, 0x04, 0x01, 0x82, 0x37, 0x11, 0x01, };
+                new byte[] { 0x2B, 0x06, 0x01, 0x04, 0x01, 0x82, 0x37, 0x11, 0x01 },
             ReadOnlySpan<byte> KeyIdentifier =
-                new byte[] { 0x2B, 0x06, 0x01, 0x04, 0x01, 0x82, 0x37, 0x11, 0x03, 0x14, };
+                new byte[] { 0x2B, 0x06, 0x01, 0x04, 0x01, 0x82, 0x37, 0x11, 0x03, 0x14 },
             ReadOnlySpan<byte> UserPrincipalName =
-                new byte[] { 0x2B, 0x06, 0x01, 0x04, 0x01, 0x82, 0x37, 0x14, 0x02, 0x03, };
+                new byte[] { 0x2B, 0x06, 0x01, 0x04, 0x01, 0x82, 0x37, 0x14, 0x02, 0x03 },
             ReadOnlySpan<byte> DocumentNameAttr =
-                new byte[] { 0x2B, 0x06, 0x01, 0x04, 0x01, 0x82, 0x37, 0x58, 0x02, 0x01, };
+                new byte[] { 0x2B, 0x06, 0x01, 0x04, 0x01, 0x82, 0x37, 0x58, 0x02, 0x01 },
             ReadOnlySpan<byte> DocumentDescriptionAttr =
-                new byte[] { 0x2B, 0x06, 0x01, 0x04, 0x01, 0x82, 0x37, 0x58, 0x02, 0x02, };
+                new byte[] { 0x2B, 0x06, 0x01, 0x04, 0x01, 0x82, 0x37, 0x58, 0x02, 0x02 },
             ReadOnlySpan<byte> KeyPurposeTlsServer =
-                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x01, };
+                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x01 },
             ReadOnlySpan<byte> KeyPurposeTlsClient =
-                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x02, };
+                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x02 },
             ReadOnlySpan<byte> KeyPurposeCodeSign =
-                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x03, };
+                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x03 },
             ReadOnlySpan<byte> KeyPurposeEmailProtection =
-                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x04, };
+                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x04 },
             ReadOnlySpan<byte> KeyPurposeTimestamping =
-                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x08, };
+                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x08 },
             ReadOnlySpan<byte> KeyPurposeOcspSigner =
-                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x09, };
+                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x09 },
             ReadOnlySpan<byte> Pkcs7NoSignature =
-                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x06, 0x02, };
+                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x06, 0x02 },
             ReadOnlySpan<byte> OCSP =
-                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01, };
+                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01 },
             ReadOnlySpan<byte> OcspNonce =
-                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01, 0x02, };
+                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01, 0x02 },
             ReadOnlySpan<byte> CAIssuers =
-                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x02, };
+                new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x02 },
             ReadOnlySpan<byte> SHA1 =
-                new byte[] { 0x2B, 0x0E, 0x03, 0x02, 0x1A, };
+                new byte[] { 0x2B, 0x0E, 0x03, 0x02, 0x1A },
             ReadOnlySpan<byte> DES =
-                new byte[] { 0x2B, 0x0E, 0x03, 0x02, 0x07, };
+                new byte[] { 0x2B, 0x0E, 0x03, 0x02, 0x07 },
             ReadOnlySpan<byte> Secp384r1 =
-                new byte[] { 0x2B, 0x81, 0x04, 0x00, 0x22, };
+                new byte[] { 0x2B, 0x81, 0x04, 0x00, 0x22 },
             ReadOnlySpan<byte> Secp521r1 =
-                new byte[] { 0x2B, 0x81, 0x04, 0x00, 0x23, };
+                new byte[] { 0x2B, 0x81, 0x04, 0x00, 0x23 },
             ReadOnlySpan<byte> CommonName =
-                new byte[] { 0x55, 0x04, 0x03, };
+                new byte[] { 0x55, 0x04, 0x03 },
             ReadOnlySpan<byte> SerialNumber =
-                new byte[] { 0x55, 0x04, 0x05, };
+                new byte[] { 0x55, 0x04, 0x05 },
             ReadOnlySpan<byte> CountryOrRegionName =
-                new byte[] { 0x55, 0x04, 0x06, };
+                new byte[] { 0x55, 0x04, 0x06 },
             ReadOnlySpan<byte> Locality =
-                new byte[] { 0x55, 0x04, 0x07, };
+                new byte[] { 0x55, 0x04, 0x07 },
             ReadOnlySpan<byte> StateOrProvinceName =
-                new byte[] { 0x55, 0x04, 0x08, };
+                new byte[] { 0x55, 0x04, 0x08 },
             ReadOnlySpan<byte> OrganizationName =
-                new byte[] { 0x55, 0x04, 0x0A, };
+                new byte[] { 0x55, 0x04, 0x0A },
             ReadOnlySpan<byte> OrganizationalUnit =
-                new byte[] { 0x55, 0x04, 0x0B, };
+                new byte[] { 0x55, 0x04, 0x0B },
             ReadOnlySpan<byte> OrganizationIdentifier =
-                new byte[] { 0x55, 0x04, 0x61, };
+                new byte[] { 0x55, 0x04, 0x61 },
             ReadOnlySpan<byte> SubjectKeyIdentifier =
-                new byte[] { 0x55, 0x1D, 0x0E, };
+                new byte[] { 0x55, 0x1D, 0x0E },
             ReadOnlySpan<byte> KeyUsage =
-                new byte[] { 0x55, 0x1D, 0x0F, };
+                new byte[] { 0x55, 0x1D, 0x0F },
             ReadOnlySpan<byte> SubjectAlternativeName =
-                new byte[] { 0x55, 0x1D, 0x11, };
+                new byte[] { 0x55, 0x1D, 0x11 },
             ReadOnlySpan<byte> BasicConstraints =
-                new byte[] { 0x55, 0x1D, 0x13, };
+                new byte[] { 0x55, 0x1D, 0x13 },
             ReadOnlySpan<byte> CrlNumber =
-                new byte[] { 0x55, 0x1D, 0x14, };
+                new byte[] { 0x55, 0x1D, 0x14 },
             ReadOnlySpan<byte> AuthorityKeyIdentifier =
-                new byte[] { 0x55, 0x1D, 0x23, };
+                new byte[] { 0x55, 0x1D, 0x23 },
             ReadOnlySpan<byte> Aes128Cbc =
-                new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x02, };
+                new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x02 },
             ReadOnlySpan<byte> Aes192Cbc =
-                new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x16, };
+                new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x16 },
             ReadOnlySpan<byte> Aes256Cbc =
-                new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x2A, };
+                new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x2A },
             ReadOnlySpan<byte> Sha256 =
-                new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, };
+                new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01 },
             ReadOnlySpan<byte> Sha384 =
-                new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, };
+                new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02 },
             ReadOnlySpan<byte> Sha512 =
-                new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, };
+                new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03 },
             ReadOnlySpan<byte> CabForumDV =
-                new byte[] { 0x67, 0x81, 0x0C, 0x01, 0x02, 0x01, };
+                new byte[] { 0x67, 0x81, 0x0C, 0x01, 0x02, 0x01 },
             ReadOnlySpan<byte> CabForumOV =
-                new byte[] { 0x67, 0x81, 0x0C, 0x01, 0x02, 0x02, };
+                new byte[] { 0x67, 0x81, 0x0C, 0x01, 0x02, 0x02 },
 
-            switch (value)
+            return value switch
             {
-                case "1.2.840.10040.4.1": return DSA;
-                case "1.2.840.10040.4.3": return DSAWithSha1;
-                case "1.2.840.10045.2.1": return EC;
-                case "1.2.840.10045.1.1": return EcPrimeField;
-                case "1.2.840.10045.1.2": return EcChar2Field;
-                case "1.2.840.10045.3.1.7": return Secp256r1;
-                case "1.2.840.10045.4.1": return ECDSAWithSha1;
-                case "1.2.840.10045.4.3.2": return ECDSAWithSha256;
-                case "1.2.840.10045.4.3.3": return ECDSAWithSha384;
-                case "1.2.840.10045.4.3.4": return ECDSAWithSha512;
-                case "1.2.840.113549.1.1.1": return RSA;
-                case "1.2.840.113549.1.1.5": return RSAWithSha1;
-                case "1.2.840.113549.1.1.7": return RSAOAEP;
-                case "1.2.840.113549.1.1.8": return MGF1;
-                case "1.2.840.113549.1.1.9": return OaepPSpecified;
-                case "1.2.840.113549.1.1.10": return RSAPSS;
-                case "1.2.840.113549.1.1.11": return RSAWithSha256;
-                case "1.2.840.113549.1.1.12": return RSAWithSha384;
-                case "1.2.840.113549.1.1.13": return RSAWithSha512;
-                case "1.2.840.113549.1.5.3": return PbeWithMD5AndDESCBC;
-                case "1.2.840.113549.1.5.10": return PbeWithSha1AndDESCBC;
-                case "1.2.840.113549.1.5.11": return PbeWithSha1AndRC2CBC;
-                case "1.2.840.113549.1.5.12": return Pbkdf2;
-                case "1.2.840.113549.1.5.13": return PasswordBasedEncryptionScheme2;
-                case "1.2.840.113549.1.7.1": return Pkcs7Data;
-                case "1.2.840.113549.1.7.2": return Pkcs7SignedData;
-                case "1.2.840.113549.1.7.3": return Pkcs7EnvelopedData;
-                case "1.2.840.113549.1.7.6": return Pkcs7EncryptedData;
-                case "1.2.840.113549.1.9.1": return Pkcs9EmailAddress;
-                case "1.2.840.113549.1.9.3": return Pkcs9ContentType;
-                case "1.2.840.113549.1.9.4": return Pkcs9MessageDigest;
-                case "1.2.840.113549.1.9.5": return Pkcs9SigningTime;
-                case "1.2.840.113549.1.9.6": return Pkcs9CounterSigner;
-                case "1.2.840.113549.1.9.7": return Pkcs9Challenge;
-                case "1.2.840.113549.1.9.14": return Pkcs9ExtensionRequest;
-                case "1.2.840.113549.1.9.15": return Pkcs9SMimeCapabilities;
-                case "1.2.840.113549.1.9.16.1.4": return TstInfo;
-                case "1.2.840.113549.1.9.16.2.12": return SigningCertificateAttr;
-                case "1.2.840.113549.1.9.16.2.14": return SignatureTimeStampAttr;
-                case "1.2.840.113549.1.9.16.2.47": return SigningCertificateV2Attr;
-                case "1.2.840.113549.1.9.20": return Pkcs9FriendlyName;
-                case "1.2.840.113549.1.9.21": return LocalKeyId;
-                case "1.2.840.113549.1.9.22.1": return Pkcs12X509CertType;
-                case "1.2.840.113549.1.12.1.3": return Pkcs12TripleDes;
-                case "1.2.840.113549.1.12.1.5": return Pkcs12Rc2Cbc128;
-                case "1.2.840.113549.1.12.1.6": return Pkcs12Rc2Cbc40;
-                case "1.2.840.113549.1.12.10.1.1": return Pkcs12KeyBag;
-                case "1.2.840.113549.1.12.10.1.2": return Pkcs12ShroudedKeyBag;
-                case "1.2.840.113549.1.12.10.1.3": return Pkcs12CertBag;
-                case "1.2.840.113549.1.12.10.1.5": return Pkcs12SecretBag;
-                case "1.2.840.113549.1.12.10.1.6": return Pkcs12SafeContentsBag;
-                case "1.2.840.113549.2.5": return MD5;
-                case "1.2.840.113549.2.7": return HMACSHA1;
-                case "1.2.840.113549.2.9": return HMACSHA256;
-                case "1.2.840.113549.2.10": return HMACSHA384;
-                case "1.2.840.113549.2.11": return HMACSHA512;
-                case "1.2.840.113549.3.2": return RC2CBC;
-                case "1.2.840.113549.3.7": return TripleDESCBC;
-                case "1.3.6.1.4.1.311.17.1": return Pkcs12KeyProviderName;
-                case "1.3.6.1.4.1.311.17.3.20": return KeyIdentifier;
-                case "1.3.6.1.4.1.311.20.2.3": return UserPrincipalName;
-                case "1.3.6.1.4.1.311.88.2.1": return DocumentNameAttr;
-                case "1.3.6.1.4.1.311.88.2.2": return DocumentDescriptionAttr;
-                case "1.3.6.1.5.5.7.3.1": return KeyPurposeTlsServer;
-                case "1.3.6.1.5.5.7.3.2": return KeyPurposeTlsClient;
-                case "1.3.6.1.5.5.7.3.3": return KeyPurposeCodeSign;
-                case "1.3.6.1.5.5.7.3.4": return KeyPurposeEmailProtection;
-                case "1.3.6.1.5.5.7.3.8": return KeyPurposeTimestamping;
-                case "1.3.6.1.5.5.7.3.9": return KeyPurposeOcspSigner;
-                case "1.3.6.1.5.5.7.6.2": return Pkcs7NoSignature;
-                case "1.3.6.1.5.5.7.48.1": return OCSP;
-                case "1.3.6.1.5.5.7.48.1.2": return OcspNonce;
-                case "1.3.6.1.5.5.7.48.2": return CAIssuers;
-                case "1.3.14.3.2.26": return SHA1;
-                case "1.3.14.3.2.7": return DES;
-                case "1.3.132.0.34": return Secp384r1;
-                case "1.3.132.0.35": return Secp521r1;
-                case "2.5.4.3": return CommonName;
-                case "2.5.4.5": return SerialNumber;
-                case "2.5.4.6": return CountryOrRegionName;
-                case "2.5.4.7": return Locality;
-                case "2.5.4.8": return StateOrProvinceName;
-                case "2.5.4.10": return OrganizationName;
-                case "2.5.4.11": return OrganizationalUnit;
-                case "2.5.4.97": return OrganizationIdentifier;
-                case "2.5.29.14": return SubjectKeyIdentifier;
-                case "2.5.29.15": return KeyUsage;
-                case "2.5.29.17": return SubjectAlternativeName;
-                case "2.5.29.19": return BasicConstraints;
-                case "2.5.29.20": return CrlNumber;
-                case "2.5.29.35": return AuthorityKeyIdentifier;
-                case "2.16.840.1.101.3.4.1.2": return Aes128Cbc;
-                case "2.16.840.1.101.3.4.1.22": return Aes192Cbc;
-                case "2.16.840.1.101.3.4.1.42": return Aes256Cbc;
-                case "2.16.840.1.101.3.4.2.1": return Sha256;
-                case "2.16.840.1.101.3.4.2.2": return Sha384;
-                case "2.16.840.1.101.3.4.2.3": return Sha512;
-                case "2.23.140.1.2.1": return CabForumDV;
-                case "2.23.140.1.2.2": return CabForumOV;
-                default: return ReadOnlySpan<byte>.Empty;
+                "1.2.840.10040.4.1" => DSA,
+                "1.2.840.10040.4.3" => DSAWithSha1,
+                "1.2.840.10045.2.1" => EC,
+                "1.2.840.10045.1.1" => EcPrimeField,
+                "1.2.840.10045.1.2" => EcChar2Field,
+                "1.2.840.10045.3.1.7" => Secp256r1,
+                "1.2.840.10045.4.1" => ECDSAWithSha1,
+                "1.2.840.10045.4.3.2" => ECDSAWithSha256,
+                "1.2.840.10045.4.3.3" => ECDSAWithSha384,
+                "1.2.840.10045.4.3.4" => ECDSAWithSha512,
+                "1.2.840.113549.1.1.1" => RSA,
+                "1.2.840.113549.1.1.5" => RSAWithSha1,
+                "1.2.840.113549.1.1.7" => RSAOAEP,
+                "1.2.840.113549.1.1.8" => MGF1,
+                "1.2.840.113549.1.1.9" => OaepPSpecified,
+                "1.2.840.113549.1.1.10" => RSAPSS,
+                "1.2.840.113549.1.1.11" => RSAWithSha256,
+                "1.2.840.113549.1.1.12" => RSAWithSha384,
+                "1.2.840.113549.1.1.13" => RSAWithSha512,
+                "1.2.840.113549.1.5.3" => PbeWithMD5AndDESCBC,
+                "1.2.840.113549.1.5.10" => PbeWithSha1AndDESCBC,
+                "1.2.840.113549.1.5.11" => PbeWithSha1AndRC2CBC,
+                "1.2.840.113549.1.5.12" => Pbkdf2,
+                "1.2.840.113549.1.5.13" => PasswordBasedEncryptionScheme2,
+                "1.2.840.113549.1.7.1" => Pkcs7Data,
+                "1.2.840.113549.1.7.2" => Pkcs7SignedData,
+                "1.2.840.113549.1.7.3" => Pkcs7EnvelopedData,
+                "1.2.840.113549.1.7.6" => Pkcs7EncryptedData,
+                "1.2.840.113549.1.9.1" => Pkcs9EmailAddress,
+                "1.2.840.113549.1.9.3" => Pkcs9ContentType,
+                "1.2.840.113549.1.9.4" => Pkcs9MessageDigest,
+                "1.2.840.113549.1.9.5" => Pkcs9SigningTime,
+                "1.2.840.113549.1.9.6" => Pkcs9CounterSigner,
+                "1.2.840.113549.1.9.7" => Pkcs9Challenge,
+                "1.2.840.113549.1.9.14" => Pkcs9ExtensionRequest,
+                "1.2.840.113549.1.9.15" => Pkcs9SMimeCapabilities,
+                "1.2.840.113549.1.9.16.1.4" => TstInfo,
+                "1.2.840.113549.1.9.16.2.12" => SigningCertificateAttr,
+                "1.2.840.113549.1.9.16.2.14" => SignatureTimeStampAttr,
+                "1.2.840.113549.1.9.16.2.47" => SigningCertificateV2Attr,
+                "1.2.840.113549.1.9.20" => Pkcs9FriendlyName,
+                "1.2.840.113549.1.9.21" => LocalKeyId,
+                "1.2.840.113549.1.9.22.1" => Pkcs12X509CertType,
+                "1.2.840.113549.1.12.1.3" => Pkcs12TripleDes,
+                "1.2.840.113549.1.12.1.5" => Pkcs12Rc2Cbc128,
+                "1.2.840.113549.1.12.1.6" => Pkcs12Rc2Cbc40,
+                "1.2.840.113549.1.12.10.1.1" => Pkcs12KeyBag,
+                "1.2.840.113549.1.12.10.1.2" => Pkcs12ShroudedKeyBag,
+                "1.2.840.113549.1.12.10.1.3" => Pkcs12CertBag,
+                "1.2.840.113549.1.12.10.1.5" => Pkcs12SecretBag,
+                "1.2.840.113549.1.12.10.1.6" => Pkcs12SafeContentsBag,
+                "1.2.840.113549.2.5" => MD5,
+                "1.2.840.113549.2.7" => HMACSHA1,
+                "1.2.840.113549.2.9" => HMACSHA256,
+                "1.2.840.113549.2.10" => HMACSHA384,
+                "1.2.840.113549.2.11" => HMACSHA512,
+                "1.2.840.113549.3.2" => RC2CBC,
+                "1.2.840.113549.3.7" => TripleDESCBC,
+                "1.3.6.1.4.1.311.17.1" => Pkcs12KeyProviderName,
+                "1.3.6.1.4.1.311.17.3.20" => KeyIdentifier,
+                "1.3.6.1.4.1.311.20.2.3" => UserPrincipalName,
+                "1.3.6.1.4.1.311.88.2.1" => DocumentNameAttr,
+                "1.3.6.1.4.1.311.88.2.2" => DocumentDescriptionAttr,
+                "1.3.6.1.5.5.7.3.1" => KeyPurposeTlsServer,
+                "1.3.6.1.5.5.7.3.2" => KeyPurposeTlsClient,
+                "1.3.6.1.5.5.7.3.3" => KeyPurposeCodeSign,
+                "1.3.6.1.5.5.7.3.4" => KeyPurposeEmailProtection,
+                "1.3.6.1.5.5.7.3.8" => KeyPurposeTimestamping,
+                "1.3.6.1.5.5.7.3.9" => KeyPurposeOcspSigner,
+                "1.3.6.1.5.5.7.6.2" => Pkcs7NoSignature,
+                "1.3.6.1.5.5.7.48.1" => OCSP,
+                "1.3.6.1.5.5.7.48.1.2" => OcspNonce,
+                "1.3.6.1.5.5.7.48.2" => CAIssuers,
+                "1.3.14.3.2.26" => SHA1,
+                "1.3.14.3.2.7" => DES,
+                "1.3.132.0.34" => Secp384r1,
+                "1.3.132.0.35" => Secp521r1,
+                "2.5.4.3" => CommonName,
+                "2.5.4.5" => SerialNumber,
+                "2.5.4.6" => CountryOrRegionName,
+                "2.5.4.7" => Locality,
+                "2.5.4.8" => StateOrProvinceName,
+                "2.5.4.10" => OrganizationName,
+                "2.5.4.11" => OrganizationalUnit,
+                "2.5.4.97" => OrganizationIdentifier,
+                "2.5.29.14" => SubjectKeyIdentifier,
+                "2.5.29.15" => KeyUsage,
+                "2.5.29.17" => SubjectAlternativeName,
+                "2.5.29.19" => BasicConstraints,
+                "2.5.29.20" => CrlNumber,
+                "2.5.29.35" => AuthorityKeyIdentifier,
+                "2.16.840.1.101.3.4.1.2" => Aes128Cbc,
+                "2.16.840.1.101.3.4.1.22" => Aes192Cbc,
+                "2.16.840.1.101.3.4.1.42" => Aes256Cbc,
+                "2.16.840.1.101.3.4.2.1" => Sha256,
+                "2.16.840.1.101.3.4.2.2" => Sha384,
+                "2.16.840.1.101.3.4.2.3" => Sha512,
+                "2.23.140.1.2.1" => CabForumDV,
+                "2.23.140.1.2.2" => CabForumOV,
+                _ => ReadOnlySpan<byte>.Empty
             };
         }
     }
