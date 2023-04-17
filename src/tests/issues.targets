@@ -509,6 +509,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_do/**">
             <Issue>https://github.com/dotnet/runtime/issues/66745</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/profiler/elt/slowpatheltenter/**">
+            <Issue>https://github.com/dotnet/runtime/issues/84750</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/profiler/elt/slowpatheltleave/**">
+            <Issue>https://github.com/dotnet/runtime/issues/84750</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
             <Issue>https://github.com/dotnet/runtime/issues/81241</Issue>
         </ExcludeList>
