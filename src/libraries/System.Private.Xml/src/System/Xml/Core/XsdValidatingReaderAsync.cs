@@ -488,35 +488,37 @@ namespace System.Xml
             return readCount;
         }
 
-        private async Task ProcessReaderEventAsync()
+        private Task ProcessReaderEventAsync()
         {
             if (_replayCache)
             {
                 // if in replay mode, do nothing since nodes have been validated already
                 // If NodeType == XmlNodeType.EndElement && if manageNamespaces, may need to pop namespace scope, since scope is not popped in ReadAheadForMemberType
 
-                return;
+                return Task.CompletedTask;
             }
 
             switch (_coreReader.NodeType)
             {
                 case XmlNodeType.Element:
-                    await ProcessElementEventAsync().ConfigureAwait(false);
-                    break;
+
+                    return ProcessElementEventAsync();
 
                 case XmlNodeType.Whitespace:
                 case XmlNodeType.SignificantWhitespace:
-                    _validator.ValidateWhitespace(await GetValueAsync().ConfigureAwait(false));
-                    break;
+
+                    return GetValueAsync()
+                        .ContinueWith(t => _validator.ValidateWhitespace(t.GetAwaiter().GetResult()), TaskScheduler.Default);
 
                 case XmlNodeType.Text:          // text inside a node
                 case XmlNodeType.CDATA:         // <![CDATA[...]]>
-                    _validator.ValidateText(await GetValueAsync().ConfigureAwait(false));
-                    break;
+
+                    return GetValueAsync()
+                        .ContinueWith(t => _validator.ValidateText(t.GetAwaiter().GetResult()), TaskScheduler.Default);
 
                 case XmlNodeType.EndElement:
-                    await ProcessEndElementEventAsync().ConfigureAwait(false);
-                    break;
+
+                    return ProcessEndElementEventAsync();
 
                 case XmlNodeType.EntityReference:
                     throw new InvalidOperationException();
@@ -532,6 +534,8 @@ namespace System.Xml
                 default:
                     break;
             }
+
+            return Task.CompletedTask;
         }
 
         private async Task ProcessElementEventAsync()
