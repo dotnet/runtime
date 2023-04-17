@@ -7303,6 +7303,10 @@ public:
     enum
     {
         BlkOpKindInvalid,
+        BlkOpKindCpObjUnroll,
+#ifdef TARGET_XARCH
+        BlkOpKindCpObjRepInstr,
+#endif
 #ifndef TARGET_X86
         BlkOpKindHelper,
 #endif

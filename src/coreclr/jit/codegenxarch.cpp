@@ -2082,7 +2082,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, genPendingCallLabel, treeNode->GetRegNum());
             break;
 
-        case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
@@ -2983,23 +2982,20 @@ ALLOC_DONE:
 
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
 {
-    assert(storeBlkNode->OperIs(GT_STORE_OBJ, GT_STORE_DYN_BLK, GT_STORE_BLK));
-
-    if (storeBlkNode->OperIs(GT_STORE_OBJ))
-    {
-#ifndef JIT32_GCENCODER
-        assert(!storeBlkNode->gtBlkOpGcUnsafe);
-#endif
-        assert(storeBlkNode->OperIsCopyBlkOp());
-        assert(storeBlkNode->AsBlk()->GetLayout()->HasGCPtr());
-        genCodeForCpObj(storeBlkNode->AsBlk());
-        return;
-    }
+    assert(storeBlkNode->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
 
     bool isCopyBlk = storeBlkNode->OperIsCopyBlkOp();
 
     switch (storeBlkNode->gtBlkOpKind)
     {
+        case GenTreeBlk::BlkOpKindCpObjRepInstr:
+        case GenTreeBlk::BlkOpKindCpObjUnroll:
+#ifndef JIT32_GCENCODER
+            assert(!storeBlkNode->gtBlkOpGcUnsafe);
+#endif
+            genCodeForCpObj(storeBlkNode->AsBlk());
+            break;
+
 #ifdef TARGET_AMD64
         case GenTreeBlk::BlkOpKindHelper:
             assert(!storeBlkNode->gtBlkOpGcUnsafe);
@@ -4087,7 +4083,7 @@ void CodeGen::genClearStackVec3ArgUpperBits()
 //                   GC pointers.
 //
 // Arguments:
-//    cpObjNode - the GT_STORE_OBJ
+//    cpObjNode - the GT_STORE_BLK node
 //
 // Notes:
 //    This will generate a sequence of movsp instructions for the cases of non-gc members.
