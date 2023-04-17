@@ -785,6 +785,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     // TODO-XARCH-CQ: We should support long/ulong multiplication
                     return nullptr;
                 }
+
+#if defined(TARGET_X86)
+                // TODO-XARCH-CQ: We need to support 64-bit CreateBroadcast
+                return nullptr;
+#endif // TARGET_X86
             }
             break;
         }
