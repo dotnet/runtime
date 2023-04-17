@@ -26,7 +26,7 @@ namespace System.Threading
             Debug.Assert((handle == registeredWaitHandle._gcHandle) && (wait == registeredWaitHandle._tpWait));
 
             bool timedOut = (waitResult == (uint)Interop.Kernel32.WAIT_TIMEOUT);
-            registeredWaitHandle.PerformCallback(timedOut);
+            registeredWaitHandle.PerformCallbackCore(timedOut);
             ThreadPool.IncrementCompletedWorkItemCount();
             // wrapper.Exit();
         }
@@ -34,43 +34,6 @@ namespace System.Threading
 
         private void PerformCallbackCore(bool timedOut)
         {
-            /* PR-Comment: Previous implementation
-            bool lockAcquired;
-            var spinner = new SpinWait();
-
-            // Prevent the race condition with Unregister and the previous PerformCallback call, which may still be
-            // holding the _lock.
-            while (!(lockAcquired = _lock.TryAcquire(0)) && !Volatile.Read(ref _unregistering))
-            {
-                spinner.SpinOnce();
-            }
-
-            // If another thread is running Unregister, no need to restart the timer or clean up
-            if (lockAcquired)
-            {
-                try
-                {
-                    if (!_unregistering)
-                    {
-                        if (_repeating)
-                        {
-                            // Allow this wait to fire again. Restart the timer before executing the callback.
-                            RestartWait();
-                        }
-                        else
-                        {
-                            // This wait will not be fired again. Free the GC handle to allow the GC to collect this object.
-                            Debug.Assert(_gcHandle.IsAllocated);
-                            _gcHandle.Free();
-                        }
-                    }
-                }
-                finally
-                {
-                    _lock.Release();
-                }
-            }
-            */
 
             // If another thread is running Unregister, no need to restart the timer or clean up
             lock (_lock!)

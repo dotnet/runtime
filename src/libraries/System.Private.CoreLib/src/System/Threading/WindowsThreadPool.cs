@@ -179,7 +179,7 @@ namespace System.Threading
             Interop.Kernel32.SubmitThreadpoolWork(s_work);
         }
 
-        private static RegisteredWaitHandle RegisterWaitForSingleObject(
+        internal static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
              object state,

@@ -35,10 +35,6 @@ namespace System.Threading
         internal unsafe RegisteredWaitHandle(SafeWaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
             uint millisecondsTimeout, bool repeating)
         {
-            if (!ThreadPool.UseWindowsThreadPool)
-            {
-                GC.SuppressFinalize(this);
-            }
             _lock = new Lock();
 
             // Protect the handle from closing while we are waiting on it (VSWhidbey 285642)
@@ -71,7 +67,6 @@ namespace System.Threading
 
         ~RegisteredWaitHandle()
         {
-            Debug.Assert(ThreadPool.UseWindowsThreadPool);
             // If _gcHandle is allocated, it points to this object, so this object must not be collected by the GC
             Debug.Assert(!_gcHandle.IsAllocated);
 

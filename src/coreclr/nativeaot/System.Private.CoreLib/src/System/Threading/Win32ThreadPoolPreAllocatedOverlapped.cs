@@ -42,7 +42,7 @@ namespace System.Threading
 
         unsafe void IDeferredDisposable.OnFinalRelease(bool disposed)
         {
-            IDeferredDisposableOnFinalReleaseCore();
+            IDeferredDisposableOnFinalReleaseCore(disposed);
         }
 
     }

@@ -141,6 +141,18 @@ namespace System.Threading
 
         public bool Unregister(WaitHandle waitObject) => UnregisterCore(waitObject);
 
+        internal void PerformCallback(bool timedOut)
+        {
+            if (ThreadPool.UseWindowsThreadPool)
+            {
+                PerformCallbackCore(timedOut);
+            }
+            else
+            {
+                PerformCallbackPortableCore(timedOut);
+            }
+        }
+
         ~RegisteredWaitHandle()
         {
             Debug.Assert(ThreadPool.UseWindowsThreadPool);

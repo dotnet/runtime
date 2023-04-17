@@ -126,7 +126,7 @@ namespace System.Threading
         /// Perform the registered callback if the <see cref="UserUnregisterWaitHandle"/> has not been signaled.
         /// </summary>
         /// <param name="timedOut">Whether or not the wait timed out.</param>
-        internal void PerformCallback(bool timedOut)
+        internal void PerformCallbackPortableCore(bool timedOut)
         {
 #if DEBUG
             s_callbackLock.Acquire();

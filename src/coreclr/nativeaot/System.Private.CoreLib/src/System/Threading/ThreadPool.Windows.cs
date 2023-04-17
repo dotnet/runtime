@@ -16,6 +16,14 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
+        // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
+        // the runtime may use the thread for processing other work.
+        //
+        // Windows thread pool threads need to yield back to the thread pool periodically, otherwise those threads may be
+        // considered to be doing long-running work and change thread pool heuristics, such as slowing or halting thread
+        // injection.
+        internal static bool YieldFromDispatchLoop => WindowsThreadPool.YieldFromDispatchLoop;
+
         internal static void InitializeForThreadPoolThread() => WindowsThreadPool.InitializeForThreadPoolThread();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -33,6 +41,22 @@ namespace System.Threading
 
         public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads) => WindowsThreadPool.GetAvailableThreads(out workerThreads, out completionPortThreads);
 
+        /// <summary>
+        /// Gets the number of thread pool threads that currently exist.
+        /// </summary>
+        /// <remarks>
+        /// For a thread pool implementation that may have different types of threads, the count includes all types.
+        /// </remarks>
+        public static int ThreadCount => WindowsThreadPool.ThreadCount;
+
+        /// <summary>
+        /// Gets the number of work items that have been processed so far.
+        /// </summary>
+        /// <remarks>
+        /// For a thread pool implementation that may have different types of work items, the count includes all types.
+        /// </remarks>
+        public static long CompletedWorkItemCount => WindowsThreadPool.CompletedWorkItemCount;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void NotifyWorkItemProgress() => WindowsThreadPool.NotifyWorkItemProgress();
 
@@ -44,7 +68,18 @@ namespace System.Threading
 
         internal static unsafe void RequestWorkerThread() => WindowsThreadPool.RequestWorkerThread();
 
-        [CLSCompliant(false)]
+        private static RegisteredWaitHandle RegisterWaitForSingleObject(
+             WaitHandle waitObject,
+             WaitOrTimerCallback callBack,
+             object state,
+             uint millisecondsTimeOutInterval,
+             bool executeOnlyOnce,
+             bool flowExecutionContext)
+        {
+            return WindowsThreadPool.RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, flowExecutionContext);
+        }
+
+            [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
         public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) => WindowsThreadPool.UnsafeQueueNativeOverlapped(overlapped);
 
