@@ -89,22 +89,22 @@ export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoS
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
         const cultureName = conv_string_root(cultureRoot);
-        const locale = cultureName ? cultureName : undefined;
-        const prefix = get_utf16_string(str2, str2Length); // searched value in source string
+        const prefix = get_utf16_string(str2, str2Length);
         // no need to look for an empty string
         const result = "".localeCompare(prefix, undefined);
         if (result === 0)
             return 1; // true
 
-        const source = get_utf16_string(str1, str1Length); // source string
+        const source = get_utf16_string(str1, str1Length);
+        const locale = cultureName ? cultureName : undefined;
         const graphemesSource = segment_string_locale_sensitive(source, locale);
         const graphemesPrefix = segment_string_locale_sensitive(prefix, locale);
 
-        // /0 or %u200d chars at the beginning do not matter in string comparison but are useful for calculating the match length
-        skip_zeroWidthChars(graphemesSource, true);
-        // /0 or %u200d chars do not matter in prefix's both ends
-        skip_zeroWidthChars(graphemesPrefix, true);
-        skip_zeroWidthChars(graphemesPrefix, false);
+        // zero Width chars at the beginning do not matter in string comparison but are useful for calculating the match length
+        skip_zeroWidthChars_from_start(graphemesSource);
+        // zero Width chars do not matter in prefix's both ends
+        skip_zeroWidthChars_from_start(graphemesPrefix);
+        skip_zeroWidthChars_from_end(graphemesPrefix);
 
         const casePicker = (options & 0x1f);
         for (let i = 0; i < graphemesPrefix.length; i++)
@@ -131,55 +131,53 @@ export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoS
     }
 }
 
-function skip_zeroWidthChars(segment: Intl.SegmentData[], fromBeginning: boolean)
+function skip_zeroWidthChars_from_start(segment: Intl.SegmentData[])
 {
-    if (fromBeginning)
+    if (segment.length === 0 || "".localeCompare(segment[0].segment, undefined) !== 0)
     {
-        while (starts_with_zeroWidthChars(segment))
-        {
-            segment.shift(); // O(n), ToDo: optimize it
-        }
+        return;
     }
-    else
+    // pop is O(1) while shift is O(n) and reverse is O(n)
+    // it pays off to revert twice and pop more than shift multiple times
+    // unless we have < 2 empty chars at the beginning
+    if (segment.length === 1 || (segment.length > 1 && "".localeCompare(segment[1].segment, undefined) !== 0))
     {
-        while (ends_with_zeroWidthChars(segment))
-        {
-            segment.pop(); // O(1)
-        }
+        segment.shift();
+        return;
     }
-
-    function starts_with_zeroWidthChars(segment: Intl.SegmentData[]) : boolean
-    {
-        return segment.length !== 0 && "".localeCompare(segment[0].segment, undefined) === 0;
-    }
-
-    function ends_with_zeroWidthChars(segment: Intl.SegmentData[]) : boolean
-    {
-        return segment.length !== 0 && "".localeCompare(segment[segment.length - 1].segment, undefined) === 0;
-    }
+    segment.reverse();
+    skip_zeroWidthChars_from_end(segment);
+    segment.reverse();
 }
 
+function skip_zeroWidthChars_from_end(segment: Intl.SegmentData[])
+{
+    while (segment.length !== 0 && "".localeCompare(segment[segment.length - 1].segment, undefined) === 0)
+    {
+        segment.pop();
+    }
+}
 
 export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, matchLengthPointer: number): number{
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
         const cultureName = conv_string_root(cultureRoot);
-        const locale = cultureName ? cultureName : undefined;
-        const suffix = get_utf16_string(str2, str2Length); // searched value in source string
+        const suffix = get_utf16_string(str2, str2Length);
         // no need to look for an empty string
         const result = "".localeCompare(suffix, undefined);
         if (result === 0)
             return 1; // true
 
-        const source = get_utf16_string(str1, str1Length); // source string
+        const source = get_utf16_string(str1, str1Length);
+        const locale = cultureName ? cultureName : undefined;
         const graphemesSource = segment_string_locale_sensitive(source, locale);
         const graphemesSuffix = segment_string_locale_sensitive(suffix, locale);
 
-        // /0 or %u200d chars at the end do not matter in string comparison but are useful for calculating the match length
-        skip_zeroWidthChars(graphemesSource, false);
-        // /0 or %u200d chars do not matter in prefix's both ends
-        skip_zeroWidthChars(graphemesSuffix, true);
-        skip_zeroWidthChars(graphemesSuffix, false);
+        // zero Width chars at the end do not matter in string comparison but are useful for calculating the match length
+        skip_zeroWidthChars_from_end(graphemesSource);
+        // zero Width chars do not matter in prefix's both ends
+        skip_zeroWidthChars_from_start(graphemesSuffix);
+        skip_zeroWidthChars_from_end(graphemesSuffix);
 
         const casePicker = (options & 0x1f);
         for (let i = 0; i < graphemesSuffix.length; i++)
