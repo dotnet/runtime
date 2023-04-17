@@ -423,9 +423,7 @@ void LinearScan::checkConflictingDefUse(RefPosition* useRP)
     {
         if (!isSingleRegister(newAssignment) || !theInterval->hasInterferingUses)
         {
-            {
-                defRP->registerAssignment = newAssignment;
-            }
+            defRP->registerAssignment = newAssignment;
         }
     }
     else
@@ -1874,12 +1872,11 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                 regMaskTP oldAssignment  = newRefPosition->registerAssignment;
                 regMaskTP calleeSaveMask = calleeSaveRegs(interval->registerType);
 #ifdef TARGET_ARM64
-                if (!newRefPosition->needsConsecutive &&
-                    newRefPosition->isLiveAtConsecutiveRegistersLoc(consecutiveRegistersLocation))
+                if (newRefPosition->isLiveAtConsecutiveRegistersLoc(consecutiveRegistersLocation))
                 {
-                    // If a method has consecutive registers and we are assigning to refPositions that are not part
-                    // of consecutive registers, but are live at the same location, skip the limit stress for them,
-                    // because there are high chances that many registers are busy for consecutive requirements and
+                    // If we are assigning to refPositions that has consecutive registers requirements, skip the
+                    // limit stress for them, because there are high chances that many registers are busy for
+                    // consecutive requirements and
                     // we do not have enough remaining for other refpositions (like operands). Likewise, skip for the
                     // definition node that comes after that, for which, all the registers are in "delayRegFree" state.
                 }
@@ -1899,8 +1896,8 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                     if (defRefPos->isLiveAtConsecutiveRegistersLoc(consecutiveRegistersLocation))
                     {
                         // If a method has consecutive registers and we are assigning to use refPosition whose
-                        // definition
-                        // was from a location that has consecutive registers, skip the limit stress for them,
+                        // definition was from a location that has consecutive registers, skip the limit stress for
+                        // them,
                         // because there are high chances that many registers are busy for consecutive requirements and
                         // marked as "delayRegFree" state. We do not have enough remaining for other refpositions.
                     }

@@ -445,6 +445,17 @@ regMaskTP LinearScan::getConstrainedRegMask(regMaskTP regMaskActual, regMaskTP r
 
 regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
 {
+#ifdef TARGET_ARM64
+    if ((refPosition != nullptr) && refPosition->isLiveAtConsecutiveRegistersLoc(consecutiveRegistersLocation))
+    {
+        // If we are assigning for the refPositions that has consecutive registers requirements, skip the
+        // limit stress for them, because there are high chances that many registers are busy for consecutive
+        // requirements and we do not have enough remaining to assign other refpositions (like operands).
+        // Likewise, skip for the definition node that comes after that, for which, all the registers are in
+        // the "delayRegFree" state.
+        return mask;
+    }
+#endif
     if (getStressLimitRegs() != LSRA_LIMIT_NONE)
     {
         // The refPosition could be null, for example when called
@@ -12078,21 +12089,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     }
 
 #ifdef DEBUG
-#ifdef TARGET_ARM64
-    if (!refPosition->needsConsecutive &&
-        refPosition->isLiveAtConsecutiveRegistersLoc(linearScan->consecutiveRegistersLocation))
-    {
-        // If a method has consecutive registers and we are assigning to refPositions that are not part
-        // of consecutive registers, but are live at the same location, skip the limit stress for them,
-        // because there are high chances that many registers are busy for consecutive requirements and
-        // we do not have enough remaining for other refpositions (like operands). Likewise, skip for the
-        // definition node that comes after that, for which, all the registers are in "delayRegFree" state.
-    }
-    else
-#endif
-    {
-        candidates = linearScan->stressLimitRegs(refPosition, candidates);
-    }
+    candidates = linearScan->stressLimitRegs(refPosition, candidates);
 #endif
     assert(candidates != RBM_NONE);
 
@@ -12253,36 +12250,6 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         // When we allocate for USE, we see that the register is busy at current location
         // and we end up with that candidate is no longer available.
         regMaskTP busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
-#ifdef TARGET_ARM64
-        if (needsConsecutiveRegisters && refPosition->isFirstRefPositionOfConsecutiveRegisters())
-        {
-            // For consecutive registers refpositions, go through the subsequent refpositions
-            // and mark the registers assigned to them as busy (at this location). This is
-            // to prevent assigning such a register to the first refposition, whose consecutive
-            // register gets busy for subsequent refposition because of a copy involved.
-            // If (I3, I5 and I6) are three intervals that needs consecutive registers (v0, v1, v2)
-            // but if they are present in (v0, v2, v1), for I5, we will insert a copy from v2->v1
-            // and need to keep both v1 and v2 live. Now, this becomes problem while assigning to
-            // I6 because, there v2 is also busy, because the value of I5 is getting copied from v2.
-            //
-            // This is somewhat conservative appoach. It is possible that we first see the register
-            // assigned to the first RefPosition and if overlaps with registers in which subsequent
-            // refPositions are live, reallocate for the first RefPosition excluding the registers
-            // that are busy for subsequent refpositions (whats being done here), but that needs another
-            // round of allocation for the same RefPosition, and it doesn't fit our existing model.
-            RefPosition* consecutiveRefPosition = linearScan->getNextConsecutiveRefPosition(refPosition);
-            while (consecutiveRefPosition != nullptr)
-            {
-                assert(consecutiveRefPosition->isIntervalRef());
-                Interval* interval = consecutiveRefPosition->getInterval();
-                if (interval->isActive)
-                {
-                    busyRegs |= genRegMask(interval->physReg);
-                }
-                consecutiveRefPosition = linearScan->getNextConsecutiveRefPosition(consecutiveRefPosition);
-            }
-        }
-#endif
         candidates &= ~busyRegs;
 
 #ifdef DEBUG
