@@ -31,6 +31,33 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define BitScanForwardPtr BitScanForward
 #endif
 
+#if defined(_MSC_VER)
+
+// Define wrappers over the non-underscore versions of the BitScan* APIs. The PAL defines these already.
+// We've #undef'ed the definitions in winnt.h for these names to avoid confusion.
+
+inline BOOLEAN BitScanForward(DWORD* Index, DWORD Mask)
+{
+    return ::_BitScanForward(Index, Mask);
+}
+
+inline BOOLEAN BitScanReverse(DWORD* Index, DWORD Mask)
+{
+    return ::_BitScanReverse(Index, Mask);
+}
+
+inline BOOLEAN BitScanForward64(DWORD* Index, DWORD64 Mask)
+{
+    return ::_BitScanForward64(Index, Mask);
+}
+
+inline BOOLEAN BitScanReverse64(DWORD* Index, DWORD64 Mask)
+{
+    return ::_BitScanReverse64(Index, Mask);
+}
+
+#endif // _MSC_VER
+
 template <typename T, int size>
 inline constexpr unsigned ArrLen(T (&)[size])
 {
