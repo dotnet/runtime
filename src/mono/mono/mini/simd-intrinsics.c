@@ -4892,6 +4892,7 @@ static SimdIntrinsic wasmbase_methods [] = {
 
 static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Add},
+	{SN_AddPairwiseWidening},
 	{SN_And, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_AND},
 	{SN_Bitmask, OP_WASM_SIMD_BITMASK},
 	{SN_CompareEqual},
@@ -4901,6 +4902,8 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Dot, OP_XOP_X_X_X, INTRINS_WASM_DOT},
 	{SN_ExtractLane},
 	{SN_Multiply},
+	{SN_MultiplyWideningLower, OP_WASM_EXTMUL_LOWER, 0, OP_WASM_EXTMUL_LOWER_U},
+	{SN_MultiplyWideningUpper, OP_WASM_EXTMUL_UPPER, 0, OP_WASM_EXTMUL_UPPER_U},
 	{SN_Negate},
 	{SN_ReplaceLane},
 	{SN_ShiftLeft, OP_SIMD_SHL},
@@ -4991,6 +4994,30 @@ emit_wasm_supported_intrinsics (
 				return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
 			case SN_Negate:
 				return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
+			case SN_AddPairwiseWidening: {
+				op = OP_XOP_X_X;
+
+				switch (arg0_type) {
+				case MONO_TYPE_I1:
+						c0 = INTRINS_WASM_EXTADD_PAIRWISE_SIGNED_V16;
+						break;
+				case MONO_TYPE_I2:
+						c0 = INTRINS_WASM_EXTADD_PAIRWISE_SIGNED_V8;
+						break;
+				case MONO_TYPE_U1:
+						c0 = INTRINS_WASM_EXTADD_PAIRWISE_UNSIGNED_V16;
+						break;
+				case MONO_TYPE_U2:
+						c0 = INTRINS_WASM_EXTADD_PAIRWISE_UNSIGNED_V8;
+						break;
+				}
+
+				// continue with default emit
+				if (c0 != 0)
+						break;
+
+				return NULL;
+			}
 			case SN_CompareEqual:
 				return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_EQ, arg0_type, fsig, args);
 			case SN_CompareNotEqual:
