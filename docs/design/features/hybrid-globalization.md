@@ -172,3 +172,15 @@ hiraganaBig.localeCompare(katakanaSmall, "en-US", { sensitivity: "base" }) // 0;
 `IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace`
 
 `IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace | IgnoreCase`
+
+
+
+**String starts with / ends with**
+
+Affected public APIs:
+- CompareInfo.IsPrefix
+- CompareInfo.IsSuffix
+- String.StartsWith
+- String.EndsWith
+
+Web API does not expose locale-sensitive endsWith/startsWith function. As a workaround, locale-sensitive string segmenter combined with locale-sensitive comparison is used. This approach, beyond having the same compare option limitations as described under **String comparison**, has additional limitations described in **String indexing**.

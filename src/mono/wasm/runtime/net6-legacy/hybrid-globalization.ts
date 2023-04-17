@@ -6,7 +6,7 @@ import { mono_wasm_new_external_root } from "../roots";
 import {MonoString, MonoStringRef } from "../types";
 import { Int32Ptr } from "../types/emscripten";
 import { conv_string_root, js_string_to_mono_string_root } from "../strings";
-import { setU16 } from "../memory";
+import { setU16, setU32 } from "../memory";
 
 export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
     try{
@@ -82,6 +82,131 @@ export function pass_exception_details(ex: any, exceptionMessage: Int32Ptr){
     const exceptionRoot = mono_wasm_new_external_root<MonoString>(<any>exceptionMessage);
     js_string_to_mono_string_root(exceptionJsString, exceptionRoot);
     exceptionRoot.release();
+}
+
+// ToDo: merge with ends_with
+export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, matchLengthPointer: number): number{
+    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+    try{
+        const cultureName = conv_string_root(cultureRoot);
+        const locale = cultureName ? cultureName : undefined;
+        const prefix = get_utf16_string(str2, str2Length); // searched value in source string
+        // no need to look for an empty string
+        const result = "".localeCompare(prefix, undefined);
+        if (result === 0)
+            return 1; // true
+
+        const source = get_utf16_string(str1, str1Length); // source string
+        const graphemesSource = segment_string_locale_sensitive(source, locale);
+        const graphemesPrefix = segment_string_locale_sensitive(prefix, locale);
+
+        // /0 or %u200d chars at the beginning do not matter in string comparison but are useful for calculating the match length
+        skip_zeroWidthChars(graphemesSource, true);
+        // /0 or %u200d chars do not matter in prefix's both ends
+        skip_zeroWidthChars(graphemesPrefix, true);
+        skip_zeroWidthChars(graphemesPrefix, false);
+
+        const casePicker = (options & 0x1f);
+        for (let i = 0; i < graphemesPrefix.length; i++)
+        {
+            const isEqual = compare_strings(graphemesSource[i].segment, graphemesPrefix[i].segment, locale, casePicker);
+            if (isEqual !== 0)
+                return 0; //false
+        }
+
+        const lastCharIdx = graphemesSource[graphemesPrefix.length - 1].index;
+        const lastCharLen = graphemesSource.length > graphemesPrefix.length ?
+            graphemesSource[graphemesPrefix.length].index - lastCharIdx :
+            str1Length - lastCharIdx;
+        const matchLen = lastCharIdx + lastCharLen;
+        setU32(matchLengthPointer, matchLen);
+        return 1; // true
+    }
+    catch (ex: any) {
+        pass_exception_details(ex, exceptionMessage);
+        return -1;
+    }
+    finally {
+        cultureRoot.release();
+    }
+}
+
+function skip_zeroWidthChars(segment: Intl.SegmentData[], fromBeginning: boolean)
+{
+    if (fromBeginning)
+    {
+        while (starts_with_zeroWidthChars(segment))
+        {
+            segment.shift(); // O(n), ToDo: optimize it
+        }
+    }
+    else
+    {
+        while (ends_with_zeroWidthChars(segment))
+        {
+            segment.pop(); // O(1)
+        }
+    }
+
+    function starts_with_zeroWidthChars(segment: Intl.SegmentData[]) : boolean
+    {
+        return segment.length !== 0 && "".localeCompare(segment[0].segment, undefined) === 0;
+    }
+
+    function ends_with_zeroWidthChars(segment: Intl.SegmentData[]) : boolean
+    {
+        return segment.length !== 0 && "".localeCompare(segment[segment.length - 1].segment, undefined) === 0;
+    }
+}
+
+
+export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, matchLengthPointer: number): number{
+    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+    try{
+        const cultureName = conv_string_root(cultureRoot);
+        const locale = cultureName ? cultureName : undefined;
+        const suffix = get_utf16_string(str2, str2Length); // searched value in source string
+        // no need to look for an empty string
+        const result = "".localeCompare(suffix, undefined);
+        if (result === 0)
+            return 1; // true
+
+        const source = get_utf16_string(str1, str1Length); // source string
+        const graphemesSource = segment_string_locale_sensitive(source, locale);
+        const graphemesSuffix = segment_string_locale_sensitive(suffix, locale);
+
+        // /0 or %u200d chars at the end do not matter in string comparison but are useful for calculating the match length
+        skip_zeroWidthChars(graphemesSource, false);
+        // /0 or %u200d chars do not matter in prefix's both ends
+        skip_zeroWidthChars(graphemesSuffix, true);
+        skip_zeroWidthChars(graphemesSuffix, false);
+
+        const casePicker = (options & 0x1f);
+        for (let i = 0; i < graphemesSuffix.length; i++)
+        {
+            const isEqual = compare_strings(graphemesSource[graphemesSource.length - 1 - i].segment, graphemesSuffix[graphemesSuffix.length - 1 - i].segment, locale, casePicker);
+            if (isEqual !== 0)
+                return 0; // false
+        }
+        const offset = graphemesSource.length - graphemesSuffix.length;
+        const firstCharIdx = graphemesSource[offset].index;
+        const matchLen = str1Length - firstCharIdx;
+        setU32(matchLengthPointer, matchLen);
+        return 1; // true
+    }
+    catch (ex: any) {
+        pass_exception_details(ex, exceptionMessage);
+        return -1;
+    }
+    finally {
+        cultureRoot.release();
+    }
+}
+
+export function segment_string_locale_sensitive(string: string, locale: string | undefined) : Intl.SegmentData[]
+{
+    const segmenter = new Intl.Segmenter(locale, { granularity: "grapheme" });
+    return Array.from(segmenter.segment(string));
 }
 
 export function compare_strings(string1: string, string2: string, locale: string | undefined, casePicker: number) : number{

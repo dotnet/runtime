@@ -16,6 +16,16 @@ namespace System.Globalization.Tests
         private static CompareInfo s_frenchCompare = new CultureInfo("fr-FR").CompareInfo;
         private static CompareInfo s_slovakCompare = new CultureInfo("sk-SK").CompareInfo;
 
+        private static CompareOptions supportedIgnoreNonSpaceOption =
+            PlatformDetection.IsHybridGlobalizationOnBrowser ?
+            CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType :
+            CompareOptions.IgnoreNonSpace;
+
+        private static CompareOptions supportedIgnoreCaseIgnoreNonSpaceOptions =
+            PlatformDetection.IsHybridGlobalizationOnBrowser ?
+            CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType :
+            CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace;
+
         public static IEnumerable<object[]> IsSuffix_TestData()
         {
             // Empty strings
@@ -32,12 +42,27 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "foobardzsdzs", "rddzs", CompareOptions.None, false, 0 };
             yield return new object[] { s_invariantCompare, "foobardzsdzs", "rddzs", CompareOptions.Ordinal, false, 0 };
             yield return new object[] { s_invariantCompare, "dz", "z", CompareOptions.None, true, 1 };
-            yield return new object[] { s_hungarianCompare, "dz", "z", CompareOptions.None, false, 0 };
             yield return new object[] { s_hungarianCompare, "dz", "z", CompareOptions.Ordinal, true, 1 };
+            if (PlatformDetection.IsHybridGlobalizationOnBrowser)
+            {
+                yield return new object[] { s_hungarianCompare, "dz", "z", CompareOptions.None, true, 1 };
+            }
+            else
+            {
+                yield return new object[] { s_hungarianCompare, "dz", "z", CompareOptions.None, false, 0 };
+            }
 
             // Slovak
-            yield return new object[] { s_slovakCompare, "ch", "h", CompareOptions.None, false, 0 };
-            yield return new object[] { s_slovakCompare, "velmi chora", "hora", CompareOptions.None, false, 0 };
+            if (PlatformDetection.IsHybridGlobalizationOnBrowser)
+            {
+                yield return new object[] { s_slovakCompare, "ch", "h", CompareOptions.None, true, 1 };
+                yield return new object[] { s_slovakCompare, "velmi chora", "hora", CompareOptions.None, true, 4 };
+            }
+            else
+            {
+                yield return new object[] { s_slovakCompare, "ch", "h", CompareOptions.None, false, 0 };
+                yield return new object[] { s_slovakCompare, "velmi chora", "hora", CompareOptions.None, false, 0 };
+            }
             yield return new object[] { s_slovakCompare, "chh", "H", CompareOptions.IgnoreCase, true, 1 };
 
             // Turkish
@@ -62,7 +87,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", CompareOptions.Ordinal, false, 0 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", CompareOptions.OrdinalIgnoreCase, false, 0 };
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", CompareOptions.Ordinal, false, 0 };
-            yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", CompareOptions.IgnoreNonSpace, true, 7 };
+            yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", supportedIgnoreNonSpaceOption, true, 7 };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.None, false, 0 };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.Ordinal, false, 0 };
             yield return new object[] { s_invariantCompare, "o\u0308o", "o", CompareOptions.None, true, 1 };
@@ -71,6 +96,8 @@ namespace System.Globalization.Tests
             // Weightless comparisons
             yield return new object[] { s_invariantCompare, "", "\u200d", CompareOptions.None, true, 0 };
             yield return new object[] { s_invariantCompare, "xy\u200d", "y", CompareOptions.None, true, 2 };
+            yield return new object[] { s_invariantCompare, "xy", "y\u200d\u200d", CompareOptions.None, true, 1 };
+            yield return new object[] { s_invariantCompare, "xy\0\0", "y", CompareOptions.None, true, 3 };
 
             // Surrogates
             yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800\uDC00", CompareOptions.None, true, 2 };
@@ -83,11 +110,12 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\uD800\uD800", "\uD800\uD800", CompareOptions.None, true, 2 };
 
             // Ignore symbols
-            yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.IgnoreSymbols, true, 6 };
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+                yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.IgnoreSymbols, true, 6 };
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.None, false, 0 };
 
             // NULL character
-            yield return new object[] { s_invariantCompare, "a\u0000b", "a\u0000b", CompareOptions.None, true, 3 };
+            yield return new object[] { s_invariantCompare, "a\u0000b", "a\u0000b", CompareOptions.None, true, 3 }; // suffix had null removed and now it's returning 2 instead of 3
             yield return new object[] { s_invariantCompare, "a\u0000b", "b\u0000b", CompareOptions.None, false, 0 };
 
             // Platform differences
@@ -106,12 +134,15 @@ namespace System.Globalization.Tests
             }
 
             // Suffixes where matched length does not equal value string length
-            yield return new object[] { s_invariantCompare, "xyzdz", "\u01F3", CompareOptions.IgnoreNonSpace, true, 2 };
-            yield return new object[] { s_invariantCompare, "xyz\u01F3", "dz", CompareOptions.IgnoreNonSpace, true, 1 };
-            yield return new object[] { s_germanCompare, "xyz Strasse", "stra\u00DFe", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, true, 7 };
-            yield return new object[] { s_germanCompare, "xyz Strasse", "xtra\u00DFe", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, false, 0 };
-            yield return new object[] { s_germanCompare, "xyz stra\u00DFe", "Strasse", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, true, 6 };
-            yield return new object[] { s_germanCompare, "xyz stra\u00DFe", "Xtrasse", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, false, 0 };
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+            {
+                yield return new object[] { s_invariantCompare, "xyzdz", "\u01F3", supportedIgnoreNonSpaceOption, true, 2 };
+                yield return new object[] { s_invariantCompare, "xyz\u01F3", "dz", supportedIgnoreNonSpaceOption, true, 1 };
+                yield return new object[] { s_germanCompare, "xyz Strasse", "stra\u00DFe", supportedIgnoreCaseIgnoreNonSpaceOptions, true, 7 };
+                yield return new object[] { s_germanCompare, "xyz stra\u00DFe", "Strasse", supportedIgnoreCaseIgnoreNonSpaceOptions, true, 6 };
+            }
+            yield return new object[] { s_germanCompare, "xyz Strasse", "xtra\u00DFe", supportedIgnoreCaseIgnoreNonSpaceOptions, false, 0 };
+            yield return new object[] { s_germanCompare, "xyz stra\u00DFe", "Xtrasse", supportedIgnoreCaseIgnoreNonSpaceOptions, false, 0 };
         }
 
         [Theory]
@@ -151,7 +182,7 @@ namespace System.Globalization.Tests
             int expectedMatchLength = (result) ? 6 : 0;
 
             IsSuffix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.None, result, expectedMatchLength);
-            IsSuffix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.IgnoreNonSpace, result, expectedMatchLength);
+            IsSuffix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", supportedIgnoreNonSpaceOption, result, expectedMatchLength);
         }
 
         [Fact]

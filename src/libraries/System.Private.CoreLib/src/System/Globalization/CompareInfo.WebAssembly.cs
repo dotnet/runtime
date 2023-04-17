@@ -8,24 +8,40 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
-        private unsafe int JsCompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
+        private static void AssertHybridOnWasm(CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(GlobalizationMode.Hybrid);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+        }
 
-
+        private static void AssertComparisonSupported(CompareOptions options, string cultureName)
+        {
             if (CompareOptionsNotSupported(options))
                 throw new PlatformNotSupportedException(GetPNSE(options));
 
-            string cultureName = m_name;
+            if (CompareOptionsNotSupportedForCulture(options, cultureName))
+                throw new PlatformNotSupportedException(GetPNSEForCulture(options, cultureName));
+        }
+
+        private static void AssertIndexingSupported(CompareOptions options, string cultureName)
+        {
+            if (IndexingOptionsNotSupported(options) || CompareOptionsNotSupported(options))
+                throw new PlatformNotSupportedException(GetPNSE(options));
 
             if (CompareOptionsNotSupportedForCulture(options, cultureName))
                 throw new PlatformNotSupportedException(GetPNSEForCulture(options, cultureName));
+        }
+
+        private unsafe int JsCompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
+        {
+            AssertHybridOnWasm(options);
+            AssertComparisonSupported(options, m_name);
 
             string exceptionMessage;
             int cmpResult;
+            string cultureName = m_name;
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
             {
@@ -37,6 +53,51 @@ namespace System.Globalization
 
             return cmpResult;
         }
+
+        private unsafe bool JsStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr)
+        {
+            AssertHybridOnWasm(options);
+            Debug.Assert(!prefix.IsEmpty);
+            string cultureName = m_name;
+            AssertIndexingSupported(options, cultureName);
+
+            string exceptionMessage;
+            bool result;
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
+            {
+                result = Interop.JsGlobalization.StartsWith(out exceptionMessage, cultureName, pSource, source.Length, pPrefix, prefix.Length, options, matchLengthPtr);
+            }
+
+            if (!string.IsNullOrEmpty(exceptionMessage))
+                throw new Exception(exceptionMessage);
+
+            return result;
+        }
+
+        private unsafe bool JsEndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr)
+        {
+            AssertHybridOnWasm(options);
+            Debug.Assert(!prefix.IsEmpty);
+            string cultureName = m_name;
+            AssertIndexingSupported(options, cultureName);
+
+            string exceptionMessage;
+            bool result;
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
+            {
+                result = Interop.JsGlobalization.EndsWith(out exceptionMessage, cultureName, pSource, source.Length, pPrefix, prefix.Length, options, matchLengthPtr);
+            }
+
+            if (!string.IsNullOrEmpty(exceptionMessage))
+                throw new Exception(exceptionMessage);
+
+            return result;
+        }
+
+        private static bool IndexingOptionsNotSupported(CompareOptions options) =>
+            (options & CompareOptions.IgnoreSymbols) == CompareOptions.IgnoreSymbols;
 
         private static bool CompareOptionsNotSupported(CompareOptions options) =>
             (options & CompareOptions.IgnoreWidth) == CompareOptions.IgnoreWidth ||
