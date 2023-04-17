@@ -67,7 +67,7 @@ namespace Microsoft.Interop.UnitTests.Verifiers
 
         public static async Task VerifySourceGeneratorAsync(string[] sources, params DiagnosticResult[] expected)
         {
-            var test = new Test(referenceAncillaryInterop: true)
+            var test = new Test(referenceAncillaryInterop: false)
             {
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
             };

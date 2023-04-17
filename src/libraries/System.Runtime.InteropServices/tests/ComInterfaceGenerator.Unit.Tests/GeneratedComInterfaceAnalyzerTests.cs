@@ -7,7 +7,7 @@ using Microsoft.Interop;
 using Microsoft.Interop.Analyzers;
 using Xunit;
 
-using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.GeneratedComInterfaceAttributeAnalyzer>;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.GeneratedComInterfaceAttributeAnalyzer>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
