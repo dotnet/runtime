@@ -2,7 +2,17 @@
   <PropertyGroup>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;net48</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetFrameworkCurrent)</TargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!--
+      We're testing the BinaryFormatter enablement / disablement switch, so we need to suppress any inherited behavior.
+      The specific combination below accomplishes this. Normal apps should *NOT* set this combination of switches and
+      should instead set the switches documented at:
+      https://learn.microsoft.com/dotnet/core/compatibility/core-libraries/7.0/binaryformatter-apis-produce-errors#recommended-action
+    -->
+    <_ProjectTypeRequiresBinaryFormatter>true</_ProjectTypeRequiresBinaryFormatter>
+    <EnableUnsafeBinaryFormatterSerialization><!-- intentionally left blank --></EnableUnsafeBinaryFormatterSerialization>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinaryFormatterTestData.cs" />

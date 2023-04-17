@@ -1112,6 +1112,7 @@ namespace Internal.JitInterface
         CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER, // static field access using the "generic static" helper (argument is MethodTable *)
         CORINFO_FIELD_STATIC_ADDR_HELPER,       // static field accessed using address-of helper (argument is FieldDesc *)
         CORINFO_FIELD_STATIC_TLS,               // unmanaged TLS access
+        CORINFO_FIELD_STATIC_TLS_MANAGED,       // managed TLS access
         CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
         CORINFO_FIELD_STATIC_RELOCATABLE,       // static field access from the data segment
         CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
@@ -1150,6 +1151,14 @@ namespace Internal.JitInterface
 
         // Used by Ready-to-Run
         public CORINFO_CONST_LOOKUP fieldLookup;
+    };
+
+    public unsafe struct CORINFO_THREAD_STATIC_BLOCKS_INFO
+    {
+        public CORINFO_CONST_LOOKUP tlsIndex;
+        public uint offsetOfThreadLocalStoragePointer;
+        public CORINFO_CONST_LOOKUP offsetOfMaxThreadStaticBlocks;
+        public CORINFO_CONST_LOOKUP offsetOfThreadStaticBlocks;
     };
 
     // System V struct passing
@@ -1198,8 +1207,8 @@ namespace Internal.JitInterface
         public byte eightByteOffsets1;
     };
 
-    // StructFloadFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` API
-    // to convey struct argument passing information.
+    // StructFloadFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` and
+    // `getRISCV64PassStructInRegisterFlags` API to convey struct argument passing information.
     //
     // `STRUCT_NO_FLOAT_FIELD` means structs are not passed using the float register(s).
     //

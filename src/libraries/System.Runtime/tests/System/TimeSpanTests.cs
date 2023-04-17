@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -1422,31 +1423,55 @@ namespace System.Tests
         [MemberData(nameof(ToString_TestData))]
         public static void TryFormat_Valid(TimeSpan input, string format, CultureInfo info, string expected)
         {
-            int charsWritten;
-            Span<char> dst;
+            // UTF16
+            {
+                int charsWritten;
+                Span<char> dst;
 
-            dst = new char[expected.Length - 1];
-            Assert.False(input.TryFormat(dst, out charsWritten, format, info));
-            Assert.Equal(0, charsWritten);
+                dst = new char[expected.Length - 1];
+                Assert.False(input.TryFormat(dst, out charsWritten, format, info));
+                Assert.Equal(0, charsWritten);
 
-            dst = new char[expected.Length];
-            Assert.True(input.TryFormat(dst, out charsWritten, format, info));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, new string(dst));
+                dst = new char[expected.Length];
+                Assert.True(input.TryFormat(dst, out charsWritten, format, info));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(expected, new string(dst));
 
-            dst = new char[expected.Length + 1];
-            Assert.True(input.TryFormat(dst, out charsWritten, format, info));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, new string(dst.Slice(0, dst.Length - 1)));
-            Assert.Equal(0, dst[dst.Length - 1]);
+                dst = new char[expected.Length + 1];
+                Assert.True(input.TryFormat(dst, out charsWritten, format, info));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(expected, new string(dst.Slice(0, dst.Length - 1)));
+                Assert.Equal(0, dst[dst.Length - 1]);
+            }
+
+            // UTF8
+            {
+                int bytesWritten;
+                Span<byte> dst;
+
+                dst = new byte[expected.Length - 1];
+                Assert.False(input.TryFormat(dst, out bytesWritten, format, info));
+                Assert.Equal(0, bytesWritten);
+
+                dst = new byte[expected.Length];
+                Assert.True(input.TryFormat(dst, out bytesWritten, format, info));
+                Assert.Equal(expected.Length, bytesWritten);
+                Assert.Equal(expected, Encoding.UTF8.GetString(dst));
+
+                dst = new byte[expected.Length + 1];
+                Assert.True(input.TryFormat(dst, out bytesWritten, format, info));
+                Assert.Equal(expected.Length, bytesWritten);
+                Assert.Equal(expected, Encoding.UTF8.GetString(dst.Slice(0, dst.Length - 1)));
+                Assert.Equal(0, dst[dst.Length - 1]);
+            }
         }
 
         [Theory]
         [MemberData(nameof(ToString_InvalidFormat_TestData))]
         public void TryFormat_InvalidFormat_ThrowsFormatException(string invalidFormat)
         {
-            char[] dst = new char[1];
-            Assert.Throws<FormatException>(() => new TimeSpan().TryFormat(dst.AsSpan(), out int charsWritten, invalidFormat, null));
+            Assert.Throws<FormatException>(() => new TimeSpan().TryFormat(new char[1], out int charsWritten, invalidFormat, null));
+            Assert.Throws<FormatException>(() => ((IUtf8SpanFormattable)new TimeSpan()).TryFormat(new byte[1], out int bytesWritten, invalidFormat, null));
         }
 
         [Fact]

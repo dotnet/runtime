@@ -486,6 +486,7 @@
       <GroupBuildCmd>$(GroupBuildCmd) /nodeReuse:false</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /maxcpucount</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /bl:$(ArtifactsDir)/log/$(Configuration)/InnerManagedTestBuild.$(__TestGroupToBuild).binlog</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(CrossBuild)' == 'true'">$(GroupBuildCmd) "/p:CrossBuild=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot'">$(GroupBuildCmd) "/p:DefaultBuildAllTarget=BuildNativeAot"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(IlcMultiModule)' == 'true'">$(GroupBuildCmd) "/p:IlcMultiModule=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(GroupBuildCmd) "/p:BuildNativeAotFrameworkObjects=true"</GroupBuildCmd>

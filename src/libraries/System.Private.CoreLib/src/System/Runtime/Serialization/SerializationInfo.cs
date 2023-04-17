@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
+#pragma warning disable SYSLIB0050 // The SerializationInfo type is part of the obsolete legacy serialization framework
+
 namespace System.Runtime.Serialization
 {
     /// <summary>The structure for holding all of the data needed for object serialization and deserialization.</summary>
@@ -24,6 +26,7 @@ namespace System.Runtime.Serialization
         private Type _rootType;
 
         [CLSCompliant(false)]
+        [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public SerializationInfo(Type type, IFormatterConverter converter)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -43,6 +46,7 @@ namespace System.Runtime.Serialization
         }
 
         [CLSCompliant(false)]
+        [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public SerializationInfo(Type type, IFormatterConverter converter, bool requireSameTokenInPartialTrust)
             : this(type, converter)
         {

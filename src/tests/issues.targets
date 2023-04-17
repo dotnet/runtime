@@ -509,6 +509,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_do/**">
             <Issue>https://github.com/dotnet/runtime/issues/66745</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/profiler/elt/slowpatheltenter/**">
+            <Issue>https://github.com/dotnet/runtime/issues/84750</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/profiler/elt/slowpatheltleave/**">
+            <Issue>https://github.com/dotnet/runtime/issues/84750</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
             <Issue>https://github.com/dotnet/runtime/issues/81241</Issue>
         </ExcludeList>
@@ -898,6 +904,9 @@
 
     <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeInitialization/CctorsWithSideEffects/CctorForWrite/*">
+            <Issue>https://github.com/dotnet/runtime/issues/84007</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/NegativeTestCases/**">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Compatible TypeLoadException for invalid inputs</Issue>
         </ExcludeList>
@@ -1011,9 +1020,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackStressTest_TargetWindows/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/166</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackTests/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/206</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsParam/AsDefault/AsDefaultTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/176: VARIANT marshalling</Issue>
@@ -1629,6 +1635,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/DoublinkList/dlcollect/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
+            <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/FinalNStruct/nstructtun/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
@@ -1801,13 +1810,13 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/call/call05_small/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_dynamic/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_dynamic_il/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_large/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_large_il/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_small/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_small_il/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh06_dynamic/**">
@@ -2191,11 +2200,11 @@
 
     <!-- Known failures for mono runtime on Windows -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetsWindows)' == 'true'" >
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/VBByRefStr/VBByRefStrTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/65698</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Vectorization/StackallocBlkTests/*">
+            <Issue>https://github.com/dotnet/runtime/issues/84398</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/PlatformDefaultMemberFunction/PlatformDefaultMemberFunctionTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
@@ -2438,9 +2447,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/rtchecks/overflow/overflow02_div/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_24846/GitHub_24846/**">
             <Issue>https://github.com/dotnet/runtime/issues/54392</Issue>
         </ExcludeList>
@@ -2535,9 +2541,6 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/rtchecks/overflow/overflow02_div/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/huge_filter_il_d/**">
@@ -2704,9 +2707,6 @@
             <Issue> needs triage </Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/**">
-            <Issue> needs triage </Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
 
@@ -3275,6 +3275,10 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
         </ExcludeList>
+        <!-- DllImportSearchPaths and NativeLibrary tests use the same test helpers that fail here -->
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportSearchPaths/DllImportSearchPathsTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/API/NativeLibraryTests/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
         </ExcludeList>
@@ -3625,6 +3629,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/VolatileTest_op_mul/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
+            <Issue>Allocates large contiguous array that is not consistently available</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/interactions/switchinfinally_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -3696,6 +3703,12 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/mandelbrot/mandelbrot-7/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/GC/API/GCHandleCollector/Usage/**">
+            <Issue>https://github.com/dotnet/runtime/issues/84786</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/regression-25709/**">
+            <Issue>https://github.com/dotnet/runtime/issues/84786</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/GC/Regressions/v2.0-beta2/452950/452950/**">
             <Issue>needs triage</Issue>
@@ -3838,10 +3851,16 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64125/Runtime_64125/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportSearchPaths/DllImportSearchPathsTest/**">
+            <Issue>Loads an assembly from file</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64883/Runtime_64883/*">
             <Issue>Loads an assembly from file</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_66624/Runtime_66624/*">
+            <Issue>Loads an assembly from file</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/StartupHooks/**">
             <Issue>Loads an assembly from file</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/incrementingeventcounter/**">
@@ -4072,9 +4091,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallConv/UnmanagedCallConvTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/53077</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/**">
-            <Issue>https://github.com/dotnet/runtime/issues/53350</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalSeqStruct/DelegatePInvoke/DelegatePInvokeTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/53351</Issue>
         </ExcludeList>
@@ -4278,9 +4294,6 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b41126/b41126/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_DefaultMode_R2r/*">

@@ -119,6 +119,8 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry = "System.Runtime.InteropServices.ComWrappers.ComInterfaceEntry";
 
+        public const string System_Runtime_InteropServices_NativeMemory = "System.Runtime.InteropServices.NativeMemory";
+
         public const string StrategyBasedComWrappers = "System.Runtime.InteropServices.Marshalling.StrategyBasedComWrappers";
 
         public const string IIUnknownInterfaceType = "System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceType";

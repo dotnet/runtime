@@ -293,7 +293,6 @@
       <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
       <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)" />
       <_EmccLinkFlags Include="--source-map-base http://example.com" />
-      <_EmccLinkFlags Include="-s STRICT_JS=1" />
       <_EmccLinkFlags Include="-s WASM_BIGINT=1" />
       <_EmccLinkFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />
       <_EmccLinkFlags Include="-s MODULARIZE=1"/>

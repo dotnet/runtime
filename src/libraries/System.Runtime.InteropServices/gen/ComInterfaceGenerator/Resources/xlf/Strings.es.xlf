@@ -147,6 +147,21 @@
         <target state="translated">El método se declara en una declaración parcial diferente a la del atributo "GeneratedComInterface".</target>
         <note />
       </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesDescription">
+        <source>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</source>
+        <target state="translated">Una interfaz con atributos 'GeneratedComInterfaceAttribute' solo puede derivar de otra interfaz con atributos 'GeneratedComInterfaceAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesMessage">
+        <source>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</source>
+        <target state="translated">El '{0}' de interfaz se deriva de dos o más interfaces atribuidas a 'GeneratedComInterfaceAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesTitle">
+        <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
+        <target state="translated">La interfaz especificada deriva de dos o más interfaces con atributos "GeneratedComInterfaceAttribute".</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
         <target state="translated">Para los tipos que no son compatibles con P/Invokes de un generador de código fuente, el P/Invoke resultante se basará en el entorno de ejecución subyacente para serializar las referencias del tipo especificado.</target>

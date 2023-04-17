@@ -833,14 +833,8 @@ namespace System.Reflection.Runtime.TypeInfos
                         if (baseType == valueType && this != enumType)
                         {
                             classification |= TypeClassification.IsValueType;
-                            foreach (Type primitiveType in ExecutionDomain.PrimitiveTypes)
-                            {
-                                if (this.Equals(primitiveType))
-                                {
-                                    classification |= TypeClassification.IsPrimitive;
-                                    break;
-                                }
-                            }
+                            if (ExecutionDomain.IsPrimitiveType(this))
+                                classification |= TypeClassification.IsPrimitive;
                         }
                     }
                     _lazyClassification = classification;

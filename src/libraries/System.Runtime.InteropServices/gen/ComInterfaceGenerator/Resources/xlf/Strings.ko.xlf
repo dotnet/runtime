@@ -147,6 +147,21 @@
         <target state="translated">메소드가 'GeneratedComInterface' 속성과 다른 부분 선언에서 선언되었습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesDescription">
+        <source>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</source>
+        <target state="translated">'GeneratedComInterfaceAttribute' 특성 인터페이스는 하나의 다른 'GeneratedComInterfaceAttribute' 특성 인터페이스에서만 파생될 수 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesMessage">
+        <source>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</source>
+        <target state="translated">인터페이스 '{0}'은(는) 'GeneratedComInterfaceAttribute'가 있는 두 개 이상의 인터페이스에서 파생됩니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesTitle">
+        <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
+        <target state="translated">지정한 인터페이스는 두 개 이상의 'GeneratedComInterfaceAttribute' 특성 인터페이스에서 파생됩니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
         <target state="translated">소스 생성 P/Invoke에서 지원하지 않는 형식의 경우 결과 P/Invoke는 기본 런타임에 의존하여 지정된 형식을 마샬링합니다.</target>

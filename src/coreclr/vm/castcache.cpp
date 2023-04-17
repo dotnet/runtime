@@ -124,7 +124,7 @@ void CastCache::Initialize()
     }
     CONTRACTL_END;
 
-    FieldDesc* pTableField = CoreLibBinder::GetField(FIELD__CASTHELPERS__TABLE);
+    FieldDesc* pTableField = CoreLibBinder::GetField(FIELD__CASTCACHE__TABLE);
 
     GCX_COOP();
     s_pTableRef = (BASEARRAYREF*)pTableField->GetCurrentStaticAddress();

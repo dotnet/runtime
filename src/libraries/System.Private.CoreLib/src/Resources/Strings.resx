@@ -1447,9 +1447,6 @@
   <data name="Argument_NotMethodCallOpcode" xml:space="preserve">
     <value>The specified opcode cannot be passed to EmitCall.</value>
   </data>
-  <data name="Argument_NotSerializable" xml:space="preserve">
-    <value>Argument passed in is not serializable.</value>
-  </data>
   <data name="Argument_NoUninitializedStrings" xml:space="preserve">
     <value>Uninitialized Strings cannot be created.</value>
   </data>
@@ -1926,25 +1923,31 @@
     <value>Year must be between 1 and 9999.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeNonZero" xml:space="preserve">
-    <value>'{0}' must be a non-zero value.</value>
+    <value>{0} ('{1}') must be a non-zero value.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeNonNegative" xml:space="preserve">
-    <value>'{0}' must be a non-negative value.</value>
+    <value>{0} ('{1}') must be a non-negative value.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero" xml:space="preserve">
-    <value>'{0}' must be a non-negative and non-zero value.</value>
+    <value>{0} ('{1}') must be a non-negative and non-zero value.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeLessOrEqual" xml:space="preserve">
-    <value>'{0}' must be less than or equal to '{1}'.</value>
+    <value>{0} ('{1}') must be less than or equal to '{2}'.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeLess" xml:space="preserve">
-    <value>'{0}' must be less than '{1}'.</value>
+    <value>{0} ('{1}') must be less than '{2}'.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeGreaterOrEqual" xml:space="preserve">
-    <value>'{0}' must be greater than or equal to '{1}'.</value>
+    <value>{0} ('{1}') must be greater than or equal to '{2}'.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeGreater" xml:space="preserve">
-    <value>'{0}' must be greater than '{1}'.</value>
+    <value>{0} ('{1}') must be greater than '{2}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeEqual" xml:space="preserve">
+    <value>{0} ('{1}') must be equal to '{2}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNotEqual" xml:space="preserve">
+    <value>{0} ('{1}') must not be equal to '{2}'.</value>
   </data>
   <data name="Arithmetic_NaN" xml:space="preserve">
     <value>Function does not accept floating point Not-a-Number values.</value>
@@ -2977,6 +2980,12 @@
   </data>
   <data name="InvalidOperation_SpanOverlappedOperation" xml:space="preserve">
     <value>This operation is invalid on overlapping buffers.</value>
+  </data>
+  <data name="InvalidOperation_TimeProviderNullLocalTimeZone" xml:space="preserve">
+    <value>The operation cannot be performed when TimeProvider.LocalTimeZone is null.</value>
+  </data>
+  <data name="InvalidOperation_TimeProviderInvalidTimestampFrequency" xml:space="preserve">
+    <value>The operation cannot be performed when TimeProvider.TimestampFrequency is zero or negative.</value>
   </data>
   <data name="NotSupported_IDispInvokeDefaultMemberWithNamedArgs" xml:space="preserve">
     <value>Invoking default method with named arguments is not supported.</value>

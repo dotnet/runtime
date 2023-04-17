@@ -298,7 +298,13 @@ CONFIG_DWORD_INFO(INTERNAL_JitDebuggable, W("JitDebuggable"), 0, "")
 #define INTERNAL_JitEnableNoWayAssert_Default 1
 #endif
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitEnableNoWayAssert, W("JitEnableNoWayAssert"), INTERNAL_JitEnableNoWayAssert_Default, "")
+
+#if defined(TARGET_RISCV64)
+// TODO-RISCV64-CQ: In RISCV64, currently jitc always generates JitFramed codes.
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JitFramed, W("JitFramed"), 1, "Forces EBP frames")
+#else
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JitFramed, W("JitFramed"), 0, "Forces EBP frames")
+#endif // TARGET_RISCV64
 CONFIG_DWORD_INFO(INTERNAL_JitThrowOnAssertionFailure, W("JitThrowOnAssertionFailure"), 0, "Throw managed exception on assertion failures during JIT instead of failfast")
 CONFIG_DWORD_INFO(INTERNAL_JitGCStress, W("JitGCStress"), 0, "GC stress mode for jit")
 CONFIG_DWORD_INFO(INTERNAL_JitHeartbeat, W("JitHeartbeat"), 0, "")
@@ -742,12 +748,13 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_GDBJitEmitDebugFrame, W("GDBJitEmitDebugFrame"
 //
 // Hardware Intrinsic ISAs; keep in sync with jitconfigvalues.h
 //
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 //TODO: should implement LoongArch64's features.
+//TODO-RISCV64-CQ: should implement RISCV64's features.
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,  W("EnableHWIntrinsic"),  0, "Allows Base+ hardware intrinsics to be disabled")
 #else
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,  W("EnableHWIntrinsic"),  1, "Allows Base+ hardware intrinsics to be disabled")
-#endif // defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAES,          W("EnableAES"),          1, "Allows AES+ hardware intrinsics to be disabled")
