@@ -97,50 +97,6 @@ inline T genFindLowestBit(T value)
     return (value & (0 - value));
 }
 
-//------------------------------------------------------------------------
-// genFindHighestBit:  Return the highest bit that is set (that is, a mask that includes just the
-//                     highest bit).
-//
-// Return Value:
-//    The highest position (0 is LSB) of bit that is set in the 'value'.
-//
-// Note:
-//    It performs the "LeadingZeroCount " operation using intrinsics and then mask out everything
-//    but the highest bit.
-inline unsigned int genFindHighestBit(unsigned int mask)
-{
-    assert(mask != 0);
-#if defined(_MSC_VER)
-    unsigned long index;
-#else
-    unsigned int index;
-#endif
-    BitScanReverse(&index, mask);
-    return 1L << index;
-}
-
-//------------------------------------------------------------------------
-// genFindHighestBit:  Return the highest bit that is set (that is, a mask that includes just the
-//                     highest bit).
-//
-// Return Value:
-//    The highest position (0 is LSB) of bit that is set in the 'value'.
-//
-// Note:
-//    It performs the "LeadingZeroCount " operation using intrinsics and then mask out everything
-//    but the highest bit.
-inline unsigned __int64 genFindHighestBit(unsigned __int64 mask)
-{
-    assert(mask != 0);
-#if defined(_MSC_VER)
-    unsigned long index;
-#else
-    unsigned int index;
-#endif
-    BitScanReverse64(&index, mask);
-    return 1LL << index;
-}
-
 /*****************************************************************************
 *
 *  Return true if the given value has exactly zero or one bits set.
@@ -199,16 +155,6 @@ inline unsigned ulo32(unsigned __int64 value)
 inline unsigned uhi32(unsigned __int64 value)
 {
     return static_cast<unsigned>(value >> 32);
-}
-
-/*****************************************************************************
- *
- *  Return the lowest bit that is set in the given register mask.
- */
-
-inline regMaskTP genFindLowestReg(regMaskTP value)
-{
-    return (regMaskTP)genFindLowestBit(value);
 }
 
 /*****************************************************************************

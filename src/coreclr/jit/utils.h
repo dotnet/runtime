@@ -25,12 +25,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Needed for unreached()
 #include "error.h"
 
-#ifdef TARGET_64BIT
-#define BitScanForwardPtr BitScanForward64
-#else
-#define BitScanForwardPtr BitScanForward
-#endif
-
 #if defined(_MSC_VER)
 
 // Define wrappers over the non-underscore versions of the BitScan* APIs. The PAL defines these already.
@@ -46,6 +40,7 @@ inline BOOLEAN BitScanReverse(DWORD* Index, DWORD Mask)
     return ::_BitScanReverse(Index, Mask);
 }
 
+#if defined(HOST_64BIT)
 inline BOOLEAN BitScanForward64(DWORD* Index, DWORD64 Mask)
 {
     return ::_BitScanForward64(Index, Mask);
@@ -55,6 +50,7 @@ inline BOOLEAN BitScanReverse64(DWORD* Index, DWORD64 Mask)
 {
     return ::_BitScanReverse64(Index, Mask);
 }
+#endif // defined(HOST_64BIT)
 
 #endif // _MSC_VER
 
