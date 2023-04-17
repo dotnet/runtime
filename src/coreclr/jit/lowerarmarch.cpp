@@ -2550,7 +2550,8 @@ void Lowering::ContainCheckNeg(GenTreeOp* neg)
             MakeSrcContained(neg, childNode);
         }
     }
-    else if (childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ) && IsContainableBinaryOp(neg, childNode))
+    else if (comp->opts.OptimizationEnabled() && childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ) &&
+             IsContainableBinaryOp(neg, childNode))
     {
         MakeSrcContained(neg, childNode);
     }
