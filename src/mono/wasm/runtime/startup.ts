@@ -273,6 +273,13 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
             string_decoder.init_fields();
         });
 
+        if (config.startupOptions && INTERNAL.resourceLoader) {
+            if (INTERNAL.resourceLoader.bootConfig.debugBuild && INTERNAL.resourceLoader.bootConfig.cacheBootResources) {
+                INTERNAL.resourceLoader.logToConsole();
+            }
+            INTERNAL.resourceLoader.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
+        }
+
         // call user code
         try {
             userOnRuntimeInitialized();

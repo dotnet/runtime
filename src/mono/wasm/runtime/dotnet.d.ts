@@ -137,6 +137,10 @@ type MonoConfig = {
      * hash of assets
      */
     assetsHash?: string;
+    /**
+     * application environment
+     */
+    applicationEnvironment?: string;
 };
 interface ResourceRequest {
     name: string;

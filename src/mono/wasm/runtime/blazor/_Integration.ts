@@ -37,6 +37,9 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, reso
     moduleConfig.enableDownloadRetry = false; // disable retry downloads
     moduleConfig.mainAssemblyName = resourceLoader.bootConfig.entryAssembly;
 
+    // TODO MF: To support reading resources in JSInitializers
+    (moduleConfig as any).resources = resources;
+
     if (resourceLoader.bootConfig.startupMemoryCache !== undefined) {
         moduleConfig.startupMemoryCache = resourceLoader.bootConfig.startupMemoryCache;
     }

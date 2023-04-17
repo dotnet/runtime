@@ -40,7 +40,6 @@ export class WebAssemblyResourceLoader {
         return { name, url: toAbsoluteUrl(url), response };
     }
 
-    // TODO MF: logToConsole
     logToConsole(): void {
         const cacheLoadsEntries = Object.values(this.cacheLoads);
         const networkLoadsEntries = Object.values(this.networkLoads);
@@ -53,7 +52,7 @@ export class WebAssemblyResourceLoader {
         }
 
         const linkerDisabledWarning = this.bootConfig.linkerEnabled ? "%c" : "\n%cThis application was built with linking (tree shaking) disabled. Published applications will be significantly smaller.";
-        console.groupCollapsed(`%cblazor%c Loaded ${toDataSizeString(totalResponseBytes)} resources${linkerDisabledWarning}`, "background: purple; color: white; padding: 1px 3px; border-radius: 3px;", "font-weight: bold;", "font-weight: normal;");
+        console.groupCollapsed(`%cdotnet%c Loaded ${toDataSizeString(totalResponseBytes)} resources${linkerDisabledWarning}`, "background: purple; color: white; padding: 1px 3px; border-radius: 3px;", "font-weight: bold;", "font-weight: normal;");
 
         if (cacheLoadsEntries.length) {
             console.groupCollapsed(`Loaded ${toDataSizeString(cacheResponseBytes)} resources from cache`);
