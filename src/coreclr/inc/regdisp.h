@@ -210,6 +210,28 @@ typedef struct _Loongarch64VolatileContextPointer
 } Loongarch64VolatileContextPointer;
 #endif
 
+#if defined(TARGET_RISCV64)
+typedef struct _Riscv64VolatileContextPointer
+{
+    PDWORD64 R0;
+    PDWORD64 A0;
+    PDWORD64 A1;
+    PDWORD64 A2;
+    PDWORD64 A3;
+    PDWORD64 A4;
+    PDWORD64 A5;
+    PDWORD64 A6;
+    PDWORD64 A7;
+    PDWORD64 T0;
+    PDWORD64 T1;
+    PDWORD64 T2;
+    PDWORD64 T3;
+    PDWORD64 T4;
+    PDWORD64 T5;
+    PDWORD64 T6;
+} Riscv64VolatileContextPointer;
+#endif
+
 struct REGDISPLAY : public REGDISPLAY_BASE {
 #ifdef TARGET_ARM64
     Arm64VolatileContextPointer     volatileCurrContextPointers;
@@ -217,6 +239,10 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
 
 #ifdef TARGET_LOONGARCH64
     Loongarch64VolatileContextPointer    volatileCurrContextPointers;
+#endif
+
+#ifdef TARGET_RISCV64
+    Riscv64VolatileContextPointer    volatileCurrContextPointers;
 #endif
 
     REGDISPLAY()
@@ -329,6 +355,8 @@ inline LPVOID GetRegdisplayReturnValue(REGDISPLAY *display)
     return (LPVOID)display->pCurrentContext->Eax;
 #elif defined(TARGET_LOONGARCH64)
     return (LPVOID)display->pCurrentContext->A0;
+#elif defined(TARGET_RISCV64)
+    return (LPVOID)display->pCurrentContext->A0;
 #else
     PORTABILITY_ASSERT("GetRegdisplayReturnValue NYI for this platform (Regdisp.h)");
     return NULL;
@@ -397,7 +425,23 @@ inline void FillContextPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pCtxPtrs, PT_CO
     {
         *(&pCtxPtrs->Edi + i) = (&pCtx->Edi + i);
     }
-#else // TARGET_X86
+#elif defined(TARGET_RISCV64) // TARGET_X86
+    *(&pCtxPtrs->S1) = &pCtx->S1;
+    *(&pCtxPtrs->S2) = &pCtx->S2;
+    *(&pCtxPtrs->S3) = &pCtx->S3;
+    *(&pCtxPtrs->S4) = &pCtx->S4;
+    *(&pCtxPtrs->S5) = &pCtx->S5;
+    *(&pCtxPtrs->S6) = &pCtx->S6;
+    *(&pCtxPtrs->S7) = &pCtx->S7;
+    *(&pCtxPtrs->S8) = &pCtx->S8;
+    *(&pCtxPtrs->S9) = &pCtx->S9;
+    *(&pCtxPtrs->S10) = &pCtx->S10;
+    *(&pCtxPtrs->S11) = &pCtx->S11;
+    *(&pCtxPtrs->Gp) = &pCtx->Gp;
+    *(&pCtxPtrs->Tp) = &pCtx->Tp;
+    *(&pCtxPtrs->Fp) = &pCtx->Fp;
+    *(&pCtxPtrs->Ra) = &pCtx->Ra;
+#else // TARGET_RISCV64
     PORTABILITY_ASSERT("FillContextPointers");
 #endif // _TARGET_???_ (ELSE)
 }
@@ -488,7 +532,23 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
     pRD->volatileCurrContextPointers.T7 = &pctx->T7;
     pRD->volatileCurrContextPointers.T8 = &pctx->T8;
     pRD->volatileCurrContextPointers.X0 = &pctx->X0;
-#endif // TARGET_LOONGARCH64
+#elif defined(TARGET_RISCV64) // TARGET_LOONGARCH64
+    pRD->volatileCurrContextPointers.A0 = &pctx->A0;
+    pRD->volatileCurrContextPointers.A1 = &pctx->A1;
+    pRD->volatileCurrContextPointers.A2 = &pctx->A2;
+    pRD->volatileCurrContextPointers.A3 = &pctx->A3;
+    pRD->volatileCurrContextPointers.A4 = &pctx->A4;
+    pRD->volatileCurrContextPointers.A5 = &pctx->A5;
+    pRD->volatileCurrContextPointers.A6 = &pctx->A6;
+    pRD->volatileCurrContextPointers.A7 = &pctx->A7;
+    pRD->volatileCurrContextPointers.T0 = &pctx->T0;
+    pRD->volatileCurrContextPointers.T1 = &pctx->T1;
+    pRD->volatileCurrContextPointers.T2 = &pctx->T2;
+    pRD->volatileCurrContextPointers.T3 = &pctx->T3;
+    pRD->volatileCurrContextPointers.T4 = &pctx->T4;
+    pRD->volatileCurrContextPointers.T5 = &pctx->T5;
+    pRD->volatileCurrContextPointers.T6 = &pctx->T6;
+#endif // TARGET_RISCV64
 
 #ifdef DEBUG_REGDISPLAY
     pRD->_pThread = NULL;
@@ -569,6 +629,9 @@ inline size_t * getRegAddr (unsigned regNum, PTR_CONTEXT regs)
     _ASSERTE(regNum < 31);
     return (size_t *)&regs->X0 + regNum;
 #elif defined(TARGET_LOONGARCH64)
+    _ASSERTE(regNum < 32);
+    return (size_t *)&regs->R0 + regNum;
+#elif defined(TARGET_RISCV64)
     _ASSERTE(regNum < 32);
     return (size_t *)&regs->R0 + regNum;
 #else

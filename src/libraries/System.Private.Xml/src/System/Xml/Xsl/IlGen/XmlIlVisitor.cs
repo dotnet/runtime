@@ -27,6 +27,7 @@ namespace System.Xml.Xsl.IlGen
     /// the stack or a local variable by an iterator.  The iterator is passive, and will just wait for
     /// a caller to pull the data and/or instruct the iterator to enumerate the next value.
     /// </summary>
+    [RequiresDynamicCode("Creates DynamicMethods")]
     internal sealed class XmlILVisitor : QilVisitor
     {
         private QilExpression _qil = null!;

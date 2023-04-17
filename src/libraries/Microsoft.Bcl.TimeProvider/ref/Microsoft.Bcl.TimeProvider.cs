@@ -8,15 +8,14 @@ namespace System
     public abstract class TimeProvider
     {
         public static TimeProvider System { get; }
-        protected TimeProvider(long timestampFrequency) { throw null; }
-        public abstract System.DateTimeOffset UtcNow { get; }
-        public System.DateTimeOffset LocalNow { get; }
-        public abstract System.TimeZoneInfo LocalTimeZone { get; }
-        public long TimestampFrequency { get; }
-        public static TimeProvider FromLocalTimeZone(System.TimeZoneInfo timeZone) { throw null; }
-        public abstract long GetTimestamp();
+        protected TimeProvider() { throw null; }
+        public virtual System.DateTimeOffset GetUtcNow() { throw null; }
+        public System.DateTimeOffset GetLocalNow() { throw null; }
+        public virtual System.TimeZoneInfo LocalTimeZone { get; }
+        public virtual long TimestampFrequency { get; }
+        public virtual long GetTimestamp() { throw null; }
         public TimeSpan GetElapsedTime(long startingTimestamp, long endingTimestamp) { throw null; }
-        public abstract System.Threading.ITimer CreateTimer(System.Threading.TimerCallback callback, object? state, System.TimeSpan dueTime, System.TimeSpan period);
+        public virtual System.Threading.ITimer CreateTimer(System.Threading.TimerCallback callback, object? state, System.TimeSpan dueTime, System.TimeSpan period) { throw null; }
     }
 }
 namespace System.Threading

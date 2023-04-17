@@ -2581,12 +2581,13 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
     regNumber src  = genConsumeReg(srcIndir->Addr());
     unsigned  size = tree->Size();
 
-    // TODO-XARCH-AVX512: Consider enabling it here
-    unsigned simdSize = (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
-                            ? YMM_REGSIZE_BYTES
-                            : XMM_REGSIZE_BYTES;
-
-    if (size >= simdSize)
+    unsigned simdSize = compiler->roundDownSIMDSize(size);
+    if (size <= ZMM_RECOMMENDED_THRESHOLD)
+    {
+        // Only use ZMM for large data due to possible CPU throttle issues
+        simdSize = min(YMM_REGSIZE_BYTES, simdSize);
+    }
+    if ((size >= simdSize) && (simdSize > 0))
     {
         // Number of SIMD regs needed to save the whole src to regs.
         unsigned numberOfSimdRegs = tree->AvailableTempRegCount(RBM_ALLFLOAT);
@@ -2603,33 +2604,37 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
         }
 
         auto emitSimdLoadStore = [&](bool load) {
-            unsigned    offset   = 0;
-            int         regIndex = 0;
-            instruction simdMov  = simdUnalignedMovIns();
+            unsigned    offset      = 0;
+            int         regIndex    = 0;
+            instruction simdMov     = simdUnalignedMovIns();
+            unsigned    curSimdSize = simdSize;
             do
             {
+                assert(curSimdSize >= XMM_REGSIZE_BYTES);
                 if (load)
                 {
                     // vmovdqu  ymm, ymmword ptr[src + offset]
-                    GetEmitter()->emitIns_R_AR(simdMov, EA_ATTR(simdSize), tempRegs[regIndex++], src, offset);
+                    GetEmitter()->emitIns_R_AR(simdMov, EA_ATTR(curSimdSize), tempRegs[regIndex++], src, offset);
                 }
                 else
                 {
                     // vmovdqu  ymmword ptr[dst + offset], ymm
-                    GetEmitter()->emitIns_AR_R(simdMov, EA_ATTR(simdSize), tempRegs[regIndex++], dst, offset);
+                    GetEmitter()->emitIns_AR_R(simdMov, EA_ATTR(curSimdSize), tempRegs[regIndex++], dst, offset);
                 }
-                offset += simdSize;
+                offset += curSimdSize;
                 if (size == offset)
                 {
                     break;
                 }
 
+                // Overlap with the previously processed data. We'll always use SIMD for simplicity
                 assert(size > offset);
-                if ((size - offset) < simdSize)
+                unsigned remainder = size - offset;
+                if (remainder < curSimdSize)
                 {
-                    // Overlap with the previously processed data. We'll always use SIMD for simplicity
-                    // TODO-CQ: Consider using smaller SIMD reg or GPR for the remainder.
-                    offset = size - simdSize;
+                    // Switch to smaller SIMD size if necessary
+                    curSimdSize = compiler->roundUpSIMDSize(remainder);
+                    offset      = size - curSimdSize;
                 }
             } while (true);
         };
@@ -2986,8 +2991,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
         assert(!storeBlkNode->gtBlkOpGcUnsafe);
 #endif
         assert(storeBlkNode->OperIsCopyBlkOp());
-        assert(storeBlkNode->AsObj()->GetLayout()->HasGCPtr());
-        genCodeForCpObj(storeBlkNode->AsObj());
+        assert(storeBlkNode->AsBlk()->GetLayout()->HasGCPtr());
+        genCodeForCpObj(storeBlkNode->AsBlk());
         return;
     }
 
@@ -3782,15 +3787,15 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
 {
     GenTree* src = putArgNode->Data();
     // We will never call this method for SIMD types, which are stored directly in genPutStructArgStk().
-    assert(src->isContained() && src->TypeIs(TYP_STRUCT) && (src->OperIs(GT_OBJ) || src->OperIsLocalRead()));
+    assert(src->isContained() && src->TypeIs(TYP_STRUCT) && (src->OperIs(GT_BLK) || src->OperIsLocalRead()));
 
 #ifdef TARGET_X86
     assert(!m_pushStkArg);
 #endif
 
-    if (src->OperIs(GT_OBJ))
+    if (src->OperIs(GT_BLK))
     {
-        genConsumeReg(src->AsObj()->Addr());
+        genConsumeReg(src->AsBlk()->Addr());
     }
 
     unsigned loadSize = putArgNode->GetArgLoadSize();
@@ -3906,7 +3911,7 @@ void CodeGen::genStructPutArgPush(GenTreePutArgStk* putArgNode)
     }
     else
     {
-        srcAddrReg = genConsumeReg(src->AsObj()->Addr());
+        srcAddrReg = genConsumeReg(src->AsBlk()->Addr());
     }
 
     ClassLayout*   layout   = src->GetLayout(compiler);
@@ -4093,7 +4098,7 @@ void CodeGen::genClearStackVec3ArgUpperBits()
 //    The register assignments have been set appropriately.
 //    This is validated by genConsumeBlockOp().
 //
-void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
+void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
     // Make sure we got the arguments of the cpobj operation in the right registers
     GenTree*  dstAddr     = cpObjNode->Addr();
@@ -5420,8 +5425,13 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
     {
         noway_assert(EA_ATTR(genTypeSize(targetType)) == EA_PTRSIZE);
+#if TARGET_64BIT
+        emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_GS,
+                          (int)addr->AsIntCon()->gtIconVal);
+#else
         emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_FS,
                           (int)addr->AsIntCon()->gtIconVal);
+#endif
     }
     else
     {
@@ -5624,6 +5634,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_SSE41_X64_Extract:
                         case NI_AVX_ExtractVector128:
                         case NI_AVX2_ExtractVector128:
+                        case NI_AVX512F_ExtractVector128:
                         case NI_AVX512F_ExtractVector256:
                         {
                             // These intrinsics are "ins reg/mem, xmm, imm8"

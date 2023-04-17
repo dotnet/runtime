@@ -4745,6 +4745,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_EARLY_LIVENESS, &Compiler::fgEarlyLiveness);
 
+    // Promote struct locals based on primitive access patterns
+    //
+    DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
+
     // Run a simple forward substitution pass.
     //
     DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
@@ -5039,6 +5043,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Partially inline static initializations
     DoPhase(this, PHASE_EXPAND_STATIC_INIT, &Compiler::fgExpandStaticInit);
+
+    if (TargetOS::IsWindows)
+    {
+        // Currently this is only applicable for Windows
+        DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
+    }
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -9936,9 +9946,8 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             }
             break;
 
-            case GT_OBJ:
             case GT_STORE_OBJ:
-                if (tree->AsObj()->GetLayout()->HasGCPtr())
+                if (tree->AsBlk()->GetLayout()->HasGCPtr())
                 {
                     chars += printf("[BLK_HASGCPTR]");
                 }
@@ -10315,7 +10324,7 @@ var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 //
 void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
-    assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
+    assert(tree->OperIs(GT_FIELD, GT_IND, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
     assert(fgAddrCouldBeNull(tree->gtGetOp1()));

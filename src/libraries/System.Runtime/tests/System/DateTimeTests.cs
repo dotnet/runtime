@@ -2664,18 +2664,18 @@ namespace System.Tests
             {
                 // Just the right length, succeeds
                 Span<byte> dest = new byte[expected.Length];
-                Assert.True(((IUtf8SpanFormattable)dt).TryFormat(dest, out int bytesWritten, format, null));
+                Assert.True(dt.TryFormat(dest, out int bytesWritten, format));
                 Assert.Equal(expected.Length, bytesWritten);
                 Assert.Equal(expected, Encoding.UTF8.GetString(dest));
 
                 // Too short, fails
                 dest = new byte[expected.Length - 1];
-                Assert.False(((IUtf8SpanFormattable)dt).TryFormat(dest, out bytesWritten, format, null));
+                Assert.False(dt.TryFormat(dest, out bytesWritten, format));
                 Assert.Equal(0, bytesWritten);
 
                 // Longer than needed, succeeds
                 dest = new byte[expected.Length + 1];
-                Assert.True(((IUtf8SpanFormattable)dt).TryFormat(dest, out bytesWritten, format, null));
+                Assert.True(dt.TryFormat(dest, out bytesWritten, format));
                 Assert.Equal(expected.Length, bytesWritten);
                 Assert.Equal(expected, Encoding.UTF8.GetString(dest.Slice(0, expected.Length)));
                 Assert.Equal(0, dest[dest.Length - 1]);
@@ -2702,9 +2702,9 @@ namespace System.Tests
             {
                 var destination = new byte[expected.Length];
 
-                Assert.False(((IUtf8SpanFormattable)dateTime).TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
+                Assert.False(dateTime.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
 
-                Assert.True(((IUtf8SpanFormattable)dateTime).TryFormat(destination, out int byteWritten, format, provider));
+                Assert.True(dateTime.TryFormat(destination, out int byteWritten, format, provider));
                 Assert.Equal(destination.Length, byteWritten);
                 Assert.Equal(expected, Encoding.UTF8.GetString(destination));
             }

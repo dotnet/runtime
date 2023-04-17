@@ -60,15 +60,49 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Tries to get the <see cref="JsonTypeInfo"/> contract metadata resolved by the current <see cref="JsonSerializerOptions"/> instance.
+        /// </summary>
+        /// <param name="type">The type to resolve contract metadata for.</param>
+        /// <param name="typeInfo">The resolved contract metadata, or <see langword="null" /> if not contract could be resolved.</param>
+        /// <returns><see langword="true"/> if a contract for <paramref name="type"/> was found, or <see langword="false"/> otherwise.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="type"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="type"/> is not valid for serialization.</exception>
+        /// <remarks>
+        /// Returned metadata can be downcast to <see cref="JsonTypeInfo{T}"/> and used with the relevant <see cref="JsonSerializer"/> overloads.
+        ///
+        /// If the <see cref="JsonSerializerOptions"/> instance is locked for modification, the method will return a cached instance for the metadata.
+        /// </remarks>
+        public bool TryGetTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
+        {
+            if (type is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(type));
+            }
+
+            if (JsonTypeInfo.IsInvalidForSerialization(type))
+            {
+                ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(type), type, null, null);
+            }
+
+            typeInfo = GetTypeInfoInternal(type, ensureNotNull: null, resolveIfMutable: true);
+            return typeInfo is not null;
+        }
+
+        /// <summary>
         /// Same as GetTypeInfo but without validation and additional knobs.
         /// </summary>
-        internal JsonTypeInfo GetTypeInfoInternal(
+        [return: NotNullIfNotNull(nameof(ensureNotNull))]
+        internal JsonTypeInfo? GetTypeInfoInternal(
             Type type,
             bool ensureConfigured = true,
+            // We can't assert non-nullability on the basis of boolean parameters,
+            // so use a nullable representation instead to piggy-back on the NotNullIfNotNull attribute.
+            bool? ensureNotNull = true,
             bool resolveIfMutable = false,
             bool fallBackToNearestAncestorType = false)
         {
             Debug.Assert(!fallBackToNearestAncestorType || IsReadOnly, "ancestor resolution should only be invoked in read-only options.");
+            Debug.Assert(ensureNotNull is null or true, "Explicitly passing false will result in invalid result annotation.");
 
             JsonTypeInfo? typeInfo = null;
 
@@ -85,7 +119,7 @@ namespace System.Text.Json
                 typeInfo = GetTypeInfoNoCaching(type);
             }
 
-            if (typeInfo == null)
+            if (typeInfo is null && ensureNotNull == true)
             {
                 ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type, TypeInfoResolver);
             }
@@ -241,7 +275,7 @@ namespace System.Text.Json
             private CacheEntry? DetermineNearestAncestor(Type type, CacheEntry entry)
             {
                 // In cases where the underlying TypeInfoResolver returns `null` for a given type,
-                // this method traverses the hierarchy above the given type to determine potential
+                // this method traverses the hierarchy above the type to determine potential
                 // ancestors for which the resolver does provide metadata. This can be useful in
                 // cases where we're using a source generator and are trying to serialize private
                 // implementations of an interface that is supported by the source generator.

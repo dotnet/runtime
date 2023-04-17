@@ -929,6 +929,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
 
         case NI_Vector128_GetElement:
         case NI_Vector256_GetElement:
+        case NI_Vector512_GetElement:
         {
             if (simdType == TYP_SIMD12)
             {
@@ -1085,10 +1086,9 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector128_AsVector3:
         case NI_Vector128_ToScalar:
         case NI_Vector256_ToScalar:
+        case NI_Vector512_ToScalar:
         {
             assert(varTypeIsFloating(baseType));
-
-            attr = emitTypeSize(TYP_SIMD16);
 
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
@@ -1738,12 +1738,51 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
                     unreached();
             }
 
-            // TODO-XARCH-AVX512 remove REG_K1 check when all K registers possible for
-            // allocation.
-            assert(emitter::isMaskReg(maskReg) && maskReg == REG_K1);
+            assert(emitter::isMaskReg(maskReg));
 
             emit->emitIns_R_R(maskIns, attr, maskReg, op1Reg);
             emit->emitIns_Mov(kmovIns, EA_8BYTE, targetReg, maskReg, INS_FLAGS_DONT_CARE);
+            break;
+        }
+
+        case NI_AVX512F_CompareEqualSpecial:
+        {
+            GenTree* op2     = node->Op(2);
+            op1Reg           = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+
+            instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareEqualSpecial, baseType);
+
+            assert(compareIns != INS_invalid);
+            assert(emitter::isMaskReg(targetReg));
+
+            emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 0);
+            break;
+        }
+
+        case NI_AVX512F_MoveMaskToVectorSpecial:
+        {
+            op1Reg = op1->GetRegNum();
+
+            instruction maskMovIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_MoveMaskToVectorSpecial, baseType);
+
+            assert(maskMovIns != INS_invalid);
+            assert(emitter::isMaskReg(op1Reg));
+
+            emit->emitIns_R_R(maskMovIns, attr, targetReg, op1Reg);
+            break;
+        }
+
+        case NI_AVX512F_KORTEST:
+        {
+            op1Reg = op1->GetRegNum();
+
+            instruction testIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_KORTEST, baseType);
+
+            assert(testIns != INS_invalid);
+            assert(emitter::isMaskReg(op1Reg));
+
+            emit->emitIns_R_R(testIns, EA_8BYTE, op1Reg, op1Reg);
             break;
         }
 

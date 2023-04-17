@@ -484,7 +484,6 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             break;
 
-        case GT_OBJ:
         case GT_BLK:
             // These should all be eliminated prior to Lowering.
             assert(!"Non-store block node in Lowering");
@@ -1301,12 +1300,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
             // If the node is TYP_STRUCT and it is put on stack with
             // putarg_stk operation, we consume and produce no registers.
-            // In this case the embedded Obj node should not produce
+            // In this case the embedded Blk node should not produce
             // registers too since it is contained.
             // Note that if it is a SIMD type the argument will be in a register.
             if (argNode->TypeGet() == TYP_STRUCT)
             {
-                assert(argNode->gtGetOp1() != nullptr && argNode->gtGetOp1()->OperGet() == GT_OBJ);
+                assert(argNode->gtGetOp1() != nullptr && argNode->gtGetOp1()->OperGet() == GT_BLK);
                 assert(argNode->gtGetOp1()->isContained());
             }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
@@ -1536,13 +1535,14 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     // Lowering was expected to get rid of memmove in case of zero
                     assert(size > 0);
 
-                    // TODO-XARCH-AVX512: Consider enabling it here
-                    unsigned simdSize =
-                        (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
-                            ? YMM_REGSIZE_BYTES
-                            : XMM_REGSIZE_BYTES;
+                    unsigned simdSize = compiler->roundDownSIMDSize(size);
+                    if (size <= ZMM_RECOMMENDED_THRESHOLD)
+                    {
+                        // Only use ZMM for large data due to possible CPU throttle issues
+                        simdSize = min(YMM_REGSIZE_BYTES, compiler->roundDownSIMDSize(size));
+                    }
 
-                    if (size >= simdSize)
+                    if ((size >= simdSize) && (simdSize > 0))
                     {
                         unsigned simdRegs = size / simdSize;
                         if ((size % simdSize) != 0)
@@ -2150,6 +2150,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_Vector256_CreateScalarUnsafe:
             case NI_Vector256_ToScalar:
             case NI_Vector512_CreateScalarUnsafe:
+            case NI_Vector512_ToScalar:
             {
                 assert(numArgs == 1);
 
@@ -2163,7 +2164,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     {
                         // We will either be in memory and need to be moved
                         // into a register of the appropriate size or we
-                        // are already in an XMM/YMM register and can stay
+                        // are already in an XMM/YMM/ZMM register and can stay
                         // where we are.
 
                         tgtPrefUse = BuildUse(op1);
@@ -2177,6 +2178,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             case NI_Vector128_GetElement:
             case NI_Vector256_GetElement:
+            case NI_Vector512_GetElement:
             {
                 assert(numArgs == 2);
 
@@ -2184,7 +2186,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     // If the index is not a constant or op1 is in register,
                     // we will use the SIMD temp location to store the vector.
-                    var_types requiredSimdTempType = (intrinsicId == NI_Vector128_GetElement) ? TYP_SIMD16 : TYP_SIMD32;
+
+                    var_types requiredSimdTempType = Compiler::getSIMDTypeForSize(intrinsicTree->GetSimdSize());
                     compiler->getSIMDInitTempVarNum(requiredSimdTempType);
                 }
                 break;

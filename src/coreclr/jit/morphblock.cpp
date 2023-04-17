@@ -218,7 +218,7 @@ void MorphInitBlockHelper::PrepareDst()
     else
     {
         assert(m_dst == m_dst->gtEffectiveVal() && "the commas were skipped in MorphBlock");
-        assert(m_dst->OperIs(GT_IND, GT_BLK, GT_OBJ) && (!m_dst->OperIs(GT_IND) || !m_dst->TypeIs(TYP_STRUCT)));
+        assert(m_dst->OperIs(GT_IND, GT_BLK) && (!m_dst->OperIs(GT_IND) || !m_dst->TypeIs(TYP_STRUCT)));
     }
 
     if (m_dst->TypeIs(TYP_STRUCT))

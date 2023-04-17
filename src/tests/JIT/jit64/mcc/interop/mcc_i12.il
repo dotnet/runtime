@@ -11,7 +11,7 @@
 
 .namespace MCCTest
 {
-  .class MyClass
+  .class public MyClass
   {
     .method assembly static pinvokeimpl("native_i1c.dll" as "#1" cdecl)
         vararg valuetype MCCTest.VType1 Sum(float64) cil managed preservesig {
@@ -59,7 +59,7 @@
       ret
     } // end of method MyClass::.ctor
 
-    .method private static int32 Main()
+    .method public static int32 Main()
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

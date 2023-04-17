@@ -546,6 +546,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR,
     CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS,
     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS,
+    CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
 
     /* Debugger */
 
@@ -653,6 +654,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_DELEGATEPROFILE64,         // Update 64-bit method profile for a delegate call site
     CORINFO_HELP_VTABLEPROFILE32,           // Update 32-bit method profile for a vtable call site
     CORINFO_HELP_VTABLEPROFILE64,           // Update 64-bit method profile for a vtable call site
+    CORINFO_HELP_COUNTPROFILE32,            // Update 32-bit block or edge count profile
+    CORINFO_HELP_COUNTPROFILE64,            // Update 64-bit block or edge count profile
 
     CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
@@ -1684,6 +1687,7 @@ enum CORINFO_FIELD_ACCESSOR
     CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER, // static field access using the "generic static" helper (argument is MethodTable *)
     CORINFO_FIELD_STATIC_ADDR_HELPER,       // static field accessed using address-of helper (argument is FieldDesc *)
     CORINFO_FIELD_STATIC_TLS,               // unmanaged TLS access
+    CORINFO_FIELD_STATIC_TLS_MANAGED,       // managed TLS access
     CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
     CORINFO_FIELD_STATIC_RELOCATABLE,       // static field access using relocation (used in AOT)
     CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
@@ -1721,6 +1725,17 @@ struct CORINFO_FIELD_INFO
     CORINFO_HELPER_DESC     accessCalloutHelper;
 
     CORINFO_CONST_LOOKUP    fieldLookup;        // Used by Ready-to-Run
+};
+
+//----------------------------------------------------------------------------
+// getThreadLocalStaticBlocksInfo and CORINFO_THREAD_STATIC_BLOCKS_INFO: The EE instructs the JIT about how to access a thread local field
+
+struct CORINFO_THREAD_STATIC_BLOCKS_INFO
+{
+    CORINFO_CONST_LOOKUP tlsIndex;
+    uint32_t offsetOfThreadLocalStoragePointer;
+    uint32_t offsetOfMaxThreadStaticBlocks;
+    uint32_t offsetOfThreadStaticBlocks;
 };
 
 //----------------------------------------------------------------------------
@@ -2740,6 +2755,12 @@ public:
                                CORINFO_ACCESS_FLAGS   flags,
                                CORINFO_FIELD_INFO    *pResult
                               ) = 0;
+
+    virtual uint32_t getThreadLocalFieldInfo (
+                        CORINFO_FIELD_HANDLE  field) = 0;
+
+    virtual void getThreadLocalStaticBlocksInfo (
+                        CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo) = 0;
 
     // Returns true iff "fldHnd" represents a static field.
     virtual bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) = 0;
