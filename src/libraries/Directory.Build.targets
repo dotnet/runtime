@@ -84,16 +84,7 @@
     <BinPlaceRef Condition="'$(BinPlaceRef)' == '' and ('$(IsReferenceAssemblyProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
     <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' and ('$(IsSourceProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
     <BinPlaceForTargetVertical Condition="'$(BinPlaceForTargetVertical)' == ''">true</BinPlaceForTargetVertical>
-    <GetBinPlaceItemsDependsOn Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">$(GetBinPlaceItemsDependsOn);AddDocumentationFileAsBinPlaceItemForExtensionsProjects</GetBinPlaceItemsDependsOn>
   </PropertyGroup>
-
-  <Target Name="AddDocumentationFileAsBinPlaceItemForExtensionsProjects"
-          Condition="Exists('$(DocumentationFile)')">
-    <ItemGroup>
-      <!-- Microsoft.Extensions are not yet using the doc-file package -->
-      <BinPlaceItem Include="$(DocumentationFile)" />
-    </ItemGroup>
-  </Target>
 
   <ItemGroup>
     <!-- Used by the runtime tests to prepare the CORE_ROOT layout. Don't use in libraries. -->

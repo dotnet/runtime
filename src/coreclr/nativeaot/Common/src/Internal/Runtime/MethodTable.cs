@@ -357,10 +357,25 @@ namespace Internal.Runtime
 #endif
         }
 
+        internal uint RawBaseSize
+        {
+            get
+            {
+                return _uBaseSize;
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                _uBaseSize = value;
+            }
+#endif
+        }
+
         internal uint BaseSize
         {
             get
             {
+                Debug.Assert(IsCanonical || IsArray);
                 return _uBaseSize;
             }
 #if TYPE_LOADER_IMPLEMENTATION
@@ -455,14 +470,6 @@ namespace Internal.Runtime
             }
         }
 
-        internal bool IsCloned
-        {
-            get
-            {
-                return Kind == EETypeKind.ClonedEEType;
-            }
-        }
-
         internal bool IsCanonical
         {
             get
@@ -511,7 +518,8 @@ namespace Internal.Runtime
         {
             get
             {
-                return ElementType == EETypeElementType.SzArray;
+                Debug.Assert(IsArray);
+                return BaseSize == SZARRAY_BASE_SIZE;
             }
         }
 
@@ -721,6 +729,7 @@ namespace Internal.Runtime
         {
             get
             {
+                Debug.Assert(IsParameterizedType);
                 return _uBaseSize;
             }
 #if TYPE_LOADER_IMPLEMENTATION
@@ -841,22 +850,6 @@ namespace Internal.Runtime
             }
         }
 
-        internal uint FieldByteCountNonGCAligned
-        {
-            get
-            {
-                // This api is designed to return correct results for EETypes which can be derived from
-                // And results indistinguishable from correct for DefTypes which cannot be derived from (sealed classes)
-                // (For sealed classes, this should always return BaseSize-((uint)sizeof(ObjHeader));
-                Debug.Assert(!IsInterface && !IsParameterizedType);
-
-                // get_BaseSize returns the GC size including space for the sync block index field, the MethodTable* and
-                // padding for GC heap alignment. Must subtract all of these to get the size used for the fields of
-                // the type (where the fields of the type includes the MethodTable*)
-                return BaseSize - ((uint)sizeof(ObjHeader) + ValueTypeFieldPadding);
-            }
-        }
-
         internal EEInterfaceInfo* InterfaceMap
         {
             get
@@ -944,11 +937,6 @@ namespace Internal.Runtime
         {
             get
             {
-                if (IsCloned)
-                {
-                    return CanonicalEEType->BaseType;
-                }
-
                 if (IsParameterizedType)
                 {
                     if (IsArray)
@@ -969,7 +957,6 @@ namespace Internal.Runtime
             {
                 Debug.Assert(IsDynamicType);
                 Debug.Assert(!IsParameterizedType);
-                Debug.Assert(!IsCloned);
                 Debug.Assert(IsCanonical);
                 _uFlags &= (uint)~EETypeFlags.RelatedTypeViaIATFlag;
                 _relatedType._pBaseType = value;
@@ -982,13 +969,6 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(!IsArray, "array type not supported in BaseType");
-
-                if (IsCloned)
-                {
-                    // Assuming that since this is not an Array, the CanonicalEEType is also not an array
-                    return CanonicalEEType->NonArrayBaseType;
-                }
-
                 Debug.Assert(IsCanonical, "we expect canonical types here");
 
                 if (IsRelatedTypeViaIAT)
@@ -1000,12 +980,12 @@ namespace Internal.Runtime
             }
         }
 
+        // TODO rename?
         internal MethodTable* NonClonedNonArrayBaseType
         {
             get
             {
                 Debug.Assert(!IsArray, "array type not supported in NonArrayBaseType");
-                Debug.Assert(!IsCloned, "cloned type not supported in NonClonedNonArrayBaseType");
                 Debug.Assert(IsCanonical || IsGenericTypeDefinition, "we expect canonical types here");
 
                 if (IsRelatedTypeViaIAT)
@@ -1022,24 +1002,10 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(!IsParameterizedType, "array type not supported in NonArrayBaseType");
-                Debug.Assert(!IsCloned, "cloned type not supported in NonClonedNonArrayBaseType");
                 Debug.Assert(IsCanonical, "we expect canonical types here");
                 Debug.Assert(!IsRelatedTypeViaIAT, "Non IAT");
 
                 return _relatedType._pBaseType;
-            }
-        }
-
-        internal MethodTable* CanonicalEEType
-        {
-            get
-            {
-                // cloned EETypes must always refer to types in other modules
-                Debug.Assert(IsCloned);
-                if (IsRelatedTypeViaIAT)
-                    return *_relatedType._ppCanonicalTypeViaIAT;
-                else
-                    return _relatedType._pCanonicalType;
             }
         }
 
@@ -1372,7 +1338,8 @@ namespace Internal.Runtime
         {
             get
             {
-                return (EETypeElementType)((_uFlags & (uint)EETypeFlags.ElementTypeMask) >> (byte)EETypeFlags.ElementTypeShift);
+                return (EETypeElementType)((_uFlags >> (byte)EETypeFlags.ElementTypeShift) &
+                    ((uint)EETypeFlags.ElementTypeMask >> (byte)EETypeFlags.ElementTypeShift));
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set

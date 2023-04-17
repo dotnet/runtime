@@ -73,6 +73,17 @@ namespace System.Security.Cryptography.Xml
             {
                 return (CryptoConfig.CreateFromName(name) ?? CreateFromKnownName(name)) as T;
             }
+#if NETCOREAPP
+            catch (NotSupportedException)
+            {
+                if (name == "http://www.w3.org/TR/1999/REC-xslt-19991116")
+                {
+                    // allow XSLT NotSupportedException to be thrown
+                    throw;
+                }
+                return null;
+            }
+#endif
             catch (Exception)
             {
                 return null;

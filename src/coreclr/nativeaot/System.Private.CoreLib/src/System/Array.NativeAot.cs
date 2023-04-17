@@ -32,14 +32,6 @@ namespace System
         private int _numComponents;
 #pragma warning restore
 
-#if TARGET_64BIT
-        private const int POINTER_SIZE = 8;
-#else
-        private const int POINTER_SIZE = 4;
-#endif
-        //                                    Header       + m_pEEType    + _numComponents (with an optional padding)
-        private const int SZARRAY_BASE_SIZE = POINTER_SIZE + POINTER_SIZE + POINTER_SIZE;
-
         public int Length => checked((int)Unsafe.As<RawArrayData>(this).Length);
 
         // This could return a length greater than int.MaxValue
@@ -47,11 +39,11 @@ namespace System
 
         public long LongLength => (long)NativeLength;
 
-        internal bool IsSzArray
+        internal unsafe bool IsSzArray
         {
             get
             {
-                return this.GetEETypePtr().BaseSize == SZARRAY_BASE_SIZE;
+                return this.GetMethodTable()->IsSzArray;
             }
         }
 

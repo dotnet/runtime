@@ -5,6 +5,7 @@ import { mono_assert } from "./types";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
 import { Module, runtimeHelpers } from "./imports";
 import { WasmOpcode } from "./jiterpreter-opcodes";
+import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 
 export const maxFailures = 2,
@@ -1620,6 +1621,15 @@ export function getRawCwrap (name: string): Function {
     return result;
 }
 
+const opcodeTableCache : { [opcode: number] : number } = {};
+
+export function getOpcodeTableValue (opcode: MintOpcode) {
+    let result = opcodeTableCache[opcode];
+    if (typeof (result) !== "number")
+        result = opcodeTableCache[opcode] = cwraps.mono_jiterp_get_opcode_value_table_entry(<any>opcode);
+    return result;
+}
+
 export function importDef (name: string, fn: Function): [string, string, Function] {
     return [name, name, fn];
 }
@@ -1651,7 +1661,7 @@ export type JiterpreterOptions = {
     // Unwrap gsharedvt wrappers when compiling jitcalls if possible
     directJitCalls: boolean;
     eliminateNullChecks: boolean;
-    minimumTraceLength: number;
+    minimumTraceValue: number;
     minimumTraceHitCount: number;
     monitoringPeriod: number;
     monitoringShortDistance: number;
@@ -1682,7 +1692,7 @@ const optionNames : { [jsName: string] : string } = {
     "eliminateNullChecks": "jiterpreter-eliminate-null-checks",
     "noExitBackwardBranches": "jiterpreter-backward-branches-enabled",
     "directJitCalls": "jiterpreter-direct-jit-calls",
-    "minimumTraceLength": "jiterpreter-minimum-trace-length",
+    "minimumTraceValue": "jiterpreter-minimum-trace-value",
     "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",
     "monitoringPeriod": "jiterpreter-trace-monitoring-period",
     "monitoringShortDistance": "jiterpreter-trace-monitoring-short-distance",

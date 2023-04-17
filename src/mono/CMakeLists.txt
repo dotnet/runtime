@@ -8,6 +8,7 @@ project(mono)
 
 include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 if (MSVC)
   # Also set by configurecompiler.cmake, which isn't used by mono yet
