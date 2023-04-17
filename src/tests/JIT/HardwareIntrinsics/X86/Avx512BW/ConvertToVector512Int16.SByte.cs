@@ -272,7 +272,7 @@ namespace JIT.HardwareIntrinsics.X86._Avx512BW.handwritten
             SByte[] inArray = new SByte[Op1ElementCount];
             Int16[] outArray = new Int16[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), 16);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), 32);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int16, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
 
             ValidateResult(inArray, outArray, method);
@@ -280,16 +280,18 @@ namespace JIT.HardwareIntrinsics.X86._Avx512BW.handwritten
 
         private void ValidateResult(SByte[] firstOp, Int16[] result, [CallerMemberName] string method = "")
         {
-            if (result[0] != firstOp[0])
+            if (result[0] != (short)firstOp[0])
             {
+                Console.WriteLine($"{0}: {result[0]} != {(short)firstOp[0]})");
                 Succeeded = false;
             }
             else
             {
                 for (var i = 1; i < RetElementCount; i++)
                 {
-                    if (result[i] != firstOp[i])
+                    if (result[i] != (short)firstOp[i])
                     {
+                        Console.WriteLine($"{i}: {result[i]} != {(short)firstOp[i]})");
                         Succeeded = false;
                         break;
                     }
