@@ -201,7 +201,7 @@ namespace System
 
         public static char Parse(string s)
         {
-            ArgumentNullException.ThrowIfNull(s);
+            if (s is null) { ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s); }
             return Parse(s.AsSpan());
         }
 
