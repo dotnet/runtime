@@ -1907,7 +1907,7 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
             GenTree* lArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
             GenTree* rArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
-            ssize_t MaxUnrollSize = comp->IsBaselineSimdIsaSupported() ? 32 : MaxUnrollSize;
+            ssize_t MaxUnrollSize = comp->IsBaselineSimdIsaSupported() ? 32 : 16;
 
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
             if (comp->compOpportunisticallyDependsOn(InstructionSet_Vector512))
