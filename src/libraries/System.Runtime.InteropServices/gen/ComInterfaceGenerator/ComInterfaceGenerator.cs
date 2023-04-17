@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -20,13 +21,6 @@ namespace Microsoft.Interop
     [Generator]
     public sealed class ComInterfaceGenerator : IIncrementalGenerator
     {
-        private sealed record ComInterfaceContext(
-            ManagedTypeInfo InterfaceType,
-            ContainingSyntaxContext TypeDefinitionContext,
-            ContainingSyntax InterfaceTypeSyntax,
-            int MethodStartIndex,
-            Guid InterfaceId);
-
         private sealed record class GeneratedStubCodeContext(
             ManagedTypeInfo OriginalDefiningType,
             ContainingSyntaxContext ContainingSyntaxContext,
@@ -46,11 +40,6 @@ namespace Microsoft.Interop
             public const string GenerateInterfaceInformation = nameof(GenerateInterfaceInformation);
             public const string GenerateIUnknownDerivedAttribute = nameof(GenerateIUnknownDerivedAttribute);
         }
-        public record struct DerivedComInterfacesContext(
-            int StartingOffset,
-            ManagedTypeInfo? BaseInterface,
-            ImmutableArray<ShadowingMethodContext> ShadowingMethodsToGenerate,
-            bool IsMarkerInterface);
 
         internal struct BaseInterfacesInfo
         {
@@ -94,7 +83,22 @@ namespace Microsoft.Interop
                                 ArgumentList(
                                     SeparatedList(Parameters.Select(p => Argument(IdentifierName(p.Name)))))))));
             }
+        }
 
+        private static bool TryGetBaseComInterface(INamedTypeSymbol comIface, [NotNullWhen(true)] out INamedTypeSymbol? baseComIface)
+        {
+            baseComIface = null;
+            foreach (var implemented in comIface.Interfaces)
+            {
+                if (implemented.GetAttributes().Any(static attr => attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute))
+                {
+                    // We'll filter out cases where there's multiple matching interfaces when determining
+                    // if this is a valid candidate for generation.
+                    Debug.Assert(baseComIface is null);
+                    baseComIface = implemented;
+                }
+            }
+            return baseComIface is not null;
         }
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -110,139 +114,84 @@ namespace Microsoft.Interop
                 .Where(
                     static modelData => modelData is not null);
 
-            var interfacesWithDiagnostics = attributedInterfaces.Select(static (data, ct) =>
+
+            var interfacesAndDiagnostics = attributedInterfaces.Select(static (data, ct) =>
             {
-                Diagnostic? diagnostic = GetDiagnosticIfInvalidTypeForGeneration(data.Syntax, data.Symbol);
-                return new { data.Syntax, data.Symbol, Diagnostic = diagnostic };
+                Diagnostic? Diagnostic = GetDiagnosticIfInvalidTypeForGeneration(data.Syntax, data.Symbol);
+                INamedTypeSymbol? BaseInterfaceSymbol = TryGetBaseComInterface(data.Symbol, out var baseComInterface) ? baseComInterface : null;
+                ComInterfaceContext Context = ComInterfaceContext.From(data.Symbol, data.Syntax);
+                return new { data.Syntax, data.Symbol, Context, Diagnostic, BaseInterfaceSymbol };
             });
 
             // Split the types we want to generate and the ones we don't into two separate groups.
-            var interfacesToGenerate = interfacesWithDiagnostics.Where(static data => data.Diagnostic is null);
-            var invalidTypeDiagnostics = interfacesWithDiagnostics.Where(static data => data.Diagnostic is not null);
+            var interfacesToGenerate = interfacesAndDiagnostics.Where(static data => data.Diagnostic is null);
+            var invalidTypeDiagnostics = interfacesAndDiagnostics.Where(static data => data.Diagnostic is not null);
 
-            var interfaceBaseInfo = interfacesToGenerate.Collect().SelectMany((data, ct) =>
+            // Get the methods for each interface, without the indices
+            var interfaceMethods = interfacesToGenerate.Select((data, ct) =>
             {
-                // Interface to BaseInterfaceInformation cache
-                var methodsToShadowCache = new Dictionary<INamedTypeSymbol, ImmutableArray<ShadowingMethodContext>>(SymbolEqualityComparer.Default);
-                foreach (var iface in data)
+                INamedTypeSymbol iface = data.Symbol;
+                List<MethodInfo> comMethods = new();
+                foreach (var member in iface.GetMembers())
                 {
-                    AddBaseInfo(iface.Symbol, methodsToShadowCache, ct);
-                }
-                return data.Select(iface => methodsToShadowCache[iface.Symbol]);
-
-                static void AddBaseInfo(INamedTypeSymbol iface, Dictionary<INamedTypeSymbol, ImmutableArray<ShadowingMethodContext>> cache, CancellationToken ct)
-                {
-                    if (TryGetBaseComInterface(iface, out var baseComIface))
+                    if (MethodInfo.IsComInterface(iface, member, out MethodInfo? methodInfo))
                     {
-                        if (!cache.TryGetValue(baseComIface, out var methodsToShadow))
+                        comMethods.Add(methodInfo);
+                    }
+                }
+                return comMethods;
+            });
+
+            // Using the methods, we can get the offsets and the shadowing methods in one stage.
+            var interfaceBaseCache = interfacesToGenerate.Zip(interfaceMethods).Collect().Select((data, ct) =>
+            {
+                Dictionary<INamedTypeSymbol, IEnumerable<(MethodInfo Method, ComInterfaceContext DefiningInterface)>> allMethods = new(SymbolEqualityComparer.Default);
+                Dictionary<INamedTypeSymbol, INamedTypeSymbol?> baseInterfaces = new(SymbolEqualityComparer.Default);
+
+                var declaredMethods = data.ToImmutableDictionary(
+                    static pair => (INamedTypeSymbol)pair.Left.Symbol,
+                    static pair => pair.Right,
+                    SymbolEqualityComparer.Default);
+                Dictionary<INamedTypeSymbol, IEnumerable<ComInterfaceMethodContext>> allMethodsCache = new(SymbolEqualityComparer.Default);
+                foreach (var ifaceMethodsPair in data)
+                {
+                    allMethods.Add(GetMethods(ifaceMethodsPair.Left.Symbol, declaredMethods, allMethodsCache);
+
+                }
+
+                return allMethods.ToImmutableArray();
+
+                static IEnumerable<ComInterfaceMethodContext> GetMethods(INamedTypeSymbol symbol, ImmutableDictionary<ISymbol?, List<MethodInfo>>? declaredMethods, Dictionary<INamedTypeSymbol, IEnumerable<ComInterfaceMethodContext>> allMethodsCache)
+                {
+                    int startingIndex = 3;
+                    if (TryGetBaseComInterface(symbol, out var baseComIface))
+                    {
+                        if (!allMethodsCache.TryGetValue(baseComIface, out var baseMethods))
                         {
-                            AddBaseInfo(baseComIface, cache, ct);
-                            methodsToShadow = cache[baseComIface];
+                            baseMethods = GetMethods(baseComIface, declaredMethods, allMethodsCache);
+                            allMethodsCache[baseComIface] = baseMethods;
                         }
-                        cache.Add(iface, GetRelevantInformationAboutBaseTypes(iface, methodsToShadow.Length, ct).ToImmutableArray());
-                    }
-                    else
-                    {
-                        cache.Add(iface, GetRelevantInformationAboutBaseTypes(iface, 3, ct).ToImmutableArray());
-                    }
 
-                }
-
-                static bool TryGetBaseComInterface(INamedTypeSymbol comIface, [NotNullWhen(true)] out INamedTypeSymbol? baseComIface)
-                {
-                    baseComIface = null;
-                    foreach (var implemented in comIface.Interfaces)
-                    {
-                        if (implemented.GetAttributes().Any(static attr => attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute))
+                        foreach (var method in BaseMethods)
                         {
-                            // We'll filter out cases where there's multiple matching interfaces when determining
-                            // if this is a valid candidate for generation.
-                            Debug.Assert(baseComIface is null);
-                            baseComIface = implemented;
-                        }
-                    }
-                    return baseComIface is not null;
-                }
-
-                ImmutableArray<DerivedComInterfacesContext>.Builder baseInterfaceInfo = ImmutableArray.CreateBuilder<DerivedComInterfacesContext>(data.Length);
-                // Track the calculated last offsets of the interfaces.
-                // If a type has invalid methods, we'll count them and issue an error when generating code for that
-                // interface.
-                Dictionary<INamedTypeSymbol, (int, INamedTypeSymbol)> derivedNextOffsets = new(SymbolEqualityComparer.Default);
-                foreach (var iface in data)
-                {
-                    var (starting, baseType, derivedStarting) = CalculateOffsetsForInterface(iface.Symbol, derivedNextOffsets);
-                    var baseTypes = ImmutableArray.CreateBuilder<ShadowingMethodContext>();
-                    // TODO: We can cache the list of base types for each interface so we don't have to recalculate them.
-                    while (baseType is not null)
-                    {
-                        (var baseStarting, var nextBaseType, derivedStarting) = CalculateOffsetsForInterface(baseType, derivedNextOffsets);
-                        baseTypes.AddRange(GetRelevantInformationAboutBaseTypes(baseType, baseStarting, ct));
-                        baseType = nextBaseType;
-                    }
-                    baseInterfaceInfo.Add(new(starting, baseTypes.FirstOrDefault()?.BaseInterfaceType, baseTypes.ToImmutableArray(), starting == derivedStarting));
-                }
-                //return baseInterfaceInfo.MoveToImmutable();
-
-                static IEnumerable<ShadowingMethodContext> GetRelevantInformationAboutBaseTypes(INamedTypeSymbol iface, int starting, CancellationToken ct)
-                {
-                    foreach (var method in iface.GetMembers().Where(m => m is IMethodSymbol))
-                    {
-                        var m = (IMethodSymbol)method;
-                        yield return new ShadowingMethodContext(
-                            starting++,
-                            ManagedTypeInfo.CreateTypeInfoForTypeSymbol(iface),
-                            iface.Name,
-                            (MethodDeclarationSyntax)m.DeclaringSyntaxReferences[0].GetSyntax(ct),
-                            ManagedTypeInfo.CreateTypeInfoForTypeSymbol(m.ReturnType),
-                            m.Parameters.Select(p => (ManagedTypeInfo.CreateTypeInfoForTypeSymbol(p.Type), p.Name, (ParameterSyntax)p.DeclaringSyntaxReferences[0].GetSyntax(ct))).ToImmutableArray());
-
-                    }
-                }
-                static (int Starting, INamedTypeSymbol BaseInterface, int DerivedStarting) CalculateOffsetsForInterface(INamedTypeSymbol iface, Dictionary<INamedTypeSymbol, (int DerivedStartingIndex, INamedTypeSymbol BaseInterface)> baseInterfaceInfoCache)
-                {
-                    INamedTypeSymbol? baseInterface = null;
-                    foreach (var implemented in iface.Interfaces)
-                    {
-                        if (implemented.GetAttributes().Any(static attr => attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute))
-                        {
-                            // We'll filter out cases where there's multiple matching interfaces when determining
-                            // if this is a valid candidate for generation.
-                            Debug.Assert(baseInterface is null);
-                            baseInterface = implemented;
+                            startingIndex++;
+                            yield return method;
                         }
                     }
-
-                    // Cache the starting offsets for each base interface so we don't have to recalculate them.
-                    (int StartingOffset, INamedTypeSymbol? BaseInterface) pair = (3, baseInterface);
-                    if (baseInterface is not null)
+                    foreach (var method in declaredMethods[symbol])
                     {
-                        if (!baseInterfaceInfoCache.TryGetValue(baseInterface, out pair))
-                        {
-                            var baseInfo = CalculateOffsetsForInterface(baseInterface, baseInterfaceInfoCache);
-                            pair = (baseInfo.DerivedStarting, baseInterface);
-                        }
+                        yield return new ComInterfaceMethodContext(method.Item2, method.Item1, startingIndex++, null);
                     }
-
-                    // This calculation isn't strictly accurate. This will count methods that aren't in the same declaring syntax as the attribute on the interface,
-                    // but we'll emit an error later if that's a problem. We also can't detect this error if the base type is in metadata.
-                    int ifaceDerivedNextOffset = pair.StartingOffset + iface.GetMembers().Where(static m => m is IMethodSymbol { IsStatic: false }).Count();
-                    baseInterfaceInfoCache[iface] = pair;
-
-                    return (pair.StartingOffset, baseInterface, ifaceDerivedNextOffset);
                 }
             });
-            var shadowingMethods = interfaceBaseInfo.Zip(interfacesToGenerate).Select((data, ct) =>
-            {
-                return (data.Right, data.Left.Select(s => s.Generate()));
-            });
+
 
             // Zip the interface base information back with the symbols and syntax for the interface
             // to calculate the interface context.
             // The generator infrastructure preserves ordering of the tables once Select statements are in use,
             // so we can rely on the order matching here.
             var interfaceContexts = interfacesToGenerate
-                .Zip(interfaceBaseInfo.Select((data, ct) => data.Length))
+                .Zip(interfaceBaseInfo.Select((data, ct) => data.StartingOffset))
                 .Select((data, ct) =>
             {
                 var (iface, startingOffset) = data;
@@ -261,13 +210,6 @@ namespace Microsoft.Interop
                     startingOffset,
                     guid ?? Guid.Empty);
             });
-            //var shadowingMethods = interfacesToGenerate.Zip(interfaceBaseInfo).Select((data, ct) =>
-            //{
-            //    var interfaceInfo = data.Left;
-            //    var interfaceBaseInfo = data.Right;
-            //    interfaceBaseInfo.BaseInterface.
-
-            //})
 
             context.RegisterDiagnostics(invalidTypeDiagnostics.Select((data, ct) => data.Diagnostic));
 
@@ -771,7 +713,7 @@ namespace Microsoft.Interop
 
         private static readonly MethodDeclarationSyntax CreateManagedVirtualFunctionTableMethodTemplate = MethodDeclaration(VoidStarStarSyntax, CreateManagedVirtualFunctionTableMethodName)
             .AddModifiers(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword));
-        private static InterfaceDeclarationSyntax GenerateImplementationVTable(ImmutableArray<IncrementalMethodStubGenerationContext> interfaceMethodStubs, DerivedComInterfacesContext baseInterfaceTypeInfo)
+        private static InterfaceDeclarationSyntax GenerateImplementationVTable(ImmutableArray<IncrementalMethodStubGenerationContext> interfaceMethodStubs, BaseInterfacesInfo baseInterfaceTypeInfo)
         {
             const string vtableLocalName = "vtable";
             var interfaceType = interfaceMethodStubs[0].OriginalDefiningType;
@@ -1009,11 +951,137 @@ namespace Microsoft.Interop
                                         SeparatedList<ExpressionSyntax>(literals)))));
             }
         }
-    }
 
-    internal record struct ComInterfaceMethodContext(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol, int Index, Diagnostic? Diagnostic)
-    {
-        public static implicit operator (MethodDeclarationSyntax Syntax, IMethodSymbol Symbol, int Index, Diagnostic? Diagnostic)(ComInterfaceMethodContext value) => (value.Syntax, value.Symbol, value.Index, value.Diagnostic);
-        public static implicit operator ComInterfaceMethodContext((MethodDeclarationSyntax Syntax, IMethodSymbol Symbol, int Index, Diagnostic? Diagnostic) value) => new ComInterfaceMethodContext(value.Syntax, value.Symbol, value.Index, value.Diagnostic);
+        private sealed record ComInterfaceContext(
+            ManagedTypeInfo InterfaceType,
+            ContainingSyntaxContext TypeDefinitionContext,
+            ContainingSyntax InterfaceTypeSyntax,
+            [property: Obsolete] int MethodStartIndex,
+            Guid InterfaceId)
+        {
+            public static ComInterfaceContext From(INamedTypeSymbol symbol, TypeDeclarationSyntax syntax)
+            {
+                Guid? guid = null;
+                var guidAttr = symbol.GetAttributes().Where(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_InteropServices_GuidAttribute).SingleOrDefault();
+                if (guidAttr is not null)
+                {
+                    string? guidstr = guidAttr.ConstructorArguments.SingleOrDefault().Value as string;
+                    if (guidstr is not null)
+                        guid = new Guid(guidstr);
+                }
+                return new ComInterfaceContext(
+                    ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol),
+                    new ContainingSyntaxContext(syntax),
+                    new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
+                    -1,
+                    guid ?? Guid.Empty);
+            }
+
+        }
+
+        /// <summary>
+        /// Represents a method that has been determined to be a COM interface method.
+        /// </summary>
+        private record MethodInfo([property: Obsolete] IMethodSymbol Symbol, MethodDeclarationSyntax Syntax)
+        {
+            public static bool IsComInterface(INamedTypeSymbol iface, ISymbol member, [NotNullWhen(true)] out MethodInfo? comMethodInfo)
+            {
+                comMethodInfo = null;
+                Location interfaceLocation = iface.Locations[0];
+                if (member.Kind == SymbolKind.Method && !member.IsStatic)
+                {
+                    // We only support methods that are defined in the same partial interface definition as the
+                    // [GeneratedComInterface] attribute.
+                    // This restriction not only makes finding the syntax for a given method cheaper,
+                    // but it also enables us to ensure that we can determine vtable method order easily.
+                    Location? methodLocationInAttributedInterfaceDeclaration = null;
+                    foreach (var methodLocation in member.Locations)
+                    {
+                        if (methodLocation.SourceTree == interfaceLocation.SourceTree
+                            && interfaceLocation.SourceSpan.Contains(methodLocation.SourceSpan))
+                        {
+                            methodLocationInAttributedInterfaceDeclaration = methodLocation;
+                            break;
+                        }
+                    }
+
+                    MethodDeclarationSyntax? comMethodDeclaringSyntax = null;
+
+                    // TODO: this should cause a diagnostic
+                    if (methodLocationInAttributedInterfaceDeclaration is null)
+                    {
+                        return false;
+                    }
+
+                    // Find the matching declaration syntax
+                    foreach (var declaringSyntaxReference in member.DeclaringSyntaxReferences)
+                    {
+                        var declaringSyntax = declaringSyntaxReference.GetSyntax(ct);
+                        Debug.Assert(declaringSyntax.IsKind(SyntaxKind.MethodDeclaration));
+                        if (declaringSyntax.GetLocation() == methodLocationInAttributedInterfaceDeclaration)
+                        {
+                            comMethodDeclaringSyntax = (MethodDeclarationSyntax)declaringSyntax;
+                            break;
+                        }
+                    }
+                    if (comMethodDeclaringSyntax is null)
+                        throw new NotImplementedException("Found a method that was declared in the attributed interface declaration, but couldn't find the syntax for it.");
+                    comMethodInfo = new((IMethodSymbol)member, comMethodDeclaringSyntax);
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Represents a method, its declaring interface, and its index in the interface's vtable.
+        /// </summary>
+        private record ComInterfaceMethodContext(ComInterfaceContext DeclaringInterface, MethodInfo MethodInfo, int Index, Diagnostic? Diagnostic)
+        {
+            public record Builder(ImmutableDictionary<ISymbol?, List<MethodInfo>>? declaredMethods)
+            {
+                public Dictionary<ComInterfaceContext, List<ComInterfaceMethodContext>> allMethodsCache = new();
+                public IEnumerable<ComInterfaceMethodContext> GetMethods(ComInterfaceContext symbol)
+                {
+                    int startingIndex = 3;
+                    if (TryGetBaseComInterface(symbol, out var baseComIface))
+                    {
+                        if (!allMethodsCache.TryGetValue(baseComIface, out var baseMethods))
+                        {
+                            baseMethods = GetMethods(baseComIface, declaredMethods, allMethodsCache);
+                            allMethodsCache[baseComIface] = baseMethods;
+                        }
+
+                        foreach (var method in baseMethods)
+                        {
+                            startingIndex++;
+                            yield return method;
+                        }
+                    }
+                    foreach (var method in declaredMethods[symbol])
+                    {
+                        yield return new ComInterfaceMethodContext(symbol, method, startingIndex++, null);
+                    }
+
+                }
+
+            }
+        }
+
+        /// <summary>
+        /// Represents an interface and all of the methods that need to be generated for it.
+        /// </summary>
+        private record ComInterfaceAndMethods(ComInterfaceContext Interface, ImmutableArray<ComInterfaceMethodContext> Methods)
+        {
+            /// <summary>
+            /// COM methods that are declared on the attributed interface declaration.
+            /// </summary>
+            public IEnumerable<ComInterfaceMethodContext> DeclaredMethods => Methods.Where(m => m.DeclaringInterface == Interface);
+
+            /// <summary>
+            /// COM methods that are declared on an interface the interface inherits from.
+            /// </summary>
+            public IEnumerable<ComInterfaceMethodContext> ShadowingMethods => Methods.Where(m => m.DeclaringInterface != Interface);
+        }
     }
 }
