@@ -31,6 +31,23 @@ namespace Microsoft.Interop
                 });
         }
 
+        public static IncrementalValuesProvider<(T Left, U Right)> ZipSingle<T, U>(this IncrementalValuesProvider<T> left, IncrementalValueProvider<U> right)
+        {
+            return left.Collect().Combine(right).SelectMany((data, ct) =>
+            {
+                ImmutableArray<(T, U)>.Builder builder = ImmutableArray.CreateBuilder<(T, U)>(data.Left.Length);
+                for (int i = 0; i < data.Left.Length; i++)
+                {
+                    builder.Add((data.Left[i], data.Right));
+                }
+                return builder.ToImmutable();
+            });
+
+
+
+        }
+
+
         /// <summary>
         /// Format the syntax nodes in the given provider such that we will not re-normalize if the input nodes have not changed.
         /// </summary>

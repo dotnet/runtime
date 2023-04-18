@@ -127,6 +127,7 @@ namespace Microsoft.Interop
             var interfacesToGenerate = interfacesAndDiagnostics.Where(static data => data.Diagnostic is null);
             var invalidTypeDiagnostics = interfacesAndDiagnostics.Where(static data => data.Diagnostic is not null);
 
+
             // Get the methods for each interface, without the indices
             var interfaceMethods = interfacesToGenerate.Select((data, ct) =>
             {
@@ -139,8 +140,37 @@ namespace Microsoft.Interop
                         comMethods.Add(methodInfo);
                     }
                 }
-                return comMethods;
+                return comMethods.ToImmutableArray();
             });
+
+            var interfaceAndBasePairs = interfacesToGenerate.Collect().Select((data, ct) =>
+            {
+                Dictionary<ComInterfaceContext, ComInterfaceContext?> ifaceToBaseMap = new();
+                Dictionary<INamedTypeSymbol, ComInterfaceContext> contexts = new(SymbolEqualityComparer.Default);
+                foreach (var iface in data)
+                {
+                    contexts.Add(iface.Symbol, iface.Context);
+                }
+                foreach (var iface in data)
+                {
+                    ifaceToBaseMap.Add(iface.Context, iface.BaseInterfaceSymbol is not null ? contexts[iface.BaseInterfaceSymbol] : null);
+                }
+                return ifaceToBaseMap;
+            });
+
+            var interfacesAndMethods = interfacesToGenerate.Select((iface, ct) => iface.Context).Zip(interfaceMethods);
+            var interfaceToMethodsMap = interfacesAndMethods.Collect().Select((data, ct) =>
+            {
+                return data.ToImmutableDictionary<(ComInterfaceContext, ImmutableArray<MethodInfo>), ComInterfaceContext, ImmutableArray<MethodInfo>>(
+                    static pair => pair.Item1,
+                    static pair => pair.Item2);
+            });
+
+            var interfaceAndMethodsContexts = interfaceToMethodsMap.Combine(interfaceAndBasePairs).SelectMany((data, ct) =>
+            {
+                return ComInterfaceMethodContext.GetMethods(data.Right, data.Left);
+            });
+
 
             // Using the methods, we can get the offsets and the shadowing methods in one stage.
             var interfaceBaseCache = interfacesToGenerate.Zip(interfaceMethods).Collect().Select((data, ct) =>
@@ -161,28 +191,6 @@ namespace Microsoft.Interop
 
                 return allMethods.ToImmutableArray();
 
-                static IEnumerable<ComInterfaceMethodContext> GetMethods(INamedTypeSymbol symbol, ImmutableDictionary<ISymbol?, List<MethodInfo>>? declaredMethods, Dictionary<INamedTypeSymbol, IEnumerable<ComInterfaceMethodContext>> allMethodsCache)
-                {
-                    int startingIndex = 3;
-                    if (TryGetBaseComInterface(symbol, out var baseComIface))
-                    {
-                        if (!allMethodsCache.TryGetValue(baseComIface, out var baseMethods))
-                        {
-                            baseMethods = GetMethods(baseComIface, declaredMethods, allMethodsCache);
-                            allMethodsCache[baseComIface] = baseMethods;
-                        }
-
-                        foreach (var method in BaseMethods)
-                        {
-                            startingIndex++;
-                            yield return method;
-                        }
-                    }
-                    foreach (var method in declaredMethods[symbol])
-                    {
-                        yield return new ComInterfaceMethodContext(method.Item2, method.Item1, startingIndex++, null);
-                    }
-                }
             });
 
 
@@ -1016,7 +1024,7 @@ namespace Microsoft.Interop
                     // Find the matching declaration syntax
                     foreach (var declaringSyntaxReference in member.DeclaringSyntaxReferences)
                     {
-                        var declaringSyntax = declaringSyntaxReference.GetSyntax(ct);
+                        var declaringSyntax = declaringSyntaxReference.GetSyntax();
                         Debug.Assert(declaringSyntax.IsKind(SyntaxKind.MethodDeclaration));
                         if (declaringSyntax.GetLocation() == methodLocationInAttributedInterfaceDeclaration)
                         {
@@ -1038,18 +1046,34 @@ namespace Microsoft.Interop
         /// </summary>
         private record ComInterfaceMethodContext(ComInterfaceContext DeclaringInterface, MethodInfo MethodInfo, int Index, Diagnostic? Diagnostic)
         {
-            public record Builder(ImmutableDictionary<ISymbol?, List<MethodInfo>>? declaredMethods)
+            public static ImmutableArray<ComInterfaceAndMethods> GetMethods(Dictionary<ComInterfaceContext, ComInterfaceContext> ifaceToBaseMap, ImmutableDictionary<ComInterfaceContext, ImmutableArray<MethodInfo>> ifaceToMethodsMap)
             {
-                public Dictionary<ComInterfaceContext, List<ComInterfaceMethodContext>> allMethodsCache = new();
-                public IEnumerable<ComInterfaceMethodContext> GetMethods(ComInterfaceContext symbol)
+
+                Dictionary<ComInterfaceContext, IEnumerable<ComInterfaceMethodContext>> allMethodsCache = new();
+                foreach(var kvp in ifaceToMethodsMap)
                 {
+                    AddMethods(kvp.Key, kvp.Value);
+                }
+
+                return allMethodsCache.Select(kvp => new ComInterfaceAndMethods(kvp.Key, kvp.Value.ToImmutableArray())).ToImmutableArray();
+
+                IEnumerable<ComInterfaceMethodContext> AddMethods(ComInterfaceContext iface, IEnumerable<MethodInfo> declaredMethods)
+                {
+                    if (allMethodsCache.TryGetValue(iface, out var cachedValue))
+                    {
+                        foreach(var value in cachedValue)
+                        {
+                            yield return value;
+                        }
+                    }
+
+                    List<ComInterfaceMethodContext> metods = new();
                     int startingIndex = 3;
-                    if (TryGetBaseComInterface(symbol, out var baseComIface))
+                    if (ifaceToBaseMap.TryGetValue(iface, out var baseComIface))
                     {
                         if (!allMethodsCache.TryGetValue(baseComIface, out var baseMethods))
                         {
-                            baseMethods = GetMethods(baseComIface, declaredMethods, allMethodsCache);
-                            allMethodsCache[baseComIface] = baseMethods;
+                            baseMethods = AddMethods(baseComIface, ifaceToMethodsMap[baseComIface]);
                         }
 
                         foreach (var method in baseMethods)
@@ -1058,9 +1082,9 @@ namespace Microsoft.Interop
                             yield return method;
                         }
                     }
-                    foreach (var method in declaredMethods[symbol])
+                    foreach (var method in declaredMethods)
                     {
-                        yield return new ComInterfaceMethodContext(symbol, method, startingIndex++, null);
+                        yield return new ComInterfaceMethodContext(iface, method, startingIndex++, null);
                     }
 
                 }
