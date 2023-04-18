@@ -86,6 +86,13 @@ namespace System.Reflection.Tests
             Assert.False(parameterInfo.HasDefaultValue);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public void HasDefaultValue_ReturnFixedValueOfTrue_NativeAot()
+        {
+            ParameterInfo parameterInfo = GetMethod(typeof(ParameterInfoMetadata), "Method1").ReturnParameter;
+            Assert.True(parameterInfo.HasDefaultValue);
+        }
+
         [Theory]
         [InlineData(typeof(ParameterInfoMetadata), "Method1", 0)]
         [InlineData(typeof(ParameterInfoMetadata), "VirtualMethod", 0)]
