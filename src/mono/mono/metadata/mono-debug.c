@@ -13,6 +13,7 @@
 #include <config.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
+#include <mono/metadata/bundled-resources-internals.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/appdomain.h>
@@ -1119,6 +1120,26 @@ static MonoDebugHandle *
 open_symfile_from_bundle (MonoImage *image)
 {
 	BundledSymfile *bsymfile;
+
+	const unsigned char *data;
+	unsigned int data_len;
+	mono_get_bundled_resource_data (image->module_name, &data, &data_len);
+	if (data)
+		return mono_debug_open_image (image, data, data_len);
+
+#ifdef ENABLE_WEBCIL
+	int len = strlen (image->module_name);
+	char *module_name_dll_suffix = strdup (image->module_name);
+	/* if image's module_name ends with .webcil, check if theres a bundled resource with a .dll extension instead */
+	if (module_name_dll_suffix && !g_strcasecmp (".webcil", &image->module_name [len - 7])) {
+		memcpy (module_name_dll_suffix + len - 7, ".dll", 4);
+		*(module_name_dll_suffix + len - 3) = '\0';
+		mono_get_bundled_resource_data (module_name_dll_suffix, &data, &data_len);
+	}
+	g_free (module_name_dll_suffix);
+	if (data)
+		return mono_debug_open_image (image, data, data_len);
+#endif
 
 	for (bsymfile = bundled_symfiles; bsymfile; bsymfile = bsymfile->next) {
 		if (!bsymfile_match (bsymfile, image->module_name))
