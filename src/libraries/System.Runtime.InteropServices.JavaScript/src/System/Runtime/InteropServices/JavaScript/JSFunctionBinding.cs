@@ -208,6 +208,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
             signature.FnHandle = jsFunctionHandle;
 
+            JSHostImplementation.FreeMethodSignatureBuffer(signature);
+
             return signature;
         }
 
@@ -220,6 +222,9 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 throw new JSException((string)exceptionMessage);
             }
+
+            JSHostImplementation.FreeMethodSignatureBuffer(signature);
+
             return signature;
         }
     }
