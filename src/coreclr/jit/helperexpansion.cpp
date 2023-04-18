@@ -464,7 +464,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
     // On Arm, Thread execution blocks are accessed using co-processor registers and instructions such
     // as MRC and MCR are used to access them. We do not support them and so should never optimize the
     // field access using TLS.
-    assert("Unsupported scenario of optimizing TLS access on Arm32");
+    assert(!"Unsupported scenario of optimizing TLS access on Arm32");
 #endif
 
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
