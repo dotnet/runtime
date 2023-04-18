@@ -3532,10 +3532,134 @@ hot_reload_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint3
 	return result;
 }
 
+static void recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataUpdateInfo *gtd_info);
+
+static MonoClassMetadataUpdateInfo *
+hot_reload_get_or_add_ginst_update_info(MonoClass *ginst)
+{
+	g_assert (m_class_get_class_kind (ginst) == MONO_CLASS_GINST);
+	MonoClassMetadataUpdateInfo *info = mono_class_get_metadata_update_info (ginst);
+
+	gboolean needToRefresh = FALSE;
+
+	if (!info)
+		needToRefresh = TRUE;
+
+	MonoClass *gtd = mono_class_get_generic_type_definition (ginst);
+	MonoClassMetadataUpdateInfo *gtd_info = mono_class_get_metadata_update_info (gtd);
+
+	if (!gtd_info)
+		return NULL;
+
+	if (info && info->generation < gtd_info->generation)
+		needToRefresh = TRUE;
+
+	if (!needToRefresh)
+		return info;
+
+	mono_loader_lock ();
+	info = mono_class_get_metadata_update_info (ginst);
+	if (info && info->generation == gtd_info->generation) {
+		mono_loader_unlock ();
+		return info;
+	}
+
+	recompute_ginst_update_info (ginst, gtd, gtd_info);
+
+	info = mono_class_get_metadata_update_info (ginst);
+	mono_loader_unlock ();
+	return info;
+}
+
+#define mono_class_new0(klass,struct_type, n_structs)		\
+    ((struct_type *) mono_class_alloc0 ((klass), ((gsize) sizeof (struct_type)) * ((gsize) (n_structs))))
+
+static void
+recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataUpdateInfo *gtd_info)
+{
+	// if ginst has a `MonoClassMetadataUpdateInfo`, use it to start with, otherwise, allocate a new one
+	MonoClassMetadataUpdateInfo *info = mono_class_get_or_add_metadata_update_info (ginst);
+  
+	if (!info)
+		info = mono_class_new0 (ginst, MonoClassMetadataUpdateInfo, 1);
+
+	// replace info->added_props by a new list re-computed from gtd_info->added_props
+	for (GSList *ptr = gtd_info->added_props; ptr; ptr = ptr->next) {
+		MonoClassMetadataUpdateProperty *gtd_added_prop = (MonoClassMetadataUpdateProperty *)ptr->data;
+		MonoClassMetadataUpdateProperty *added_prop = mono_class_new0 (ginst, MonoClassMetadataUpdateProperty, 1);
+		
+		added_prop->prop = gtd_added_prop->prop;
+		added_prop->token = gtd_added_prop->token;
+
+		ERROR_DECL (error);
+		if (added_prop->prop.get)
+				added_prop->prop.get = mono_class_inflate_generic_method_full_checked (
+					added_prop->prop.get, ginst, mono_class_get_context (ginst), error);
+		if (added_prop->prop.set)
+			added_prop->prop.set = mono_class_inflate_generic_method_full_checked (
+				added_prop->prop.set, ginst, mono_class_get_context (ginst), error);
+		g_assert (is_ok (error)); /*FIXME proper error handling*/
+
+		added_prop->prop.parent = ginst;
+
+		// if (!info->added_props) {
+		// 	info->added_props = g_list_alloc ();
+		// 	info->added_props->data = (gpointer)added_prop;
+		// }
+		// GSList *l = g_list_append (info->added_props, added_prop);
+		// g_assert (l != NULL && l->next != NULL && l->next->next == NULL);
+		// info->added_props = l->next;
+
+		info->added_props = g_slist_prepend_mem_manager (m_class_get_mem_manager (ginst), info->added_props, (gpointer)added_prop);
+	}
+
+	// replace info->added_events by a new list re-computed from gtd_info->added_events
+	for (GSList *ptr = gtd_info->added_events; ptr; ptr = ptr->next) {
+		MonoClassMetadataUpdateEvent *gtd_added_event = (MonoClassMetadataUpdateEvent *)ptr->data;
+		MonoClassMetadataUpdateEvent *added_event = mono_class_new0 (ginst, MonoClassMetadataUpdateEvent, 1);
+		
+		added_event->evt = gtd_added_event->evt;
+
+		ERROR_DECL (error);
+		if (added_event->evt.add)
+				added_event->evt.add = mono_class_inflate_generic_method_full_checked (
+					added_event->evt.add, ginst, mono_class_get_context (ginst), error);
+		if (added_event->evt.remove)
+			added_event->evt.remove = mono_class_inflate_generic_method_full_checked (
+				added_event->evt.remove, ginst, mono_class_get_context (ginst), error);
+		if (added_event->evt.raise)
+			added_event->evt.raise = mono_class_inflate_generic_method_full_checked (
+				added_event->evt.raise, ginst, mono_class_get_context (ginst), error);
+		g_assert (is_ok (error)); /*FIXME proper error handling*/
+		
+		added_event->evt.parent = ginst;
+
+		// if (!info->added_events) {
+		// 	info->added_events = g_list_alloc ();
+		// 	info->added_events->data = (gpointer)added_event;
+		// }
+		// GSList *l = g_list_append (info->added_events, added_event);
+		// g_assert (l != NULL && l->next != NULL && l->next->next == NULL);
+		// info->added_events = l->next;
+
+		info->added_events = g_slist_prepend_mem_manager (m_class_get_mem_manager (ginst), info->added_events, (gpointer)added_event);
+	}
+	
+	// finally, update the generation of the ginst info to the same one as the gtd
+	info->generation = gtd_info->generation;
+	// we're done info is now up to date    
+}
+
 static MonoProperty *
 hot_reload_added_properties_iter (MonoClass *klass, gpointer *iter)
 {
-	MonoClassMetadataUpdateInfo *info = mono_class_get_metadata_update_info (klass);
+	MonoClassMetadataUpdateInfo *info;
+	if (mono_class_is_ginst (klass)) {
+		info = hot_reload_get_or_add_ginst_update_info (klass);
+	} else {
+		info = mono_class_get_metadata_update_info (klass);
+	}
+
 	if (!info)
 		return NULL;
 
