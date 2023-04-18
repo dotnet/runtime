@@ -9,6 +9,7 @@ using Xunit;
 
 public class Test
 {
+    // This is trying to verify that we zero-extend from the result of "(byte)(-s_2)".
 	public class Program
 	{
 		public static short s_2;
