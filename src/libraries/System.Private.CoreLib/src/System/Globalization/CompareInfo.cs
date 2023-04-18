@@ -1425,6 +1425,10 @@ namespace System.Globalization
         private SortKey CreateSortKeyCore(string source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsCreateSortKey(source, options) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
+#endif
                 IcuCreateSortKey(source, options);
 
         /// <summary>
@@ -1462,9 +1466,13 @@ namespace System.Globalization
         }
 
         private int GetSortKeyCore(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options) =>
-           GlobalizationMode.UseNls ?
-               NlsGetSortKey(source, destination, options) :
-               IcuGetSortKey(source, destination, options);
+            GlobalizationMode.UseNls ?
+                NlsGetSortKey(source, destination, options) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
+#endif
+                IcuGetSortKey(source, destination, options);
 
         /// <summary>
         /// Returns the length (in bytes) of the sort key that would be produced from the specified input.
@@ -1495,8 +1503,12 @@ namespace System.Globalization
         }
 
         private int GetSortKeyLengthCore(ReadOnlySpan<char> source, CompareOptions options) =>
-          GlobalizationMode.UseNls ?
+            GlobalizationMode.UseNls ?
               NlsGetSortKeyLength(source, options) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
+#endif
               IcuGetSortKeyLength(source, options);
 
         public override bool Equals([NotNullWhen(true)] object? value)
@@ -1570,6 +1582,10 @@ namespace System.Globalization
         private unsafe int GetHashCodeOfStringCore(ReadOnlySpan<char> source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsGetHashCodeOfString(source, options) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                throw new PlatformNotSupportedException(GetPNSEText("HashCode")) :
+#endif
                 IcuGetHashCodeOfString(source, options);
 
         public override string ToString() => "CompareInfo - " + Name;
@@ -1599,5 +1615,9 @@ namespace System.Globalization
         }
 
         public int LCID => CultureInfo.GetCultureInfo(Name).LCID;
+
+#if TARGET_BROWSER
+        private static string GetPNSEText(string funcName) => SR.Format(SR.PlatformNotSupported_HybridGlobalization, funcName);
+#endif
     }
 }
