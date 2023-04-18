@@ -105,7 +105,7 @@ namespace System.Globalization
 
 
         private static string GetPNSE(CompareOptions options) =>
-            Sr.Format(SR.PlatformNotSupported_HybridGlobalizationWithCompareOptions, options);
+            SR.Format(SR.PlatformNotSupported_HybridGlobalizationWithCompareOptions, options);
 
         private static bool CompareOptionsNotSupportedForCulture(CompareOptions options, string cultureName) =>
             (options == CompareOptions.IgnoreKanaType &&
@@ -114,6 +114,6 @@ namespace System.Globalization
             (cultureName.Split('-')[0] == "ja"));
 
         private static string GetPNSEForCulture(CompareOptions options, string cultureName) =>
-            Sr.Format(SR.PlatformNotSupported_HybridGlobalizationWithCompareOptions, options, cultureName);
+            SR.Format(SR.PlatformNotSupported_HybridGlobalizationWithCompareOptions, options, cultureName);
     }
 }
