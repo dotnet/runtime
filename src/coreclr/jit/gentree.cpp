@@ -19666,6 +19666,11 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                         assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
                         intrinsic = NI_AVX2_MultiplyLow;
                     }
+                    else if (simdSize == 64)
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+                        intrinsic = NI_AVX512BW_MultiplyLow;
+                    }
                     else
                     {
                         intrinsic = NI_SSE2_MultiplyLow;
@@ -19680,6 +19685,11 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     {
                         assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
                         intrinsic = NI_AVX2_MultiplyLow;
+                    }
+                    else if (simdSize == 64)
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                        intrinsic = NI_AVX512F_MultiplyLow;
                     }
                     else if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
                     {
@@ -19744,6 +19754,11 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                         assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                         intrinsic = NI_AVX_Multiply;
                     }
+                    else if (simdSize == 64)
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                        intrinsic = NI_AVX512F_Multiply;
+                    }
                     else
                     {
                         intrinsic = NI_SSE_Multiply;
@@ -19757,6 +19772,11 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     {
                         assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                         intrinsic = NI_AVX_Multiply;
+                    }
+                    else if (simdSize == 64)
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                        intrinsic = NI_AVX512F_Multiply;
                     }
                     else
                     {

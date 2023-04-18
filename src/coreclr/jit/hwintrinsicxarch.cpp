@@ -1950,14 +1950,22 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Multiply:
         case NI_Vector256_Multiply:
+        case NI_Vector512_Multiply:
         case NI_Vector128_op_Multiply:
         case NI_Vector256_op_Multiply:
+        case NI_Vector512_op_Multiply:
         {
             assert(sig->numArgs == 2);
 
             if ((simdSize == 32) && !varTypeIsFloating(simdBaseType) && !compExactlyDependsOn(InstructionSet_AVX2))
             {
                 // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
+                break;
+            }
+
+            if (simdSize == 64 && !IsBaselineVector512IsaSupportedDebugOnly())
+            {
+                // We use AVX512F for all compatible base types (float, int, uint, double)
                 break;
             }
 
