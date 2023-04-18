@@ -32,9 +32,13 @@ jobs:
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     helixQueues:
 
-    # iOS/tvOS simulator x64/x86
-    - ${{ if in(parameters.platform, 'iossimulator_x64', 'tvossimulator_x64') }}:
-      - OSX.1015.Amd64.Open
+    # iOS Simulator/Mac Catalyst arm64
+    - ${{ if in(parameters.platform, 'maccatalyst_arm64', 'iossimulator_arm64') }}:
+      - OSX.1200.Arm64.Open
+
+    # iOS/tvOS Simulator x64 & MacCatalyst x64
+    - ${{ if in(parameters.platform, 'iossimulator_x64', 'tvossimulator_x64', 'maccatalyst_x64') }}:
+      - OSX.1200.Amd64.Open
 
     # Android arm64
     - ${{ if in(parameters.platform, 'android_arm64') }}:
@@ -47,6 +51,18 @@ jobs:
     # Browser wasm
     - ${{ if eq(parameters.platform, 'browser_wasm') }}:
       - (Ubuntu.1804.Amd64)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-webassembly
+
+    # iOS devices
+    - ${{ if in(parameters.platform, 'ios_arm64') }}:
+      # split traffic for runtime-extra-platforms (which mostly runs on rolling builds)
+      - ${{ if ne(parameters.jobParameters.isExtraPlatforms, true) }}:
+        - OSX.1015.Amd64.Iphone.Open
+      - ${{ if eq(parameters.jobParameters.isExtraPlatforms, true) }}:
+        - OSX.1200.Amd64.Iphone.Open
+
+    # tvOS devices
+    - ${{ if in(parameters.platform, 'tvos_arm64') }}:
+        - OSX.13.Amd64.AppleTV.Open
 
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
