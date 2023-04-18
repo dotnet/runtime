@@ -23,7 +23,8 @@ namespace System
           IMinMaxValue<byte>,
           IUnsignedNumber<byte>,
           IUtf8SpanFormattable,
-          IUtfChar<byte>
+          IUtfChar<byte>,
+          IBinaryIntegerParseAndFormatInfo<byte>
     {
         private readonly byte m_value; // Do not rename (binary serialization)
 
@@ -92,98 +93,44 @@ namespace System
             return m_value;
         }
 
-        public static byte Parse(string s)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
-        }
+        public static byte Parse(string s) => Parse(s, NumberStyles.Integer, provider: null);
 
-        public static byte Parse(string s, NumberStyles style)
-        {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static byte Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
-        public static byte Parse(string s, IFormatProvider? provider)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
-        }
+        public static byte Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
 
-        // Parses an unsigned byte from a String in the given style.  If
-        // a NumberFormatInfo isn't specified, the current culture's
-        // NumberFormatInfo is assumed.
         public static byte Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider));
+            if (s is null) { ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s); }
+            return Parse(s.AsSpan(), style, provider);
         }
 
         public static byte Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Parse(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<byte>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        private static byte Parse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info)
-        {
-            Number.ParsingStatus status = Number.TryParseUInt32(s, style, info, out uint i);
-            if (status != Number.ParsingStatus.OK)
-            {
-                Number.ThrowOverflowOrFormatException(status, s, TypeCode.Byte);
-            }
+        public static bool TryParse([NotNullWhen(true)] string? s, out byte result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-            if (i > MaxValue) Number.ThrowOverflowException(TypeCode.Byte);
-            return (byte)i;
-        }
-
-        public static bool TryParse([NotNullWhen(true)] string? s, out byte result)
-        {
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
-
-            return TryParse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
-        }
-
-        public static bool TryParse(ReadOnlySpan<char> s, out byte result)
-        {
-            return TryParse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out byte result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out byte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
-            if (s == null)
+            if (s is null)
             {
                 result = 0;
                 return false;
             }
-
-            return TryParse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out byte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
-        }
-
-        private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out byte result)
-        {
-            if (Number.TryParseUInt32(s, style, info, out uint i) != Number.ParsingStatus.OK
-                || i > MaxValue)
-            {
-                result = 0;
-                return false;
-            }
-            result = (byte)i;
-            return true;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public override string ToString()
@@ -1213,5 +1160,25 @@ namespace System
         static byte IUtfChar<byte>.CastFrom(int value) => (byte)value;
         static byte IUtfChar<byte>.CastFrom(uint value) => (byte)value;
         static byte IUtfChar<byte>.CastFrom(ulong value) => (byte)value;
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<byte>.IsSigned => false;
+
+        static int IBinaryIntegerParseAndFormatInfo<byte>.MaxDigitCount => 3; // 255
+
+        static int IBinaryIntegerParseAndFormatInfo<byte>.MaxHexDigitCount => 2; // 0xFF
+
+        static byte IBinaryIntegerParseAndFormatInfo<byte>.MaxValueDiv10 => MaxValue / 10;
+
+        static string IBinaryIntegerParseAndFormatInfo<byte>.OverflowMessage => SR.Overflow_Byte;
+
+        static bool IBinaryIntegerParseAndFormatInfo<byte>.IsGreaterThanAsUnsigned(byte left, byte right) => left > right;
+
+        static byte IBinaryIntegerParseAndFormatInfo<byte>.MultiplyBy10(byte value) => (byte)(value * 10);
+
+        static byte IBinaryIntegerParseAndFormatInfo<byte>.MultiplyBy16(byte value) => (byte)(value * 16);
     }
 }

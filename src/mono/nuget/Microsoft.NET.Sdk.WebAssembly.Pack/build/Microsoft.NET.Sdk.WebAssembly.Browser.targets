@@ -31,6 +31,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' == 'Core'">net8.0</_WebAssemblySdkTasksTFM>
     <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' != 'Core'">net472</_WebAssemblySdkTasksTFM>
     <_WebAssemblySdkTasksAssembly>$(WebAssemblySdkDirectoryRoot)tools\$(_WebAssemblySdkTasksTFM)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
+
+    <!-- Compression -->
+    <CompressionIncludePatterns>$(CompressionIncludePatterns);_framework\**</CompressionIncludePatterns>
+    <DisableBuildCompression Condition="'$(WasmBuildingForNestedPublish)' == 'true'">true</DisableBuildCompression>
   </PropertyGroup>
 
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.GenerateWasmBootJson" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
@@ -77,28 +81,48 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!-- Wire-up static web assets -->
   <PropertyGroup>
+    <!-- Static Web Assets -->
     <ResolveStaticWebAssetsInputsDependsOn>
       $(ResolveStaticWebAssetsInputsDependsOn);
       _AddWasmStaticWebAssets;
     </ResolveStaticWebAssetsInputsDependsOn>
-
     <StaticWebAssetsPrepareForRunDependsOn>
       _GenerateBuildWasmBootJson;
       $(StaticWebAssetsPrepareForRunDependsOn)
     </StaticWebAssetsPrepareForRunDependsOn>
-
     <ResolvePublishStaticWebAssetsDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
       $(ResolvePublishStaticWebAssetsDependsOn);
       ProcessPublishFilesForWasm;
       ComputeWasmExtensions;
       _AddPublishWasmBootJsonToStaticWebAssets;
     </ResolvePublishStaticWebAssetsDependsOn>
-
     <GenerateStaticWebAssetsPublishManifestDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
       $(GenerateStaticWebAssetsPublishManifestDependsOn);
       GeneratePublishWasmBootJson;
     </GenerateStaticWebAssetsPublishManifestDependsOn>
 
+    <!-- Compression -->
+    <ResolveCompressedFilesDependsOn>
+      $(ResolveCompressedFilesDependsOn);
+      ResolveWasmOutputs;
+      _AddWasmStaticWebAssets;
+    </ResolveCompressedFilesDependsOn>
+    <ResolveCompressedFilesForPublishDependsOn>
+      $(ResolveCompressedFilesForPublishDependsOn);
+      ProcessPublishFilesForWasm;
+      ComputeWasmExtensions;
+      _AddPublishWasmBootJsonToStaticWebAssets;
+    </ResolveCompressedFilesForPublishDependsOn>
+    <CompressFilesDependsOn>
+      $(CompressFilesDependsOn)
+      _GenerateBuildWasmBootJson;
+    </CompressFilesDependsOn>
+    <CompressFilesForPublishDependsOn>
+      $(CompressFilesForPublishDependsOn);
+      GeneratePublishWasmBootJson;
+    </CompressFilesForPublishDependsOn>
+
+    <!-- Wasm -->
     <AddWasmStaticWebAssetsDependsOn>
       $(AddWasmStaticWebAssetsDependsOn);
       ResolveWasmOutputs;
@@ -381,6 +405,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <DefineStaticWebAssets CandidateAssets="@(_BlazorExtensionsCandidate)">
       <Output TaskParameter="Assets" ItemName="StaticWebAsset" />
       <Output TaskParameter="Assets" ItemName="_BlazorExtensionsCandidatesForPublish" />
+      <Output TaskParameter="Assets" ItemName="AssetToCompress" />
     </DefineStaticWebAssets>
   </Target>
 

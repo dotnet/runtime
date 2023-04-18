@@ -525,8 +525,7 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 
 //
 // Specify the number of breakpoints and watchpoints that the OS
-// will track. Architecturally, LOONGARCH64 supports up to 16. In practice,
-// however, almost no one implements more than 4 of each.
+// will track.
 //
 
 #define RISCV64_MAX_BREAKPOINTS     8
@@ -541,6 +540,7 @@ typedef struct DECLSPEC_ALIGN(16) _T_CONTEXT {
     //
 
     /* +0x000 */ DWORD ContextFlags;
+    /* +0x004 */ DWORD Fcsr;
 
     //
     // Integer registers
@@ -584,7 +584,6 @@ typedef struct DECLSPEC_ALIGN(16) _T_CONTEXT {
     //
     //TODO-RISCV64: support the SIMD.
     ULONGLONG F[32];
-    DWORD   Fcsr;
 } T_CONTEXT, *PT_CONTEXT;
 
 // _IMAGE_RISCV64_RUNTIME_FUNCTION_ENTRY (see ExternalAPIs\Win9CoreSystem\inc\winnt.h)

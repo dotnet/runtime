@@ -560,6 +560,7 @@ typedef DECLSPEC_ALIGN(16) struct {
     //
 
     /* +0x000 */ DWORD ContextFlags;
+    /* +0x004 */ DWORD Fcsr;
 
     //
     // Integer registers

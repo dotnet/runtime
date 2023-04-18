@@ -5295,3 +5295,95 @@ HRESULT ClrDataAccess::GetGlobalAllocationContext(
     SOSDacLeave();
     return hr;
 }
+
+HRESULT ClrDataAccess::GetHandleTableMemoryRegions(ISOSMemoryEnum** ppEnum)
+{
+    if (!ppEnum)
+        return E_POINTER;
+
+    SOSDacEnter();
+
+    DacHandleTableMemoryEnumerator* htEnum = new (nothrow) DacHandleTableMemoryEnumerator();
+    if (htEnum)
+    {
+        hr = htEnum->Init();
+
+        if (SUCCEEDED(hr))
+            hr = htEnum->QueryInterface(__uuidof(ISOSMemoryEnum), (void**)ppEnum);
+
+        if (FAILED(hr))
+            delete htEnum;
+    }
+    else
+    {
+        hr = E_OUTOFMEMORY;
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetGCBookkeepingMemoryRegions(ISOSMemoryEnum** ppEnum)
+{
+    if (!ppEnum)
+        return E_POINTER;
+
+    SOSDacEnter();
+
+    DacGCBookkeepingEnumerator* bkEnum = new (nothrow) DacGCBookkeepingEnumerator();
+    if (bkEnum)
+    {
+        hr = bkEnum->Init();
+
+        if (SUCCEEDED(hr))
+            hr = bkEnum->QueryInterface(__uuidof(ISOSMemoryEnum), (void**)ppEnum);
+
+        if (FAILED(hr))
+            delete bkEnum;
+    }
+    else
+    {
+        hr = E_OUTOFMEMORY;
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+
+HRESULT ClrDataAccess::GetGCFreeRegions(ISOSMemoryEnum **ppEnum)
+{
+    if (!ppEnum)
+        return E_POINTER;
+
+    SOSDacEnter();
+
+    DacFreeRegionEnumerator* frEnum = new (nothrow) DacFreeRegionEnumerator();
+    if (frEnum)
+    {
+        hr = frEnum->Init();
+
+        if (SUCCEEDED(hr))
+            hr = frEnum->QueryInterface(__uuidof(ISOSMemoryEnum), (void**)ppEnum);
+
+        if (FAILED(hr))
+            delete frEnum;
+    }
+    else
+    {
+        hr = E_OUTOFMEMORY;
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::LockedFlush()
+{
+    SOSDacEnter();
+
+    Flush();
+
+    SOSDacLeave();
+    return hr;
+}
