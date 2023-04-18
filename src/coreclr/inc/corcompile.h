@@ -161,6 +161,8 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
 
     ENCODE_CHECK_IL_BODY,                           /* Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. */
     ENCODE_VERIFY_IL_BODY,                          /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
+    
+    ENCODE_RVA_FIELD_ADDRESS,                       /* Used in Crossgen2 to address RVA fields in their original MSIL images */
 
     ENCODE_MODULE_HANDLE                = 0x50,     /* Module token */
     ENCODE_STATIC_FIELD_ADDRESS,                    /* For accessing a static field */

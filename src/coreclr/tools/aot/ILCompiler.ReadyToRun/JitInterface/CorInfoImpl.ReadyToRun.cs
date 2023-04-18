@@ -1508,11 +1508,9 @@ namespace Internal.JitInterface
                     fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_UNMANAGED;
 
                     // TODO: Handle the case when the RVA is in the TLS range
-                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RVA_ADDRESS;
-
-                    ISymbolNode node = _compilation.GetFieldRvaData(field);
-                    pResult->fieldLookup.addr = (void*)ObjectToHandle(node);
-                    pResult->fieldLookup.accessType = node.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
+                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RELOCATABLE;
+                    fieldOffset = 0;
+                    pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.RvaFieldAddress(ComputeFieldWithToken(field, ref pResolvedToken)));
 
                     // We are not going through a helper. The constructor has to be triggered explicitly.
                     if (!IsClassPreInited(field.OwningType))
@@ -1588,9 +1586,9 @@ namespace Internal.JitInterface
                     {
                         PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
 
-                        // Static fields outside of the version bubble need to be accessed using the ENCODE_FIELD_ADDRESS
+                        // Static fields outside of the version bubble need to be accessed using the ENCODE_RVA_FIELD_ADDRESS
                         // helper in accordance with ZapInfo::getFieldInfo in CoreCLR.
-                        pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldAddress(ComputeFieldWithToken(field, ref pResolvedToken)));
+                        pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.RvaFieldAddress(ComputeFieldWithToken(field, ref pResolvedToken)));
 
                         fieldFlags &= ~CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC_IN_HEAP; // The dynamic helper takes care of the unboxing
                         fieldOffset = 0;
