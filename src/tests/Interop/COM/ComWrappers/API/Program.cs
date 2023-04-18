@@ -715,6 +715,7 @@ namespace ComWrappersTests
                 ValidateRuntimeTrackerScenario();
                 ValidateQueryInterfaceAfterManagedObjectCollected();
 
+                // Tracked by https://github.com/dotnet/runtime/issues/74620
                 if (!PlatformDetection.IsNativeAot)
                 {
                     ValidateAggregationWithComObject();
