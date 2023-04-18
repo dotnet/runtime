@@ -79,7 +79,7 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, parameterInfo.HasDefaultValue);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void HasDefaultValue_ReturnParam()
         {
             ParameterInfo parameterInfo = GetMethod(typeof(ParameterInfoMetadata), "Method1").ReturnParameter;
