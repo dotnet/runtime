@@ -58,9 +58,8 @@ internal sealed partial class LowLevelLifoAsyncWaitSemaphore : LowLevelLifoSemap
         Debug.Assert(timeoutMs >= -1);
 
         // Try to acquire the semaphore or
-        // [[a) register as a spinner if false and timeoutMs > 0]]
-        // b) register as a waiter if [[there's already too many spinners or]] true and timeoutMs > 0
-        // c) bail out if timeoutMs == 0 and return false
+        // a) register as a waiter and timeoutMs > 0
+        // b) bail out if timeoutMs == 0 and return false
         Counts counts = _separated._counts;
         while (true)
         {
@@ -101,31 +100,6 @@ internal sealed partial class LowLevelLifoAsyncWaitSemaphore : LowLevelLifoSemap
         }
 
         Debug.Fail("unreachable");
-
-#if false
-        // Unregister as spinner, and acquire the semaphore or register as a waiter
-        counts = _separated._counts;
-        while (true)
-        {
-            Counts newCounts = counts;
-            if (counts.SignalCount != 0)
-            {
-                newCounts.DecrementSignalCount();
-            }
-            else
-            {
-                newCounts.IncrementWaiterCount();
-            }
-
-            Counts countsBeforeUpdate = _separated._counts.InterlockedCompareExchange(newCounts, counts);
-            if (countsBeforeUpdate == counts)
-            {
-                return counts.SignalCount != 0 || WaitForSignal(timeoutMs);
-            }
-
-            counts = countsBeforeUpdate;
-        }
-#endif
     }
 
     private void PrepareAsyncWaitForSignal(int timeoutMs, Action<LowLevelLifoAsyncWaitSemaphore, object?> onSuccess, Action<LowLevelLifoAsyncWaitSemaphore, object?> onTimeout, object? state)
@@ -183,7 +157,11 @@ internal sealed partial class LowLevelLifoAsyncWaitSemaphore : LowLevelLifoSemap
         }
         // if we get here, we need to keep waiting because the SignalCount above was 0 after we did
         // the CompareExchange - someone took the signal before us.
-        // FIXME(ak): why is the timeoutMs the same as before? wouldn't we starve? why does LowLevelLifoSemaphore.WaitForSignal not decrement timeoutMs?
+
+        // Note: we could choose to decrement TimeoutMs here by the amount of time we've already
+        // waited, but that means we'd have to collect the time before we started waiting, which is
+        // an extra call out to JS that isn't needed in the case where there's no contention.  The
+        // TimeoutMs is a minimum that we would wait, so it's ok to waitlonger.
         self.PrepareAsyncWaitCore (we.TimeoutMs, we);
         // on success calls InternalAsyncWaitSuccess, on timeout calls InternalAsyncWaitTimeout
     }
