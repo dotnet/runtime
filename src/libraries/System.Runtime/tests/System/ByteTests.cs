@@ -99,11 +99,15 @@ namespace System.Tests
                 yield return new object[] { (byte)123, "D", emptyFormat, "123" };
                 yield return new object[] { (byte)123, "D99", emptyFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123" };
 
+                yield return new object[] { (byte)0, "x", emptyFormat, "0" };
                 yield return new object[] { (byte)0x24, "x", emptyFormat, "24" };
+
+                yield return new object[] { (byte)0, "b", emptyFormat, "0" };
+                yield return new object[] { (byte)0x24, "b", emptyFormat, "100100" };
+
                 yield return new object[] { (byte)24, "N", emptyFormat, string.Format("{0:N}", 24.00) };
-
-
             }
+
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
             yield return new object[] { (byte)32, "C100", invariantFormat, "\u00A432.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (byte)32, "P100", invariantFormat, "3,200.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
@@ -112,6 +116,7 @@ namespace System.Tests
             yield return new object[] { (byte)32, "F100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (byte)32, "N100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (byte)32, "X100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020" };
+            yield return new object[] { (byte)32, "B100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000" };
 
             var customFormat = new NumberFormatInfo()
             {
