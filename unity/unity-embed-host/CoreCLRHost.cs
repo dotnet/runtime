@@ -162,6 +162,11 @@ static unsafe partial class CoreCLRHost
         [NativeCallbackType("MonoClass*")] IntPtr klass)
         => FormatterServices.GetUninitializedObject(klass.TypeFromHandleIntPtr()).ToNativeRepresentation();
 
+    [return: NativeCallbackType("MonoException*")]
+    public static IntPtr exception_from_class_msg([NativeCallbackType("MonoClass*")] IntPtr klass,
+        [NativeCallbackType("const char*")] sbyte* msg)
+        => Activator.CreateInstance(klass.TypeFromHandleIntPtr(), new string(msg)).ToNativeRepresentation();
+
     [return: NativeCallbackType("MonoObject*")]
     public static IntPtr type_get_object(
         [ManagedWrapperOptions(ManagedWrapperOptions.Exclude)] [NativeCallbackType("MonoDomain*")]

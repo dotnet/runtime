@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using NUnit.Framework;
 using Unity.CoreCLRHelpers;
 
@@ -44,6 +45,27 @@ public abstract class BaseEmbeddingApiTests
     //         var finalStr = Encoding.Unicode.GetString(utf16);
     //     }
     // }
+
+    class TestException : Exception
+    {
+        public TestException(string msg) : base(msg)
+        {
+        }
+    }
+
+    [Test]
+    public unsafe void ExceptionFromClassWorks()
+    {
+        string msg = "An Exception Message";
+        byte[] bytes = Encoding.ASCII.GetBytes(msg);
+        Exception ex;
+        fixed (byte* p = bytes)
+        {
+            sbyte* sp = (sbyte*)p;
+            ex = (Exception)ClrHost.exception_from_class_msg(typeof(TestException), sp).ToManagedRepresentation();
+        }
+        Assert.That(msg, Is.EqualTo(ex.Message));
+    }
 
     [Test]
     public unsafe void ValueBoxWorks()
