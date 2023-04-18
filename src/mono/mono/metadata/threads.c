@@ -4944,19 +4944,9 @@ ves_icall_System_Threading_Thread_GetCurrentOSThreadId (MonoError *error)
 }
 
 gpointer
-ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal (int32_t kind)
+ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal (void)
 {
-	switch (kind) {
-	case LIFO_SEMAPHORE_NORMAL:
-		return (gpointer)mono_lifo_semaphore_init ();
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	case LIFO_SEMAPHORE_ASYNCWAIT:
-		return (gpointer)mono_lifo_semaphore_asyncwait_init ();
-#endif
-	default:
-		g_error ("Invalid LowLevelLifoSemaphore kind %d\n", kind);
-		g_assert_not_reached();
-	}
+	return (gpointer)mono_lifo_semaphore_init ();
 }
 
 void
@@ -5004,8 +4994,14 @@ ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_p
 }
 
 #if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+gpointer
+ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_InitInternal (void)
+{
+	return (gpointer)mono_lifo_semaphore_asyncwait_init ();
+}
+
 void
-ves_icall_System_Threading_LowLevelLifoSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, intptr_t user_data)
+ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, intptr_t user_data)
 {
 	LifoSemaphoreAsyncWait *sem = (LifoSemaphoreAsyncWait *)sem_ptr;
 	g_assert (sem->base.kind == LIFO_SEMAPHORE_ASYNCWAIT);
@@ -5037,10 +5033,16 @@ ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(
 /* for the AOT cross compiler with --print-icall-table these don't need to be callable, they just
  * need to be defined */
 #if defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP)
-void
-ves_icall_System_Threading_LowLevelLifoSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, intptr_t user_data)
+gpointer
+ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_InitInternal (void)
 {
-	g_assert_not_reached();
+	g_assert_not_reached ();
+}
+
+void
+ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, intptr_t user_data)
+{
+	g_assert_not_reached ();
 }
 
 void

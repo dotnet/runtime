@@ -10,13 +10,13 @@ namespace System.Threading
         private IntPtr lifo_semaphore;
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern IntPtr InitInternal(int kind);
+        private static extern IntPtr InitInternal();
 
 #pragma warning disable IDE0060
         private void Create(int maximumSignalCount)
 #pragma warning restore IDE0060
         {
-            lifo_semaphore = InitInternal(1);
+            lifo_semaphore = InitInternal();
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

@@ -18,7 +18,7 @@ internal sealed partial class LowLevelLifoAsyncWaitSemaphore : LowLevelLifoSemap
     private IntPtr lifo_semaphore;
 
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
-    private static extern IntPtr InitInternal(int kind);
+    private static extern IntPtr InitInternal();
 
     public LowLevelLifoAsyncWaitSemaphore(int initialSignalCount, int maximumSignalCount, int spinCount, Action onWait)
         : base (initialSignalCount, maximumSignalCount, spinCount, onWait)
@@ -30,7 +30,7 @@ internal sealed partial class LowLevelLifoAsyncWaitSemaphore : LowLevelLifoSemap
     private void CreateAsyncWait(int maximumSignalCount)
 #pragma warning restore IDE0060
     {
-        lifo_semaphore = InitInternal(2);
+        lifo_semaphore = InitInternal();
     }
 
     [MethodImplAttribute(MethodImplOptions.InternalCall)]

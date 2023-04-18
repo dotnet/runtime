@@ -571,8 +571,8 @@ NOHANDLES(ICALL(ILOCK_23, "Read(long&)", ves_icall_System_Threading_Interlocked_
 #if (defined(HOST_BROWSER) && !defined(DISABLE_THREADS)) || (defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP))
 ICALL_TYPE(LIFOASYNCSEM, "System.Threading.LowLevelLifoAsyncWaitSemaphore", LIFOASYNCSEM_1)
 NOHANDLES(ICALL(LIFOASYNCSEM_1, "DeleteInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal))
-NOHANDLES(ICALL(LIFOASYNCSEM_2, "InitInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal))
-NOHANDLES(ICALL(LIFOASYNCSEM_3, "PrepareAsyncWaitInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_PrepareAsyncWaitInternal))
+NOHANDLES(ICALL(LIFOASYNCSEM_2, "InitInternal", ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_InitInternal))
+NOHANDLES(ICALL(LIFOASYNCSEM_3, "PrepareAsyncWaitInternal", ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitInternal))
 NOHANDLES(ICALL(LIFOASYNCSEM_4, "ReleaseInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal))
 #endif
 
