@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Tests
@@ -187,33 +188,39 @@ namespace System.Tests
 
             Assert.True(currentOSCheck());
 
-            bool[] allResults = new bool[]
+            Dictionary<string, bool> allResults = new()
             {
-                OperatingSystem.IsBrowser(),
-                OperatingSystem.IsLinux(),
-                OperatingSystem.IsFreeBSD(),
-                OperatingSystem.IsAndroid(),
-                OperatingSystem.IsIOS(),
-                OperatingSystem.IsMacCatalyst(),
-                OperatingSystem.IsMacOS(),
-                OperatingSystem.IsTvOS(),
-                OperatingSystem.IsWatchOS(),
-                OperatingSystem.IsWindows(),
-                OperatingSystem.IsWasi(),
+                { "IsBrowser", OperatingSystem.IsBrowser() },
+                { "IsLinux", OperatingSystem.IsLinux() },
+                { "IsFreeBSD", OperatingSystem.IsFreeBSD() },
+                { "IsAndroid", OperatingSystem.IsAndroid() },
+                { "IsIOS", OperatingSystem.IsIOS() },
+                { "IsMacCatalyst", OperatingSystem.IsMacCatalyst() },
+                { "IsMacOS", OperatingSystem.IsMacOS() },
+                { "IsTvOS", OperatingSystem.IsTvOS() },
+                { "IsWatchOS", OperatingSystem.IsWatchOS() },
+                { "IsWindows", OperatingSystem.IsWindows() },
+                { "IsWasi", OperatingSystem.IsWasi() },
             };
 
             // MacCatalyst is a special case since it also returns true for iOS
             if (currentOSName == "MacCatalyst")
             {
-                for (int i = 0; i < allResults.Length; i++)
+                foreach (var result in allResults)
                 {
-                    bool expected = (i == 4 || i == 5) ? true : false; // true for IsIOS() and IsMacCatalyst()
-                    Assert.Equal(expected, allResults[i]);
+                    if (result.Key == "IsMacCatalyst" || result.Key == "IsIOS")
+                    {
+                        Assert.True(result.Value);
+                    }
+                    else
+                    {
+                        Assert.False(result.Value);
+                    }
                 }
             }
             else
             {
-                Assert.Single(allResults, true);
+                Assert.Single(allResults.Values, true);
             }
         }
 
