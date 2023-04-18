@@ -15,10 +15,10 @@ namespace System.Reflection.Emit
         private readonly string _name;
         private Type?[]? _coreTypes;
         private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyReferences = new();
-        private readonly Dictionary<ConstructorInfo, MemberReferenceHandle> _memberReferences = new();
+        private readonly Dictionary<ConstructorInfo, MemberReferenceHandle> _ctorReferences = new();
         private readonly Dictionary<Type, TypeReferenceHandle> _typeReferences = new();
-        private Dictionary<string, ModuleReferenceHandle>? _moduleReferences;
         private readonly List<TypeBuilderImpl> _typeDefinitions = new();
+        private Dictionary<string, ModuleReferenceHandle>? _moduleReferences;
         private List<CustomAttributeWrapper>? _customAttributes;
         private int _nextMethodDefRowId = 1;
         private int _nextFieldDefRowId = 1;
@@ -182,11 +182,11 @@ namespace System.Reflection.Emit
 
         private MemberReferenceHandle GetConstructorHandle(MetadataBuilder metadata, ConstructorInfo constructorInfo)
         {
-            if (!_memberReferences.TryGetValue(constructorInfo, out var constructorHandle))
+            if (!_ctorReferences.TryGetValue(constructorInfo, out var constructorHandle))
             {
                 TypeReferenceHandle parentHandle = GetTypeReference(metadata, constructorInfo.DeclaringType!);
                 constructorHandle = MetadataHelper.AddConstructorReference(this, metadata, parentHandle, constructorInfo);
-                _memberReferences.Add(constructorInfo, constructorHandle);
+                _ctorReferences.Add(constructorInfo, constructorHandle);
             }
 
             return constructorHandle;

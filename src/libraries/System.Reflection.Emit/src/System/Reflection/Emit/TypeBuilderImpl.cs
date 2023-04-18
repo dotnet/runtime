@@ -19,8 +19,8 @@ namespace System.Reflection.Emit
         private PackingSize _packingSize;
         private int _typeSize;
 
-        internal List<MethodBuilderImpl> _methodDefinitions = new();
-        internal List<FieldBuilderImpl> _fieldDefinitions = new();
+        internal readonly List<MethodBuilderImpl> _methodDefinitions = new();
+        internal readonly List<FieldBuilderImpl> _fieldDefinitions = new();
         internal List<CustomAttributeWrapper>? _customAttributes;
 
         internal TypeBuilderImpl(string fullName, TypeAttributes typeAttributes,
@@ -100,6 +100,9 @@ namespace System.Reflection.Emit
                     break;
                 case "System.Runtime.InteropServices.ComImportAttribute":
                     _attributes |= TypeAttributes.Import;
+                    break;
+                case "System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeImportAttribute":
+                    _attributes |= TypeAttributes.WindowsRuntime;
                     break;
                 case "System.Security.SuppressUnmanagedCodeSecurityAttribute": // It says has no effect in .NET Core, maybe remove?
                     _attributes |= TypeAttributes.HasSecurity;

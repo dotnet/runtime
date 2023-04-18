@@ -75,12 +75,10 @@ namespace System.Reflection.Emit.Tests
                     MethodInfo[] methodsFromDisk = typeFromDisk.IsValueType ? typeFromDisk.GetMethods(BindingFlags.DeclaredOnly) : typeFromDisk.GetMethods();
                     FieldInfo[] fieldsFromDisk = typeFromDisk.GetFields();
 
-                    IList<CustomAttributeData> typeAttributesFromDisk = typeFromDisk.GetCustomAttributesData();
-
                     AssemblyTools.AssertTypeProperties(sourceType, typeFromDisk);
                     AssemblyTools.AssertMethods(sourceType.IsValueType ? sourceType.GetMethods(BindingFlags.DeclaredOnly) : sourceType.GetMethods(), methodsFromDisk);
                     AssemblyTools.AssertFields(sourceType.GetFields(), fieldsFromDisk);
-                    ValidateAttributes(typeAttributesFromDisk);
+                    ValidateAttributes(typeFromDisk.GetCustomAttributesData());
 
                     for (int j = 0; j < methodsFromDisk.Length; j++)
                     {
@@ -138,11 +136,7 @@ namespace System.Reflection.Emit.Tests
             foreach (Type type in types)
             {
                 TypeBuilder tb = mb.DefineType(type.FullName, type.Attributes, type.BaseType);
-
-                if (typeAttributes != null)
-                {
-                    typeAttributes.ForEach(tb.SetCustomAttribute);
-                }
+                typeAttributes.ForEach(tb.SetCustomAttribute);
 
                 DefineMethodsAndSetAttributes(methodAttributes, tb, type.IsInterface ? type.GetMethods() : type.GetMethods(BindingFlags.DeclaredOnly));
                 DefineFieldsAndSetAttributes(fieldAttributes, type.GetFields(), tb);
@@ -154,11 +148,7 @@ namespace System.Reflection.Emit.Tests
             foreach (FieldInfo field in fields)
             {
                 FieldBuilder fb = tb.DefineField(field.Name, field.FieldType, field.Attributes);
-
-                if (fieldAttributes != null)
-                {
-                    fieldAttributes.ForEach(fb.SetCustomAttribute);
-                }
+                fieldAttributes.ForEach(fb.SetCustomAttribute);
             }
         }
 
@@ -167,11 +157,7 @@ namespace System.Reflection.Emit.Tests
             foreach (var method in methods)
             {
                 MethodBuilder meb = tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, method.ReturnType, null);
-
-                if (methodAttributes != null)
-                {
-                    methodAttributes.ForEach(meb.SetCustomAttribute);
-                }
+                methodAttributes.ForEach(meb.SetCustomAttribute);
             }
         }
 
@@ -282,7 +268,7 @@ namespace System.Reflection.Emit.Tests
                 AssemblyBuilder ab = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(
                     PopulateAssemblyName(), null, typeof(string), out MethodInfo saveMethod);
                 TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes);
-                typeAttributes.ForEach(attr => tb.SetCustomAttribute(attr));
+                typeAttributes.ForEach(tb.SetCustomAttribute);
                 DefineMethodsAndSetAttributes(methodAttributes.ToList(), tb, type.GetMethods());
 
                 saveMethod.Invoke(ab, new object[] { file.Path });
@@ -292,16 +278,14 @@ namespace System.Reflection.Emit.Tests
                 IList<CustomAttributeData> attributesFromDisk = testType.GetCustomAttributesData();
 
                 Assert.Equal(typeAttributes.Count, attributesFromDisk.Count);
-
+                Assert.True((testType.Attributes & TypeAttributes.Import) != 0); // ComImportAttribute
+                Assert.True((testType.Attributes & TypeAttributes.HasSecurity) != 0); // SuppressUnmanagedCodeSecurityAttribute
                 for (int i = 0; i < attributesFromDisk.Count; i++)
                 {
                     switch (attributesFromDisk[i].AttributeType.Name)
                     {
-                        case "ComImportAttribute":
-                            Assert.True((testType.Attributes & TypeAttributes.Import) != 0);
-                            break;
+                        case "ComImportAttribute": // just making sure that these attributes are expected
                         case "SuppressUnmanagedCodeSecurityAttribute":
-                            Assert.True((testType.Attributes & TypeAttributes.HasSecurity) != 0);
                             break;
                         case "GuidAttribute":
                             Assert.Equal(s_guidPair.args[0], attributesFromDisk[i].ConstructorArguments[0].Value);
@@ -328,7 +312,6 @@ namespace System.Reflection.Emit.Tests
                         switch (methodAttributesFromDisk[i].AttributeType.Name)
                         {
                             case "SuppressUnmanagedCodeSecurityAttribute":
-                                break;
                             case "PreserveSigAttribute":
                                 break;
                             case "GuidAttribute":
