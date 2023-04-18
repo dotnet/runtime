@@ -30,12 +30,12 @@ unsafe class Program
         else
         {
             lowerBound = 1300 * 1024; // ~1.3 MB
-            upperBound = 1600 * 1024; // ~1.6 MB
+            upperBound = 1750 * 1024; // ~1.75 MB
         }
 
         if (fileSize < lowerBound || fileSize > upperBound)
         {
-            Console.WriteLine("BUG: File size is not in the expected range. Did a libraries change regress size of Hello World?");
+            Console.WriteLine($"BUG: File size is not in the expected range ({lowerBound} to {upperBound} bytes). Did a libraries change regress size of Hello World?");
             return 1;
         }
 

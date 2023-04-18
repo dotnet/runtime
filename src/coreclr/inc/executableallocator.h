@@ -20,6 +20,16 @@
 // This class is responsible for allocation of all the executable memory in the runtime.
 class ExecutableAllocator
 {
+public:
+
+    enum CacheableMapping
+    {
+        AddToCache,
+        DoNotAddToCache,
+    };
+
+private:
+
     // RX address range block descriptor
     struct BlockRX
     {
@@ -61,6 +71,11 @@ class ExecutableAllocator
 
     static int64_t g_releaseCount;
     static int64_t g_reserveCount;
+
+    static int64_t g_MapRW_Calls;
+    static int64_t g_MapRW_CallsWithCacheMiss;
+    static int64_t g_MapRW_LinkedListWalkDepth;
+    static int64_t g_LinkedListTotalDepth;
 #endif
     // Instance of the allocator
     static ExecutableAllocator* g_instance;
@@ -102,9 +117,19 @@ class ExecutableAllocator
     // for platforms that don't use shared memory.
     size_t m_freeOffset = 0;
 
-    // Last RW mapping cached so that it can be reused for the next mapping
+// Uncomment these to gather information to better choose caching parameters
+//#define VARIABLE_SIZED_CACHEDMAPPING_SIZE
+
+    // Last RW mappings cached so that it can be reused for the next mapping
     // request if it goes into the same range.
-    BlockRW* m_cachedMapping = NULL;
+    // This is handled as a 3 element cache with an LRU replacement policy
+#ifdef VARIABLE_SIZED_CACHEDMAPPING_SIZE
+    // If variable sized mappings enabled, make the cache physically big enough to cover all interesting sizes
+    static int g_cachedMappingSize;
+    BlockRW* m_cachedMapping[16] = { 0 };
+#else
+    BlockRW* m_cachedMapping[3] = { 0 };
+#endif
 
     // Synchronization of the public allocator methods
     CRITSEC_COOKIE m_CriticalSection;
@@ -114,15 +139,18 @@ class ExecutableAllocator
     // and replaces it by the passed in one.
     void UpdateCachedMapping(BlockRW *pBlock);
 
-    // Remove the cached mapping
-    void RemoveCachedMapping();
+    // Remove the cached mapping (1 based indexing)
+    void RemoveCachedMapping(size_t indexToRemove);
+
+    // Find an overlapped cached mapping with pBlock, or return 0
+    size_t FindOverlappingCachedMapping(BlockRX* pBlock);
 
     // Find existing RW block that maps the whole specified range of RX memory.
     // Return NULL if no such block exists.
-    void* FindRWBlock(void* baseRX, size_t size);
+    void* FindRWBlock(void* baseRX, size_t size, CacheableMapping cacheMapping);
 
     // Add RW block to the list of existing RW blocks
-    bool AddRWBlock(void* baseRW, void* baseRX, size_t size);
+    bool AddRWBlock(void* baseRW, void* baseRX, size_t size, CacheableMapping cacheMapping);
 
     // Remove RW block from the list of existing RW blocks and return the base
     // address and size the underlying memory was mapped at.
@@ -230,7 +258,7 @@ public:
     void Release(void* pRX);
 
     // Map the specified block of executable memory as RW
-    void* MapRW(void* pRX, size_t size);
+    void* MapRW(void* pRX, size_t size, CacheableMapping cacheMapping);
 
     // Unmap the RW mapping at the specified address
     void UnmapRW(void* pRW);
@@ -290,14 +318,14 @@ public:
     {
     }
 
-    ExecutableWriterHolder(T* addressRX, size_t size)
+    ExecutableWriterHolder(T* addressRX, size_t size, ExecutableAllocator::CacheableMapping cacheMapping = ExecutableAllocator::AddToCache)
     {
         m_addressRX = addressRX;
 #if defined(HOST_OSX) && defined(HOST_ARM64)
         m_addressRW = addressRX;
         PAL_JitWriteProtect(true);
 #else
-        m_addressRW = (T *)ExecutableAllocator::Instance()->MapRW((void*)addressRX, size);
+        m_addressRW = (T *)ExecutableAllocator::Instance()->MapRW((void*)addressRX, size, cacheMapping);
 #endif
     }
 
@@ -320,7 +348,7 @@ public:
 
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
 #undef ExecutableWriterHolder
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
 #define ExecutableWriterHolder ExecutableAllocator::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__); ExecutableWriterHolderNoLog
 #define AssignExecutableWriterHolder(addressRX, size) AssignExecutableWriterHolder(addressRX, size); ExecutableAllocator::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__); 
 #else

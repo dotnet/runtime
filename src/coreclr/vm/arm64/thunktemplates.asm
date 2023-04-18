@@ -5,7 +5,10 @@
 #include "asmconstants.h"
 #include "asmmacros.h"
 
-#define DATA_SLOT(stub, field) (stub##Code + PAGE_SIZE + stub##Data__##field)
+; STUB_PAGE_SIZE must match the behavior of GetStubCodePageSize() on this architecture/os
+#define STUB_PAGE_SIZE 16384
+
+#define DATA_SLOT(stub, field) (stub##Code + STUB_PAGE_SIZE + stub##Data__##field)
 
     LEAF_ENTRY StubPrecodeCode
         ldr x10, DATA_SLOT(StubPrecode, Target)
@@ -29,7 +32,7 @@
         beq CountReachedZero
         ldr  x9, DATA_SLOT(CallCountingStub, TargetForMethod)
         br   x9
-CountReachedZero        
+CountReachedZero
         ldr  x10, DATA_SLOT(CallCountingStub, TargetForThresholdReached)
         br   x10
     LEAF_END_MARKED CallCountingStubCode

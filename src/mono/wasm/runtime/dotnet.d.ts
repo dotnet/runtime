@@ -5,6 +5,51 @@
 
 //! This is not considered public API with backward compatibility guarantees. 
 
+interface BootJsonData {
+    readonly entryAssembly: string;
+    readonly resources: ResourceGroups;
+    /** Gets a value that determines if this boot config was produced from a non-published build (i.e. dotnet build or dotnet run) */
+    readonly debugBuild: boolean;
+    readonly linkerEnabled: boolean;
+    readonly cacheBootResources: boolean;
+    readonly config: string[];
+    readonly icuDataMode: ICUDataMode;
+    readonly startupMemoryCache: boolean | undefined;
+    readonly runtimeOptions: string[] | undefined;
+    modifiableAssemblies: string | null;
+    aspnetCoreBrowserTools: string | null;
+}
+type BootJsonDataExtension = {
+    [extensionName: string]: ResourceList;
+};
+interface ResourceGroups {
+    readonly assembly: ResourceList;
+    readonly lazyAssembly: ResourceList;
+    readonly pdb?: ResourceList;
+    readonly runtime: ResourceList;
+    readonly satelliteResources?: {
+        [cultureName: string]: ResourceList;
+    };
+    readonly libraryInitializers?: ResourceList;
+    readonly extensions?: BootJsonDataExtension;
+    readonly runtimeAssets: ExtendedResourceList;
+}
+type ResourceList = {
+    [name: string]: string;
+};
+type ExtendedResourceList = {
+    [name: string]: {
+        hash: string;
+        behavior: string;
+    };
+};
+declare enum ICUDataMode {
+    Sharded = 0,
+    All = 1,
+    Invariant = 2,
+    Custom = 3
+}
+
 interface DotnetHostBuilder {
     withConfig(config: MonoConfig): DotnetHostBuilder;
     withConfigSrc(configSrc: string): DotnetHostBuilder;
@@ -137,6 +182,10 @@ type MonoConfig = {
      * hash of assets
      */
     assetsHash?: string;
+    /**
+     * application environment
+     */
+    applicationEnvironment?: string;
 };
 interface ResourceRequest {
     name: string;
@@ -180,6 +229,7 @@ interface AssetEntry extends ResourceRequest {
 type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "symbols";
 type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
 "invariant" | //  operate in invariant globalization mode.
+"hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
 "auto";
 type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
@@ -187,6 +237,8 @@ type DotnetModuleConfig = {
     configSrc?: string;
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
+    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
+    getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
     imports?: any;
     exports?: string[];
     downloadResource?: (request: ResourceRequest) => LoadingResource | undefined;
@@ -279,4 +331,4 @@ declare global {
 declare const dotnet: ModuleAPI["dotnet"];
 declare const exit: ModuleAPI["exit"];
 
-export { AssetEntry, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { AssetEntry, BootJsonData, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, ICUDataMode, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

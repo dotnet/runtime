@@ -752,9 +752,14 @@ public:
     static int GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
 #endif
 
+#if defined(TARGET_RISCV64)
+    static bool IsRiscv64OnlyOneField(MethodTable * pMT);
+    static int GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
+#endif
+
 #if defined(UNIX_AMD64_ABI_ITF)
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
-    bool ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
+    bool ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct, MethodTable** pByValueClassCache = NULL);
     bool ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, EEClassNativeLayoutInfo const* nativeLayoutInfo);
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
@@ -794,7 +799,7 @@ private:
 #if defined(UNIX_AMD64_ABI_ITF)
     void AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel) const;
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
-    bool ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
+    bool ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct, MethodTable** pByValueClassCache);
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
     DWORD   GetClassIndexFromToken(mdTypeDef typeToken)

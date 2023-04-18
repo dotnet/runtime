@@ -2353,5 +2353,30 @@ namespace Internal.JitInterface
                 _ => -1
             };
         }
+
+        private bool getIsClassInitedFlagAddress(CORINFO_CLASS_STRUCT_* cls, ref CORINFO_CONST_LOOKUP addr, ref int offset)
+        {
+            MetadataType type = (MetadataType)HandleToObject(cls);
+            addr.addr = (void*)ObjectToHandle(_compilation.NodeFactory.TypeNonGCStaticsSymbol(type));
+            addr.accessType = InfoAccessType.IAT_VALUE;
+            offset = -NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
+            return true;
+        }
+
+        private bool getStaticBaseAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref CORINFO_CONST_LOOKUP addr)
+        {
+            MetadataType type = (MetadataType)HandleToObject(cls);
+            if (isGc)
+            {
+                addr.accessType = InfoAccessType.IAT_PVALUE;
+                addr.addr = (void*)ObjectToHandle(_compilation.NodeFactory.TypeGCStaticsSymbol(type));
+            }
+            else
+            {
+                addr.accessType = InfoAccessType.IAT_VALUE;
+                addr.addr = (void*)ObjectToHandle(_compilation.NodeFactory.TypeNonGCStaticsSymbol(type));
+            }
+            return true;
+        }
     }
 }

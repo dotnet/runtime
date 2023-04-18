@@ -35,6 +35,7 @@
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
+using Xunit;
 
 class ApplicationException : Exception { }
 
@@ -615,7 +616,8 @@ public struct BB
 
 public class App
 {
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

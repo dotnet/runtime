@@ -16,6 +16,7 @@ import {
     append_memmove_dest_src, try_append_memset_fast,
     try_append_memmove_fast, counters,
     getMemberOffset, JiterpMember, BailoutReason,
+    getOpcodeTableValue
 } from "./jiterpreter-support";
 import {
     sizeOfDataItem,
@@ -27,6 +28,7 @@ import {
     traceEip, nullCheckValidation,
     abortAtJittedLoopBodies, traceNullCheckOptimizations,
     nullCheckCaching, traceBackBranches,
+    maxCallHandlerReturnAddresses,
 
     mostRecentOptions,
 
@@ -213,8 +215,8 @@ export function generateWasmBody (
             //  a given exit
             exitOpcodeCounter = conditionalOpcodeCounter + prologueOpcodeCounter +
                 builder.branchTargets.size;
-        let isLowValueOpcode = false,
-            skipDregInvalidation = false;
+        let skipDregInvalidation = false,
+            opcodeValue = getOpcodeTableValue(opcode);
 
         // We record the offset of each backward branch we encounter, so that later branch
         //  opcodes know that it's available by branching to the top of the dispatch loop
@@ -242,6 +244,10 @@ export function generateWasmBody (
             //  of that by only counting how far we are from the most recent branch target
             conditionalOpcodeCounter = 0;
         }
+
+        // Handle the _OUTSIDE_BRANCH_BLOCK table entries
+        if ((opcodeValue < -1) && isConditionallyExecuted)
+            opcodeValue = (opcodeValue === -2) ? 2 : 0;
 
         isFirstInstruction = false;
 
@@ -339,18 +345,18 @@ export function generateWasmBody (
                     isConditionallyExecuted = true;
                 break;
 
-            case MintOpcode.MINT_LEAVE_S:
             case MintOpcode.MINT_BR_S:
             case MintOpcode.MINT_CALL_HANDLER:
             case MintOpcode.MINT_CALL_HANDLER_S:
                 if (!emit_branch(builder, ip, frame, opcode))
                     ip = abort;
-                else
+                else {
                     // Technically incorrect, but the instructions following this one may not be executed
                     //  since we might have skipped over them.
                     // FIXME: Identify when we should actually set the conditionally executed flag, perhaps
                     //  by doing a simple static flow analysis based on the displacements. Update heuristic too!
                     isConditionallyExecuted = true;
+                }
                 break;
 
             case MintOpcode.MINT_CKNULL: {
@@ -392,7 +398,7 @@ export function generateWasmBody (
             }
 
             case MintOpcode.MINT_TIER_ENTER_JITERPRETER:
-                isLowValueOpcode = true;
+                opcodeValue = 0;
                 // If we hit an enter opcode and we're not currently in a branch block
                 //  or the enter opcode is the first opcode in a branch block, this likely
                 //  indicates that we've reached a loop body that was already jitted before
@@ -405,7 +411,7 @@ export function generateWasmBody (
                 //  and leaves us in the interp.
                 if (
                     abortAtJittedLoopBodies &&
-                    (result >= builder.options.minimumTraceLength) &&
+                    (result >= builder.options.minimumTraceValue) &&
                     // This is an unproductive heuristic if backward branches are on
                     !builder.options.noExitBackwardBranches
                 ) {
@@ -426,21 +432,6 @@ export function generateWasmBody (
                         ip = abort;
                     }
                 }
-                break;
-
-            case MintOpcode.MINT_TIER_MONITOR_JITERPRETER:
-            case MintOpcode.MINT_TIER_PREPARE_JITERPRETER:
-            case MintOpcode.MINT_TIER_NOP_JITERPRETER: // FIXME: Should we abort for NOPs like ENTERs?
-            case MintOpcode.MINT_NOP:
-            case MintOpcode.MINT_DEF:
-            case MintOpcode.MINT_DUMMY_USE:
-            case MintOpcode.MINT_IL_SEQ_POINT:
-            case MintOpcode.MINT_TIER_PATCHPOINT_DATA:
-            case MintOpcode.MINT_MONO_MEMORY_BARRIER:
-            case MintOpcode.MINT_SDB_BREAKPOINT:
-            case MintOpcode.MINT_SDB_INTR_LOC:
-            case MintOpcode.MINT_SDB_SEQ_POINT:
-                isLowValueOpcode = true;
                 break;
 
             case MintOpcode.MINT_SAFEPOINT:
@@ -867,7 +858,7 @@ export function generateWasmBody (
                     //  to abort the entire trace if we have branch support enabled - the call
                     //  might be infrequently hit and as a result it's worth it to keep going.
                     append_exit(builder, ip, exitOpcodeCounter, BailoutReason.Call);
-                    isLowValueOpcode = true;
+                    opcodeValue = 0;
                 } else {
                     // We're in a block that executes unconditionally, and no branches have been
                     //  executed before now so the trace will always need to bail out into the
@@ -891,7 +882,6 @@ export function generateWasmBody (
                             ? BailoutReason.CallDelegate
                             : BailoutReason.Call
                     );
-                    isLowValueOpcode = true;
                 } else {
                     ip = abort;
                 }
@@ -907,7 +897,6 @@ export function generateWasmBody (
                 // See comments for MINT_CALL
                 if (isConditionallyExecuted) {
                     append_bailout(builder, ip, BailoutReason.Icall);
-                    isLowValueOpcode = true;
                 } else {
                     ip = abort;
                 }
@@ -920,16 +909,50 @@ export function generateWasmBody (
                 // Not an exit, because throws are by definition unlikely
                 // We shouldn't make optimization decisions based on them.
                 append_bailout(builder, ip, BailoutReason.Throw);
-                isLowValueOpcode = true;
                 break;
 
-            case MintOpcode.MINT_ENDFINALLY:
-                // This one might make sense to partially implement, but the jump target
-                //  is computed at runtime which would make it hard to figure out where
-                //  we need to put branch targets. Not worth just doing a conditional
-                //  bailout since finally blocks always run
-                ip = abort;
+            // These are generated in place of regular LEAVEs inside of the body of a catch clause.
+            // We can safely assume that during normal execution, catch clauses won't be running.
+            case MintOpcode.MINT_LEAVE_CHECK:
+            case MintOpcode.MINT_LEAVE_S_CHECK:
+                append_bailout(builder, ip, BailoutReason.LeaveCheck);
                 break;
+
+            case MintOpcode.MINT_ENDFINALLY: {
+                if (
+                    (builder.callHandlerReturnAddresses.length > 0) &&
+                    (builder.callHandlerReturnAddresses.length <= maxCallHandlerReturnAddresses)
+                ) {
+                    // console.log(`endfinally @0x${(<any>ip).toString(16)}. return addresses:`, builder.callHandlerReturnAddresses.map(ra => (<any>ra).toString(16)));
+                    // FIXME: Clean this codegen up
+                    // Load ret_ip
+                    const clauseIndex = getArgU16(ip, 1),
+                        clauseDataOffset = get_imethod_clause_data_offset(frame, clauseIndex);
+                    builder.local("pLocals");
+                    builder.appendU8(WasmOpcode.i32_load);
+                    builder.appendMemarg(clauseDataOffset, 0);
+                    // Stash it in a variable because we're going to need to use it multiple times
+                    builder.local("math_lhs32", WasmOpcode.set_local);
+                    // Do a bunch of trivial comparisons to see if ret_ip is one of our expected return addresses,
+                    //  and if it is, generate a branch back to the dispatcher at the top
+                    for (let r = 0; r < builder.callHandlerReturnAddresses.length; r++) {
+                        const ra = builder.callHandlerReturnAddresses[r];
+                        builder.local("math_lhs32");
+                        builder.ptr_const(ra);
+                        builder.appendU8(WasmOpcode.i32_eq);
+                        builder.block(WasmValtype.void, WasmOpcode.if_);
+                        builder.cfg.branch(ra, ra < ip, true);
+                        builder.endBlock();
+                    }
+                    // If none of the comparisons succeeded we won't have branched anywhere, so bail out
+                    // This shouldn't happen during non-exception-handling execution unless the trace doesn't
+                    //  contain the CALL_HANDLER that led here
+                    append_bailout(builder, ip, BailoutReason.UnexpectedRetIp);
+                } else {
+                    ip = abort;
+                }
+                break;
+            }
 
             case MintOpcode.MINT_RETHROW:
             case MintOpcode.MINT_PROF_EXIT:
@@ -1161,7 +1184,6 @@ export function generateWasmBody (
                         // FIXME: Or do we want to record them? Early conditional returns might reduce the value of a trace,
                         //  but the main problem is more likely to be calls early in traces. Worth testing later.
                         append_bailout(builder, ip, BailoutReason.Return);
-                        isLowValueOpcode = true;
                     } else
                         ip = abort;
                 } else if (
@@ -1236,10 +1258,16 @@ export function generateWasmBody (
                     if (builder.branchTargets.size > 0) {
                         // FIXME: Try to reduce the number of these
                         append_exit(builder, ip, exitOpcodeCounter, BailoutReason.ComplexBranch);
-                        isLowValueOpcode = true;
                     } else
                         ip = abort;
+                } else if (opcodeValue === 0) {
+                    // This means it was explicitly marked as no-value in the opcode value table
+                    //  so we can just skip over it. This is done for things like nops.
                 } else {
+                    /*
+                    if (opcodeValue > 0)
+                        console.log(`JITERP: aborting trace for opcode ${opname} with value ${opcodeValue}`);
+                    */
                     ip = abort;
                 }
                 break;
@@ -1280,12 +1308,14 @@ export function generateWasmBody (
                 builder.traceBuf.push(stmtText);
             }
 
-            if (!isLowValueOpcode) {
+            if (opcodeValue > 0) {
                 if (isConditionallyExecuted)
                     conditionalOpcodeCounter++;
                 else
                     prologueOpcodeCounter++;
-                result++;
+                result += opcodeValue;
+            } else if (opcodeValue < 0) {
+                // console.log(`JITERP: opcode ${opname} did not abort but had value ${opcodeValue}`);
             }
 
             ip += <any>(info[1] * 2);
@@ -2444,7 +2474,8 @@ function append_call_handler_store_ret_ip (
     builder.appendU8(WasmOpcode.i32_store);
     builder.appendMemarg(clauseDataOffset, 0); // FIXME: 32-bit alignment?
 
-    // console.log(`call_handler clauseDataOffset=0x${clauseDataOffset.toString(16)} retIp=0x${retIp.toString(16)}`);
+    // console.log(`call_handler @0x${(<any>ip).toString(16)} retIp=0x${retIp.toString(16)}`);
+    builder.callHandlerReturnAddresses.push(retIp);
 }
 
 function emit_branch (
@@ -2463,8 +2494,6 @@ function emit_branch (
     //  the current branch block and execution proceeds forward to find the
     //  branch target (if possible), bailing out at the end otherwise
     switch (opcode) {
-        case MintOpcode.MINT_LEAVE:
-        case MintOpcode.MINT_LEAVE_S:
         case MintOpcode.MINT_CALL_HANDLER:
         case MintOpcode.MINT_CALL_HANDLER_S:
         case MintOpcode.MINT_BR:
@@ -2472,7 +2501,6 @@ function emit_branch (
             const isCallHandler = (opcode === MintOpcode.MINT_CALL_HANDLER) ||
                 (opcode === MintOpcode.MINT_CALL_HANDLER_S);
             displacement = (
-                (opcode === MintOpcode.MINT_LEAVE) ||
                 (opcode === MintOpcode.MINT_BR) ||
                 (opcode === MintOpcode.MINT_CALL_HANDLER)
             )
@@ -2496,10 +2524,14 @@ function emit_branch (
                     counters.backBranchesEmitted++;
                     return true;
                 } else {
-                    if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
-                        console.log(`back branch target 0x${destination.toString(16)} not found in list ` +
+                    if (destination < builder.cfg.entryIp) {
+                        if ((traceBackBranches > 1) || (builder.cfg.trace > 1))
+                            console.log(`${info[0]} target 0x${destination.toString(16)} before start of trace`);
+                    } else if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
+                        console.log(`0x${(<any>ip).toString(16)} ${info[0]} target 0x${destination.toString(16)} not found in list ` +
                             builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
                         );
+
                     cwraps.mono_jiterp_boost_back_branch_target(destination);
                     // FIXME: Should there be a safepoint here?
                     append_bailout(builder, destination, BailoutReason.BackwardBranch);
@@ -2586,8 +2618,11 @@ function emit_branch (
             builder.cfg.branch(destination, true, true);
             counters.backBranchesEmitted++;
         } else {
-            if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
-                console.log(`back branch target 0x${destination.toString(16)} not found in list ` +
+            if (destination < builder.cfg.entryIp) {
+                if ((traceBackBranches > 1) || (builder.cfg.trace > 1))
+                    console.log(`${info[0]} target 0x${destination.toString(16)} before start of trace`);
+            } else if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
+                console.log(`0x${(<any>ip).toString(16)} ${info[0]} target 0x${destination.toString(16)} not found in list ` +
                     builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
                 );
             // We didn't find a loop to branch to, so bail out

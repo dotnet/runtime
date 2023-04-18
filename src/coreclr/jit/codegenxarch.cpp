@@ -355,7 +355,7 @@ void CodeGen::genEHFinallyOrFilterRet(BasicBlock* block)
     assert(block->lastNode() != nullptr);
     assert(block->lastNode()->OperGet() == GT_RETFILT);
 
-    if (block->bbJumpKind == BBJ_EHFINALLYRET)
+    if (block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET))
     {
         assert(block->lastNode()->AsOp()->gtOp1 == nullptr); // op1 == nullptr means endfinally
 
@@ -1704,9 +1704,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     // setting the GTF_REUSE_REG_VAL flag.
     if (treeNode->IsReuseRegVal())
     {
-        // For now, this is only used for constant nodes.
-        assert((treeNode->OperIsConst()));
-        JITDUMP("  TreeNode is marked ReuseReg\n");
+        genCodeForReuseVal(treeNode);
         return;
     }
 
@@ -2583,12 +2581,13 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
     regNumber src  = genConsumeReg(srcIndir->Addr());
     unsigned  size = tree->Size();
 
-    // TODO-XARCH-AVX512: Consider enabling it here
-    unsigned simdSize = (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
-                            ? YMM_REGSIZE_BYTES
-                            : XMM_REGSIZE_BYTES;
-
-    if (size >= simdSize)
+    unsigned simdSize = compiler->roundDownSIMDSize(size);
+    if (size <= ZMM_RECOMMENDED_THRESHOLD)
+    {
+        // Only use ZMM for large data due to possible CPU throttle issues
+        simdSize = min(YMM_REGSIZE_BYTES, simdSize);
+    }
+    if ((size >= simdSize) && (simdSize > 0))
     {
         // Number of SIMD regs needed to save the whole src to regs.
         unsigned numberOfSimdRegs = tree->AvailableTempRegCount(RBM_ALLFLOAT);
@@ -2605,33 +2604,37 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
         }
 
         auto emitSimdLoadStore = [&](bool load) {
-            unsigned    offset   = 0;
-            int         regIndex = 0;
-            instruction simdMov  = simdUnalignedMovIns();
+            unsigned    offset      = 0;
+            int         regIndex    = 0;
+            instruction simdMov     = simdUnalignedMovIns();
+            unsigned    curSimdSize = simdSize;
             do
             {
+                assert(curSimdSize >= XMM_REGSIZE_BYTES);
                 if (load)
                 {
                     // vmovdqu  ymm, ymmword ptr[src + offset]
-                    GetEmitter()->emitIns_R_AR(simdMov, EA_ATTR(simdSize), tempRegs[regIndex++], src, offset);
+                    GetEmitter()->emitIns_R_AR(simdMov, EA_ATTR(curSimdSize), tempRegs[regIndex++], src, offset);
                 }
                 else
                 {
                     // vmovdqu  ymmword ptr[dst + offset], ymm
-                    GetEmitter()->emitIns_AR_R(simdMov, EA_ATTR(simdSize), tempRegs[regIndex++], dst, offset);
+                    GetEmitter()->emitIns_AR_R(simdMov, EA_ATTR(curSimdSize), tempRegs[regIndex++], dst, offset);
                 }
-                offset += simdSize;
+                offset += curSimdSize;
                 if (size == offset)
                 {
                     break;
                 }
 
+                // Overlap with the previously processed data. We'll always use SIMD for simplicity
                 assert(size > offset);
-                if ((size - offset) < simdSize)
+                unsigned remainder = size - offset;
+                if (remainder < curSimdSize)
                 {
-                    // Overlap with the previously processed data. We'll always use SIMD for simplicity
-                    // TODO-CQ: Consider using smaller SIMD reg or GPR for the remainder.
-                    offset = size - simdSize;
+                    // Switch to smaller SIMD size if necessary
+                    curSimdSize = compiler->roundUpSIMDSize(remainder);
+                    offset      = size - curSimdSize;
                 }
             } while (true);
         };
@@ -2744,18 +2747,10 @@ void CodeGen::genLclHeap(GenTree* tree)
 
     // compute the amount of memory to allocate to properly STACK_ALIGN.
     size_t amount = 0;
-    if (size->IsCnsIntOrI())
+    if (size->IsCnsIntOrI() && size->isContained())
     {
-        // If size is a constant, then it must be contained.
-        assert(size->isContained());
-
-        // If amount is zero then return null in targetReg
         amount = size->AsIntCon()->gtIconVal;
-        if (amount == 0)
-        {
-            instGen_Set_Reg_To_Zero(EA_PTRSIZE, targetReg);
-            goto BAILOUT;
-        }
+        assert((amount > 0) && (amount <= UINT_MAX));
 
         // 'amount' is the total number of bytes to localloc to properly STACK_ALIGN
         amount = AlignUp(amount, STACK_ALIGN);
@@ -2850,77 +2845,44 @@ void CodeGen::genLclHeap(GenTree* tree)
             goto ALLOC_DONE;
         }
 
-        inst_RV_IV(INS_add, REG_SPBASE, compiler->lvaOutgoingArgSpaceSize, EA_PTRSIZE);
-        stackAdjustment += (target_size_t)compiler->lvaOutgoingArgSpaceSize;
-        locAllocStackOffset = stackAdjustment;
+        if (size->IsCnsIntOrI() && size->isContained())
+        {
+            stackAdjustment     = 0;
+            locAllocStackOffset = (target_size_t)compiler->lvaOutgoingArgSpaceSize;
+        }
+        else
+        {
+            inst_RV_IV(INS_add, REG_SPBASE, compiler->lvaOutgoingArgSpaceSize, EA_PTRSIZE);
+            stackAdjustment += (target_size_t)compiler->lvaOutgoingArgSpaceSize;
+            locAllocStackOffset = stackAdjustment;
+        }
     }
 #endif
 
-    if (size->IsCnsIntOrI())
+    if (size->IsCnsIntOrI() && size->isContained())
     {
         // We should reach here only for non-zero, constant size allocations.
         assert(amount > 0);
         assert((amount % STACK_ALIGN) == 0);
-        assert((amount % REGSIZE_BYTES) == 0);
 
-        // For small allocations we will generate up to six push 0 inline
-        size_t cntRegSizedWords = amount / REGSIZE_BYTES;
-        if (compiler->info.compInitMem && (cntRegSizedWords <= 6))
+        // We should reach here only for non-zero, constant size allocations which we zero
+        // via BLK explicitly, so just bump the stack pointer.
+        if ((amount >= compiler->eeGetPageSize()) || (TARGET_POINTER_SIZE == 4))
         {
-            for (; cntRegSizedWords != 0; cntRegSizedWords--)
-            {
-                inst_IV(INS_push_hide, 0); // push_hide means don't track the stack
-            }
-
-            lastTouchDelta = 0;
-
-            goto ALLOC_DONE;
+            regCnt = tree->GetSingleTempReg();
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, regCnt, -(ssize_t)amount);
+            genStackPointerDynamicAdjustmentWithProbe(regCnt);
+            // lastTouchDelta is dynamic, and can be up to a page. So if we have outgoing arg space,
+            // we're going to assume the worst and probe.
         }
-
-#ifdef TARGET_X86
-        bool needRegCntRegister = true;
-#else  // !TARGET_X86
-        bool needRegCntRegister = initMemOrLargeAlloc;
-#endif // !TARGET_X86
-
-        if (needRegCntRegister)
-        {
-            // If compInitMem=true, we can reuse targetReg as regcnt.
-            // Since size is a constant, regCnt is not yet initialized.
-            assert(regCnt == REG_NA);
-            if (compiler->info.compInitMem)
-            {
-                assert(tree->AvailableTempRegCount() == 0);
-                regCnt = targetReg;
-            }
-            else
-            {
-                regCnt = tree->GetSingleTempReg();
-            }
-        }
-
-        if (!initMemOrLargeAlloc)
+        else
         {
             // Since the size is less than a page, and we don't need to zero init memory, simply adjust ESP.
-            // ESP might already be in the guard page, so we must touch it BEFORE
-            // the alloc, not after.
-
-            assert(amount < compiler->eeGetPageSize()); // must be < not <=
+            // ESP might already be in the guard page, so we must touch it BEFORE the alloc, not after.
             lastTouchDelta = genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)amount,
-                                                                            /* trackSpAdjustments */ regCnt == REG_NA);
-            goto ALLOC_DONE;
+                                                                            /* trackSpAdjustments */ true);
         }
-
-        // else, "mov regCnt, amount"
-
-        if (compiler->info.compInitMem)
-        {
-            // When initializing memory, we want 'amount' to be the loop count.
-            assert((amount % STACK_ALIGN) == 0);
-            amount /= STACK_ALIGN;
-        }
-
-        instGen_Set_Reg_To_Imm(((size_t)(int)amount == amount) ? EA_4BYTE : EA_8BYTE, regCnt, amount);
+        goto ALLOC_DONE;
     }
 
     // We should not have any temp registers at this point.
@@ -2998,8 +2960,6 @@ ALLOC_DONE:
         genDefineTempLabel(endLabel);
     }
 
-BAILOUT:
-
 #ifdef JIT32_GCENCODER
     if (compiler->lvaLocAllocSPvar != BAD_VAR_NUM)
     {
@@ -3031,8 +2991,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
         assert(!storeBlkNode->gtBlkOpGcUnsafe);
 #endif
         assert(storeBlkNode->OperIsCopyBlkOp());
-        assert(storeBlkNode->AsObj()->GetLayout()->HasGCPtr());
-        genCodeForCpObj(storeBlkNode->AsObj());
+        assert(storeBlkNode->AsBlk()->GetLayout()->HasGCPtr());
+        genCodeForCpObj(storeBlkNode->AsBlk());
         return;
     }
 
@@ -3827,15 +3787,15 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
 {
     GenTree* src = putArgNode->Data();
     // We will never call this method for SIMD types, which are stored directly in genPutStructArgStk().
-    assert(src->isContained() && src->TypeIs(TYP_STRUCT) && (src->OperIs(GT_OBJ) || src->OperIsLocalRead()));
+    assert(src->isContained() && src->TypeIs(TYP_STRUCT) && (src->OperIs(GT_BLK) || src->OperIsLocalRead()));
 
 #ifdef TARGET_X86
     assert(!m_pushStkArg);
 #endif
 
-    if (src->OperIs(GT_OBJ))
+    if (src->OperIs(GT_BLK))
     {
-        genConsumeReg(src->AsObj()->Addr());
+        genConsumeReg(src->AsBlk()->Addr());
     }
 
     unsigned loadSize = putArgNode->GetArgLoadSize();
@@ -3951,7 +3911,7 @@ void CodeGen::genStructPutArgPush(GenTreePutArgStk* putArgNode)
     }
     else
     {
-        srcAddrReg = genConsumeReg(src->AsObj()->Addr());
+        srcAddrReg = genConsumeReg(src->AsBlk()->Addr());
     }
 
     ClassLayout*   layout   = src->GetLayout(compiler);
@@ -4138,7 +4098,7 @@ void CodeGen::genClearStackVec3ArgUpperBits()
 //    The register assignments have been set appropriately.
 //    This is validated by genConsumeBlockOp().
 //
-void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
+void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
     // Make sure we got the arguments of the cpobj operation in the right registers
     GenTree*  dstAddr     = cpObjNode->Addr();
@@ -5465,8 +5425,13 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
     {
         noway_assert(EA_ATTR(genTypeSize(targetType)) == EA_PTRSIZE);
+#if TARGET_64BIT
+        emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_GS,
+                          (int)addr->AsIntCon()->gtIconVal);
+#else
         emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_FS,
                           (int)addr->AsIntCon()->gtIconVal);
+#endif
     }
     else
     {
@@ -5669,6 +5634,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_SSE41_X64_Extract:
                         case NI_AVX_ExtractVector128:
                         case NI_AVX2_ExtractVector128:
+                        case NI_AVX512F_ExtractVector128:
                         case NI_AVX512F_ExtractVector256:
                         {
                             // These intrinsics are "ins reg/mem, xmm, imm8"
@@ -5691,6 +5657,25 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
                             assert((ival >= 0) && (ival <= 255));
                             op2->gtIconVal = static_cast<int8_t>(ival);
+                            break;
+                        }
+
+                        case NI_AVX512F_ConvertToVector128Int16:
+                        case NI_AVX512F_ConvertToVector128Int32:
+                        case NI_AVX512F_ConvertToVector128UInt16:
+                        case NI_AVX512F_ConvertToVector128UInt32:
+                        case NI_AVX512F_ConvertToVector256Int16:
+                        case NI_AVX512F_ConvertToVector256Int32:
+                        case NI_AVX512F_ConvertToVector256UInt16:
+                        case NI_AVX512F_ConvertToVector256UInt32:
+                        case NI_AVX512BW_ConvertToVector128Byte:
+                        case NI_AVX512BW_ConvertToVector128SByte:
+                        case NI_AVX512BW_ConvertToVector256Byte:
+                        case NI_AVX512BW_ConvertToVector256SByte:
+                        {
+                            // These intrinsics are "ins reg/mem, xmm"
+                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                            attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(hwintrinsic->GetSimdSize()));
                             break;
                         }
 
@@ -7023,7 +7008,15 @@ void CodeGen::genCompareInt(GenTree* treeNode)
                 targetType = TYP_BOOL; // just a tip for inst_SETCC that movzx is not needed
             }
         }
-        emit->emitInsBinary(ins, emitTypeSize(type), op1, op2);
+
+        emitAttr size    = emitTypeSize(type);
+        bool     canSkip = compiler->opts.OptimizationEnabled() && (ins == INS_cmp) && !op1->isUsedFromMemory() &&
+                       !op2->isUsedFromMemory() && emit->IsRedundantCmp(size, op1->GetRegNum(), op2->GetRegNum());
+
+        if (!canSkip)
+        {
+            emit->emitInsBinary(ins, size, op1, op2);
+        }
     }
 
     // Are we evaluating this into a register?

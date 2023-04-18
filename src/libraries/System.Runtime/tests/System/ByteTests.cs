@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -98,11 +99,15 @@ namespace System.Tests
                 yield return new object[] { (byte)123, "D", emptyFormat, "123" };
                 yield return new object[] { (byte)123, "D99", emptyFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123" };
 
+                yield return new object[] { (byte)0, "x", emptyFormat, "0" };
                 yield return new object[] { (byte)0x24, "x", emptyFormat, "24" };
+
+                yield return new object[] { (byte)0, "b", emptyFormat, "0" };
+                yield return new object[] { (byte)0x24, "b", emptyFormat, "100100" };
+
                 yield return new object[] { (byte)24, "N", emptyFormat, string.Format("{0:N}", 24.00) };
-
-
             }
+
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
             yield return new object[] { (byte)32, "C100", invariantFormat, "\u00A432.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (byte)32, "P100", invariantFormat, "3,200.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
@@ -111,6 +116,7 @@ namespace System.Tests
             yield return new object[] { (byte)32, "F100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (byte)32, "N100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (byte)32, "X100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020" };
+            yield return new object[] { (byte)32, "B100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000" };
 
             var customFormat = new NumberFormatInfo()
             {
@@ -357,45 +363,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void TryFormat(byte i, string format, IFormatProvider provider, string expected)
-        {
-            char[] actual;
-            int charsWritten;
-
-            // Just right
-            actual = new char[expected.Length];
-            Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, new string(actual));
-
-            // Longer than needed
-            actual = new char[expected.Length + 1];
-            Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, new string(actual, 0, charsWritten));
-
-            // Too short
-            if (expected.Length > 0)
-            {
-                actual = new char[expected.Length - 1];
-                Assert.False(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
-                Assert.Equal(0, charsWritten);
-            }
-
-            if (format != null)
-            {
-                // Upper format
-                actual = new char[expected.Length];
-                Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format.ToUpperInvariant(), provider));
-                Assert.Equal(expected.Length, charsWritten);
-                Assert.Equal(expected.ToUpperInvariant(), new string(actual));
-
-                // Lower format
-                actual = new char[expected.Length];
-                Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format.ToLowerInvariant(), provider));
-                Assert.Equal(expected.Length, charsWritten);
-                Assert.Equal(expected.ToLowerInvariant(), new string(actual));
-            }
-        }
+        public static void TryFormat(byte i, string format, IFormatProvider provider, string expected) =>
+            NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);
     }
 }

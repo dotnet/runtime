@@ -522,6 +522,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowFormatException_NeedSingleChar()
+        {
+            throw new FormatException(SR.Format_NeedSingleChar);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge()
         {
             throw new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
@@ -1094,6 +1100,10 @@ namespace System
                     return SR.ArgumentOutOfRange_NotGreaterThanBufferLength;
                 case ExceptionResource.InvalidOperation_SpanOverlappedOperation:
                     return SR.InvalidOperation_SpanOverlappedOperation;
+                case ExceptionResource.InvalidOperation_TimeProviderNullLocalTimeZone:
+                    return SR.InvalidOperation_TimeProviderNullLocalTimeZone;
+                case ExceptionResource.InvalidOperation_TimeProviderInvalidTimestampFrequency:
+                    return SR.InvalidOperation_TimeProviderInvalidTimestampFrequency;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1285,5 +1295,7 @@ namespace System
         CancellationTokenSource_Disposed,
         Argument_AlignmentMustBePow2,
         InvalidOperation_SpanOverlappedOperation,
+        InvalidOperation_TimeProviderNullLocalTimeZone,
+        InvalidOperation_TimeProviderInvalidTimestampFrequency,
     }
 }

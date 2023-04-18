@@ -562,37 +562,63 @@ namespace System.Tests
         [Fact]
         public static void TryFormatTest()
         {
-            Span<char> buffer = stackalloc char[100];
-            TimeOnly timeOnly = TimeOnly.FromDateTime(DateTime.Now);
+            // UTF16
+            {
+                Span<char> buffer = stackalloc char[100];
+                TimeOnly timeOnly = TimeOnly.FromDateTime(DateTime.Now);
 
-            buffer.Fill(' ');
-            Assert.True(timeOnly.TryFormat(buffer, out int charsWritten));
-            Assert.Equal(charsWritten, buffer.TrimEnd().Length);
+                buffer.Fill(' ');
+                Assert.True(timeOnly.TryFormat(buffer, out int charsWritten));
+                Assert.Equal(charsWritten, buffer.TrimEnd().Length);
 
-            buffer.Fill(' ');
-            Assert.True(timeOnly.TryFormat(buffer, out charsWritten, "o"));
-            Assert.Equal(16, charsWritten);
-            Assert.Equal(16, buffer.TrimEnd().Length);
+                buffer.Fill(' ');
+                Assert.True(timeOnly.TryFormat(buffer, out charsWritten, "o"));
+                Assert.Equal(16, charsWritten);
+                Assert.Equal(16, buffer.TrimEnd().Length);
 
-            buffer.Fill(' ');
-            Assert.True(timeOnly.TryFormat(buffer, out charsWritten, "R"));
-            Assert.Equal(8, charsWritten);
-            Assert.Equal(8, buffer.TrimEnd().Length);
+                buffer.Fill(' ');
+                Assert.True(timeOnly.TryFormat(buffer, out charsWritten, "R"));
+                Assert.Equal(8, charsWritten);
+                Assert.Equal(8, buffer.TrimEnd().Length);
 
-            Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten));
-            Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "r"));
-            Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "O"));
+                Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten));
+                Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "r"));
+                Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "O"));
 
-            Assert.Throws<FormatException>(() => {
-                    Span<char> buff = stackalloc char[100];
-                    timeOnly.TryFormat(buff, out charsWritten, "u");
-                });
-            Assert.Throws<FormatException>(() => {
-                    Span<char> buff = stackalloc char[100];
-                    timeOnly.TryFormat(buff, out charsWritten, "dd-yyyy");
-                });
-            Assert.Throws<FormatException>(() => $"{timeOnly:u}");
-            Assert.Throws<FormatException>(() => $"{timeOnly:dd-yyyy}");
+                Assert.Throws<FormatException>(() => timeOnly.TryFormat(stackalloc char[100], out charsWritten, "u"));
+                Assert.Throws<FormatException>(() => timeOnly.TryFormat(stackalloc char[100], out charsWritten, "dd-yyyy"));
+                Assert.Throws<FormatException>(() => $"{timeOnly:u}");
+                Assert.Throws<FormatException>(() => $"{timeOnly:dd-yyyy}");
+            }
+
+            // UTF8
+            {
+                Span<byte> buffer = stackalloc byte[100];
+                TimeOnly timeOnly = TimeOnly.FromDateTime(DateTime.Now);
+
+                buffer.Fill((byte)' ');
+                Assert.True(timeOnly.TryFormat(buffer, out int bytesWritten));
+                Assert.Equal(bytesWritten, buffer.TrimEnd(" "u8).Length);
+
+                buffer.Fill((byte)' ');
+                Assert.True(timeOnly.TryFormat(buffer, out bytesWritten, "o"));
+                Assert.Equal(16, bytesWritten);
+                Assert.Equal(16, buffer.TrimEnd(" "u8).Length);
+
+                buffer.Fill((byte)' ');
+                Assert.True(timeOnly.TryFormat(buffer, out bytesWritten, "R"));
+                Assert.Equal(8, bytesWritten);
+                Assert.Equal(8, buffer.TrimEnd(" "u8).Length);
+
+                Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out bytesWritten));
+                Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out bytesWritten, "r"));
+                Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out bytesWritten, "O"));
+
+                Assert.Throws<FormatException>(() => timeOnly.TryFormat(new byte[100], out bytesWritten, "u"));
+                Assert.Throws<FormatException>(() => timeOnly.TryFormat(new byte[100], out bytesWritten, "dd-yyyy"));
+                Assert.Throws<FormatException>(() => $"{timeOnly:u}");
+                Assert.Throws<FormatException>(() => $"{timeOnly:dd-yyyy}");
+            }
         }
     }
 }

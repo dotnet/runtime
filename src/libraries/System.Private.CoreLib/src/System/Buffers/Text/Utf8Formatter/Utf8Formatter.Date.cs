@@ -37,13 +37,23 @@ namespace System.Buffers.Text
                 offset = value.Offset;
             }
 
-            return symbol switch
+            switch (symbol)
             {
-                'R' => TryFormatDateTimeR(value.UtcDateTime, destination, out bytesWritten),
-                'l' => TryFormatDateTimeL(value.UtcDateTime, destination, out bytesWritten),
-                'O' => TryFormatDateTimeO(value.DateTime, value.Offset, destination, out bytesWritten),
-                'G' => TryFormatDateTimeG(value.DateTime, offset, destination, out bytesWritten),
-                _ => FormattingHelpers.TryFormatThrowFormatException(out bytesWritten),
+                case 'R':
+                    return DateTimeFormat.TryFormatR(value.UtcDateTime, new TimeSpan(DateTimeFormat.NullOffset), destination, out bytesWritten);
+
+                case 'O':
+                    return DateTimeFormat.TryFormatO(value.DateTime, value.Offset, destination, out bytesWritten);
+
+                case 'l':
+                    return TryFormatDateTimeL(value.UtcDateTime, destination, out bytesWritten);
+
+                case 'G':
+                    return TryFormatDateTimeG(value.DateTime, offset, destination, out bytesWritten);
+
+                default:
+                    ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+                    goto case 'R';
             };
         }
 
@@ -70,16 +80,24 @@ namespace System.Buffers.Text
         /// </exceptions>
         public static bool TryFormat(DateTime value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
         {
-            char symbol = FormattingHelpers.GetSymbolOrDefault(format, 'G');
-
-            return symbol switch
+            switch (FormattingHelpers.GetSymbolOrDefault(format, 'G'))
             {
-                'R' => TryFormatDateTimeR(value, destination, out bytesWritten),
-                'l' => TryFormatDateTimeL(value, destination, out bytesWritten),
-                'O' => TryFormatDateTimeO(value, Utf8Constants.NullUtcOffset, destination, out bytesWritten),
-                'G' => TryFormatDateTimeG(value, Utf8Constants.NullUtcOffset, destination, out bytesWritten),
-                _ => FormattingHelpers.TryFormatThrowFormatException(out bytesWritten),
-            };
+                case 'R':
+                    return DateTimeFormat.TryFormatR(value, new TimeSpan(DateTimeFormat.NullOffset), destination, out bytesWritten);
+
+                case 'O':
+                    return DateTimeFormat.TryFormatO(value, Utf8Constants.NullUtcOffset, destination, out bytesWritten);
+
+                case 'l':
+                    return TryFormatDateTimeL(value, destination, out bytesWritten);
+
+                case 'G':
+                    return TryFormatDateTimeG(value, Utf8Constants.NullUtcOffset, destination, out bytesWritten);
+
+                default:
+                    ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+                    goto case 'R'; // unreachable
+            }
         }
     }
 }

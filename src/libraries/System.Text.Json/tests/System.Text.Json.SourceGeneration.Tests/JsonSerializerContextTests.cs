@@ -223,6 +223,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             JsonTypeInfo personInfo = options.GetTypeInfo(typeof(Person));
             Assert.IsAssignableFrom<JsonTypeInfo<Person>>(personInfo);
             Assert.Same(options, personInfo.Options);
+
+            NotSupportedException exn = Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(MyStruct)));
+            Assert.Contains(typeof(NestedContext).FullName, exn.Message);
+            Assert.Contains(typeof(PersonJsonContext).FullName, exn.Message);
         }
 
         [Fact]

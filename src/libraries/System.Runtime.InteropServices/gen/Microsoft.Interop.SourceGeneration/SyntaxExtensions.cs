@@ -81,6 +81,20 @@ namespace Microsoft.Interop
             return new SyntaxTokenList(strippedTokens);
         }
 
+        public static SyntaxTokenList StripAccessibilityModifiers(this SyntaxTokenList tokenList)
+        {
+            List<SyntaxToken> strippedTokens = new ();
+            for (int i = 0; i < tokenList.Count; i++)
+            {
+                if (tokenList[i].Kind() is SyntaxKind.PublicKeyword or SyntaxKind.InternalKeyword or SyntaxKind.ProtectedKeyword or SyntaxKind.PrivateKeyword)
+                {
+                    continue;
+                }
+                strippedTokens.Add(tokenList[i]);
+            }
+            return new SyntaxTokenList(strippedTokens);
+        }
+
         public static SyntaxTokenList AddToModifiers(this SyntaxTokenList modifiers, SyntaxKind modifierToAdd)
         {
             if (modifiers.IndexOf(modifierToAdd) >= 0)

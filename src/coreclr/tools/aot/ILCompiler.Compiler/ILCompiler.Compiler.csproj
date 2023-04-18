@@ -30,12 +30,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\..\..\libraries\Common\src\System\Reflection\TypeNameParser.cs">
-      <Link>TypeNameParser.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\..\libraries\Common\src\System\Text\ValueStringBuilder.cs">
-      <Link>ValueStringBuilder.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\DelegateInfo.cs">
       <Link>IL\DelegateInfo.cs</Link>
     </Compile>
@@ -390,6 +384,13 @@
     <Compile Include="Compiler\Dataflow\TrimAnalysisMethodCallPattern.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisPatternStore.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisReflectionAccessPattern.cs" />
+    <Compile Include="Compiler\Dataflow\TypeNameParser.Dataflow.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.cs">
+      <Link>Compiler\Dataflow\TypeNameParser.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs">
+      <Link>Utilities\ValueStringBuilder.cs</Link>
+    </Compile>
     <Compile Include="Compiler\Dataflow\ValueNode.cs" />
     <Compile Include="Compiler\DebugInformationProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeMetadataNode.cs" />
@@ -421,7 +422,6 @@
     <Compile Include="Compiler\DependencyAnalysis\TentativeInstanceMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TrimmingDescriptorNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\TypeNameParser.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VariantInterfaceMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldMetadataNode.cs" />
@@ -494,7 +494,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfFrozenObjectsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ClassConstructorContextMap.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ClonedConstructedEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ConstructedEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DictionaryLayoutNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternalReferencesTableNode.cs" />

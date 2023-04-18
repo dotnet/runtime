@@ -197,12 +197,7 @@ void ProcessChildStdErr(char* stderrFilename)
         if (buff[buffLen - 1] == '\n')
             buff[buffLen - 1] = 0;
 
-        if (strncmp(buff, "ERROR: ", 7) == 0)
-            LogError("%s", &buff[7]); // log as Error and remove the "ERROR: " in front
-        else if (strncmp(buff, "WARNING: ", 9) == 0)
-            LogWarning("%s", &buff[9]); // log as Warning and remove the "WARNING: " in front
-        else if (strlen(buff) > 0)
-            LogWarning("%s", buff); // unknown output, log it as a warning
+        LogPassThroughStderr(buff);
     }
 
 Cleanup:
@@ -237,26 +232,10 @@ void ProcessChildStdOut(const CommandLine::Options& o,
         if (buff[buffLen - 1] == '\n')
             buff[buffLen - 1] = 0;
 
-        if (strncmp(buff, "MISSING: ", 9) == 0)
-            LogMissing("%s", &buff[9]); // log as Missing and remove the "MISSING: " in front
-        else if (strncmp(buff, "ISSUE: ", 7) == 0)
-        {
-            if (strncmp(&buff[7], "<ASM_DIFF> ", 11) == 0)
-                LogIssue(ISSUE_ASM_DIFF, "%s", &buff[18]); // log as Issue and remove the "ISSUE: <ASM_DIFF>" in front
-            else if (strncmp(&buff[7], "<ASSERT> ", 9) == 0)
-                LogIssue(ISSUE_ASSERT, "%s", &buff[16]); // log as Issue and remove the "ISSUE: <ASSERT>" in front
-        }
-        else if (strncmp(buff, g_SuperPMIUsageFirstLine, strlen(g_SuperPMIUsageFirstLine)) == 0)
+        if (strncmp(buff, g_SuperPMIUsageFirstLine, strlen(g_SuperPMIUsageFirstLine)) == 0)
         {
             *usageError = true; // Signals that we had a SuperPMI command line usage error
-
-            // Read the entire stdout file and printf it
-            printf("%s", buff);
-            while (fgets(buff, MAX_LOG_LINE_SIZE, fp) != NULL)
-            {
-                printf("%s", buff);
-            }
-            break;
+            LogPassThroughStdout(buff);
         }
         else if (strncmp(buff, g_AllFormatStringFixedPrefix, strlen(g_AllFormatStringFixedPrefix)) == 0)
         {
@@ -289,6 +268,12 @@ void ProcessChildStdOut(const CommandLine::Options& o,
             *failed += childFailed;
             *excluded += childExcluded;
             *missing += childMissing;
+        }
+        else
+        {
+            // Do output pass-through.
+            // Note that the same logging verbosity level is passed to the child processes.
+            LogPassThroughStdout(buff);
         }
     }
 
@@ -473,9 +458,6 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
     char* spmiArgs     = new char[MAX_CMDLINE_SIZE];
     *spmiArgs          = '\0';
 
-// We don't pass through /parallel, /skipCleanup, /verbosity, /failingMCList, or /diffMCList. Everything else we need to
-// reconstruct and pass through.
-
 #define ADDSTRING(s)                                                                                                   \
     if (s != nullptr)                                                                                                  \
     {                                                                                                                  \
@@ -492,13 +474,33 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
         bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " %s %s", arg, s);         \
     }
 
+    // We don't pass through:
+    //
+    //    -parallel
+    //    -writeLogFile (the parent process writes the log file based on the output of the child processes)
+    //    -reproName
+    //    -coredistools
+    //    -skipCleanup
+    //    -metricsSummary
+    //    -baseMetricsSummary
+    //    -diffMetricsSummary
+    //    -failingMCList
+    //    -diffMCList
+    //    -failureLimit
+    //
+    // Everything else we need to reconstruct and pass through.
+    //
+    // Note that for -verbosity, if the level includes LOGLEVEL_INFO, the process will output a
+    // "Loaded/Jitted/FailedCompile/Excluded/Missing[/Diffs]" line which is parsed and summarized by
+    // the parent process. If it isn't output, the summary doesn't happen.
+
     ADDARG_BOOL(o.breakOnError, "-boe");
     ADDARG_BOOL(o.breakOnAssert, "-boa");
     ADDARG_BOOL(o.breakOnException, "-box");
     ADDARG_BOOL(o.ignoreStoredConfig, "-ignoreStoredConfig");
     ADDARG_BOOL(o.applyDiff, "-applyDiff");
+    ADDARG_STRING(o.verbosity, "-verbosity");
     ADDARG_STRING(o.reproName, "-reproName");
-    ADDARG_STRING(o.writeLogFile, "-writeLogFile");
     ADDARG_STRING(o.methodStatsTypes, "-emitMethodStats");
     ADDARG_STRING(o.hash, "-matchHash");
     ADDARG_STRING(o.targetArchitecture, "-target");

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -98,7 +99,12 @@ namespace System.Tests
                 yield return new object[] { (ushort)123, "D", defaultFormat, "123" };
                 yield return new object[] { (ushort)123, "D99", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123" };
 
+                yield return new object[] { (ushort)0, "x", defaultFormat, "0" };
                 yield return new object[] { (ushort)0x2468, "x", defaultFormat, "2468" };
+
+                yield return new object[] { (ushort)0, "b", defaultFormat, "0" };
+                yield return new object[] { (ushort)0x2468, "b", defaultFormat, "10010001101000" };
+
                 yield return new object[] { (ushort)2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
             }
 
@@ -110,6 +116,7 @@ namespace System.Tests
             yield return new object[] { (ushort)32, "F100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (ushort)32, "N100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (ushort)32, "X100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020" };
+            yield return new object[] { (ushort)32, "B100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000" };
 
             var customFormat = new NumberFormatInfo()
             {
@@ -354,45 +361,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void TryFormat(ushort i, string format, IFormatProvider provider, string expected)
-        {
-            char[] actual;
-            int charsWritten;
-
-            // Just right
-            actual = new char[expected.Length];
-            Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, new string(actual));
-
-            // Longer than needed
-            actual = new char[expected.Length + 1];
-            Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, new string(actual, 0, charsWritten));
-
-            // Too short
-            if (expected.Length > 0)
-            {
-                actual = new char[expected.Length - 1];
-                Assert.False(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
-                Assert.Equal(0, charsWritten);
-            }
-
-            if (format != null)
-            {
-                // Upper format
-                actual = new char[expected.Length];
-                Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format.ToUpperInvariant(), provider));
-                Assert.Equal(expected.Length, charsWritten);
-                Assert.Equal(expected.ToUpperInvariant(), new string(actual));
-
-                // Lower format
-                actual = new char[expected.Length];
-                Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format.ToLowerInvariant(), provider));
-                Assert.Equal(expected.Length, charsWritten);
-                Assert.Equal(expected.ToLowerInvariant(), new string(actual));
-            }
-        }
+        public static void TryFormat(ushort i, string format, IFormatProvider provider, string expected) =>
+            NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);
     }
 }
