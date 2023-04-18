@@ -1573,6 +1573,7 @@ public:
 
 #if defined(TARGET_ARM64)
     static insCond JumpKindToInsCond(emitJumpKind condition);
+    static insOpts ShiftOpToInsOpts(genTreeOps op);
 #elif defined(TARGET_XARCH)
     static instruction JumpKindToCmov(emitJumpKind condition);
 #endif

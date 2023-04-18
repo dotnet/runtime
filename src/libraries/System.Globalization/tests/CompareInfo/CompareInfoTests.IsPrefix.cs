@@ -7,24 +7,8 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class CompareInfoIsPrefixTests
+    public class CompareInfoIsPrefixTests : CompareInfoTestsBase
     {
-        private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
-        private static CompareInfo s_germanCompare = new CultureInfo("de-DE").CompareInfo;
-        private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
-        private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
-        private static CompareInfo s_frenchCompare = new CultureInfo("fr-FR").CompareInfo;
-
-        private static CompareOptions supportedIgnoreNonSpaceOption =
-            PlatformDetection.IsHybridGlobalizationOnBrowser ?
-            CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType :
-            CompareOptions.IgnoreNonSpace;
-
-        private static CompareOptions supportedIgnoreCaseIgnoreNonSpaceOptions =
-            PlatformDetection.IsHybridGlobalizationOnBrowser ?
-            CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType :
-            CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace;
-
         public static IEnumerable<object[]> IsPrefix_TestData()
         {
             // Empty strings

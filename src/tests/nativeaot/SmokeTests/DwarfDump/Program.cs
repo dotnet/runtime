@@ -54,8 +54,8 @@ public class Program
         const int MinWarnings = 16500;
         const int MaxWarnings = 18500;
 #else
-        const int MinWarnings = 9500;
-        const int MaxWarnings = 10500;
+        const int MinWarnings = 12000;
+        const int MaxWarnings = 13000;
 #endif
         int count = 0;
         string line;
