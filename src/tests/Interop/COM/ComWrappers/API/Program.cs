@@ -11,6 +11,7 @@ namespace ComWrappersTests
     using System.Runtime.InteropServices;
 
     using ComWrappersTests.Common;
+    using TestLibrary;
     using Xunit;
 
     class Program
@@ -713,8 +714,12 @@ namespace ComWrappersTests
                 ValidateBadComWrapperImpl();
                 ValidateRuntimeTrackerScenario();
                 ValidateQueryInterfaceAfterManagedObjectCollected();
-                ValidateAggregationWithComObject();
-                ValidateAggregationWithReferenceTrackerObject();
+
+                if (!PlatformDetection.IsNativeAot)
+                {
+                    ValidateAggregationWithComObject();
+                    ValidateAggregationWithReferenceTrackerObject();
+                }
 
                 // Ensure all objects have been cleaned up.
                 ForceGC();
