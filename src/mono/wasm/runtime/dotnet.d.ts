@@ -5,6 +5,51 @@
 
 //! This is not considered public API with backward compatibility guarantees. 
 
+interface BootJsonData {
+    readonly entryAssembly: string;
+    readonly resources: ResourceGroups;
+    /** Gets a value that determines if this boot config was produced from a non-published build (i.e. dotnet build or dotnet run) */
+    readonly debugBuild: boolean;
+    readonly linkerEnabled: boolean;
+    readonly cacheBootResources: boolean;
+    readonly config: string[];
+    readonly icuDataMode: ICUDataMode;
+    readonly startupMemoryCache: boolean | undefined;
+    readonly runtimeOptions: string[] | undefined;
+    modifiableAssemblies: string | null;
+    aspnetCoreBrowserTools: string | null;
+}
+type BootJsonDataExtension = {
+    [extensionName: string]: ResourceList;
+};
+interface ResourceGroups {
+    readonly assembly: ResourceList;
+    readonly lazyAssembly: ResourceList;
+    readonly pdb?: ResourceList;
+    readonly runtime: ResourceList;
+    readonly satelliteResources?: {
+        [cultureName: string]: ResourceList;
+    };
+    readonly libraryInitializers?: ResourceList;
+    readonly extensions?: BootJsonDataExtension;
+    readonly runtimeAssets: ExtendedResourceList;
+}
+type ResourceList = {
+    [name: string]: string;
+};
+type ExtendedResourceList = {
+    [name: string]: {
+        hash: string;
+        behavior: string;
+    };
+};
+declare enum ICUDataMode {
+    Sharded = 0,
+    All = 1,
+    Invariant = 2,
+    Custom = 3
+}
+
 interface DotnetHostBuilder {
     withConfig(config: MonoConfig): DotnetHostBuilder;
     withConfigSrc(configSrc: string): DotnetHostBuilder;
@@ -286,4 +331,4 @@ declare global {
 declare const dotnet: ModuleAPI["dotnet"];
 declare const exit: ModuleAPI["exit"];
 
-export { AssetEntry, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { AssetEntry, BootJsonData, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, ICUDataMode, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

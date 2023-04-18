@@ -42,7 +42,7 @@ export class BootConfigResult {
     }
 }
 
-// Keep in sync with bootJsonData from the BlazorWebAssemblySDK
+// Keep in sync with Microsoft.NET.Sdk.WebAssembly.BootJsonData from the WasmSDK
 export interface BootJsonData {
     readonly entryAssembly: string;
     readonly resources: ResourceGroups;
