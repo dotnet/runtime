@@ -19536,6 +19536,11 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                 intrinsic = NI_AVX_Divide;
             }
+            else if (simdSize == 64)
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                intrinsic = NI_AVX512F_Divide;
+            }
             else if (simdBaseType == TYP_FLOAT)
             {
                 intrinsic = NI_SSE_Divide;

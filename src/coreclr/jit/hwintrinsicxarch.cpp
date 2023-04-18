@@ -1279,8 +1279,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Divide:
         case NI_Vector256_Divide:
+        case NI_Vector512_Divide:
         case NI_Vector128_op_Division:
-        case NI_Vector256_op_Division:
+        case NI_Vector512_op_Division:
         {
             assert(sig->numArgs == 2);
 
