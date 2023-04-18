@@ -10,6 +10,9 @@
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64' AND '$(TargetArchitecture)' != 'x86'">true</CLRTestTargetUnsupported>
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'x86' AND '$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
     <CLRTestTargetUnsupported Condition="'$(TargetsOSX)' == 'true'">true</CLRTestTargetUnsupported>
+
+    <!-- We have a lot of tests here so run them in outerloop by default to avoid timeouts -->
+    <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
 
   <ItemGroup>

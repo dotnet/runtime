@@ -6835,6 +6835,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX_DotProduct:
                 case NI_AVX_Permute:
                 case NI_AVX_Permute2x128:
+                case NI_AVX_Shuffle:
+                case NI_AVX2_AlignRight:
                 case NI_AVX2_Blend:
                 case NI_AVX2_MultipleSumAbsoluteDifferences:
                 case NI_AVX2_Permute2x128:
@@ -6842,8 +6844,20 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX2_ShiftLeftLogical:
                 case NI_AVX2_ShiftRightArithmetic:
                 case NI_AVX2_ShiftRightLogical:
+                case NI_AVX2_Shuffle:
                 case NI_AVX2_ShuffleHigh:
                 case NI_AVX2_ShuffleLow:
+                case NI_AVX512F_ShiftLeftLogical:
+                case NI_AVX512F_ShiftRightArithmetic:
+                case NI_AVX512F_ShiftRightLogical:
+                case NI_AVX512F_Shuffle:
+                case NI_AVX512F_VL_ShiftRightArithmetic:
+                case NI_AVX512BW_AlignRight:
+                case NI_AVX512BW_ShiftLeftLogical:
+                case NI_AVX512BW_ShiftRightArithmetic:
+                case NI_AVX512BW_ShiftRightLogical:
+                case NI_AVX512BW_ShuffleHigh:
+                case NI_AVX512BW_ShuffleLow:
                 {
                     assert(!supportsSIMDScalarLoads);
 
@@ -7509,6 +7523,13 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_ShiftLeftLogical:
                         case NI_AVX2_ShiftRightArithmetic:
                         case NI_AVX2_ShiftRightLogical:
+                        case NI_AVX512F_ShiftLeftLogical:
+                        case NI_AVX512F_ShiftRightArithmetic:
+                        case NI_AVX512F_ShiftRightLogical:
+                        case NI_AVX512F_VL_ShiftRightArithmetic:
+                        case NI_AVX512BW_ShiftLeftLogical:
+                        case NI_AVX512BW_ShiftRightArithmetic:
+                        case NI_AVX512BW_ShiftRightLogical:
                         {
                             // These intrinsics can have op2 be imm or reg/mem
 
@@ -7526,13 +7547,37 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
+                        case NI_AVX2_Shuffle:
+                        {
+                            if (varTypeIsByte(simdBaseType))
+                            {
+                                // byte and sbyte are: pshufb ymm1, ymm2, ymm3/m256
+                                assert(!isCommutative);
+
+                                bool supportsRegOptional = false;
+
+                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                                {
+                                    MakeSrcContained(node, op2);
+                                }
+                                else if (supportsRegOptional)
+                                {
+                                    MakeSrcRegOptional(node, op2);
+                                }
+                                break;
+                            }
+                            FALLTHROUGH;
+                        }
+
                         case NI_SSE2_Shuffle:
                         case NI_SSE2_ShuffleHigh:
                         case NI_SSE2_ShuffleLow:
                         case NI_AVX2_Permute4x64:
-                        case NI_AVX2_Shuffle:
                         case NI_AVX2_ShuffleHigh:
                         case NI_AVX2_ShuffleLow:
+                        case NI_AVX512F_Shuffle:
+                        case NI_AVX512BW_ShuffleHigh:
+                        case NI_AVX512BW_ShuffleLow:
                         {
                             // These intrinsics have op2 as an imm and op1 as a reg/mem
 
@@ -7601,6 +7646,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_SSE2_ShiftRightLogical128BitLane:
                         case NI_AVX2_ShiftLeftLogical128BitLane:
                         case NI_AVX2_ShiftRightLogical128BitLane:
+                        case NI_AVX512BW_ShiftLeftLogical128BitLane:
+                        case NI_AVX512BW_ShiftRightLogical128BitLane:
                         {
 #if DEBUG
                             // These intrinsics should have been marked contained by the general-purpose handling
@@ -7852,6 +7899,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_MultipleSumAbsoluteDifferences:
                         case NI_AVX2_Permute2x128:
                         case NI_AVX512F_InsertVector256:
+                        case NI_AVX512F_Shuffle:
+                        case NI_AVX512BW_AlignRight:
                         case NI_PCLMULQDQ_CarrylessMultiply:
                         {
                             if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
