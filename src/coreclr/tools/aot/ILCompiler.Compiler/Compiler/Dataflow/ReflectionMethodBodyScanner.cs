@@ -135,7 +135,39 @@ namespace ILCompiler.Dataflow
             DynamicallyAccessedMemberTypes annotation = flowAnnotations.GetTypeAnnotation(type);
             Debug.Assert(annotation != DynamicallyAccessedMemberTypes.None);
             var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, typeHierarchyDataFlowOrigin: type, enabled: true);
-            reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, type.GetDisplayName());
+
+            // We need to apply annotations to this type, and its base/interface types (recursively)
+            // But the annotations on base/interfaces may already be applied so we don't need to apply those
+            // again (and should avoid doing so as it would produce extra warnings).
+            MessageOrigin origin = new MessageOrigin(type);
+            if (type.HasBaseType)
+            {
+                if (!flowAnnotations.GetTypeAnnotation(type.BaseType).HasFlag(annotation))
+                {
+                    reflectionMarker.MarkTypeForDynamicallyAccessedMembers(origin, type.BaseType, annotation, type.GetDisplayName(), declaredOnly: false);
+                }
+            }
+
+            // Most of the DynamicallyAccessedMemberTypes don't select members on interfaces. We only need to apply
+            // annotations to interfaces separately if dealing with DAMT.All or DAMT.Interfaces.
+            if (annotation.HasFlag(DynamicallyAccessedMemberTypes.Interfaces))
+            {
+                var annotationToApplyToInterfaces = annotation == DynamicallyAccessedMemberTypes.All ? annotation : DynamicallyAccessedMemberTypes.Interfaces;
+                foreach (var iface in type.RuntimeInterfaces)
+                {
+                    if (flowAnnotations.GetTypeAnnotation(iface).HasFlag(annotationToApplyToInterfaces))
+                        continue;
+
+                    // Apply All or Interfaces to the interface type.
+                    // DAMT.All may produce redundant warnings from implementing types, when the interface type already had some annotations.
+                    reflectionMarker.MarkTypeForDynamicallyAccessedMembers(origin, iface, annotationToApplyToInterfaces, type.GetDisplayName(), declaredOnly: false);
+                }
+            }
+
+            // The annotations this type inherited from its base types or interfaces should not produce
+            // warnings on the respective base/interface members, since those are already covered by applying
+            // the annotations to those types. So we only need to handle the members directly declared on this type.
+            reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, type.GetDisplayName(), declaredOnly: true);
             return reflectionMarker.Dependencies;
         }
 
