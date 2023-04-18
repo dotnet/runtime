@@ -556,7 +556,9 @@ enum GenTreeFlags : unsigned int
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
 
-    GTF_VECCON_FROMSCALAR       = 0x80000000   // GT_VECCON -- Indicate the vector constant is created from the same scalar.
+    GTF_VECCON_FROMSCALAR       = 0x80000000,   // GT_VECCON -- Indicate the vector constant is created from the same scalar.
+
+    GTF_BROADCAST_EMBEDDED      = 0x80000000   //  GT_HWINTRINSIC -- Indicate this broadcast node is part of embedded broadcast.
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
@@ -2040,6 +2042,23 @@ public:
     {
         gtFlags &= ~GTF_VECCON_FROMSCALAR;
         assert(!IsCreatedFromScalar());
+    }
+
+    bool IsEmbBroadcast()
+    {
+        return ((gtFlags & GTF_BROADCAST_EMBEDDED) != 0);
+    }
+
+    void SetEmbBroadcast()
+    {
+        gtFlags |= GTF_BROADCAST_EMBEDDED;
+        assert(IsEmbBroadcast());
+    }
+
+    void ClearEmbBroadcast()
+    {
+        gtFlags &= ~GTF_BROADCAST_EMBEDDED;
+        assert(!IsEmbBroadcast());
     }
 
     bool CanCSE() const

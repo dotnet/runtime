@@ -2366,36 +2366,36 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 //   var tmp1 = Vector128.CreateScalarUnsafe(op1);
                 //   return Avx2.BroadcastScalarToVector256(tmp1);
 
-
                 tmp1 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, simdBaseJitType, 16);
                 LowerNode(tmp1);
 
                 node->ResetHWIntrinsicId(NI_AVX2_BroadcastScalarToVector256, tmp1);
-                
+
                 // if AVX512 is supported, seek for optimization opportunities using embedded broadcast.
                 // contain the broadcast intrinsics in the embeddebd broadcast compatible intrinsics
                 // at codegen phase, directly emit the operend on "Create" node instead of a series of broadcast.
-                if(comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
                 {
                     LIR::Use use;
-                    bool foundUse = BlockRange().TryGetUse(node, &use);
+                    bool     foundUse   = BlockRange().TryGetUse(node, &use);
                     GenTree* CreateUser = nullptr;
-                    if(foundUse && use.User()->OperIs(GT_HWINTRINSIC) && 
-                    use.User()->AsHWIntrinsic()->isEmbBroadcastHWIntrinsic())
+                    if (foundUse && use.User()->OperIs(GT_HWINTRINSIC) &&
+                        use.User()->AsHWIntrinsic()->isEmbBroadcastHWIntrinsic())
                     {
                         CreateUser = use.User();
                     }
                     // RUIHAN: Should we contain this 2 lowered intrinsics or contain the original "Create"
-                    if(CreateUser != nullptr && op1->OperIs(GT_LCL_VAR))
-                    {          
+                    if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) && op1->TypeIs(TYP_FLOAT))
+                    {
                         const unsigned opLclNum = op1->AsLclVar()->GetLclNum();
                         comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
                         MakeSrcContained(tmp1, op1);
                         MakeSrcContained(node, tmp1);
                         MakeSrcContained(CreateUser, node);
+                        node->SetEmbBroadcast();
                     }
                 }
-                
+
                 return LowerNode(node);
             }
 
@@ -7530,7 +7530,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 
         case NI_AVX2_BroadcastScalarToVector256:
         {
-            return true;
+            return childNode->IsEmbBroadcast();
         }
 
         default:

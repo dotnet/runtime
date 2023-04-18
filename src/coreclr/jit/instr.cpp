@@ -803,11 +803,10 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 case NI_AVX2_BroadcastScalarToVector256:
                 {
                     assert(hwintrinsic->isContained());
-                    GenTree* tmp = hwintrinsic->Op(1);
-                    if(tmp->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe)
+                    if (hwintrinsic->IsEmbBroadcast())
                     {
-                        op = tmp->AsHWIntrinsic()->Op(1);
-                        assert(op->OperIs(GT_LCL_VAR));
+                        op = hwintrinsic->AsHWIntrinsic()->Op(1)->AsHWIntrinsic()->Op(1);
+                        assert(op->OperIs(GT_LCL_VAR) && op->TypeIs(TYP_FLOAT));
                         return genOperandDesc(op);
                     }
                     else
@@ -1118,9 +1117,9 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
 bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 {
     // need to check if the datatype is EB compatible, say 32-, 64-bit.
-    insFlags flags = instInfo[ins];   
-    bool IsEmbBroadcastCompatible = (flags & INS_Flags_EmbeddedBroadcastSupported) != 0;
-    if(!IsEmbBroadcastCompatible)
+    insFlags flags                    = instInfo[ins];
+    bool     IsEmbBroadcastCompatible = (flags & INS_Flags_EmbeddedBroadcastSupported) != 0;
+    if (!IsEmbBroadcastCompatible)
     {
         return false;
     }
@@ -1133,28 +1132,24 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
     {
         case GT_HWINTRINSIC:
         {
-            if(op->AsHWIntrinsic()->GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector256)
-            {
-                GenTree* tmp = op->AsHWIntrinsic()->Op(1);
-                if(tmp->OperIs(GT_HWINTRINSIC) && tmp->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe)
-                {
-                    IsEmbBroadcastEnabled = tmp->AsHWIntrinsic()->Op(1)->OperIs(GT_LCL_VAR) 
-                        && tmp->AsHWIntrinsic()->Op(1)->TypeIs(TYP_FLOAT);
-                }
-            }
-        }
-        break;
-        
-        case GT_CNS_VEC:
-        {
-            if(op->IsCreatedFromScalar())
+            if (op->IsEmbBroadcast())
             {
                 IsEmbBroadcastEnabled = true;
             }
+            break;
         }
-    
-    default:
-        break;
+
+        case GT_CNS_VEC:
+        {
+            if (op->IsCreatedFromScalar())
+            {
+                IsEmbBroadcastEnabled = true;
+            }
+            break;
+        }
+
+        default:
+            break;
     }
 
     return IsEmbBroadcastCompatible && IsEmbBroadcastEnabled;
@@ -1187,19 +1182,19 @@ void CodeGen::inst_RV_RV_TT(
     bool        IsEmbBroadcast = false;
 #if defined(TARGET_XARCH)
     IsEmbBroadcast = CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2);
-    if(IsEmbBroadcast && op2->OperIs(GT_CNS_VEC) && op2->AsVecCon()->IsCreatedFromScalar())
+    if (IsEmbBroadcast && op2->OperIs(GT_CNS_VEC) && op2->AsVecCon()->IsCreatedFromScalar())
     {
         switch (ins)
         {
-        case INS_addps:
+            case INS_addps:
             {
                 float scalar = static_cast<float>(op2->AsVecCon()->gtSimd32Val.f32[0]);
-                op2Desc = OperandDesc(emit->emitFltOrDblConst(*reinterpret_cast<float*>(&scalar), EA_4BYTE));
+                op2Desc      = OperandDesc(emit->emitFltOrDblConst(*reinterpret_cast<float*>(&scalar), EA_4BYTE));
+                break;
             }
-            break;
-        
-        default:
-            break;
+
+            default:
+                break;
         }
     }
 #endif //  TARGET_XARCH
