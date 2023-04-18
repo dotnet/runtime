@@ -1182,6 +1182,11 @@
     <Comment> The runtime cannot be suspened since a suspension is already in progress. </Comment>
 </HRESULT>
 
+<HRESULT NumericValue="0x80131389">
+    <SymbolicName>CORPROF_E_NOT_GC_OBJECT</SymbolicName>
+    <Comment> This object belongs to a non-gc heap. </Comment>
+</HRESULT>
+
 <HRESULT NumericValue="0x80131416">
 	<SymbolicName>CORSEC_E_POLICY_EXCEPTION</SymbolicName>
 	<Message>"PolicyException thrown."</Message>
