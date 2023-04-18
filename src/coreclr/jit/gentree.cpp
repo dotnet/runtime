@@ -19282,7 +19282,7 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
         NamedIntrinsic intrinsic = NI_AVX512F_Abs;
         return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
     }
-    else if ( (simdSize == 64) && (varTypeIsSmall(simdBaseType)))
+    else if ((simdSize == 64) && (varTypeIsSmall(simdBaseType)))
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
         NamedIntrinsic intrinsic = NI_AVX512BW_Abs;
@@ -20112,7 +20112,7 @@ GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, CorInfoType s
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
         intrinsic = NI_AVX_Ceiling;
     }
-    else if(simdSize == 64)
+    else if (simdSize == 64)
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
         intrinsic = NI_AVX512F_Ceiling;
@@ -21534,7 +21534,7 @@ GenTree* Compiler::gtNewSimdFloorNode(var_types type, GenTree* op1, CorInfoType 
     {
         intrinsic = NI_AVX_Floor;
     }
-    else if(simdSize == 64)
+    else if (simdSize == 64)
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
         intrinsic = NI_AVX512F_Floor;
@@ -21911,7 +21911,7 @@ GenTree* Compiler::gtNewSimdMaxNode(
     }
     else if (simdSize == 64)
     {
-        if(varTypeIsSmall(simdBaseType))
+        if (varTypeIsSmall(simdBaseType))
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
             intrinsic = NI_AVX512BW_Max;
@@ -21921,7 +21921,6 @@ GenTree* Compiler::gtNewSimdMaxNode(
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
             intrinsic = NI_AVX512F_Max;
         }
-
     }
     else
     {
@@ -22112,7 +22111,7 @@ GenTree* Compiler::gtNewSimdMinNode(
     }
     else if (simdSize == 64)
     {
-        if(varTypeIsSmall(simdBaseType))
+        if (varTypeIsSmall(simdBaseType))
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
             intrinsic = NI_AVX512BW_Min;
@@ -22122,7 +22121,6 @@ GenTree* Compiler::gtNewSimdMinNode(
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
             intrinsic = NI_AVX512F_Min;
         }
-
     }
     else
     {
