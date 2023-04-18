@@ -1827,6 +1827,9 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
 //    consecutiveRegistersLocation - The most recent location where consecutive
 //     registers were needed.
 //
+// Returns: If the refposition is live at same location which has the requirement of
+//    consecutive registers.
+//
 bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegistersLocation)
 {
     if (needsConsecutive)
