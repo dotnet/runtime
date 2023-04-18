@@ -94,7 +94,7 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="_WasiBuildNativeCore" DependsOnTargets="$(_WasiBuildNativeCoreDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
+  <Target Name="_WasiBuildNativeCore" BeforeTargets="_WasiGenerateAppBundle" DependsOnTargets="$(_WasiBuildNativeCoreDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
 
   <Target Name="_PrepareForWasiBuildNative">
     <Error Condition="'$(_IsToolchainMissing)' == 'true'"
