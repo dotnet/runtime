@@ -294,6 +294,12 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
 
     if (childNode->OperIs(GT_NEG))
     {
+        if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // Cannot contain if the parent operation needs to set flags
+            return false;
+        }
+
         if (parentNode->OperIs(GT_CMP) || parentNode->OperIsCompare())
         {
             if (IsInvariantInRange(childNode, parentNode))
