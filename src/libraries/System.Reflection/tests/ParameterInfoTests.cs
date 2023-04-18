@@ -79,18 +79,19 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, parameterInfo.HasDefaultValue);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void HasDefaultValue_ReturnParam()
         {
             ParameterInfo parameterInfo = GetMethod(typeof(ParameterInfoMetadata), "Method1").ReturnParameter;
-            Assert.False(parameterInfo.HasDefaultValue);
-        }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public void HasDefaultValue_ReturnFixedValueOfTrue_NativeAot()
-        {
-            ParameterInfo parameterInfo = GetMethod(typeof(ParameterInfoMetadata), "Method1").ReturnParameter;
-            Assert.True(parameterInfo.HasDefaultValue);
+            if (PlatformDetection.IsNativeAot)
+            {
+                Assert.True(parameterInfo.HasDefaultValue);
+            }
+            else
+            {
+                Assert.False(parameterInfo.HasDefaultValue);
+            }
         }
 
         [Theory]
