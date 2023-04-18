@@ -9,7 +9,6 @@
     <!-- We don't need to worry about coverage as we have a number of stress tests that can disable intrinsics per ISA and run on the normally supported platforms -->
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64' AND '$(TargetArchitecture)' != 'x86'">true</CLRTestTargetUnsupported>
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'x86' AND '$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
-    <CLRTestTargetUnsupported Condition="'$(TargetsOSX)' == 'true' AND $(MSBuildProjectName.StartsWith('Avx512'))">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
   <ItemGroup>
