@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Text;
-
+using System.Text.Unicode;
 using Internal.DeveloperExperience;
 using Internal.Runtime.Augments;
 
@@ -255,12 +255,11 @@ namespace System
                     const int MaxStack = 2048;
                     Span<byte> exceptionStack = stackalloc byte[MaxStack];
 
-                    var utf8Encoded = Encoding.UTF8.GetBytes(outputMessage).AsSpan();
-                    int length = Math.Max(MaxStack, utf8Encoded.Length);
-                    utf8Encoded.Slice(0, length).CopyTo(exceptionStack);
+                    // Ignore output, as this is best-effort
+                    _ = Utf8.FromUtf16(outputMessage, exceptionStack, out _, out int length);
                     // Fill the rest of the buffer with nulls
                     if (length < MaxStack)
-                        utf8Encoded.Slice(length).Clear();
+                        exceptionStack.Slice(length).Clear();
 
                     unsafe
                     {
