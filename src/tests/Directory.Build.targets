@@ -549,6 +549,16 @@
 
     <!-- Bump the generic cycle tolerance. There's at least one test with a cycle that is reachable at runtime to depth 6 -->
     <IlcArg Include="--maxgenericcycle:7" />
+
+    <!-- We set TrimMode to partial so that we don't trim parts of the tests,
+         but don't make this apply to xunit cruft -->
+    <IlcArg Include="--trim:Microsoft.DotNet.XUnitExtensions" />
+    <IlcArg Include="--trim:xunit.abstractions" />
+    <IlcArg Include="--trim:xunit.assert" />
+    <IlcArg Include="--trim:xunit.console" />
+    <IlcArg Include="--trim:xunit.core" />
+    <IlcArg Include="--trim:xunit.execution.dotnet" />
+    <IlcArg Include="--trim:xunit.abstractions" />
   </ItemGroup>
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />

@@ -27,7 +27,8 @@ namespace Internal.TypeSystem
     {
         RequiredCustomModifier = 0,
         OptionalCustomModifier = 1,
-        ArrayShape = 2
+        ArrayShape = 2,
+        UnmanagedCallConv = 3,
     }
 
     public struct EmbeddedSignatureData

@@ -19,7 +19,8 @@ namespace System.Numerics
         : IEquatable<Complex>,
           IFormattable,
           INumberBase<Complex>,
-          ISignedNumber<Complex>
+          ISignedNumber<Complex>,
+          IUtf8SpanFormattable
     {
         private const NumberStyles DefaultNumberStyle = NumberStyles.Float | NumberStyles.AllowThousands;
 
@@ -393,14 +394,23 @@ namespace System.Numerics
 
         public override int GetHashCode() => HashCode.Combine(m_real, m_imaginary);
 
-        public override string ToString() => $"<{m_real}; {m_imaginary}>";
+        public override string ToString() => ToString(null, null);
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => ToString(format, null);
 
         public string ToString(IFormatProvider? provider) => ToString(null, provider);
 
-        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider) =>
-            $"<{m_real.ToString(format, provider)}; {m_imaginary.ToString(format, provider)}>";
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
+        {
+            // $"<{m_real.ToString(format, provider)}; {m_imaginary.ToString(format, provider)}>";
+            var handler = new DefaultInterpolatedStringHandler(4, 2, provider, stackalloc char[512]);
+            handler.AppendLiteral("<");
+            handler.AppendFormatted(m_real, format);
+            handler.AppendLiteral("; ");
+            handler.AppendFormatted(m_imaginary, format);
+            handler.AppendLiteral(">");
+            return handler.ToStringAndClear();
+        }
 
         public static Complex Sin(Complex value)
         {
@@ -2199,46 +2209,52 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="ISpanFormattable.TryFormat(Span{char}, out int, ReadOnlySpan{char}, IFormatProvider?)" />
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+            TryFormatCore(destination, out charsWritten, format, provider);
+
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+            TryFormatCore(utf8Destination, out bytesWritten, format, provider);
+
+        private bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            int charsWrittenSoFar = 0;
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
             // We have at least 6 more characters for: <0; 0>
-            if (destination.Length < 6)
+            if (destination.Length >= 6)
             {
-                charsWritten = charsWrittenSoFar;
-                return false;
+                int realChars;
+                if (typeof(TChar) == typeof(char) ?
+                    m_real.TryFormat(MemoryMarshal.Cast<TChar, char>(destination.Slice(1)), out realChars, format, provider) :
+                    m_real.TryFormat(MemoryMarshal.Cast<TChar, byte>(destination.Slice(1)), out realChars, format, provider))
+                {
+                    destination[0] = TChar.CreateTruncating('<');
+                    destination = destination.Slice(1 + realChars); // + 1 for <
+
+                    // We have at least 4 more characters for: ; 0>
+                    if (destination.Length >= 4)
+                    {
+                        int imaginaryChars;
+                        if (typeof(TChar) == typeof(char) ?
+                            m_imaginary.TryFormat(MemoryMarshal.Cast<TChar, char>(destination.Slice(2)), out imaginaryChars, format, provider) :
+                            m_imaginary.TryFormat(MemoryMarshal.Cast<TChar, byte>(destination.Slice(2)), out imaginaryChars, format, provider))
+                        {
+                            // We have 1 more character for: >
+                            if ((uint)(2 + imaginaryChars) < (uint)destination.Length)
+                            {
+                                destination[0] = TChar.CreateTruncating(';');
+                                destination[1] = TChar.CreateTruncating(' ');
+                                destination[2 + imaginaryChars] = TChar.CreateTruncating('>');
+
+                                charsWritten = realChars + imaginaryChars + 4;
+                                return true;
+                            }
+                        }
+                    }
+                }
             }
 
-            destination[charsWrittenSoFar++] = '<';
-
-            bool tryFormatSucceeded = m_real.TryFormat(destination.Slice(charsWrittenSoFar), out int tryFormatCharsWritten, format, provider);
-            charsWrittenSoFar += tryFormatCharsWritten;
-
-            // We have at least 4 more characters for: ; 0>
-            if (!tryFormatSucceeded || (destination.Length < (charsWrittenSoFar + 4)))
-            {
-                charsWritten = charsWrittenSoFar;
-                return false;
-            }
-
-            destination[charsWrittenSoFar++] = ';';
-            destination[charsWrittenSoFar++] = ' ';
-
-            tryFormatSucceeded = m_imaginary.TryFormat(destination.Slice(charsWrittenSoFar), out tryFormatCharsWritten, format, provider);
-            charsWrittenSoFar += tryFormatCharsWritten;
-
-            // We have at least 1 more character for: >
-            if (!tryFormatSucceeded || (destination.Length < (charsWrittenSoFar + 1)))
-            {
-                charsWritten = charsWrittenSoFar;
-                return false;
-            }
-
-            destination[charsWrittenSoFar++] = '>';
-
-            charsWritten = charsWrittenSoFar;
-            return true;
+            charsWritten = 0;
+            return false;
         }
 
         //
