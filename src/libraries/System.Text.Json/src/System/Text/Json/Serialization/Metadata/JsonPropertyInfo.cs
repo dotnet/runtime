@@ -176,14 +176,13 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonObjectCreationHandling EffectiveObjectCreationHandling { get; private set; }
 
         /// <summary>
-        /// Gets of sets a value indicating if member will be replaced or populated during deserialization.
-        /// When <see langword="null"/> default value will be used.
+        /// Gets or sets a value indicating if the property or field should be replaced or populated during deserialization.
         /// </summary>
         /// <remarks>
-        /// Default value is resolved based on capability of property converter to populate,
-        /// presence of <see cref="JsonObjectCreationHandlingAttribute"/> on the declaring type
-        /// and <see cref="JsonSerializerOptions.PreferredObjectCreationHandling"/> value.
         /// Initial value for this property is based on the presence of <see cref="JsonObjectCreationHandlingAttribute"/> attribute on the property.
+        /// When <see langword="null"/> effective handling will be resolved based on
+        /// capability of property converter to populate, containing type's <see cref="JsonTypeInfo.PreferredPropertyObjectCreationHandling"/>.
+        /// and <see cref="JsonSerializerOptions.PreferredObjectCreationHandling"/> value.
         /// </remarks>
         public JsonObjectCreationHandling? ObjectCreationHandling
         {
@@ -799,14 +798,18 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal bool TryPopulate(scoped ref ReadStack state)
+        /// <summary>
+        /// Tries to get pre-populated value from the property if populating is enabled.
+        /// If property value is <see langword="null"/> this method will return false.
+        /// </summary>
+        internal bool TryGetPrePopulatedValue(scoped ref ReadStack state)
         {
             if (EffectiveObjectCreationHandling != JsonObjectCreationHandling.Populate)
                 return false;
 
             Debug.Assert(EffectiveConverter.CanPopulate, "Property is marked with Populate but converter cannot populate. This should have been validated in Configure");
             Debug.Assert(state.Current.ParentObject != null, "Parent object is null");
-            Debug.Assert(!state.Current.IsPopulating, "We've called TryPopulate more than once");
+            Debug.Assert(!state.Current.IsPopulating, "We've called TryGetPrePopulatedValue more than once");
             object? value = Get!(state.Current.ParentObject);
             state.Current.ReturnValue = value;
             state.Current.IsPopulating = value != null;

@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected virtual void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
-            if (state.Current.ParentProperty?.TryPopulate(ref state) == true)
+            if (state.Current.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
             {
                 return;
             }

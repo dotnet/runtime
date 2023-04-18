@@ -497,7 +497,7 @@ namespace System.Text.Json.Serialization.Metadata
         private JsonObjectCreationHandling? _preferredPropertyObjectCreationHandling;
 
         /// <summary>
-        /// Gets or sets the preferred value for properties for <see cref="JsonObjectCreationHandling"/>.
+        /// Gets or sets the preferred <see cref="JsonObjectCreationHandling"/> value for properties contained in the type.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// The <see cref="JsonTypeInfo"/> instance has been locked for further modification.

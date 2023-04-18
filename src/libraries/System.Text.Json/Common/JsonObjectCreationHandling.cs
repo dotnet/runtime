@@ -5,7 +5,7 @@ namespace System.Text.Json.Serialization
 {
 
     /// <summary>
-    /// Indicates how .NET properties or fields should be populated during deserialization.
+    /// Determines how deserialization will handle object creation for fields or properties.
     /// </summary>
 #if BUILDING_SOURCE_GENERATOR
     internal
@@ -15,12 +15,12 @@ namespace System.Text.Json.Serialization
     enum JsonObjectCreationHandling
     {
         /// <summary>
-        /// Member is replaced during deserialization.
+        /// A new instance will always be created when deserializing a field or property.
         /// </summary>
         Replace = 0,
 
         /// <summary>
-        /// Member is populated during deserialization.
+        /// Attempt to populate any instances already found on a deserialized field or property.
         /// </summary>
         Populate = 1,
     }
