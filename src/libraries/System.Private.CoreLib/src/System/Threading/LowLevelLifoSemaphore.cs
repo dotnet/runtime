@@ -136,6 +136,7 @@ namespace System.Threading
 
             while (true)
             {
+                int startTicks = Environment.TickCount;
                 if (!WaitCore(timeoutMs))
                 {
                     // Unregister the waiter. The wait subsystem used above guarantees that a thread that wakes due to a timeout does
@@ -143,6 +144,7 @@ namespace System.Threading
                     _separated._counts.InterlockedDecrementWaiterCount();
                     return false;
                 }
+                int elapsedTicks = Environment.TickCount;
 
                 // Unregister the waiter if this thread will not be waiting anymore, and try to acquire the semaphore
                 Counts counts = _separated._counts;
@@ -173,6 +175,11 @@ namespace System.Threading
                     }
 
                     counts = countsBeforeUpdate;
+                    if (timeoutMs != -1) {
+                        int waitMs = elapsedTicks - startTicks;
+                        if (waitMs <= timeoutMs)
+                            timeoutMs -= waitMs;
+                    }
                 }
             }
         }

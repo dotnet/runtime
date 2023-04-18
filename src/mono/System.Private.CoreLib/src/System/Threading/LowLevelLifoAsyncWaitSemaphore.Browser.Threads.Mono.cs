@@ -50,7 +50,11 @@ internal sealed partial class LowLevelLifoAsyncWaitSemaphore : LowLevelLifoSemap
         ReleaseInternal(lifo_semaphore, count);
     }
 
-    private sealed record WaitEntry (LowLevelLifoAsyncWaitSemaphore Semaphore, int TimeoutMs, Action<LowLevelLifoAsyncWaitSemaphore, object?> OnSuccess, Action<LowLevelLifoAsyncWaitSemaphore, object?> OnTimeout, object? State);
+    private sealed record WaitEntry (LowLevelLifoAsyncWaitSemaphore Semaphore, Action<LowLevelLifoAsyncWaitSemaphore, object?> OnSuccess, Action<LowLevelLifoAsyncWaitSemaphore, object?> OnTimeout, object? State)
+    {
+        public int TimeoutMs {get; internal set;}
+        public int StartWaitTicks {get; internal set; }
+    }
 
     public void PrepareAsyncWait(int timeoutMs, Action<LowLevelLifoAsyncWaitSemaphore, object?> onSuccess, Action<LowLevelLifoAsyncWaitSemaphore, object?> onTimeout, object? state)
     {
@@ -108,7 +112,12 @@ internal sealed partial class LowLevelLifoAsyncWaitSemaphore : LowLevelLifoSemap
 
         _onWait();
 
-        PrepareAsyncWaitCore(timeoutMs, new WaitEntry(this, timeoutMs, onSuccess, onTimeout, state));
+        WaitEntry we = new WaitEntry(this, onSuccess, onTimeout, state)
+        {
+            TimeoutMs = timeoutMs,
+            StartWaitTicks = Environment.TickCount,
+        };
+        PrepareAsyncWaitCore(timeoutMs, we);
         // on success calls InternalAsyncWaitSuccess, on timeout calls InternalAsyncWaitTimeout
     }
 
@@ -124,6 +133,7 @@ internal sealed partial class LowLevelLifoAsyncWaitSemaphore : LowLevelLifoSemap
     private static void InternalAsyncWaitSuccess(LowLevelLifoAsyncWaitSemaphore self, WaitEntry internalWaitEntry)
     {
         WaitEntry we = internalWaitEntry!;
+        int elapsedTicks = Environment.TickCount;
         // Unregister the waiter if this thread will not be waiting anymore, and try to acquire the semaphore
         Counts counts = self._separated._counts;
         while (true)
@@ -158,10 +168,12 @@ internal sealed partial class LowLevelLifoAsyncWaitSemaphore : LowLevelLifoSemap
         // if we get here, we need to keep waiting because the SignalCount above was 0 after we did
         // the CompareExchange - someone took the signal before us.
 
-        // Note: we could choose to decrement TimeoutMs here by the amount of time we've already
-        // waited, but that means we'd have to collect the time before we started waiting, which is
-        // an extra call out to JS that isn't needed in the case where there's no contention.  The
-        // TimeoutMs is a minimum that we would wait, so it's ok to waitlonger.
+        if (we.TimeoutMs != -1) {
+            int waitMs = elapsedTicks - we.StartWaitTicks;
+            if (waitMs <= we.TimeoutMs)
+                we.TimeoutMs -= waitMs;
+            we.StartWaitTicks = elapsedTicks;
+        }
         self.PrepareAsyncWaitCore (we.TimeoutMs, we);
         // on success calls InternalAsyncWaitSuccess, on timeout calls InternalAsyncWaitTimeout
     }
