@@ -3,12 +3,13 @@
 
 namespace System.Diagnostics.Metrics
 {
-    internal sealed class RateSumAggregator : Aggregator
+    internal sealed class CounterAggregator : Aggregator
     {
         private readonly bool _isMonotonic;
-        private double _sum;
+        private double _delta;
+        private double _aggregatedValue;
 
-        public RateSumAggregator(bool isMonotonic)
+        public CounterAggregator(bool isMonotonic)
         {
             _isMonotonic = isMonotonic;
         }
@@ -17,7 +18,7 @@ namespace System.Diagnostics.Metrics
         {
             lock (this)
             {
-                _sum += value;
+                _delta += value;
             }
         }
 
@@ -25,20 +26,21 @@ namespace System.Diagnostics.Metrics
         {
             lock (this)
             {
-                RateStatistics? stats = new RateStatistics(_sum, _isMonotonic);
-                _sum = 0;
+                _aggregatedValue += _delta;
+                CounterStatistics? stats = new CounterStatistics(_delta, _isMonotonic, _aggregatedValue);
+                _delta = 0;
                 return stats;
             }
         }
     }
 
-    internal sealed class RateAggregator : Aggregator
+    internal sealed class ObservableCounterAggregator : Aggregator
     {
         private readonly bool _isMonotonic;
         private double? _prevValue;
-        private double _value;
+        private double _currValue;
 
-        public RateAggregator(bool isMonotonic)
+        public ObservableCounterAggregator(bool isMonotonic)
         {
             _isMonotonic = isMonotonic;
         }
@@ -47,7 +49,7 @@ namespace System.Diagnostics.Metrics
         {
             lock (this)
             {
-                _value = value;
+                _currValue = value;
             }
         }
 
@@ -58,25 +60,29 @@ namespace System.Diagnostics.Metrics
                 double? delta = null;
                 if (_prevValue.HasValue)
                 {
-                    delta = _value - _prevValue.Value;
+                    delta = _currValue - _prevValue.Value;
                 }
-                RateStatistics stats = new RateStatistics(delta, _isMonotonic);
-                _prevValue = _value;
+
+                CounterStatistics stats = new CounterStatistics(delta, _isMonotonic, _currValue);
+                _prevValue = _currValue;
                 return stats;
             }
         }
     }
 
-    internal sealed class RateStatistics : IAggregationStatistics
+    internal sealed class CounterStatistics : IAggregationStatistics
     {
-        public RateStatistics(double? delta, bool isMonotonic)
+        public CounterStatistics(double? delta, bool isMonotonic, double value)
         {
             Delta = delta;
             IsMonotonic = isMonotonic;
+            Value = value;
         }
 
         public double? Delta { get; }
 
         public bool IsMonotonic { get; }
+
+        public double Value { get; }
     }
 }
