@@ -420,7 +420,7 @@ LOCAL_LABEL(CheckCardTable):
     // branch to exit is taken.
     ccmp x15, x12, #0x2, hs
 
-    bhi  LOCAL_LABEL(Exit)
+    bhs  LOCAL_LABEL(Exit)
 
 LOCAL_LABEL(SkipEphemeralCheck):
     // Check if we need to update the card table

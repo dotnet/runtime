@@ -3,16 +3,22 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop.UnitTests;
 using Xunit;
 
+using System.Diagnostics;
+
+
 using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
-using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
 
 namespace ComInterfaceGenerator.Unit.Tests
@@ -23,6 +29,25 @@ namespace ComInterfaceGenerator.Unit.Tests
             [CallerLineNumber] int lineNumber = 0,
             [CallerFilePath] string? filePath = null)
             => TestUtils.GetFileLineName(lineNumber, filePath);
+
+        public static IEnumerable<object[]> ComInterfaceGeneratorSnippetsToCompile()
+        {
+            CodeSnippets codeSnippets = new(new GeneratedComInterfaceAttributeProvider());
+            // Inheriting from multiple GeneratedComInterface-marked interfaces.
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeMultipleComInterfaceBases, new[] {
+                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MultipleComInterfaceBaseTypes)
+                    .WithLocation(0)
+                    .WithArguments("IComInterface2")
+            } };
+        }
+
+        [Theory]
+        [MemberData(nameof(ComInterfaceGeneratorSnippetsToCompile))]
+        public async Task ValidateComInterfaceGeneratorSnippets(string id, string source, DiagnosticResult[] expectedDiagnostics)
+        {
+            TestUtils.Use(id);
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostics);
+        }
 
         private static IComInterfaceAttributeProvider GetAttributeProvider(GeneratorKind generator)
             => generator switch
@@ -90,7 +115,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         public async Task ValidateInvalidUnmanagedToManagedCodeSnippets(string id, string source, DiagnosticResult[] expectedDiagnostics)
         {
             _ = id;
-            VerifyComInterfaceGenerator.Test test = new(referenceAncillaryInterop: true)
+            VerifyComInterfaceGenerator.Test test = new(referenceAncillaryInterop: false)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
@@ -110,7 +135,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             DiagnosticResult expectedDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                 .WithLocation(0)
                 .WithArguments("The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type 'global::Marshaller' does not support it.", "value");
-            await VerifyComInterfaceGenerator.VerifySourceGeneratorWithAncillaryInteropAsync(source, expectedDiagnostic);
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
         }
     }
 }

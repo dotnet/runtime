@@ -9,7 +9,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         public NullableSpec(ITypeSymbol type) : base(type) { }
         public override TypeSpecKind SpecKind => TypeSpecKind.Nullable;
-        public override ConstructionStrategy ConstructionStrategy => UnderlyingType.ConstructionStrategy;
         public required TypeSpec UnderlyingType { get; init; }
     }
 }

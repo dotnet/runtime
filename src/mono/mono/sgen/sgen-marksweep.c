@@ -2433,19 +2433,6 @@ major_iterate_block_ranges_in_parallel (sgen_cardtable_block_callback callback, 
 	} END_FOREACH_BLOCK_RANGE_NO_LOCK;
 }
 
-static void
-major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
-{
-	MSBlockInfo *block;
-	gboolean has_references;
-
-	major_finish_sweep_checking ();
-	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
-		if (has_references)
-			callback ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), ms_block_size);
-	} END_FOREACH_BLOCK_NO_LOCK;
-}
-
 #ifdef HEAVY_STATISTICS
 extern guint64 marked_cards;
 extern guint64 scanned_cards;
@@ -2878,7 +2865,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->pin_objects = major_pin_objects;
 	collector->pin_major_object = pin_major_object;
 	collector->scan_card_table = major_scan_card_table;
-	collector->iterate_live_block_ranges = major_iterate_live_block_ranges;
 	collector->iterate_block_ranges = major_iterate_block_ranges;
 	collector->iterate_block_ranges_in_parallel = major_iterate_block_ranges_in_parallel;
 #ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC

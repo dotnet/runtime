@@ -142,6 +142,8 @@ namespace System.Text.RegularExpressions
         protected internal string? pattern;
         protected internal System.Text.RegularExpressions.RegexOptions roptions;
         protected Regex() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected Regex(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public Regex([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { }
         public Regex([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { }
@@ -264,6 +266,8 @@ namespace System.Text.RegularExpressions
     public partial class RegexMatchTimeoutException : System.TimeoutException, System.Runtime.Serialization.ISerializable
     {
         public RegexMatchTimeoutException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected RegexMatchTimeoutException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public RegexMatchTimeoutException(string message) { }
         public RegexMatchTimeoutException(string message, System.Exception inner) { }
@@ -328,6 +332,8 @@ namespace System.Text.RegularExpressions
         private RegexParseException() { }
         public System.Text.RegularExpressions.RegexParseError Error { get { throw null; } }
         public int Offset { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public abstract partial class RegexRunner
@@ -348,7 +354,7 @@ namespace System.Text.RegularExpressions
         protected internal int runtrackpos;
         protected internal RegexRunner() { }
         protected void Capture(int capnum, int start, int end) { }
-        protected static bool CharInClass(char ch, string charClass) { throw null; }
+        public static bool CharInClass(char ch, string charClass) { throw null; }
         protected static bool CharInSet(char ch, string @set, string category) { throw null; }
         protected void CheckTimeout() { }
         protected void Crawl(int i) { }

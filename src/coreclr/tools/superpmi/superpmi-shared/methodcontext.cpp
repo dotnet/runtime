@@ -3626,6 +3626,73 @@ void MethodContext::repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 }
 
+void MethodContext::recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result)
+{
+    if (GetThreadLocalFieldInfo == nullptr)
+        GetThreadLocalFieldInfo = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = 0;
+
+    key = CastHandle(field);
+    GetThreadLocalFieldInfo->Add(key, result);
+    DEBUG_REC(dmpGetThreadLocalFieldInfo(key, result));
+}
+
+void MethodContext::dmpGetThreadLocalFieldInfo(DWORDLONG key, DWORD value)
+{
+    printf("GetThreadLocalFieldInfo key hnd-%016" PRIX64 ", result-%u", key, value);
+}
+
+uint32_t MethodContext::repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+{
+    DWORDLONG key   = CastHandle(field);
+    DWORD     value = LookupByKeyOrMiss(GetThreadLocalFieldInfo, key, ": key %016" PRIX64 "", key);
+
+    DEBUG_REP(dmpGetThreadLocalFieldInfo(key, value));
+
+    return value;
+}
+
+void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+{
+    if (GetThreadLocalStaticBlocksInfo == nullptr)
+        GetThreadLocalStaticBlocksInfo = new LightWeightMap<DWORD, Agnostic_GetThreadLocalStaticBlocksInfo>();
+
+    Agnostic_GetThreadLocalStaticBlocksInfo value;
+    ZeroMemory(&value, sizeof(value));
+
+    value.tlsIndex.handle                   = CastHandle(pInfo->tlsIndex.addr);
+    value.tlsIndex.accessType               = pInfo->tlsIndex.accessType;
+    value.offsetOfMaxThreadStaticBlocks     = pInfo->offsetOfMaxThreadStaticBlocks;
+    value.offsetOfThreadLocalStoragePointer = pInfo->offsetOfThreadLocalStoragePointer;
+    value.offsetOfThreadStaticBlocks        = pInfo->offsetOfThreadStaticBlocks;
+
+    // This data is same for entire process, so just add it against key '0'.
+    GetThreadLocalStaticBlocksInfo->Add(0, value);
+    DEBUG_REC(dmpGetThreadLocalStaticBlocksInfo(0, value));
+}
+
+void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value)
+{
+    printf("GetThreadLocalStaticBlocksInfo key 0, value tlsIndex-%016" PRIX64
+           ", offsetOfMaxThreadStaticBlocks-%u, offsetOfThreadLocalStoragePointer-%u, offsetOfThreadStaticBlocks-%u",
+           value.tlsIndex.handle, value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadLocalStoragePointer,
+           value.offsetOfThreadStaticBlocks);
+}
+
+void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+{
+    Agnostic_GetThreadLocalStaticBlocksInfo value = LookupByKeyOrMiss(GetThreadLocalStaticBlocksInfo, 0, ": key %u", 0);
+
+    DEBUG_REP(dmpGetThreadLocalStaticBlocksInfo(0, value));
+
+    pInfo->tlsIndex.accessType = (InfoAccessType)value.tlsIndex.accessType;
+    pInfo->tlsIndex.addr = (void*)value.tlsIndex.handle;
+    pInfo->offsetOfMaxThreadStaticBlocks = value.offsetOfMaxThreadStaticBlocks;
+    pInfo->offsetOfThreadLocalStoragePointer = value.offsetOfThreadLocalStoragePointer;
+    pInfo->offsetOfThreadStaticBlocks = value.offsetOfThreadStaticBlocks;
+}
+
 void MethodContext::recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle,
                                          void**                ppIndirection,
                                          CORINFO_METHOD_HANDLE result)
@@ -4393,6 +4460,74 @@ size_t MethodContext::repGetClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
     if (ppIndirection != nullptr)
         *ppIndirection = (void*)value.pIndirection;
     return (size_t)value.result;
+}
+
+void MethodContext::recGetIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset, bool result)
+{
+    if (GetIsClassInitedFlagAddress == nullptr)
+        GetIsClassInitedFlagAddress = new LightWeightMap<DWORDLONG, Agnostic_GetIsClassInitedFlagAddress>();
+
+    Agnostic_GetIsClassInitedFlagAddress value;
+    value.addr.handle = CastHandle(addr->addr);
+    value.addr.accessType = (DWORD)addr->accessType;
+    value.offset = (DWORD)*offset;
+    value.result = (DWORD)result;
+
+    DWORDLONG key = CastHandle(cls);
+    GetIsClassInitedFlagAddress->Add(key, value);
+    DEBUG_REC(dmpGetIsClassInitedFlagAddress(key, value));
+}
+void MethodContext::dmpGetIsClassInitedFlagAddress(DWORDLONG key, const Agnostic_GetIsClassInitedFlagAddress& value)
+{
+    printf("GetIsClassInitedFlagAddress key hnd-%016" PRIX64 ", value addr-%016" PRIX64 ", result-%u", key, value.addr.handle, value.result);
+}
+bool MethodContext::repGetIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset)
+{
+    DWORDLONG key = CastHandle(cls);
+    Agnostic_GetIsClassInitedFlagAddress value = LookupByKeyOrMiss(GetIsClassInitedFlagAddress, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetIsClassInitedFlagAddress(key, value));
+
+    *offset = (int)value.offset;
+    addr->accessType = (InfoAccessType)value.addr.accessType;
+    addr->addr = (void*)value.addr.handle;
+    return (bool)value.result;
+}
+
+void MethodContext::recGetStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr, bool result)
+{
+    if (GetStaticBaseAddress == nullptr)
+        GetStaticBaseAddress = new LightWeightMap<DLD, Agnostic_GetStaticBaseAddress>();
+
+    Agnostic_GetStaticBaseAddress value;
+    value.addr.handle = CastHandle(addr->addr);
+    value.addr.accessType = (DWORD)addr->accessType;
+    value.result = (DWORDLONG)result;
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(cls);
+    key.B = (DWORD)isGc;
+
+    GetStaticBaseAddress->Add(key, value);
+    DEBUG_REC(dmpGetStaticBaseAddress(key, value));
+}
+void MethodContext::dmpGetStaticBaseAddress(DLD key, const Agnostic_GetStaticBaseAddress& value)
+{
+    printf("GetStaticBaseAddress key hnd-%016" PRIX64 ", value addr-%016" PRIX64 ", result-%u", key.A, value.addr.handle, value.result);
+}
+bool MethodContext::repGetStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr)
+{
+    DLD key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(cls);
+    key.B = (DWORD)isGc;
+
+    Agnostic_GetStaticBaseAddress value = LookupByKeyOrMiss(GetStaticBaseAddress, key, ": key %016" PRIX64 "", key.A);
+    DEBUG_REP(dmpGetStaticBaseAddress(key, value));
+
+    addr->accessType = (InfoAccessType)value.addr.accessType;
+    addr->addr = (void*)value.addr.handle;
+    return (bool)value.result;
 }
 
 void MethodContext::recGetThreadTLSIndex(void** ppIndirection, DWORD result)
@@ -6247,6 +6382,31 @@ DWORD MethodContext::repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HA
 
     DWORD value = LookupByKeyOrMissNoMessage(GetLoongArch64PassStructInRegisterFlags, key);
     DEBUG_REP(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
+    return value;
+}
+
+void MethodContext::recGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value)
+{
+    if (GetRISCV64PassStructInRegisterFlags == nullptr)
+        GetRISCV64PassStructInRegisterFlags = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(structHnd);
+
+    GetRISCV64PassStructInRegisterFlags->Add(key, value);
+    DEBUG_REC(dmpGetRISCV64PassStructInRegisterFlags(key, value));
+}
+
+void MethodContext::dmpGetRISCV64PassStructInRegisterFlags(DWORDLONG key, DWORD value)
+{
+    printf("GetRISCV64PassStructInRegisterFlags key %016" PRIX64 " value-%08X", key, value);
+}
+
+DWORD MethodContext::repGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    DWORDLONG key = CastHandle(structHnd);
+
+    DWORD value = LookupByKeyOrMissNoMessage(GetRISCV64PassStructInRegisterFlags, key);
+    DEBUG_REP(dmpGetRISCV64PassStructInRegisterFlags(key, value));
     return value;
 }
 

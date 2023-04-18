@@ -8,9 +8,8 @@ namespace GitHub_21899
 {
     public class GitHub_21899
     {
-
         [Fact]
-        public static int Main()
+        public static int TestEntryPoint()
         {
             bool pass = true;
             pass = test1() && test2() && test3() && test4();

@@ -92,6 +92,30 @@ namespace ComInterfaceGenerator.Unit.Tests
             await VerifySourceGeneratorAsync(source, "I", "Empty", "J");
         }
 
+        [Fact]
+        public async Task InheritingComInterfaces()
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                [GeneratedComInterface]
+                partial interface I
+                {
+                    void Method();
+                    void Method2();
+                }
+                [GeneratedComInterface]
+                partial interface J : I
+                {
+                    void MethodA();
+                    void MethodB();
+                }
+                """;
+
+            await VerifySourceGeneratorAsync(source, "I", "J");
+        }
+
         private static async Task VerifySourceGeneratorAsync(string source, params string[] typeNames)
         {
             GeneratedShapeTest test = new(typeNames)
@@ -107,7 +131,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             private readonly string[] _typeNames;
 
             public GeneratedShapeTest(params string[] typeNames)
-                : base(referenceAncillaryInterop: true)
+                : base(referenceAncillaryInterop: false)
             {
                 _typeNames = typeNames;
             }

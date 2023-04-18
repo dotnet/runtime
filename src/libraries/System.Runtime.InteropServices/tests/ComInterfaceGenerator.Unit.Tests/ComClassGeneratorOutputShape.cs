@@ -83,7 +83,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             private readonly string[] _typeNames;
 
             public GeneratedShapeTest(params string[] typeNames)
-                :base(referenceAncillaryInterop: true)
+                :base(referenceAncillaryInterop: false)
             {
                 _typeNames = typeNames;
             }
