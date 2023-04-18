@@ -1116,11 +1116,6 @@ fire_attach_profiler_events (MonoNativeThreadId tid)
 }
 
 
-#ifdef MONO_EMSCRIPTEN_KEEPALIVE_WORKAROUND_HACK
-/* See ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal */
-__thread uint mono_emscripten_keepalive_hack_count;
-#endif
-
 static guint32 WINAPI
 start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 {
@@ -4979,9 +4974,6 @@ ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_p
 void
 ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
 {
-#ifdef MONO_EMSCRIPTEN_KEEPALIVE_WORKAROUND_HACK
-	mono_emscripten_keepalive_hack_count++;
-#endif
 	emscripten_runtime_keepalive_push();
 }
 
@@ -4989,24 +4981,6 @@ void
 ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
 {
 	emscripten_runtime_keepalive_pop();
-#ifdef MONO_EMSCRIPTEN_KEEPALIVE_WORKAROUND_HACK
-	/* This is a BAD IDEA:
-	 *
-	 * 1. We don't know if there were non-mono callers of emscripten_runtime_keepalive_push. We
-	 * could be dropping a thread that was meant to stay alive.
-	 *
-	 * 2. mono_thread_exit while we have managed frames on the stack means we might leak
-	 * resource since finally clauses didn't run.  Also the mono interpreter doesn't really get
-	 * a chance to clean up.
-	 *
-	 * 
-	 */
-	mono_emscripten_keepalive_hack_count--;
-	if (!mono_emscripten_keepalive_hack_count) {
-		g_warning ("thread %p mono keepalive count is zero, detaching\n", (void*)(intptr_t)pthread_self());
-		mono_thread_exit();
-	}
-#endif
 }
 
 extern int mono_wasm_eventloop_has_unsettled_interop_promises(void);
