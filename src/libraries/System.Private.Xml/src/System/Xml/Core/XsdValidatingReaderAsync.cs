@@ -507,14 +507,12 @@ namespace System.Xml
                 case XmlNodeType.Whitespace:
                 case XmlNodeType.SignificantWhitespace:
 
-                    return GetValueAsync()
-                        .ContinueWith(t => _validator.ValidateWhitespace(t.GetAwaiter().GetResult()), TaskScheduler.Default);
+                    return ValidateWhitespace(GetValueAsync(), _validator);
 
                 case XmlNodeType.Text:          // text inside a node
                 case XmlNodeType.CDATA:         // <![CDATA[...]]>
 
-                    return GetValueAsync()
-                        .ContinueWith(t => _validator.ValidateText(t.GetAwaiter().GetResult()), TaskScheduler.Default);
+                    return ValidateText(GetValueAsync(), _validator);
 
                 case XmlNodeType.EndElement:
 
@@ -536,6 +534,10 @@ namespace System.Xml
             }
 
             return Task.CompletedTask;
+
+            static async Task ValidateWhitespace(Task<string> t, XmlSchemaValidator validator) => validator.ValidateWhitespace(await t.ConfigureAwait(false));
+
+            static async Task ValidateText(Task<string> t, XmlSchemaValidator validator) => validator.ValidateText(await t.ConfigureAwait(false));
         }
 
         private async Task ProcessElementEventAsync()
