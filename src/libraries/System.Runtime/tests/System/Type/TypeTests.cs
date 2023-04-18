@@ -534,7 +534,7 @@ namespace System.Tests
             Assert.Throws(expectedException, () => Type.GetType(typeName, throwOnError: true, ignoreCase: false));
         }
 
-        [Theory]
+                [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [InlineData(".GlobalStructStartingWithDot")]
         [InlineData(" GlobalStructStartingWithSpace")]
         public void GetTypeByName_NonRoundtrippable(string typeName)
