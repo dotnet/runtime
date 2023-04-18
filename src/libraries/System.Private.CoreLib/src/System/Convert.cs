@@ -2099,7 +2099,7 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                ThrowInvalidBase();
             }
 
             if (value == null)
@@ -2122,7 +2122,7 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                ThrowInvalidBase();
             }
 
             if (value == null)
@@ -2147,7 +2147,7 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                ThrowInvalidBase();
             }
 
             if (value == null)
@@ -2173,7 +2173,7 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                ThrowInvalidBase();
             }
 
             if (value == null)
@@ -2195,7 +2195,7 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                ThrowInvalidBase();
             }
             return value != null ?
                 ParseNumbers.StringToInt(value.AsSpan(), fromBase, ParseNumbers.IsTight) :
@@ -2211,7 +2211,7 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                ThrowInvalidBase();
             }
             return value != null ?
                 (uint)ParseNumbers.StringToInt(value.AsSpan(), fromBase, ParseNumbers.TreatAsUnsigned | ParseNumbers.IsTight) :
@@ -2226,7 +2226,7 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                ThrowInvalidBase();
             }
             return value != null ?
                 ParseNumbers.StringToLong(value.AsSpan(), fromBase, ParseNumbers.IsTight) :
@@ -2242,7 +2242,7 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                ThrowInvalidBase();
             }
             return value != null ?
                 (ulong)ParseNumbers.StringToLong(value.AsSpan(), fromBase, ParseNumbers.TreatAsUnsigned | ParseNumbers.IsTight) :
@@ -2254,37 +2254,93 @@ namespace System
             ToString((int)value, toBase);
 
         // Convert the Int16 value to a string in base fromBase
-        public static string ToString(short value, int toBase) =>
-            toBase switch
+        public static string ToString(short value, int toBase)
+        {
+            string format = "d";
+
+            switch (toBase)
             {
-                2 => value.ToString("b"),
-                8 => ToOctalString((ushort)value),
-                10 => value.ToString(CultureInfo.InvariantCulture),
-                16 => value.ToString("x"),
-                _ => throw new ArgumentException(SR.Arg_InvalidBase),
+                case 2:
+                    format = "b";
+                    break;
+
+                case 8:
+                    return ToOctalString((ushort)value);
+
+                case 10:
+                    break;
+
+                case 16:
+                    format = "x";
+                    break;
+
+                default:
+                    ThrowInvalidBase();
+                    break;
             };
+
+            return value.ToString(format, CultureInfo.InvariantCulture);
+        }
 
         // Convert the Int32 value to a string in base toBase
-        public static string ToString(int value, int toBase) =>
-            toBase switch
+        public static string ToString(int value, int toBase)
+        {
+            string format = "d";
+
+            switch (toBase)
             {
-                2 => value.ToString("b"),
-                8 => ToOctalString((uint)value),
-                10 => value.ToString(CultureInfo.InvariantCulture),
-                16 => value.ToString("x"),
-                _ => throw new ArgumentException(SR.Arg_InvalidBase),
+                case 2:
+                    format = "b";
+                    break;
+
+                case 8:
+                    return ToOctalString((uint)value);
+
+                case 10:
+                    break;
+
+                case 16:
+                    format = "x";
+                    break;
+
+                default:
+                    ThrowInvalidBase();
+                    break;
             };
 
+            return value.ToString(format, CultureInfo.InvariantCulture);
+        }
+
         // Convert the Int64 value to a string in base toBase
-        public static string ToString(long value, int toBase) =>
-            toBase switch
+        public static string ToString(long value, int toBase)
+        {
+            string format = "d";
+
+            switch (toBase)
             {
-                2 => value.ToString("b"),
-                8 => ToOctalString((ulong)value),
-                10 => value.ToString(CultureInfo.InvariantCulture),
-                16 => value.ToString("x"),
-                _ => throw new ArgumentException(SR.Arg_InvalidBase),
+                case 2:
+                    format = "b";
+                    break;
+
+                case 8:
+                    return ToOctalString((ulong)value);
+
+                case 10:
+                    break;
+
+                case 16:
+                    format = "x";
+                    break;
+
+                default:
+                    ThrowInvalidBase();
+                    break;
             };
+
+            return value.ToString(format, CultureInfo.InvariantCulture);
+        }
+
+        private static void ThrowInvalidBase() => throw new ArgumentException(SR.Arg_InvalidBase);
 
         private static string ToOctalString(ulong value)
         {
