@@ -26,14 +26,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 extern ICorJitHost* g_jitHost;
 
-#if defined(DEBUG)
-// Column settings for DOTNET_JitDumpIR.  We could(should) make these programmable.
-#define COLUMN_OPCODE 30
-#define COLUMN_OPERANDS (COLUMN_OPCODE + 25)
-#define COLUMN_KINDS 110
-#define COLUMN_FLAGS (COLUMN_KINDS + 32)
-#endif
-
 unsigned Compiler::jitTotalMethodCompiled = 0;
 
 #if defined(DEBUG)
