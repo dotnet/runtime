@@ -353,6 +353,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		// No warning for public methods on base type because that annotation is already
 		// inherited from the base type.
 		[ExpectedWarning ("IL2115", nameof (AnnotatedBase), nameof (AnnotatedBase.DAMField1))]
+		// TODO: NativeAOT duplicates the warning here since it's already reported on AnnotatedBase
+		[ExpectedWarning ("IL2113", nameof (AnnotatedBase), "--RUC on AnnotatedBase--", ProducedBy = Tool.NativeAot)]
 		class AnnotatedDerivedFromAnnotatedBase : AnnotatedBase
 		{
 			[Kept]
@@ -449,6 +451,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		// again about base methods.
 		[ExpectedWarning ("IL2115", nameof (Base), nameof (DAMField1))]
 		[ExpectedWarning ("IL2115", nameof (AnnotatedDerivedFromBase), nameof (DAMField2))]
+		// https://github.com/dotnet/linker/issues/2815
+		[ExpectedWarning ("IL2113", nameof (AnnotatedDerivedFromBase), nameof (AnnotatedDerivedFromBase.RUCMethod), "--RUC on AnnotatedDerivedFromBase--", ProducedBy = Tool.NativeAot)]
+		// TODO: NativeAOT produces duplicate warnings (these are all already reported by the AnnotatedDerivedFromBase class)
+		//  linker uses a cache to avoid the duplication, NativeAOT currently doesn't have such cache (as it would be its only purpose)
+		[ExpectedWarning ("IL2113", nameof (Base), nameof (Base.RUCBaseMethod), "--RUCBaseMethod--", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL2113", "--Base.RUCVirtualMethod--", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL2115", nameof (Base), nameof (Base.DAMVirtualProperty) + ".get", ProducedBy = Tool.NativeAot)]
 		class DerivedFromAnnotatedDerivedFromBase : AnnotatedDerivedFromBase
 		{
 			[Kept]
