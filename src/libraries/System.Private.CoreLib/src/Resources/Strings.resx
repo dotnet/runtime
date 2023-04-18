@@ -382,8 +382,8 @@
   <data name="Arg_HandleNotSync" xml:space="preserve">
     <value>Handle does not support synchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened asynchronously (that is, it was opened explicitly for overlapped I/O).</value>
   </data>
-  <data name="Arg_HexStyleNotSupported" xml:space="preserve">
-    <value>The number style AllowHexSpecifier is not supported on floating point data types.</value>
+  <data name="Arg_HexBinaryStylesNotSupported" xml:space="preserve">
+    <value>The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on floating point data types.</value>
   </data>
   <data name="Arg_HTCapacityOverflow" xml:space="preserve">
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
@@ -415,8 +415,8 @@
   <data name="Arg_InvalidHandle" xml:space="preserve">
     <value>Invalid handle.</value>
   </data>
-  <data name="Arg_InvalidHexStyle" xml:space="preserve">
-    <value>With the AllowHexSpecifier bit set in the enum bit field, the only other valid bits that can be combined into the enum value must be a subset of those in HexNumber.</value>
+  <data name="Arg_InvalidHexBinaryStyle" xml:space="preserve">
+    <value>With the AllowHexSpecifier or AllowBinarySpecifier bit set in the enum bit field, the only other valid bits that can be combined into the enum value must be AllowLeadingWhite and AllowTrailingWhite.</value>
   </data>
   <data name="Arg_InvalidNeutralResourcesLanguage_Asm_Culture" xml:space="preserve">
     <value>The NeutralResourcesLanguageAttribute on the assembly "{0}" specifies an invalid culture name: "{1}".</value>
