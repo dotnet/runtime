@@ -36,8 +36,8 @@ initialize_runtimeconfig (const char *bundle_path)
         LOG_ERROR ("Out of memory.\n");
 
     const char *file_name = "runtimeconfig.bin";
-    const char *data;
-    int data_len;
+    const unsigned char *data;
+    unsigned int data_len;
     mono_get_bundled_resource_data (file_name, &data, &data_len);
 
     if (data) {
