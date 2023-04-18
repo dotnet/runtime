@@ -102,7 +102,7 @@ namespace System.Diagnostics.Metrics
             WriteEvent(3, sessionId, intervalStartTime, intervalEndTime);
         }
 
-        [Event(4, Keywords = Keywords.TimeSeriesValues)]
+        [Event(4, Keywords = Keywords.TimeSeriesValues, Version=1)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                             Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
         public void CounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate, string value)
@@ -191,7 +191,7 @@ namespace System.Diagnostics.Metrics
             WriteEvent(15, runningSessionId);
         }
 
-        [Event(16, Keywords = Keywords.TimeSeriesValues)]
+        [Event(16, Keywords = Keywords.TimeSeriesValues, Version=1)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                             Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
         public void UpDownCounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate, string value)
