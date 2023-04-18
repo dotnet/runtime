@@ -204,7 +204,7 @@ namespace System.Reflection
         {
             if (IsRetval)
             {
-                return Type.DBNull;
+                return DBNull.Value;
             }
 
             // Prioritize metadata constant over custom attribute constant
