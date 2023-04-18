@@ -6818,6 +6818,8 @@ void gc_heap::gc_thread_function ()
 
     heap_select::init_cpu_mapping(heap_number);
 
+    BOOL saved_gradual_decommit_in_progress_p = FALSE;
+
     while (1)
     {
         assert (!gc_t_join.joined());
@@ -6837,6 +6839,7 @@ void gc_heap::gc_thread_function ()
             END_TIMING(suspend_ee_during_log);
 
             proceed_with_gc_p = TRUE;
+            saved_gradual_decommit_in_progress_p = gradual_decommit_in_progress_p;
             gradual_decommit_in_progress_p = FALSE;
 
             if (!should_proceed_with_gc())
@@ -6871,9 +6874,18 @@ void gc_heap::gc_thread_function ()
 
         if (heap_number == 0)
         {
-            if (proceed_with_gc_p && (!settings.concurrent))
+            if (proceed_with_gc_p)
             {
-                do_post_gc();
+                if (!settings.concurrent)
+                {
+                    do_post_gc();
+                }
+                else if (saved_gradual_decommit_in_progress_p)
+                {
+                    // we only did a background GC - restore flag setting
+                    dprintf (2, ("restore gradual_decommit_in_progress_p"));
+                    gradual_decommit_in_progress_p = TRUE;
+                }
             }
 
 #ifdef BACKGROUND_GC
