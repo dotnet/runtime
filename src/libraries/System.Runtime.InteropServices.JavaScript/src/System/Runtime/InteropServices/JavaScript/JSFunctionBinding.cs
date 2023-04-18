@@ -172,6 +172,10 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void InvokeJSImpl(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
         {
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(jsFunction);
+#endif
+
             IntPtr functionJSHandle = jsFunction.JSHandle;
             fixed (JSMarshalerArgument* ptr = arguments)
             {
