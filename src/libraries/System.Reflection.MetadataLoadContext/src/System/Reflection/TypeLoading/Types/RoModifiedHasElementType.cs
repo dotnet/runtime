@@ -11,7 +11,7 @@ namespace System.Reflection
     /// </summary>
     internal sealed class RoModifiedHasElementType : RoModifiedType
     {
-        private RoModifiedType? _elementModifiedType;
+        private readonly RoModifiedType? _elementModifiedType;
 
         public RoModifiedHasElementType(RoType unmodifiedType) : base(unmodifiedType)
         {

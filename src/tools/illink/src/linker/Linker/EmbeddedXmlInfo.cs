@@ -33,7 +33,7 @@ namespace Mono.Linker
 
 			DescriptorMarker? marker = null;
 			try {
-				context.LogMessage ($"Processing embedded linker descriptor '{rsc.Name}' from '{assembly.Name}'.");
+				context.LogMessage ($"Processing embedded trimming descriptor '{rsc.Name}' from '{assembly.Name}'.");
 				marker = GetExternalResolveStep (context, rsc, assembly);
 			} catch (XmlException ex) {
 				/* This could happen if some broken XML file is embedded. */

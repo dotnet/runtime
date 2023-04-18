@@ -123,10 +123,10 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        internal struct ModeName
+        internal readonly struct ModeName
         {
-            public QilName Mode;
-            public QilName Name;
+            public readonly QilName Mode;
+            public readonly QilName Name;
 
             public ModeName(QilName mode, QilName name)
             {

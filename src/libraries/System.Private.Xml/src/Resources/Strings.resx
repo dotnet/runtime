@@ -627,9 +627,6 @@
   <data name="Xml_InvalidPrefix" xml:space="preserve">
     <value>Prefixes beginning with "xml" (regardless of whether the characters are uppercase, lowercase, or some combination thereof) are reserved for use by XML.</value>
   </data>
-  <data name="Xml_InvalidIndentation" xml:space="preserve">
-    <value>Indentation value must be greater than 0.</value>
-  </data>
   <data name="Xml_NotInWriteState" xml:space="preserve">
     <value>NotInWriteState.</value>
   </data>

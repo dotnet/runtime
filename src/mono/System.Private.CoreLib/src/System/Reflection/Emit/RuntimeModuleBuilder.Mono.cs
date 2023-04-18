@@ -249,7 +249,7 @@ namespace System.Reflection.Emit
 
         private RuntimeTypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
-            ArgumentNullException.ThrowIfNull(name, "fullname");
+            Debug.Assert(name is not null);
             ITypeIdentifier ident = TypeIdentifiers.FromInternal(name);
             if (name_cache.ContainsKey(ident))
                 throw new ArgumentException(SR.Argument_DuplicateTypeName);
@@ -532,7 +532,7 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(type);
             if (type.IsByRef)
-                throw new ArgumentException("type can't be a byref type", nameof(type));
+                throw new ArgumentException(SR.Argument_CannotBeByRefType, nameof(type));
             return type.MetadataToken;
         }
 
@@ -600,11 +600,11 @@ namespace System.Reflection.Emit
             // allocated by the runtime
             if (member is TypeBuilderInstantiation || member is SymbolType)
                 token = typespec_tokengen--;
-            else if (member is FieldOnTypeBuilderInst)
+            else if (member is FieldOnTypeBuilderInstantiation)
                 token = memberref_tokengen--;
-            else if (member is ConstructorOnTypeBuilderInst)
+            else if (member is ConstructorOnTypeBuilderInstantiation)
                 token = memberref_tokengen--;
-            else if (member is MethodOnTypeBuilderInst)
+            else if (member is MethodOnTypeBuilderInstantiation)
                 token = memberref_tokengen--;
             else if (member is FieldBuilder)
                 token = memberref_tokengen--;
@@ -659,8 +659,9 @@ namespace System.Reflection.Emit
 
         internal int GetToken(MemberInfo member, bool create_open_instance)
         {
-            if (member is TypeBuilderInstantiation || member is FieldOnTypeBuilderInst || member is ConstructorOnTypeBuilderInst || member is MethodOnTypeBuilderInst || member is SymbolType || member is FieldBuilder || member is TypeBuilder || member is ConstructorBuilder || member is MethodBuilder || member is GenericTypeParameterBuilder ||
-                member is EnumBuilder)
+            if (member is TypeBuilderInstantiation || member is FieldOnTypeBuilderInstantiation || member is ConstructorOnTypeBuilderInstantiation ||
+                member is MethodOnTypeBuilderInstantiation || member is SymbolType || member is FieldBuilder || member is TypeBuilder ||
+                member is ConstructorBuilder || member is MethodBuilder || member is GenericTypeParameterBuilder || member is EnumBuilder)
                 return GetPseudoToken(member, create_open_instance);
             return getToken(this, member, create_open_instance);
         }
@@ -715,11 +716,11 @@ namespace System.Reflection.Emit
                 return fb.RuntimeResolve();
             if (obj is RuntimeGenericTypeParameterBuilder gtpb)
                 return gtpb.RuntimeResolve();
-            if (obj is FieldOnTypeBuilderInst fotbi)
+            if (obj is FieldOnTypeBuilderInstantiation fotbi)
                 return fotbi.RuntimeResolve();
-            if (obj is MethodOnTypeBuilderInst motbi)
+            if (obj is MethodOnTypeBuilderInstantiation motbi)
                 return motbi.RuntimeResolve();
-            if (obj is ConstructorOnTypeBuilderInst cotbi)
+            if (obj is ConstructorOnTypeBuilderInstantiation cotbi)
                 return cotbi.RuntimeResolve();
             if (obj is Type t)
                 return t.RuntimeResolve();
@@ -868,7 +869,7 @@ namespace System.Reflection.Emit
                 return Array.Empty<object>();
 
             if (attributeType is TypeBuilder)
-                throw new InvalidOperationException("First argument to GetCustomAttributes can't be a TypeBuilder");
+                throw new InvalidOperationException(SR.InvalidOperation_CannotHaveFirstArgumentAsTypeBuilder);
 
             List<object> results = new List<object>();
             for (int i = 0; i < cattrs.Length; i++)
@@ -876,7 +877,7 @@ namespace System.Reflection.Emit
                 Type t = cattrs[i].Ctor.GetType();
 
                 if (t is TypeBuilder)
-                    throw new InvalidOperationException("Can't construct custom attribute for TypeBuilder type");
+                    throw new InvalidOperationException(SR.InvalidOperation_CannotConstructCustomAttributeForTypeBuilderType);
 
                 if (attributeType == null || attributeType.IsAssignableFrom(t))
                     results.Add(cattrs[i].Invoke());
@@ -894,7 +895,7 @@ namespace System.Reflection.Emit
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             if (!global_type_created)
-                throw new InvalidOperationException("Module-level fields cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.");
+                throw new InvalidOperationException(SR.InvalidOperation_ModuleFieldsMethodsRelyOnCreateGlobalFunctionsMethod);
             return global_type!.AsType().GetField(name, bindingAttr);
         }
 
@@ -902,7 +903,7 @@ namespace System.Reflection.Emit
         public override FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
             if (!global_type_created)
-                throw new InvalidOperationException("Module-level fields cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.");
+                throw new InvalidOperationException(SR.InvalidOperation_ModuleFieldsMethodsRelyOnCreateGlobalFunctionsMethod);
             return global_type!.AsType().GetFields(bindingFlags);
         }
 
@@ -910,7 +911,7 @@ namespace System.Reflection.Emit
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
             if (!global_type_created)
-                throw new InvalidOperationException("Module-level methods cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.");
+                throw new InvalidOperationException(SR.InvalidOperation_ModuleFieldsMethodsRelyOnCreateGlobalFunctionsMethod);
             return global_type!.AsType().GetMethods(bindingFlags);
         }
 

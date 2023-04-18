@@ -18,6 +18,7 @@ public class MiscTests : BuildTestBase
     }
 
     [Theory]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/84722")]
     [InlineData("Debug", true)]
     [InlineData("Debug", false)]
     [InlineData("Release", true)]
@@ -35,7 +36,7 @@ public class MiscTests : BuildTestBase
         AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
         // build with -p:DeployOnBuild=true, and that will trigger a publish
-        (CommandResult res, _) = BuildInternal(id, config, publish: false, setWasmDevel: false, "-p:DeployOnBuild=true");
+        (CommandResult res, _) = BlazorBuildInternal(id, config, publish: false, setWasmDevel: false, "-p:DeployOnBuild=true");
 
         var expectedFileType = nativeRelink ? NativeFilesType.Relinked : NativeFilesType.AOT;
 
@@ -83,7 +84,7 @@ public class MiscTests : BuildTestBase
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
 
         // will aot
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT));
+        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT, ExpectRelinkDirWhenPublishing: true));
 
         // build again
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));

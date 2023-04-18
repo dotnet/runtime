@@ -4,13 +4,17 @@
 
 "use strict";
 
+// USE_PTHREADS is emscripten's define symbol, which is passed to acorn optimizer, so we could use it here
 #if USE_PTHREADS
-const usePThreads = true;
+const monoWasmThreads = true;
 const isPThread = `ENVIRONMENT_IS_PTHREAD`;
 #else
-const usePThreads = false;
-const isPThread = `false`;
+const monoWasmThreads = false;
+const isPThread = "false";
 #endif
+
+// because we can't pass custom define symbols to acorn optimizer, we use environment variables to pass other build options
+const WasmEnableLegacyJsInterop = process.env.WasmEnableLegacyJsInterop !== "false";
 
 const DotnetSupportLib = {
     $DOTNET: {},
@@ -22,13 +26,13 @@ const DotnetSupportLib = {
     // Emscripten's getBinaryPromise is not async for NodeJs, but we would like to have it async, so we replace it.
     // We also replace implementation of fetch
     $DOTNET__postset: `
-let __dotnet_replacement_PThread = ${usePThreads} ? {} : undefined;
-${usePThreads ? `
+let __dotnet_replacement_PThread = ${monoWasmThreads} ? {} : undefined;
+${monoWasmThreads ? `
 __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
 __dotnet_replacement_PThread.threadInitTLS = PThread.threadInitTLS;
 __dotnet_replacement_PThread.allocateUnusedWorker = PThread.allocateUnusedWorker;
 ` : ''}
-let __dotnet_replacements = {scriptUrl: import.meta.url, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
+let __dotnet_replacements = {scriptUrl: import.meta.url, fetch: globalThis.fetch, require, updateMemoryViews, pthreadReplacements: __dotnet_replacement_PThread};
 if (ENVIRONMENT_IS_NODE) {
     __dotnet_replacements.requirePromise = __requirePromise;
 }
@@ -36,7 +40,7 @@ let __dotnet_exportedAPI = __initializeImportsAndExports(
     { isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module, marshaled_imports: IMPORTS },
     __dotnet_replacements, __callbackAPI);
-updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
+updateMemoryViews = __dotnet_replacements.updateMemoryViews;
 fetch = __dotnet_replacements.fetch;
 _scriptDir = __dirname = scriptDirectory = __dotnet_replacements.scriptDirectory;
 if (ENVIRONMENT_IS_NODE) {
@@ -45,7 +49,7 @@ if (ENVIRONMENT_IS_NODE) {
     });
 }
 var noExitRuntime = __dotnet_replacements.noExitRuntime;
-${usePThreads ? `
+${monoWasmThreads ? `
 PThread.loadWasmModuleToWorker = __dotnet_replacements.pthreadReplacements.loadWasmModuleToWorker;
 PThread.threadInitTLS = __dotnet_replacements.pthreadReplacements.threadInitTLS;
 PThread.allocateUnusedWorker = __dotnet_replacements.pthreadReplacements.allocateUnusedWorker;
@@ -55,7 +59,7 @@ PThread.allocateUnusedWorker = __dotnet_replacements.pthreadReplacements.allocat
 
 // the methods would be visible to EMCC linker
 // --- keep in sync with exports.ts ---
-const linked_functions = [
+let linked_functions = [
     // mini-wasm.c
     "mono_set_timeout",
 
@@ -74,7 +78,6 @@ const linked_functions = [
     "mono_wasm_profiler_leave",
 
     // driver.c
-    "mono_wasm_invoke_js_blazor",
     "mono_wasm_trace_logger",
     "mono_wasm_event_pipe_early_startup_callback",
 
@@ -88,35 +91,43 @@ const linked_functions = [
     "mono_jiterp_do_jit_call_indirect",
 
     // corebindings.c
-    "mono_wasm_invoke_js_with_args_ref",
-    "mono_wasm_get_object_property_ref",
-    "mono_wasm_set_object_property_ref",
-    "mono_wasm_get_by_index_ref",
-    "mono_wasm_set_by_index_ref",
-    "mono_wasm_get_global_object_ref",
-    "mono_wasm_create_cs_owned_object_ref",
     "mono_wasm_release_cs_owned_object",
-    "mono_wasm_typed_array_to_array_ref",
-    "mono_wasm_typed_array_from_ref",
     "mono_wasm_bind_js_function",
     "mono_wasm_invoke_bound_function",
     "mono_wasm_invoke_import",
     "mono_wasm_bind_cs_function",
     "mono_wasm_marshal_promise",
+    "mono_wasm_change_case_invariant",
+    "mono_wasm_change_case",
+    "mono_wasm_compare_string",
 
-    // pal_icushim_static.c
-    "mono_wasm_load_icu_data",
-    "mono_wasm_get_icudt_name",
-
-    #if USE_PTHREADS
-    /// mono-threads-wasm.c
-    "mono_wasm_pthread_on_pthread_attached",
-    // diagnostics_server.c
-    "mono_wasm_diagnostic_server_on_server_thread_created",
-    "mono_wasm_diagnostic_server_on_runtime_server_init",
-    "mono_wasm_diagnostic_server_stream_signal_work_available",
-    #endif
+    "icudt68_dat",
 ];
+
+if (monoWasmThreads) {
+    linked_functions = [...linked_functions,
+        /// mono-threads-wasm.c
+        "mono_wasm_pthread_on_pthread_attached",
+        // diagnostics_server.c
+        "mono_wasm_diagnostic_server_on_server_thread_created",
+        "mono_wasm_diagnostic_server_on_runtime_server_init",
+        "mono_wasm_diagnostic_server_stream_signal_work_available",
+    ]
+}
+if (WasmEnableLegacyJsInterop) {
+    linked_functions = [...linked_functions,
+        "mono_wasm_invoke_js_with_args_ref",
+        "mono_wasm_get_object_property_ref",
+        "mono_wasm_set_object_property_ref",
+        "mono_wasm_get_by_index_ref",
+        "mono_wasm_set_by_index_ref",
+        "mono_wasm_get_global_object_ref",
+        "mono_wasm_create_cs_owned_object_ref",
+        "mono_wasm_typed_array_to_array_ref",
+        "mono_wasm_typed_array_from_ref",
+        "mono_wasm_invoke_js_blazor",
+    ]
+}
 
 // -- this javascript file is evaluated by emcc during compilation! --
 // we generate simple proxy for each exported function so that emcc will include them in the final output

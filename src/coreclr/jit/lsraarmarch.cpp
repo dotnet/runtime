@@ -448,11 +448,11 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
 
             assert(src->isContained());
 
-            if (src->OperIs(GT_OBJ))
+            if (src->OperIs(GT_BLK))
             {
                 // Build uses for the address to load from.
                 //
-                srcCount = BuildOperandUses(src->AsObj()->Addr());
+                srcCount = BuildOperandUses(src->AsBlk()->Addr());
             }
             else
             {
@@ -558,7 +558,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     {
         assert(src->TypeIs(TYP_STRUCT) && src->isContained());
 
-        if (src->OperIs(GT_OBJ))
+        if (src->OperIs(GT_BLK))
         {
             // If the PUTARG_SPLIT clobbers only one register we may need an
             // extra internal register in case there is a conflict between the
@@ -570,7 +570,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
             }
 
             // We will generate code that loads from the OBJ's address, which must be in a register.
-            srcCount = BuildOperandUses(src->AsObj()->Addr());
+            srcCount = BuildOperandUses(src->AsBlk()->Addr());
         }
         else
         {
@@ -699,8 +699,8 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     }
 
                     const bool isSrcAddrLocal = src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ||
-                                                ((srcAddrOrFill != nullptr) && srcAddrOrFill->OperIsLocalAddr());
-                    const bool isDstAddrLocal = dstAddr->OperIsLocalAddr();
+                                                ((srcAddrOrFill != nullptr) && srcAddrOrFill->OperIs(GT_LCL_ADDR));
+                    const bool isDstAddrLocal = dstAddr->OperIs(GT_LCL_ADDR);
 
                     // CodeGen can use 16-byte SIMD ldp/stp for larger block sizes.
                     // This is the case, when both registers are either sp or fp.
@@ -726,6 +726,50 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     {
                         buildInternalIntRegisterDefForNode(blkNode);
                     }
+#endif
+                }
+                break;
+
+                case GenTreeBlk::BlkOpKindUnrollMemmove:
+                {
+#ifdef TARGET_ARM64
+
+                    // Prepare SIMD/GPR registers needed to perform an unrolled memmove. The idea that
+                    // we can ignore the fact that src and dst might overlap if we save the whole src
+                    // to temp regs in advance.
+
+                    // Lowering was expected to get rid of memmove in case of zero
+                    assert(size > 0);
+
+                    const unsigned simdSize = FP_REGSIZE_BYTES;
+                    if (size >= simdSize)
+                    {
+                        unsigned simdRegs = size / simdSize;
+                        if ((size % simdSize) != 0)
+                        {
+                            // TODO-CQ: Consider using GPR load/store here if the reminder is 1,2,4 or 8
+                            simdRegs++;
+                        }
+                        for (unsigned i = 0; i < simdRegs; i++)
+                        {
+                            // It's too late to revert the unrolling so we hope we'll have enough SIMD regs
+                            // no more than MaxInternalCount. Currently, it's controlled by getUnrollThreshold(memmove)
+                            buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                        }
+                    }
+                    else if (isPow2(size))
+                    {
+                        // Single GPR for 1,2,4,8
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                    }
+                    else
+                    {
+                        // Any size from 3 to 15 can be handled via two GPRs
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                    }
+#else // TARGET_ARM64
+                    unreached();
 #endif
                 }
                 break;
@@ -833,9 +877,14 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 //
 int LinearScan::BuildSelect(GenTreeOp* select)
 {
-    assert(select->OperIs(GT_SELECT));
+    assert(select->OperIs(GT_SELECT, GT_SELECTCC));
 
-    int srcCount = BuildOperandUses(select->AsConditional()->gtCond);
+    int srcCount = 0;
+    if (select->OperIs(GT_SELECT))
+    {
+        srcCount += BuildOperandUses(select->AsConditional()->gtCond);
+    }
+
     srcCount += BuildOperandUses(select->gtOp1);
     srcCount += BuildOperandUses(select->gtOp2);
     BuildDef(select);

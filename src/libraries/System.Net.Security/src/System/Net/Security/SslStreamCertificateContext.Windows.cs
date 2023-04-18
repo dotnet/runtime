@@ -101,8 +101,8 @@ namespace System.Net.Security
                 }
             }
 
+            _intermediateCertificates = intermediates;
             Certificate = target;
-            IntermediateCertificates = intermediates;
             Trust = trust;
         }
     }

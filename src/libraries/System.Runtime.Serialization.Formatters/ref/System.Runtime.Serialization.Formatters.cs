@@ -6,6 +6,7 @@
 
 namespace System.Runtime.Serialization
 {
+    [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.CLSCompliantAttribute(false)]
     public abstract partial class Formatter : System.Runtime.Serialization.IFormatter
     {
@@ -15,13 +16,11 @@ namespace System.Runtime.Serialization
         public abstract System.Runtime.Serialization.SerializationBinder? Binder { get; set; }
         public abstract System.Runtime.Serialization.StreamingContext Context { get; set; }
         public abstract System.Runtime.Serialization.ISurrogateSelector? SurrogateSelector { get; set; }
-        [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("BinaryFormatter serialization uses dynamic code generation, the type of objects being processed cannot be statically discovered.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.")]
         public abstract object Deserialize(System.IO.Stream serializationStream);
         protected virtual object? GetNext(out long objID) { throw null; }
         protected virtual long Schedule(object? obj) { throw null; }
-        [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.")]
         public abstract void Serialize(System.IO.Stream serializationStream, object graph);
         protected abstract void WriteArray(object obj, string name, System.Type memberType);
@@ -48,6 +47,7 @@ namespace System.Runtime.Serialization
         protected abstract void WriteUInt64(ulong val, string name);
         protected abstract void WriteValueType(object obj, string name, System.Type memberType);
     }
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class FormatterConverter : System.Runtime.Serialization.IFormatterConverter
     {
         public FormatterConverter() { }
@@ -73,6 +73,7 @@ namespace System.Runtime.Serialization
         [System.CLSCompliantAttribute(false)]
         public ulong ToUInt64(object value) { throw null; }
     }
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public static partial class FormatterServices
     {
         public static void CheckTypeSecurity(System.Type t, System.Runtime.Serialization.Formatters.TypeFilterLevel securityLevel) { }
@@ -86,36 +87,39 @@ namespace System.Runtime.Serialization
         public static object GetUninitializedObject([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type) { throw null; }
         public static object PopulateObjectMembers(object obj, System.Reflection.MemberInfo[] members, object?[] data) { throw null; }
     }
+    [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface IFormatter
     {
         System.Runtime.Serialization.SerializationBinder? Binder { get; set; }
         System.Runtime.Serialization.StreamingContext Context { get; set; }
         System.Runtime.Serialization.ISurrogateSelector? SurrogateSelector { get; set; }
-        [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("BinaryFormatter serialization uses dynamic code generation, the type of objects being processed cannot be statically discovered.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.")]
         object Deserialize(System.IO.Stream serializationStream);
-        [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.")]
         void Serialize(System.IO.Stream serializationStream, object graph);
     }
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface ISerializationSurrogate
     {
         void GetObjectData(object obj, System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context);
         object SetObjectData(object obj, System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context, System.Runtime.Serialization.ISurrogateSelector? selector);
     }
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface ISurrogateSelector
     {
         void ChainSelector(System.Runtime.Serialization.ISurrogateSelector selector);
         System.Runtime.Serialization.ISurrogateSelector? GetNextSelector();
         System.Runtime.Serialization.ISerializationSurrogate? GetSurrogate(System.Type type, System.Runtime.Serialization.StreamingContext context, out System.Runtime.Serialization.ISurrogateSelector selector);
     }
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class ObjectIDGenerator
     {
         public ObjectIDGenerator() { }
         public virtual long GetId(object obj, out bool firstTime) { throw null; }
         public virtual long HasId(object obj, out bool firstTime) { throw null; }
     }
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class ObjectManager
     {
         public ObjectManager(System.Runtime.Serialization.ISurrogateSelector? selector, System.Runtime.Serialization.StreamingContext context) { }
@@ -144,6 +148,7 @@ namespace System.Runtime.Serialization
         public virtual void BindToName(System.Type serializedType, out string? assemblyName, out string? typeName) { throw null; }
         public abstract System.Type? BindToType(string assemblyName, string typeName);
     }
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class SerializationObjectManager
     {
         public SerializationObjectManager(System.Runtime.Serialization.StreamingContext context) { }
@@ -151,6 +156,7 @@ namespace System.Runtime.Serialization
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("SerializationObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.")]
         public void RegisterObject(object obj) { }
     }
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class SurrogateSelector : System.Runtime.Serialization.ISurrogateSelector
     {
         public SurrogateSelector() { }
@@ -163,22 +169,26 @@ namespace System.Runtime.Serialization
 }
 namespace System.Runtime.Serialization.Formatters
 {
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum FormatterAssemblyStyle
     {
         Simple = 0,
         Full = 1,
     }
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum FormatterTypeStyle
     {
         TypesWhenNeeded = 0,
         TypesAlways = 1,
         XsdString = 2,
     }
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface IFieldInfo
     {
         string[]? FieldNames { get; set; }
         System.Type[]? FieldTypes { get; set; }
     }
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum TypeFilterLevel
     {
         Low = 2,
@@ -187,6 +197,7 @@ namespace System.Runtime.Serialization.Formatters
 }
 namespace System.Runtime.Serialization.Formatters.Binary
 {
+    [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class BinaryFormatter : System.Runtime.Serialization.IFormatter
     {
         public BinaryFormatter() { }
@@ -197,11 +208,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
         public System.Runtime.Serialization.Formatters.TypeFilterLevel FilterLevel { get { throw null; } set { } }
         public System.Runtime.Serialization.ISurrogateSelector? SurrogateSelector { get { throw null; } set { } }
         public System.Runtime.Serialization.Formatters.FormatterTypeStyle TypeFormat { get { throw null; } set { } }
-        [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("BinaryFormatter serialization uses dynamic code generation, the type of objects being processed cannot be statically discovered.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.")]
         public object Deserialize(System.IO.Stream serializationStream) { throw null; }
-        [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.")]
         public void Serialize(System.IO.Stream serializationStream, object graph) { }
     }

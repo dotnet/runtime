@@ -20,6 +20,8 @@
 #include "holder.h"
 #include "SpinLock.h"
 
+// Uses _rt_aot_lock_internal_t that has CrstStatic as a field
+// This is initialized at the beginning and EventPipe library requires the lock handle to be maintained by the runtime
 ep_rt_lock_handle_t _ep_rt_aot_config_lock_handle;
 CrstStatic _ep_rt_aot_config_lock;
 
@@ -147,7 +149,7 @@ ep_rt_aot_atomic_compare_exchange_size_t (volatile size_t *target, size_t expect
     return static_cast<size_t>(PalInterlockedCompareExchange64 ((volatile int64_t *)target, (int64_t)value, (int64_t)expected));
 #else
     return static_cast<size_t>(PalInterlockedCompareExchange ((volatile int32_t *)target, (int32_t)value, (int32_t)expected));
-#endif	
+#endif
 }
 
 ep_char8_t *
@@ -351,7 +353,12 @@ ep_rt_aot_spin_lock_alloc (ep_rt_spin_lock_handle_t *spin_lock)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    spin_lock->lock = new (nothrow) SpinLock ();
+    // EventPipe library expects SpinLocks to be used but NativeAOT will use a lock and change as needed if performance is an issue
+    // Uses _rt_aot_lock_internal_t that has CrstStatic as a field
+    // EventPipe library will intialize using thread, EventPipeBufferManager instances and will maintain these on the EventPipe library side
+
+    spin_lock->lock = new (nothrow) CrstStatic ();
+    spin_lock->lock->InitNoThrow (CrstType::CrstEventPipe);
 }
 
 void
@@ -502,4 +509,77 @@ ep_rt_aot_volatile_store_ptr_without_barrier (
     VolatileStoreWithoutBarrier<void *> ((void **)ptr, value);
 }
 
+void ep_rt_aot_init (void)
+{
+    extern ep_rt_lock_handle_t _ep_rt_aot_config_lock_handle;
+    extern CrstStatic _ep_rt_aot_config_lock;
+
+    _ep_rt_aot_config_lock_handle.lock = &_ep_rt_aot_config_lock;
+    _ep_rt_aot_config_lock_handle.lock->InitNoThrow (CrstType::CrstEventPipeConfig);
+}
+
+bool ep_rt_aot_lock_acquire (ep_rt_lock_handle_t *lock)
+{
+    if (lock) {
+        lock->lock->Enter();
+        return true;
+    }
+    return false;
+}
+
+bool ep_rt_aot_lock_release (ep_rt_lock_handle_t *lock)
+{
+    if (lock) {
+        lock->lock->Leave();
+        return true;
+    }
+    return false;
+}
+
+bool ep_rt_aot_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock)
+{
+    // In NativeAOT, we use a lock, instead of a SpinLock. 
+    // The method signature matches the EventPipe library expectation of a SpinLock
+    if (spin_lock) {
+        spin_lock->lock->Enter();
+        return true;
+    }
+    return false;
+}
+
+bool ep_rt_aot_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock)
+{
+    // In NativeAOT, we use a lock, instead of a SpinLock. 
+    // The method signature matches the EventPipe library expectation of a SpinLock
+    if (spin_lock) {
+        spin_lock->lock->Leave();
+        return true;
+    }
+    return false;
+}
+
+#ifdef EP_CHECKED_BUILD
+
+void ep_rt_aot_lock_requires_lock_held (const ep_rt_lock_handle_t *lock)
+{
+    EP_ASSERT (((ep_rt_lock_handle_t *)lock)->lock->OwnedByCurrentThread ());
+}
+
+void ep_rt_aot_lock_requires_lock_not_held (const ep_rt_lock_handle_t *lock)
+{
+    EP_ASSERT (lock->lock == NULL || !((ep_rt_lock_handle_t *)lock)->lock->OwnedByCurrentThread ());
+}
+
+void ep_rt_aot_spin_lock_requires_lock_held (const ep_rt_spin_lock_handle_t *spin_lock)
+{
+    EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
+	EP_ASSERT (spin_lock->lock->OwnedByCurrentThread ());
+}
+
+void ep_rt_aot_spin_lock_requires_lock_not_held (const ep_rt_spin_lock_handle_t *spin_lock)
+{
+	EP_ASSERT (spin_lock->lock == NULL || !spin_lock->lock->OwnedByCurrentThread ());
+}
+
+#endif /* EP_CHECKED_BUILD */
 #endif /* ENABLE_PERFTRACING */

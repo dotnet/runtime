@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace System.Diagnostics.Tracing
@@ -16,13 +17,56 @@ namespace System.Diagnostics.Tracing
             _eventProvider = new WeakReference<EventProvider>(eventProvider);
         }
 
+        protected override unsafe void HandleEnableNotification(
+                                    EventProvider target,
+                                    byte* additionalData,
+                                    byte level,
+                                    long matchAnyKeywords,
+                                    long matchAllKeywords,
+                                    Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData)
+        {
+            ulong id = 0;
+            if (additionalData != null)
+            {
+                id = BitConverter.ToUInt64(new ReadOnlySpan<byte>(additionalData, sizeof(ulong)));
+            }
+
+            // EventPipe issues Interop.Advapi32.EVENT_CONTROL_CODE_ENABLE_PROVIDER if a session
+            // is stopping as long as some other session is still enabled. If the session is stopping
+            // the session ID will be null, if it is a session starting it will be a non-zero value
+            bool bEnabling = id != 0;
+
+            IDictionary<string, string?>? args = null;
+            ControllerCommand command = ControllerCommand.Update;
+
+            if (bEnabling)
+            {
+                byte[]? filterDataBytes = null;
+                if (filterData != null)
+                {
+                    MarshalFilterData(filterData, out command, out filterDataBytes);
+                }
+
+                args = ParseFilterData(filterDataBytes);
+            }
+
+            // Since we are sharing logic across ETW and EventPipe in OnControllerCommand we have to set up data to
+            // mimic ETW to get the right commands sent to EventSources. perEventSourceSessionId has special meaning,
+            // if it is -1 the this command will be translated to a Disable command in EventSource.OnEventCommand. If
+            // it is 0-3 it indicates an ETW session with activities, and SessionMask.MAX (4) means legacy ETW session.
+            // We send SessionMask.MAX just to conform.
+            target.OnControllerCommand(command, args, bEnabling ? (int)SessionMask.MAX : -1);
+        }
+
         [UnmanagedCallersOnly]
         private static unsafe void Callback(byte* sourceId, int isEnabled, byte level,
             long matchAnyKeywords, long matchAllKeywords, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, void* callbackContext)
         {
             EventPipeEventProvider _this = (EventPipeEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!;
             if (_this._eventProvider.TryGetTarget(out EventProvider? target))
-                target.EnableCallback(isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+            {
+                _this.ProviderCallback(target, sourceId, isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+            }
         }
 
         // Register an event provider.
@@ -94,7 +138,7 @@ namespace System.Diagnostics.Tracing
 
         // Define an EventPipeEvent handle.
         internal override unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level,
-            byte *pMetadata, uint metadataLength)
+            byte* pMetadata, uint metadataLength)
         {
             return EventPipeInternal.DefineEvent(_provHandle, eventID, keywords, eventVersion, level, pMetadata, metadataLength);
         }

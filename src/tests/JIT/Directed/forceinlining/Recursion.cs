@@ -4,10 +4,12 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using Xunit;
 
 public class P
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = true;
 

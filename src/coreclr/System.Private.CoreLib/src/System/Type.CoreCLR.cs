@@ -26,7 +26,8 @@ namespace System
         public static Type? GetType(string typeName, bool throwOnError, bool ignoreCase)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeType.GetType(typeName, throwOnError, ignoreCase, ref stackMark);
+            return TypeNameParser.GetType(typeName, Assembly.GetExecutingAssembly(ref stackMark),
+                throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
@@ -34,7 +35,8 @@ namespace System
         public static Type? GetType(string typeName, bool throwOnError)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeType.GetType(typeName, throwOnError, false, ref stackMark);
+            return TypeNameParser.GetType(typeName, Assembly.GetExecutingAssembly(ref stackMark),
+                throwOnError: throwOnError);
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
@@ -42,7 +44,7 @@ namespace System
         public static Type? GetType(string typeName)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeType.GetType(typeName, false, false, ref stackMark);
+            return TypeNameParser.GetType(typeName, Assembly.GetExecutingAssembly(ref stackMark));
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
@@ -53,7 +55,8 @@ namespace System
             Func<Assembly?, string, bool, Type?>? typeResolver)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, false, false, ref stackMark);
+            return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver,
+                ((assemblyResolver != null) && (typeResolver != null)) ? null : Assembly.GetExecutingAssembly(ref stackMark));
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
@@ -65,7 +68,9 @@ namespace System
             bool throwOnError)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError, false, ref stackMark);
+            return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver,
+                ((assemblyResolver != null) && (typeResolver != null)) ? null : Assembly.GetExecutingAssembly(ref stackMark),
+                throwOnError : throwOnError);
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
@@ -78,7 +83,9 @@ namespace System
             bool ignoreCase)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
+            return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver,
+                ((assemblyResolver != null) && (typeResolver != null)) ? null : Assembly.GetExecutingAssembly(ref stackMark),
+                throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 
         // Given a class handle, this will return the class for that handle.

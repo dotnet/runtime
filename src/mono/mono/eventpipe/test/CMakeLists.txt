@@ -20,6 +20,12 @@ if(ENABLE_PERFTRACING)
             ep-test-runner.c
             ep-test-driver.c
             ep-thread-tests.c
+            dn-vector-tests.c
+            dn-vector-ptr-tests.c
+            dn-fwd-list-tests.c
+            dn-list-tests.c
+            dn-queue-tests.c
+            dn-umap-tests.c
         )
 
         list(APPEND EVENTPIPE_TEST_HEADERS
@@ -33,11 +39,11 @@ if(ENABLE_PERFTRACING)
         set(CMAKE_SKIP_RPATH 1)
         add_executable(ep-test ${EVENTPIPE_TEST_SOURCES} ${EVENTPIPE_TEST_HEADERS})
         target_sources(ep-test PRIVATE "${mono-components-objects}")
-        target_link_libraries(ep-test monosgen-static ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS} monoapi)
+        target_link_libraries(ep-test PRIVATE eglib_api monosgen-static ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS} monoapi)
         if(ICU_LDFLAGS)
             set_target_properties(ep-test PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
         endif()
-        install(TARGETS ep-test RUNTIME)
+        install_with_stripped_symbols(ep-test TARGETS bin)
     else(ENABLE_EVENTPIPE_TEST AND STATIC_COMPONENTS AND (NOT DISABLE_COMPONENTS) AND (NOT DISABLE_LIBS) AND (NOT DISABLE_EXECUTABLES))
         message(VERBOSE "Skip building native EventPipe library test runner.")
     endif(ENABLE_EVENTPIPE_TEST AND STATIC_COMPONENTS AND (NOT DISABLE_COMPONENTS) AND (NOT DISABLE_LIBS) AND (NOT DISABLE_EXECUTABLES))

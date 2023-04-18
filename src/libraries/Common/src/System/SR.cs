@@ -12,7 +12,7 @@ namespace System
         // This method is used to decide if we need to append the exception message parameters to the message when calling SR.Format.
         // by default it returns the value of System.Resources.UseSystemResourceKeys AppContext switch or false if not specified.
         // Native code generators can replace the value this returns based on user input at the time of native code generation.
-        // The Linker is also capable of replacing the value of this method when the application is being trimmed.
+        // The trimming tools are also capable of replacing the value of this method when the application is being trimmed.
         internal static bool UsingResourceKeys() => s_usingResourceKeys;
 
         internal static string GetResourceString(string resourceKey)

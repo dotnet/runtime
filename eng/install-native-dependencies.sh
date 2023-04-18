@@ -28,12 +28,12 @@ case "$os" in
         apt update
 
         apt install -y build-essential gettext locales cmake llvm clang lldb liblldb-dev libunwind8-dev libicu-dev liblttng-ust-dev \
-            libssl-dev libkrb5-dev libnuma-dev zlib1g-dev
+            libssl-dev libkrb5-dev zlib1g-dev
 
         localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
         ;;
 
-    osx|mac*|ios*|tvos*)
+    osx|maccatalyst|ios|iossimulator|tvos|tvossimulator)
         echo "Installed xcode version: $(xcode-select -p)"
 
         export HOMEBREW_NO_INSTALL_CLEANUP=1

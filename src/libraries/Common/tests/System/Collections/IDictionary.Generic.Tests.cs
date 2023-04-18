@@ -421,7 +421,7 @@ namespace System.Collections.Tests
                 ICollection<TKey> keys = dictionary.Keys;
                 IEnumerator<TKey> keysEnum = keys.GetEnumerator();
                 dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
-                if (IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified)
+                if (count == 0 ? Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException : IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified)
                 {
                     Assert.Throws<InvalidOperationException>(() => keysEnum.MoveNext());
                     Assert.Throws<InvalidOperationException>(() => keysEnum.Reset());
@@ -528,7 +528,7 @@ namespace System.Collections.Tests
                 ICollection<TValue> values = dictionary.Values;
                 IEnumerator<TValue> valuesEnum = values.GetEnumerator();
                 dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
-                if (IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified)
+                if (count == 0 ? Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException : IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified)
                 {
                     Assert.Throws<InvalidOperationException>(() => valuesEnum.MoveNext());
                     Assert.Throws<InvalidOperationException>(() => valuesEnum.Reset());

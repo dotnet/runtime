@@ -9,23 +9,19 @@ namespace System.Reflection.Emit
     internal sealed class RuntimeFieldBuilder : FieldBuilder
     {
         #region Private Data Members
-        private int m_fieldTok;
-        private RuntimeTypeBuilder m_typeBuilder;
-        private string m_fieldName;
-        private FieldAttributes m_Attributes;
-        private Type m_fieldType;
+        private readonly int m_fieldTok;
+        private readonly RuntimeTypeBuilder m_typeBuilder;
+        private readonly string m_fieldName;
+        private readonly FieldAttributes m_Attributes;
+        private readonly Type m_fieldType;
         #endregion
 
         #region Constructor
         internal RuntimeFieldBuilder(RuntimeTypeBuilder typeBuilder, string fieldName, Type type,
             Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
-            ArgumentException.ThrowIfNullOrEmpty(fieldName);
-
             if (fieldName[0] == '\0')
                 throw new ArgumentException(SR.Argument_IllegalName, nameof(fieldName));
-
-            ArgumentNullException.ThrowIfNull(type);
 
             if (type == typeof(void))
                 throw new ArgumentException(SR.Argument_BadFieldType);

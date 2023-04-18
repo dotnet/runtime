@@ -62,9 +62,8 @@ namespace System.Reflection.Emit
 
         private static bool IsBoundedVector(Type type)
         {
-            ArrayType? at = type as ArrayType;
-            if (at != null)
-                return at.GetEffectiveRank() == 1;
+            if (type is SymbolType st && st.IsArray)
+                return st.GetArrayRank() == 1;
             return type.ToString().EndsWith("[*]", StringComparison.Ordinal); /*Super uggly hack, SR doesn't allow one to query for it */
         }
 
@@ -235,8 +234,8 @@ namespace System.Reflection.Emit
             aname = (AssemblyName)n.Clone();
 
             if (!Enum.IsDefined(typeof(AssemblyBuilderAccess), access))
-                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture,
-                    "Argument value {0} is not valid.", (int)access),
+                throw new ArgumentException(SR.Format(CultureInfo.InvariantCulture,
+                    SR.Arg_EnumIllegalVal, (int)access),
                     nameof(access));
 
             name = n.Name;
@@ -266,6 +265,11 @@ namespace System.Reflection.Emit
 
         protected override ModuleBuilder DefineDynamicModuleCore(string name)
         {
+            if (name[0] == '\0')
+            {
+                throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
+            }
+
             if (manifest_module_used)
                 throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
             manifest_module_used = true;

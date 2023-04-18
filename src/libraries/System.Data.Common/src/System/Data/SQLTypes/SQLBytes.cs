@@ -179,7 +179,7 @@ namespace System.Data.SqlTypes
                         buffer = new byte[_stream.Length];
                         if (_stream.Position != 0)
                             _stream.Seek(0, SeekOrigin.Begin);
-                        _stream.Read(buffer, 0, checked((int)_stream.Length));
+                        _stream.ReadExactly(buffer, 0, checked((int)_stream.Length));
                         break;
 
                     default:
@@ -319,7 +319,7 @@ namespace System.Data.SqlTypes
                     case SqlBytesCharsState.Stream:
                         if (_stream!.Position != offset)
                             _stream.Seek(offset, SeekOrigin.Begin);
-                        _stream.Read(buffer, offsetInBuffer, count);
+                        count = _stream.Read(buffer, offsetInBuffer, count);
                         break;
 
                     default:
@@ -456,7 +456,7 @@ namespace System.Data.SqlTypes
             if (_stream.Position != 0)
                 _stream.Seek(0, SeekOrigin.Begin);
 
-            _stream.Read(_rgbBuf, 0, (int)lStreamLen);
+            _stream.ReadExactly(_rgbBuf, 0, (int)lStreamLen);
             _stream = null;
             _lCurLen = lStreamLen;
             _state = SqlBytesCharsState.Buffer;

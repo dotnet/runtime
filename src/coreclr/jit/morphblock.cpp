@@ -27,12 +27,10 @@ protected:
         return "MorphInitBlock";
     }
 
-    static GenTree* MorphBlock(Compiler* comp, GenTree* tree, bool isDest);
-    static GenTree* MorphCommaBlock(Compiler* comp, GenTreeOp* firstComma);
-
 private:
-    void TryInitFieldByField();
-    void TryPrimitiveInit();
+    void     TryInitFieldByField();
+    void     TryPrimitiveInit();
+    GenTree* EliminateCommas(GenTree** commaPool);
 
 protected:
     Compiler* m_comp;
@@ -127,6 +125,9 @@ GenTree* MorphInitBlockHelper::Morph()
 {
     JITDUMP("%s:\n", GetHelperName());
 
+    GenTree* commaPool;
+    GenTree* sideEffects = EliminateCommas(&commaPool);
+
     PrepareDst();
     PrepareSrc();
     PropagateBlockAssertions();
@@ -143,16 +144,40 @@ GenTree* MorphInitBlockHelper::Morph()
     assert(m_result != nullptr);
 
 #ifdef DEBUG
-    if (m_result != m_asg)
+    // If we are going to return a different node than the input then morph
+    // expects us to have set GTF_DEBUG_NODE_MORPHED.
+    if ((m_result != m_asg) || (sideEffects != nullptr))
     {
         m_result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
     }
-    if (m_comp->verbose)
+#endif
+
+    while (sideEffects != nullptr)
     {
-        printf("%s (after):\n", GetHelperName());
-        m_comp->gtDispTree(m_result);
+        if (commaPool != nullptr)
+        {
+            GenTree* comma = commaPool;
+            commaPool      = commaPool->gtNext;
+
+            assert(comma->OperIs(GT_COMMA));
+            comma->gtType        = m_result->TypeGet();
+            comma->AsOp()->gtOp1 = sideEffects;
+            comma->AsOp()->gtOp2 = m_result;
+            comma->gtFlags       = (sideEffects->gtFlags | m_result->gtFlags) & GTF_ALL_EFFECT;
+
+            m_result = comma;
+        }
+        else
+        {
+            m_result = m_comp->gtNewOperNode(GT_COMMA, m_result->TypeGet(), sideEffects, m_result);
+        }
+        INDEBUG(m_result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+        sideEffects = sideEffects->gtNext;
     }
-#endif // DEBUG
+
+    JITDUMP("%s (after):\n", GetHelperName());
+    DISPTREE(m_result);
 
     return m_result;
 }
@@ -163,12 +188,10 @@ GenTree* MorphInitBlockHelper::Morph()
 //
 void MorphInitBlockHelper::PrepareDst()
 {
-    GenTree* origDst = m_asg->gtGetOp1();
-    m_dst            = MorphBlock(m_comp, origDst, true);
-    if (m_dst != origDst)
-    {
-        m_asg->gtOp1 = m_dst;
-    }
+    m_dst = m_asg->gtGetOp1();
+
+    // Commas cannot be destinations.
+    assert(!m_dst->OperIs(GT_COMMA));
 
     if (m_asg->TypeGet() != m_dst->TypeGet())
     {
@@ -186,9 +209,6 @@ void MorphInitBlockHelper::PrepareDst()
         m_dstLclNum    = m_dstLclNode->GetLclNum();
         m_dstVarDsc    = m_comp->lvaGetDesc(m_dstLclNum);
 
-        assert((m_dstVarDsc->TypeGet() != TYP_STRUCT) ||
-               (m_dstVarDsc->GetLayout()->GetSize() == m_dstVarDsc->lvExactSize));
-
         // Kill everything about m_dstLclNum (and its field locals)
         if (m_comp->optLocalAssertionProp && (m_comp->optAssertionCount > 0))
         {
@@ -198,7 +218,7 @@ void MorphInitBlockHelper::PrepareDst()
     else
     {
         assert(m_dst == m_dst->gtEffectiveVal() && "the commas were skipped in MorphBlock");
-        assert(m_dst->OperIs(GT_IND, GT_BLK, GT_OBJ) && (!m_dst->OperIs(GT_IND) || !m_dst->TypeIs(TYP_STRUCT)));
+        assert(m_dst->OperIs(GT_IND, GT_BLK) && (!m_dst->OperIs(GT_IND) || !m_dst->TypeIs(TYP_STRUCT)));
     }
 
     if (m_dst->TypeIs(TYP_STRUCT))
@@ -211,10 +231,12 @@ void MorphInitBlockHelper::PrepareDst()
         m_blockSize = genTypeSize(m_dst);
     }
 
+    assert(m_blockSize != 0);
+
 #if defined(DEBUG)
     if (m_comp->verbose)
     {
-        printf("PrepareDst for [%06u] ", m_comp->dspTreeID(origDst));
+        printf("PrepareDst for [%06u] ", m_comp->dspTreeID(m_dst));
         if (m_dstLclNode != nullptr)
         {
             printf("have found a local var V%02u.\n", m_dstLclNum);
@@ -321,125 +343,6 @@ void MorphInitBlockHelper::MorphStructCases()
 }
 
 //------------------------------------------------------------------------
-// MorphBlock: Morph a block node preparatory to morphing a block assignment.
-//
-// Arguments:
-//    comp - a compiler instance;
-//    tree - a struct type node;
-//    isDest - true if this is the destination of an assignment;
-//
-// Return Value:
-//    Returns the possibly-morphed node. The caller is responsible for updating
-//    the parent of this node.
-//
-// static
-GenTree* MorphInitBlockHelper::MorphBlock(Compiler* comp, GenTree* tree, bool isDest)
-{
-    JITDUMP("MorphBlock for %s tree, before:\n", (isDest ? "dst" : "src"));
-    DISPTREE(tree);
-
-    assert(varTypeIsStruct(tree));
-
-    if (tree->OperIs(GT_COMMA))
-    {
-        // TODO-Cleanup: this block is not needed for not struct nodes, but
-        // TryPrimitiveCopy works wrong without this transformation.
-        tree = MorphCommaBlock(comp, tree->AsOp());
-        if (isDest)
-        {
-            tree->SetDoNotCSE();
-        }
-    }
-
-    assert(!tree->OperIsIndir() || varTypeIsI(genActualType(tree->AsIndir()->Addr())));
-
-    JITDUMP("MorphBlock after:\n");
-    DISPTREE(tree);
-    return tree;
-}
-
-//------------------------------------------------------------------------
-// MorphCommaBlock: transform COMMA<struct>(X) as OBJ<STRUCT>(COMMA byref(ADDR(X)).
-//
-// Notes:
-//    In order to CSE and value number array index expressions and bounds checks,
-//    the commas in which they are contained need to match.
-//    The pattern is that the COMMA should be the address expression.
-//    Therefore, we insert a GT_ADDR just above the node, and wrap it in an obj or ind.
-//    TODO-1stClassStructs: Consider whether this can be improved.
-//    Example:
-//      before: [3] comma struct <- [2] comma struct <- [1] LCL_VAR struct
-//      after: [5] obj <- [3] comma byref <- [2] comma byref <- [4] addr byref <- [1] LCL_VAR struct
-//
-// static
-GenTree* MorphInitBlockHelper::MorphCommaBlock(Compiler* comp, GenTreeOp* firstComma)
-{
-    assert(firstComma->OperIs(GT_COMMA));
-
-    ArrayStack<GenTree*> commas(comp->getAllocator(CMK_ArrayStack));
-    for (GenTree* currComma = firstComma; currComma != nullptr && currComma->OperIs(GT_COMMA);
-         currComma          = currComma->gtGetOp2())
-    {
-        commas.Push(currComma);
-    }
-
-    GenTree* lastComma = commas.Top();
-
-    GenTree* effectiveVal = lastComma->gtGetOp2();
-
-    if (!effectiveVal->OperIsIndir() && !effectiveVal->IsLocal())
-    {
-        return firstComma;
-    }
-
-    assert(effectiveVal == firstComma->gtEffectiveVal());
-
-    GenTree* effectiveValAddr = comp->gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
-
-    INDEBUG(effectiveValAddr->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
-    lastComma->AsOp()->gtOp2 = effectiveValAddr;
-
-    while (!commas.Empty())
-    {
-        GenTree* comma = commas.Pop();
-        comma->gtType  = TYP_BYREF;
-
-        // The "IND(COMMA)" => "COMMA(IND)" transform may have set NO_CSEs on these COMMAs, clear them.
-        comma->ClearDoNotCSE();
-        comp->gtUpdateNodeSideEffects(comma);
-    }
-
-    const var_types blockType = effectiveVal->TypeGet();
-    GenTree*        addr      = firstComma;
-
-    GenTree* res;
-
-    if (blockType == TYP_STRUCT)
-    {
-        CORINFO_CLASS_HANDLE structHnd = comp->gtGetStructHandleIfPresent(effectiveVal);
-        if (structHnd == NO_CLASS_HANDLE)
-        {
-            // TODO-1stClassStructs: get rid of all such cases.
-            res = comp->gtNewIndir(blockType, addr);
-        }
-        else
-        {
-            res = comp->gtNewObjNode(structHnd, addr);
-            comp->gtSetObjGcInfo(res->AsObj());
-        }
-    }
-    else
-    {
-        res = comp->gtNewIndir(blockType, addr);
-    }
-
-    comp->gtUpdateNodeSideEffects(res);
-    INDEBUG(res->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-    return res;
-}
-
-//------------------------------------------------------------------------
 // InitFieldByField: Attempts to promote a local block init tree to a tree
 // of promoted field initialization assignments.
 //
@@ -481,12 +384,6 @@ void MorphInitBlockHelper::TryInitFieldByField()
     LclVarDsc* destLclVar = m_dstVarDsc;
     unsigned   blockSize  = m_blockSize;
 
-    if (blockSize == 0)
-    {
-        JITDUMP(" size is zero.\n");
-        return;
-    }
-
     if (destLclVar->IsAddressExposed() && destLclVar->lvContainsHoles)
     {
         JITDUMP(" dest is address exposed and contains holes.\n");
@@ -506,7 +403,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
         return;
     }
 
-    if (destLclVar->lvExactSize != blockSize)
+    if (destLclVar->lvExactSize() != blockSize)
     {
         JITDUMP(" dest size mismatch.\n");
         return;
@@ -596,11 +493,17 @@ void MorphInitBlockHelper::TryInitFieldByField()
             case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
+#if defined(TARGET_XARCH)
             case TYP_SIMD32:
+            case TYP_SIMD64:
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
+            {
                 assert(initPattern == 0);
                 src = m_comp->gtNewZeroConNode(fieldType);
                 break;
+            }
+
             default:
                 unreached();
         }
@@ -641,11 +544,6 @@ void MorphInitBlockHelper::TryInitFieldByField()
 //
 void MorphInitBlockHelper::TryPrimitiveInit()
 {
-    if (m_blockSize == 0)
-    {
-        return;
-    }
-
     if (m_src->IsIntegralConst(0) && (m_dstVarDsc != nullptr) && (genTypeSize(m_dstVarDsc) == m_blockSize))
     {
         var_types lclVarType = m_dstVarDsc->TypeGet();
@@ -669,6 +567,119 @@ void MorphInitBlockHelper::TryPrimitiveInit()
         m_result                 = m_asg;
         m_transformationDecision = BlockTransformation::OneAsgBlock;
     }
+}
+
+//------------------------------------------------------------------------
+// EliminateCommas: Prepare for block morphing by removing commas from the
+// source operand of the assignment.
+//
+// Parameters:
+//   commaPool - [out] Pool of GT_COMMA nodes linked by their gtNext nodes that
+//                     can be used by the caller to avoid unnecessarily creating
+//                     new commas.
+//
+// Returns:
+//   Extracted side effects, in reverse order, linked via the gtNext fields of
+//   the nodes.
+//
+// Notes:
+//   We have a tree like the following (note that location-valued commas are
+//   illegal, so there cannot be a comma on the left):
+//
+//            ASG
+//          /     \.
+//        IND   COMMA
+//         |      /  \.
+//         B     C    D
+//
+//   We'd like downstream code to just see and be expand ASG(IND(B), D).
+//   We will produce:
+//
+//       COMMA
+//       /   \.
+//     ASG   COMMA
+//    /  \    /  \.
+//   tmp  B  C   ASG
+//              /  \.
+//            IND   D
+//             |
+//            tmp
+//
+//   If the ASG has GTF_REVERSE_OPS then we will produce:
+//
+//      COMMA
+//      /   \.
+//     C    ASG
+//         /  \.
+//       IND   D
+//        |
+//        B
+//
+//   While keeping the GTF_REVERSE_OPS.
+//
+//   Note that the final resulting tree is created in the caller since it also
+//   needs to propagate side effect flags from the decomposed assignment to all
+//   the created commas. Therefore this function just returns a linked list of
+//   the side effects to be used for that purpose.
+//
+GenTree* MorphInitBlockHelper::EliminateCommas(GenTree** commaPool)
+{
+    *commaPool = nullptr;
+
+    GenTree* sideEffects = nullptr;
+    auto addSideEffect   = [&sideEffects](GenTree* sideEff) {
+        sideEff->gtNext = sideEffects;
+        sideEffects     = sideEff;
+    };
+
+    auto addComma = [commaPool, &addSideEffect](GenTree* comma) {
+        addSideEffect(comma->gtGetOp1());
+        comma->gtNext = *commaPool;
+        *commaPool    = comma;
+    };
+
+    GenTree* lhs = m_asg->gtGetOp1();
+    assert(lhs->OperIsIndir() || lhs->OperIsLocal());
+
+    GenTree* rhs = m_asg->gtGetOp2();
+
+    if (m_asg->IsReverseOp())
+    {
+        while (rhs->OperIs(GT_COMMA))
+        {
+            addComma(rhs);
+            rhs = rhs->gtGetOp2();
+        }
+    }
+    else
+    {
+        if (lhs->OperIsIndir() && rhs->OperIs(GT_COMMA))
+        {
+            GenTree* addr = lhs->gtGetOp1();
+            if (((addr->gtFlags & GTF_ALL_EFFECT) != 0) || (((rhs->gtFlags & GTF_ASG) != 0) && !addr->IsInvariant()))
+            {
+                unsigned lhsAddrLclNum = m_comp->lvaGrabTemp(true DEBUGARG("Block morph LHS addr"));
+
+                addSideEffect(m_comp->gtNewTempAssign(lhsAddrLclNum, addr));
+                lhs->AsUnOp()->gtOp1 = m_comp->gtNewLclvNode(lhsAddrLclNum, genActualType(addr));
+                m_comp->gtUpdateNodeSideEffects(lhs);
+            }
+        }
+
+        while (rhs->OperIs(GT_COMMA))
+        {
+            addComma(rhs);
+            rhs = rhs->gtGetOp2();
+        }
+    }
+
+    if (sideEffects != nullptr)
+    {
+        m_asg->gtOp2 = rhs;
+        m_comp->gtUpdateNodeSideEffects(m_asg);
+    }
+
+    return sideEffects;
 }
 
 class MorphCopyBlockHelper : public MorphInitBlockHelper
@@ -741,12 +752,7 @@ MorphCopyBlockHelper::MorphCopyBlockHelper(Compiler* comp, GenTree* asg) : Morph
 //
 void MorphCopyBlockHelper::PrepareSrc()
 {
-    GenTree* origSrc = m_asg->gtGetOp2();
-    m_src            = MorphBlock(m_comp, origSrc, false);
-    if (m_src != origSrc)
-    {
-        m_asg->gtOp2 = m_src;
-    }
+    m_src = m_asg->gtGetOp2();
 
     if (m_src->IsLocal())
     {
@@ -811,7 +817,7 @@ void MorphCopyBlockHelper::MorphStructCases()
             noway_assert(varTypeIsStruct(m_dstVarDsc));
             noway_assert(!m_comp->opts.MinOpts());
 
-            if (m_blockSize == m_dstVarDsc->lvExactSize)
+            if (m_blockSize == m_dstVarDsc->lvExactSize())
             {
                 JITDUMP(" (m_dstDoFldAsg=true)");
                 // We may decide later that a copyblk is required when this struct has holes
@@ -831,7 +837,7 @@ void MorphCopyBlockHelper::MorphStructCases()
             noway_assert(varTypeIsStruct(m_srcVarDsc));
             noway_assert(!m_comp->opts.MinOpts());
 
-            if (m_blockSize == m_srcVarDsc->lvExactSize)
+            if (m_blockSize == m_srcVarDsc->lvExactSize())
             {
                 JITDUMP(" (m_srcDoFldAsg=true)");
                 // We may decide later that a copyblk is required when this struct has holes
@@ -885,15 +891,15 @@ void MorphCopyBlockHelper::MorphStructCases()
     }
 
 #if defined(TARGET_ARM)
-    if ((m_src->OperIsIndir()) && (m_src->gtFlags & GTF_IND_UNALIGNED))
+    if ((m_dst->OperIsIndir()) && m_dst->AsIndir()->IsUnaligned())
     {
-        JITDUMP(" src is unaligned");
+        JITDUMP(" store is unaligned");
         requiresCopyBlock = true;
     }
 
-    if (m_asg->gtFlags & GTF_BLK_UNALIGNED)
+    if ((m_src->OperIsIndir()) && m_src->AsIndir()->IsUnaligned())
     {
-        JITDUMP(" m_asg is unaligned");
+        JITDUMP(" src is unaligned");
         requiresCopyBlock = true;
     }
 #endif // TARGET_ARM
@@ -930,7 +936,7 @@ void MorphCopyBlockHelper::MorphStructCases()
             // Both structs should be of the same type, or have the same number of fields of the same type.
             // If not we will use a copy block.
             bool misMatchedTypes = false;
-            if (m_dstVarDsc->GetStructHnd() != m_srcVarDsc->GetStructHnd())
+            if (m_dstVarDsc->GetLayout() != m_srcVarDsc->GetLayout())
             {
                 if (m_dstVarDsc->lvFieldCnt != m_srcVarDsc->lvFieldCnt)
                 {
@@ -1095,7 +1101,7 @@ void MorphCopyBlockHelper::MorphStructCases()
 //
 void MorphCopyBlockHelper::TryPrimitiveCopy()
 {
-    if (!m_dst->TypeIs(TYP_STRUCT) || (m_blockSize == 0))
+    if (!m_dst->TypeIs(TYP_STRUCT))
     {
         return;
     }
@@ -1470,8 +1476,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                         assert(destType != TYP_STRUCT);
                         unsigned destSize = genTypeSize(destType);
                         m_srcVarDsc       = m_comp->lvaGetDesc(m_srcLclNum);
-                        unsigned srcSize =
-                            (m_srcVarDsc->lvType == TYP_STRUCT) ? m_srcVarDsc->lvExactSize : genTypeSize(m_srcVarDsc);
+                        unsigned srcSize  = m_srcVarDsc->lvExactSize();
                         if (destSize == srcSize)
                         {
                             m_srcLclNode->ChangeOper(GT_LCL_FLD);
@@ -1602,6 +1607,12 @@ GenTree* Compiler::fgMorphInitBlock(GenTree* tree)
 //
 GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
 {
+    if (!tree->Data()->OperIs(GT_CNS_INT, GT_INIT_VAL))
+    {
+        // Data is a location and required to have GTF_DONT_CSE.
+        tree->Data()->gtFlags |= GTF_DONT_CSE;
+    }
+
     tree->Addr()        = fgMorphTree(tree->Addr());
     tree->Data()        = fgMorphTree(tree->Data());
     tree->gtDynamicSize = fgMorphTree(tree->gtDynamicSize);
@@ -1613,7 +1624,7 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
         if ((size != 0) && FitsIn<int32_t>(size))
         {
             ClassLayout* layout = typGetBlkLayout(static_cast<unsigned>(size));
-            GenTree*     dst    = gtNewStructVal(layout, tree->Addr());
+            GenTree*     dst    = gtNewStructVal(layout, tree->Addr(), tree->gtFlags & GTF_IND_FLAGS);
             dst->gtFlags |= GTF_GLOB_REF;
 
             GenTree* src = tree->Data();
@@ -1625,7 +1636,7 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
             }
 
             GenTree* asg = gtNewAssignNode(dst, src);
-            asg->gtFlags |= (tree->gtFlags & (GTF_ALL_EFFECT | GTF_BLK_VOLATILE | GTF_BLK_UNALIGNED));
+            asg->AddAllEffectsFlags(tree);
             INDEBUG(asg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
             fgAssignSetVarDef(asg);

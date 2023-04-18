@@ -188,6 +188,8 @@ The API should allow these scenarios:
   * The native app can get back a native function pointer which calls specified managed method
 * Get native function pointer for managed method
   * From native code get a native function pointer to already loaded managed method
+* Load managed component
+  * From native code load an assembly
 
 All the proposed APIs will be exports of the `hostfxr` library and will use the same calling convention and name mangling as existing `hostfxr` exports.
 
@@ -221,7 +223,8 @@ struct hostfxr_initialize_parameters
 The `hostfxr_initialize_parameters` structure stores parameters which are common to all forms of initialization.
 * `size` - the size of the structure. This is used for versioning. Should be set to `sizeof(hostfxr_initialize_parameters)`.
 * `host_path` - path to the native host (typically the `.exe`). This value is not used for anything by the hosting components. It's just passed to the CoreCLR as the path to the executable. It can point to a file which is not executable itself, if such file doesn't exist (for example in COM activation scenarios this points to the `comhost.dll`). This is used by PAL to initialize internal command line structures, process name and so on.
-* `dotnet_root` - path to the root of the .NET Core installation in use. This typically points to the install location from which the `hostfxr` has been loaded. For example on Windows this would typically point to `C:\Program Files\dotnet`. The path is used to search for shared frameworks and potentially SDKs.
+* `dotnet_root` - Optional. Path to the root of the .NET Core installation in use. This typically points to the install location from which the `hostfxr` has been loaded. For example on Windows this would typically point to `C:\Program Files\dotnet`. The path is used to search for shared frameworks and potentially SDKs.
+  * If not specified, `hostfxr` will determine the root based on its own location - the same directory if the runtime (`coreclr`) exists next to it (as in self-contained applications), otherwise a relative path per the [install layout](https://github.com/dotnet/designs/blob/main/accepted/2020/install-locations.md#net-core-install-layout).
 
 
 ``` C
@@ -371,12 +374,15 @@ Starts the runtime and returns a function pointer to specified functionality of 
   * `hdt_com_activation`, `hdt_com_register`, `hdt_com_unregister` - COM activation entry-points - see [COM activation](https://github.com/dotnet/runtime/tree/main/docs/design/features/COM-activation.md) for more details.
   * `hdt_load_in_memory_assembly` - IJW entry-point - see [IJW activation](https://github.com/dotnet/runtime/tree/main/docs/design/features/IJW-activation.md) for more details.
   * `hdt_winrt_activation` **[.NET 3.\* only]** - WinRT activation entry-point - see [WinRT activation](https://github.com/dotnet/runtime/tree/main/docs/design/features/WinRT-activation.md) for more details. The delegate is not supported for .NET 5 and above.
-  * `hdt_get_function_pointer` **[.NET 5 and above]** - entry-point which finds a managed method and returns a function pointer to it. See below for details (Calling managed function).
+  * `hdt_get_function_pointer` **[.NET 5 and above]** - entry-point which finds a managed method and returns a function pointer to it. See [calling managed functions](#calling-managed-function-net-5-and-above) for details.
+  * `hdt_load_assembly` **[.NET 8 and above]** - entry-point which loads an assembly by its path. See [loading managed components](#loading-managed-components-net-8-and-above) for details.
+  * `hdt_load_assembly_bytes` **[.NET 8 and above]** - entry-point which loads an assembly from a byte array. See [loading managed components](#loading-managed-components-net-8-and-above) for details.
 * `delegate` - when successful, the native function pointer to the requested runtime functionality.
 
 In .NET Core 3.0 the function only works if `hostfxr_initialize_for_runtime_config` was used to initialize the host context.
 In .NET 5 the function also works if `hostfxr_initialize_for_dotnet_command_line` was used to initialize the host context. Also for .NET 5 it will only be allowed to request `hdt_load_assembly_and_get_function_pointer` or `hdt_get_function_pointer` on a context initialized via `hostfxr_initialize_for_dotnet_command_line`, all other runtime delegates will not be supported in this case.
 
+All returned runtime delegates use the `__stdcall` calling convention on x86.
 
 ### Cleanup
 ``` C
@@ -459,6 +465,43 @@ It is allowed to call the returned runtime helper many times for different types
 
 The returned native function pointer to managed method has the lifetime of the process and can be used to call the method many times over. Currently there's no way to "release" the native function pointer (and the respective managed delegate), this functionality may be added in a future release.
 
+### Loading managed components **[.NET 8 and above]**
+
+The runtime delegate type `hdt_load_assembly` allows loading a managed assembly by its path. Calling `hostfxr_get_runtime_delegate(handle, hdt_load_assembly, &helper)` returns a function pointer to the runtime helper with this signature:
+```C
+int load_assembly(
+    const char_t *assembly_path,
+    void         *load_context,
+    void         *reserved);
+```
+
+Calling this function will load the specified assembly in the default load context. It uses `AssemblyDependencyResolver` to register additional dependency resolution for the load context.
+* `assembly_path` - Path to the assembly to load - requirements match the `assemblyPath` parameter of [AssemblyLoadContext.LoadFromAssemblyPath](https://learn.microsoft.com/dotnet/api/system.runtime.loader.assemblyloadcontext.loadfromassemblypath). This path will also be used for dependency resolution via any `.deps.json` corresponding to the assembly.
+* `load_context` - the load context that will be used to load the assembly. For .NET 8 this parameter must be `NULL` and the API will only load the assembly in the default load context.
+* `reserved` - parameter reserved for future extensibility, currently unused and must be `NULL`.
+
+The runtime delegate type `hdt_load_assembly_bytes` allows loading a managed assembly from a byte array. Calling `hostfxr_get_runtime_delegate(handle, hdt_load_assembly_bytes, &helper)` returns a function pointer to the runtime helper with this signature:
+```C
+int load_assembly_bytes(
+    const void *assembly_bytes,
+    size_t     assembly_bytes_len,
+    const void *symbols_bytes,
+    size_t     symbols_bytes_len,
+    void       *load_context,
+    void       *reserved);
+```
+
+Calling this function will load the specified assembly in the default load context. It does not provide a mechanism for registering additional dependency resolution, as mechanisms like `.deps.json` and `AssemblyDependencyResolver` are file-based. Dependencies can be pre-loaded (for example, via a previous call to this function) or the specified assembly can explicitly register its own resolution logic (for example, via the [`AssemblyLodContext.Resolving`](https://learn.microsoft.com/dotnet/api/system.runtime.loader.assemblyloadcontext.resolving) event).
+* `assembly_bytes` - Bytes of the assembly to load.
+* `assembly_bytes_len` - Byte length of the assembly to load.
+* `symbols_bytes` - Bytes of the symbols for the assembly to load.
+* `symbols_bytes_len` - Byte length of the symbols for the assembly to load.
+* `load_context` - the load context that will be used to load the assembly. For .NET 8 this parameter must be `NULL` and the API will only load the assembly in the default load context.
+* `reserved` - parameter reserved for future extensibility, currently unused and must be `NULL`.
+
+These runtime delegates simply load the assembly. They do not return any representation of the loaded assembly and do not execute code in the assembly. To run code from the assembly, the delegate for [calling a managed function](#calling-managed-function-net-5-and-above) can be used to get a function pointer to a method in a loaded assembly by specifying the assembly-qualified type name containing the method.
+
+It is allowed to ask for this helper on any valid host context. The returned runtime helper can be called multiple times for different assemblies. It is not required to get the helper every time.
 
 ### Multiple host contexts interactions
 

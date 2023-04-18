@@ -572,7 +572,7 @@ namespace System.Security.Cryptography.Xml
         /// <param name="reference">The reference being processed</param>
         /// <param name="data">Stream containing the output of the reference</param>
         /// <returns>Stream containing the output of the reference</returns>
-        [return: NotNullIfNotNull("data")]
+        [return: NotNullIfNotNull(nameof(data))]
         internal static Stream? LogReferenceData(Reference reference, Stream? data)
         {
             if (VerboseLoggingEnabled)
@@ -677,6 +677,7 @@ namespace System.Security.Cryptography.Xml
         /// </summary>
         /// <param name="signedXml">SignedXml object driving the signature</param>
         /// <param name="reference">Reference being hashed</param>
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         internal static void LogSigningReference(SignedXml signedXml, Reference reference)
         {
             Debug.Assert(signedXml != null, "signedXml != null");
@@ -684,7 +685,7 @@ namespace System.Security.Cryptography.Xml
 
             if (VerboseLoggingEnabled)
             {
-                HashAlgorithm? hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
+                HashAlgorithm? hashAlgorithm = CryptoHelpers.CreateNonTransformFromName<HashAlgorithm>(reference.DigestMethod);
                 string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                   SR.Log_SigningReference,
@@ -807,6 +808,7 @@ namespace System.Security.Cryptography.Xml
         /// <param name="reference">reference being verified</param>
         /// <param name="actualHash">actual hash value of the reference</param>
         /// <param name="expectedHash">hash value the signature expected the reference to have</param>
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         internal static void LogVerifyReferenceHash(SignedXml signedXml,
                                                     Reference reference,
                                                     byte[]? actualHash,
@@ -819,7 +821,7 @@ namespace System.Security.Cryptography.Xml
 
             if (VerboseLoggingEnabled)
             {
-                HashAlgorithm? hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
+                HashAlgorithm? hashAlgorithm = CryptoHelpers.CreateNonTransformFromName<HashAlgorithm>(reference.DigestMethod);
                 string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                   SR.Log_ReferenceHash,
@@ -1025,6 +1027,7 @@ namespace System.Security.Cryptography.Xml
         /// </summary>
         /// <param name="signedXml">SignedXml object verifying the signature</param>
         /// <param name="reference">reference being verified</param>
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         internal static void LogSignedXmlRecursionLimit(SignedXml signedXml,
                                                         Reference reference)
         {
@@ -1033,7 +1036,7 @@ namespace System.Security.Cryptography.Xml
 
             if (InformationLoggingEnabled)
             {
-                HashAlgorithm? hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
+                HashAlgorithm? hashAlgorithm = CryptoHelpers.CreateNonTransformFromName<HashAlgorithm>(reference.DigestMethod);
                 string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                     SR.Log_SignedXmlRecursionLimit,

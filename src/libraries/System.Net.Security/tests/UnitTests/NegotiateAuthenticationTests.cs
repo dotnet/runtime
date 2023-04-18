@@ -10,6 +10,7 @@ using System.Net.Test.Common;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.Security.Tests
@@ -86,6 +87,10 @@ namespace System.Net.Security.Tests
         [ConditionalFact(nameof(IsNtlmUnavailable))]
         public void Package_Unsupported_NTLM()
         {
+            if (PlatformDetection.IsRedHatFamily7)
+            {
+                throw new SkipTestException("https://github.com/dotnet/runtime/issues/83540");
+            }
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "NTLM", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
             NegotiateAuthentication negotiateAuthentication = new NegotiateAuthentication(clientOptions);
             NegotiateAuthenticationStatusCode statusCode;

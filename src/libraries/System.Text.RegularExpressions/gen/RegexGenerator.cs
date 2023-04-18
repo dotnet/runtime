@@ -57,13 +57,43 @@ namespace System.Text.RegularExpressions.Generator
                 context.SyntaxProvider
 
                 // Find all MethodDeclarationSyntax nodes attributed with GeneratedRegex and gather the required information.
+                // The predicate will be run once for every attributed node in the same file that's being modified.
+                // The transform will be run once for every attributed node in the compilation.
+                // Thus, both should do the minimal amount of work required and get out.  This should also have extracted
+                // everything from the target necessary to do all subsequent analysis and should return an object that's
+                // meaningfully comparable and that doesn't reference anything from the compilation: we want to ensure
+                // that any successful cached results are idempotent for the input such that they don't trigger downstream work
+                // if there are no changes.
                 .ForAttributeWithMetadataName(
                     GeneratedRegexAttributeName,
                     (node, _) => node is MethodDeclarationSyntax,
-                    GetSemanticTargetForGeneration)
+                    GetRegexMethodDataOrFailureDiagnostic)
+
+                // Filter out any parsing errors that resulted in null objects being returned.
                 .Where(static m => m is not null)
 
-                // Incorporate the compilation data, as it impacts code generation.
+                // The input here will either be a Diagnostic (in the case of something erroneous detected in GetRegexMethodDataOrFailureDiagnostic)
+                // or it will be a RegexPatternAndSyntax containing all of the successfully parsed data from the attribute/method.
+                .Select((methodOrDiagnostic, _) =>
+                {
+                    if (methodOrDiagnostic is RegexPatternAndSyntax method)
+                    {
+                        try
+                        {
+                            RegexTree regexTree = RegexParser.Parse(method.Pattern, method.Options | RegexOptions.Compiled, method.Culture); // make sure Compiled is included to get all optimizations applied to it
+                            AnalysisResults analysis = RegexTreeAnalyzer.Analyze(regexTree);
+                            return new RegexMethod(method.DeclaringType, method.DiagnosticLocation, method.MethodName, method.Modifiers, method.Pattern, method.Options, method.MatchTimeout, regexTree, analysis);
+                        }
+                        catch (Exception e)
+                        {
+                            return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, method.DiagnosticLocation, e.Message);
+                        }
+                    }
+
+                    return methodOrDiagnostic;
+                })
+
+                // Now incorporate the compilation data, as it impacts code generation.
                 .Combine(compilationDataProvider)
 
                 // Generate the RunnerFactory for each regex, if possible.  This is where the bulk of the implementation occurs.
@@ -80,7 +110,7 @@ namespace System.Text.RegularExpressions.Generator
                     // We'll still output a limited implementation that just caches a new Regex(...).
                     if (!SupportsCodeGeneration(regexMethod, methodOrDiagnosticAndCompilationData.Right.LanguageVersion, out string? reason))
                     {
-                        return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.MethodSyntax.GetLocation()), methodOrDiagnosticAndCompilationData.Right);
+                        return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.DiagnosticLocation), methodOrDiagnosticAndCompilationData.Right);
                     }
 
                     // Generate the core logic for the regex.
@@ -93,6 +123,8 @@ namespace System.Text.RegularExpressions.Generator
                     writer.Indent -= 2;
                     return (regexMethod, sw.ToString(), requiredHelpers, methodOrDiagnosticAndCompilationData.Right);
                 })
+
+                // Combine all of the generated text outputs into a single batch. We then generate a single source output from that batch.
                 .Collect();
 
             // When there something to output, take all the generated strings and concatenate them to output,

@@ -69,6 +69,10 @@ const char* CodeGen::genInsName(instruction ins)
         #define INST(id, nm, ldst, e1) nm,
         #include "instrs.h"
 
+#elif defined(TARGET_RISCV64)
+        #define INST(id, nm, ldst, e1) nm,
+        #include "instrs.h"
+
 #else
 #error "Unknown TARGET"
 #endif
@@ -101,12 +105,88 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     static char     buf[4][TEMP_BUFFER_LEN];
     const char*     retbuf;
 
-    if (GetEmitter()->IsVexEncodedInstruction(ins) && !GetEmitter()->IsBMIInstruction(ins))
+    const emitter* emit = GetEmitter();
+
+    if (emit->IsVexOrEvexEncodableInstruction(ins))
     {
-        sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);
-        retbuf = buf[curBuf];
-        curBuf = (curBuf + 1) % 4;
-        return retbuf;
+        if (!emit->IsBMIInstruction(ins) && !emit->IsKInstruction(ins))
+        {
+            if (emit->TakesEvexPrefix(id))
+            {
+                switch (ins)
+                {
+                    case INS_movdqa:
+                    {
+                        return "vmovdqa32";
+                    }
+
+                    case INS_movdqu:
+                    {
+                        return "vmovdqu32";
+                    }
+
+                    case INS_pand:
+                    {
+                        return "vpandd";
+                    }
+
+                    case INS_pandn:
+                    {
+                        return "vpandnd";
+                    }
+
+                    case INS_por:
+                    {
+                        return "vpord";
+                    }
+
+                    case INS_pxor:
+                    {
+                        return "vpxord";
+                    }
+
+                    case INS_vbroadcastf128:
+                    {
+                        return "vbroadcastf32x4";
+                    }
+
+                    case INS_vextractf128:
+                    {
+                        return "vextractf32x4";
+                    }
+
+                    case INS_vinsertf128:
+                    {
+                        return "vinsertf32x4";
+                    }
+
+                    case INS_vbroadcasti128:
+                    {
+                        return "vbroadcasti32x4";
+                    }
+
+                    case INS_vextracti128:
+                    {
+                        return "vextracti32x4";
+                    }
+
+                    case INS_vinserti128:
+                    {
+                        return "vinserti32x4";
+                    }
+
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+
+            sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);
+            retbuf = buf[curBuf];
+            curBuf = (curBuf + 1) % 4;
+            return retbuf;
+        }
     }
 
     // Some instructions have different mnemonics depending on the size.
@@ -157,36 +237,23 @@ const char* CodeGen::genSizeStr(emitAttr attr)
     static
     const char * const sizes[] =
     {
-        "",
         "byte  ptr ",
         "word  ptr ",
-        nullptr,
         "dword ptr ",
-        nullptr,
-        nullptr,
-        nullptr,
         "qword ptr ",
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
         "xmmword ptr ",
-        nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-        nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-        "ymmword ptr"
+        "ymmword ptr ",
+        "zmmword ptr "
     };
     // clang-format on
 
     unsigned size = EA_SIZE(attr);
 
-    assert(size == 0 || size == 1 || size == 2 || size == 4 || size == 8 || size == 16 || size == 32);
+    assert(genMaxOneBit(size) && (size <= 64));
 
     if (EA_ATTR(size) == attr)
     {
-        return sizes[size];
+        return (size > 0) ? sizes[genLog2(size)] : "";
     }
     else if (attr == EA_GCREF)
     {
@@ -340,6 +407,8 @@ void CodeGen::inst_RV(instruction ins, regNumber reg, var_types type, emitAttr s
 #ifdef TARGET_LOONGARCH64
     // inst_RV is not used for LoongArch64, so there is no need to define `emitIns_R`.
     NYI_LOONGARCH64("inst_RV-----unused on LOONGARCH64----");
+#elif defined(TARGET_RISCV64)
+    NYI_RISCV64("inst_RV-----unused on RISCV64----");
 #else
     GetEmitter()->emitIns_R(ins, size, reg);
 #endif
@@ -356,7 +425,7 @@ void CodeGen::inst_Mov(var_types dstType,
                        emitAttr  size,
                        insFlags  flags /* = INS_FLAGS_DONT_CARE */)
 {
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (isFloatRegType(dstType) != genIsValidFloatReg(dstReg))
     {
         if (dstType == TYP_FLOAT)
@@ -378,6 +447,7 @@ void CodeGen::inst_Mov(var_types dstType,
         else
         {
             NYI_LOONGARCH64("CodeGen::inst_Mov dstType");
+            NYI_RISCV64("CodeGen::inst_Mov dstType");
         }
     }
 #endif
@@ -470,7 +540,7 @@ void CodeGen::inst_RV_RV_RV(instruction ins,
 {
 #ifdef TARGET_ARM
     GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3, flags);
-#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3);
 #else
     NYI("inst_RV_RV_RV");
@@ -505,7 +575,7 @@ void CodeGen::inst_IV_handle(instruction ins, cnsval_ssize_t val)
 void CodeGen::inst_set_SV_var(GenTree* tree)
 {
 #ifdef DEBUG
-    assert((tree != nullptr) && tree->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_STORE_LCL_VAR));
+    assert((tree != nullptr) && (tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR) || tree->IsLclVarAddr()));
     assert(tree->AsLclVarCommon()->GetLclNum() < compiler->lvaCount);
 
     GetEmitter()->emitVarRefOffs = tree->AsLclVar()->gtLclILoffs;
@@ -546,7 +616,7 @@ void CodeGen::inst_RV_IV(
     assert(ins != INS_tst);
     assert(ins != INS_mov);
     GetEmitter()->emitIns_R_R_I(ins, size, reg, reg, val);
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     GetEmitter()->emitIns_R_R_I(ins, size, reg, reg, val);
 #else // !TARGET_ARM
 #ifdef TARGET_AMD64
@@ -712,6 +782,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
             {
                 case NI_Vector128_CreateScalarUnsafe:
                 case NI_Vector256_CreateScalarUnsafe:
+                case NI_Vector512_CreateScalarUnsafe:
                 {
                     // The hwintrinsic should be contained and its
                     // op1 should be either contained or spilled. This
@@ -740,12 +811,11 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 
         switch (addr->OperGet())
         {
-            case GT_LCL_VAR_ADDR:
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
             {
                 assert(addr->isContained());
-                varNum = addr->AsLclVarCommon()->GetLclNum();
-                offset = addr->AsLclVarCommon()->GetLclOffs();
+                varNum = addr->AsLclFld()->GetLclNum();
+                offset = addr->AsLclFld()->GetLclOffs();
                 break;
             }
 
@@ -785,28 +855,39 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 #if defined(FEATURE_SIMD)
                     case TYP_SIMD8:
                     {
-                        simd8_t constValue = op->AsVecCon()->gtSimd8Val;
+                        simd8_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd8_t));
                         return OperandDesc(emit->emitSimd8Const(constValue));
                     }
 
                     case TYP_SIMD12:
-                    case TYP_SIMD16:
                     {
                         simd16_t constValue = {};
-
-                        if (op->TypeIs(TYP_SIMD12))
-                            memcpy(&constValue, &op->AsVecCon()->gtSimd12Val, sizeof(simd12_t));
-                        else
-                            constValue = op->AsVecCon()->gtSimd16Val;
-
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd12_t));
+                        return OperandDesc(emit->emitSimd16Const(constValue));
+                    }
+                    case TYP_SIMD16:
+                    {
+                        simd16_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd16_t));
                         return OperandDesc(emit->emitSimd16Const(constValue));
                     }
 
+#if defined(TARGET_XARCH)
                     case TYP_SIMD32:
                     {
-                        simd32_t constValue = op->AsVecCon()->gtSimd32Val;
+                        simd32_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd32_t));
                         return OperandDesc(emit->emitSimd32Const(constValue));
                     }
+
+                    case TYP_SIMD64:
+                    {
+                        simd64_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd64_t));
+                        return OperandDesc(emit->emitSimd64Const(constValue));
+                    }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
                     default:
@@ -1236,6 +1317,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
 instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
 {
     NYI_LOONGARCH64("ins_Move_Extend");
+    NYI_RISCV64("ins_Move_Extend");
 
     instruction ins = INS_invalid;
 
@@ -1264,7 +1346,7 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
     {
         if (srcType == TYP_DOUBLE)
         {
-            return (srcInReg) ? INS_movaps : INS_movsdsse2;
+            return (srcInReg) ? INS_movaps : INS_movsd_simd;
         }
         else if (srcType == TYP_FLOAT)
         {
@@ -1401,7 +1483,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #ifdef FEATURE_SIMD
         if (srcType == TYP_SIMD8)
         {
-            return INS_movsdsse2;
+            return INS_movsd_simd;
         }
         else
 #endif // FEATURE_SIMD
@@ -1423,7 +1505,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #if defined(TARGET_XARCH)
         if (srcType == TYP_DOUBLE)
         {
-            return INS_movsdsse2;
+            return INS_movsd_simd;
         }
         else if (srcType == TYP_FLOAT)
         {
@@ -1445,6 +1527,19 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         else if (srcType == TYP_FLOAT)
         {
             return INS_fld_s;
+        }
+        else
+        {
+            assert(!"unhandled floating type");
+        }
+#elif defined(TARGET_RISCV64)
+        if (srcType == TYP_DOUBLE)
+        {
+            return INS_fld;
+        }
+        else if (srcType == TYP_FLOAT)
+        {
+            return INS_flw;
         }
         else
         {
@@ -1511,6 +1606,29 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
     {
         ins = INS_ld_d; // default ld_d.
     }
+#elif defined(TARGET_RISCV64)
+    if (varTypeIsByte(srcType))
+    {
+        if (varTypeIsUnsigned(srcType))
+            ins = INS_lbu;
+        else
+            ins = INS_lb;
+    }
+    else if (varTypeIsShort(srcType))
+    {
+        if (varTypeIsUnsigned(srcType))
+            ins = INS_lhu;
+        else
+            ins = INS_lh;
+    }
+    else if (TYP_INT == srcType)
+    {
+        ins = INS_lw;
+    }
+    else
+    {
+        ins = INS_ld; // default ld.
+    }
 #else
     NYI("ins_Load");
 #endif
@@ -1571,8 +1689,17 @@ instruction CodeGen::ins_Copy(var_types dstType)
     {
         return INS_mov;
     }
+#elif defined(TARGET_RISCV64)
+    if (varTypeIsFloating(dstType))
+    {
+        return dstType == TYP_FLOAT ? INS_fsgnj_s : INS_fsgnj_d;
+    }
+    else
+    {
+        return INS_mov;
+    }
 #else // TARGET_*
-#error "Unknown TARGET_"
+#error "Unknown TARGET"
 #endif
 }
 
@@ -1635,6 +1762,20 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         assert(genIsValidFloatReg(srcReg));
         return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_movfr2gr_s : INS_movfr2gr_d;
     }
+#elif defined(TARGET_RISCV64)
+    // TODO-RISCV64-CQ: supporting SIMD.
+    assert(!varTypeIsSIMD(dstType));
+    if (dstIsFloatReg)
+    {
+        assert(!genIsValidFloatReg(srcReg));
+        return dstType == TYP_FLOAT ? INS_fcvt_s_l : INS_fcvt_d_l;
+    }
+    else
+    {
+        assert(genIsValidFloatReg(srcReg));
+        return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_fcvt_w_d : INS_fcvt_l_d;
+    }
+    return INS_invalid;
 #else // TARGET*
 #error "Unknown TARGET"
 #endif
@@ -1659,7 +1800,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 #ifdef FEATURE_SIMD
         if (dstType == TYP_SIMD8)
         {
-            return INS_movsdsse2;
+            return INS_movsd_simd;
         }
         else
 #endif // FEATURE_SIMD
@@ -1674,7 +1815,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
     {
         if (dstType == TYP_DOUBLE)
         {
-            return INS_movsdsse2;
+            return INS_movsd_simd;
         }
         else if (dstType == TYP_FLOAT)
         {
@@ -1710,6 +1851,19 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
             return aligned ? INS_fstx_s : INS_fst_s;
         }
     }
+#elif defined(TARGET_RISCV64)
+    assert(!varTypeIsSIMD(dstType));
+    if (varTypeIsFloating(dstType))
+    {
+        if (dstType == TYP_DOUBLE)
+        {
+            return INS_fsd;
+        }
+        else if (dstType == TYP_FLOAT)
+        {
+            return INS_fsw;
+        }
+    }
 #else
     assert(!varTypeIsSIMD(dstType));
     assert(!varTypeIsFloating(dstType));
@@ -1733,6 +1887,15 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         ins = aligned ? INS_stx_w : INS_st_w;
     else
         ins = aligned ? INS_stx_d : INS_st_d;
+#elif defined(TARGET_RISCV64)
+    if (varTypeIsByte(dstType))
+        ins = INS_sb;
+    else if (varTypeIsShort(dstType))
+        ins = INS_sh;
+    else if (TYP_INT == dstType)
+        ins = INS_sw;
+    else
+        ins = INS_sd;
 #else
     NYI("ins_Store");
 #endif
@@ -2042,6 +2205,8 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
     GetEmitter()->emitIns_Mov(INS_mov, size, reg, REG_ZR, /* canSkip */ true);
 #elif defined(TARGET_LOONGARCH64)
     GetEmitter()->emitIns_R_R_I(INS_ori, size, reg, REG_R0, 0);
+#elif defined(TARGET_RISCV64)
+    GetEmitter()->emitIns_R_R_I(INS_addi, size, reg, REG_R0, 0);
 #else
 #error "Unknown TARGET"
 #endif

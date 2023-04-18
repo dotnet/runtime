@@ -12,7 +12,7 @@
 .assembly simple
 {
 }
-.class private sequential ansi sealed beforefieldinit Test_simple
+.class public sequential ansi sealed beforefieldinit Test_simple
        extends [mscorlib]System.ValueType
 {
   .field public unsigned int8 _byte
@@ -214,7 +214,7 @@
     IL_008d:  ret
   } // end of method Test::VerifyStruct
 
-  .method private hidebysig static int32 Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

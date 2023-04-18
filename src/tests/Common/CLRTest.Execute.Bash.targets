@@ -126,7 +126,7 @@ fi
 
       <BashCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
 <![CDATA[
-if [ -z ${CLRTestExpectedExitCode+x} ]%3B then export CLRTestExpectedExitCode=$(CLRTestExitCode)%3B fi
+export CLRTestExpectedExitCode=$(CLRTestExitCode)
 echo BEGIN EXECUTION]]>
       </BashCLRTestExitCodePrep>
 
@@ -187,11 +187,17 @@ fi
         <Command><![CDATA[        export __DotEnv="${i#*=}"
         if [ ! -f "$__DotEnv" ]
         then
-            echo "The Debugger FullPath %5C%22${__DotEnv}%5C%22 does not exist"
+            echo "The dotenv file FullPath %5C%22${__DotEnv}%5C%22 does not exist"
             usage
         fi
         export __DotEnvArg=-e ${__DotEnv}]]></Command>
         <Description>A dotenv file to pass to corerun to set environment variables for the test run.</Description>
+      </BashCLRTestExecutionScriptArgument>
+
+      <BashCLRTestExecutionScriptArgument Include="usewatcher">
+        <HasParam>false</HasParam>
+        <Command><![CDATA[        _RunWithWatcher=1]]></Command>
+        <Description>Run the tests using the test watcher.</Description>
       </BashCLRTestExecutionScriptArgument>
     </ItemGroup>
 
@@ -250,10 +256,11 @@ then
     exit 1
   fi
 
-  # Copy CORECLR native binaries to $LinkBin,
+  # Copy CORECLR native binaries and the test watcher to $LinkBin,
   # so that we can run the test based on that directory
   cp $CORE_ROOT/*.so $LinkBin/
   cp $CORE_ROOT/corerun $LinkBin/
+  cp $CORE_ROOT/watchdog $LinkBin/
 
   # Copy some files that may be arguments
   for f in *.txt;
@@ -283,6 +290,7 @@ fi
       </PropertyGroup>
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
+      <WatcherRunFile>"$CORE_ROOT/watchdog" $_WatcherTimeoutMins</WatcherRunFile>
 
       <!-- Note that this overwrites CLRTestBashPreCommands rather than adding to it. -->
       <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
@@ -318,6 +326,9 @@ fi
 if [ ! -z "$CLRCustomTestLauncher" ];
 then
     LAUNCHER="$CLRCustomTestLauncher $PWD/"
+elif [ "$_RunWithWatcher" == 1 ];
+then
+    LAUNCHER="$(WatcherRunFile) $(CLRTestRunFile)"
 else
     LAUNCHER="$_DebuggerFullPath $_DebuggerArgsSeparator $(CLRTestRunFile)"
 fi
@@ -346,8 +357,11 @@ $(BashLinkerTestLaunchCmds)
 if [ ! -z "$CLRCustomTestLauncher" ];
 then
     LAUNCHER="$CLRCustomTestLauncher $PWD/"
+elif [ "$_RunWithWatcher" == 1 ];
+then
+    LAUNCHER="$(WatcherRunFile) $(CLRTestRunFile)"
 else
-    LAUNCHER="$_DebuggerFullPath $(CLRTestRunFile)"
+    LAUNCHER="$_DebuggerFullPath $_DebuggerArgsSeparator $(CLRTestRunFile)"
 fi
 
 $(BashIlrtTestLaunchCmds)
@@ -484,7 +498,7 @@ usage()
 for i in "$@"
     do
         case $i in
-        -?|-h|--help)
+          -?|-h|--help|/?|/h|/help)
         usage
         %3B%3B
 @(BashCLRTestExecutionScriptArgument -> '        -%(Identity)%(ParamText)|/%(Identity)%(ParamText))
@@ -534,7 +548,20 @@ ReleaseLock()
 }
 cd "$%28dirname "${BASH_SOURCE[0]}")"
 LockFile="lock"
+_RunWithWatcher=0
+_WatcherTimeoutMins=10
 
+if [[ ! -z "$__TestCollectionTimeoutMins" ]]%3B then
+    _WatcherTimeoutMins=$__TestCollectionTimeoutMins
+fi
+
+# The watcher needs a bit of time to start up, capture dumps, clean up, and so on.
+# Because of this, we pass a smaller timeout than the test collection one.
+# For simplicity purposes, we will assume there are no work items with just
+# a one-minute max timeout.
+if (( $_WatcherTimeoutMins > 1 ))%3B then
+    _WatcherTimeoutMins="%24((_WatcherTimeoutMins-1))"
+fi
 
 # The __TestEnv variable may be used to specify a script to source before the test.
 if [ -n "$__TestEnv" ]%3B then

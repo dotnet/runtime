@@ -9,7 +9,9 @@ namespace System.Net.Security
     public partial class SslStreamCertificateContext
     {
         public readonly X509Certificate2 Certificate;
-        public readonly X509Certificate2[] IntermediateCertificates;
+        public ReadOnlySpan<X509Certificate2> IntermediateCertificates => _intermediateCertificates;
+
+        private readonly X509Certificate2[] _intermediateCertificates;
         internal readonly SslCertificateTrust? Trust;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -131,7 +133,7 @@ namespace System.Net.Security
 
         internal SslStreamCertificateContext Duplicate()
         {
-            return new SslStreamCertificateContext(new X509Certificate2(Certificate), IntermediateCertificates, Trust);
+            return new SslStreamCertificateContext(new X509Certificate2(Certificate), _intermediateCertificates, Trust);
         }
     }
 }

@@ -34,7 +34,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#if MONO_FEATURE_SRE
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -66,7 +65,7 @@ namespace System.Reflection.Emit
 
             ConstructorInfo res = type.GetConstructor(constructor);
             if (res == null)
-                throw new ArgumentException("constructor not found");
+                throw new ArgumentException(SR.Format(SR.MissingConstructor_Name, type));
 
             return res;
         }
@@ -116,7 +115,7 @@ namespace System.Reflection.Emit
 
             MethodInfo res = type.GetMethod(method);
             if (res == null)
-                throw new ArgumentException(string.Format("method {0} not found in type {1}", method.Name, type));
+                throw new ArgumentException(SR.Format(SR.MissingMethod_Name, type, method.Name));
 
             return res;
         }
@@ -137,12 +136,12 @@ namespace System.Reflection.Emit
             if (field.DeclaringType != type.GetGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_InvalidFieldDeclaringType, nameof(type));
 
-            if (field is FieldOnTypeBuilderInst)
-                throw new ArgumentException("The specified field must be declared on a generic type definition.", nameof(field));
+            if (field is FieldOnTypeBuilderInstantiation)
+                throw new ArgumentException(SR.Argument_FieldNeedGenericDeclaringType, nameof(field));
 
             FieldInfo res = type.GetField(field);
             if (res == null)
-                throw new System.Exception("field not found");
+                throw new System.Exception(SR.Format(SR.MissingField, field.Name));
             else
                 return res;
         }
@@ -214,7 +213,7 @@ namespace System.Reflection.Emit
 
         [DynamicDependency(nameof(state))]  // Automatically keeps all previous fields too due to StructLayout
         [DynamicDependency(nameof(IsAssignableToInternal))] // Used from reflection.c: mono_reflection_call_is_assignable_to
-        internal RuntimeTypeBuilder(RuntimeModuleBuilder mb, string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
+        internal RuntimeTypeBuilder(RuntimeModuleBuilder mb, string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
         {
             this.is_hidden_global_type = false;
             int sep_index;
@@ -224,20 +223,20 @@ namespace System.Reflection.Emit
             this.packing_size = packing_size;
             this.nesting_type = nesting_type;
 
-            check_name(nameof(fullname), fullname);
+            check_name(nameof(name), name);
 
             if (parent == null && (attr & TypeAttributes.Interface) != 0 && (attr & TypeAttributes.Abstract) == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_BadInterfaceNotAbstract);
 
-            sep_index = fullname.LastIndexOf('.');
+            sep_index = name.LastIndexOf('.');
             if (sep_index != -1)
             {
-                this.tname = fullname.Substring(sep_index + 1);
-                this.nspace = fullname.Substring(0, sep_index);
+                this.tname = name.Substring(sep_index + 1);
+                this.nspace = name.Substring(0, sep_index);
             }
             else
             {
-                this.tname = fullname;
+                this.tname = name;
                 this.nspace = string.Empty;
             }
             if (interfaces != null)
@@ -608,7 +607,7 @@ namespace System.Reflection.Emit
                 !((attributes & MethodAttributes.Abstract) != 0) ||
                 !((attributes & MethodAttributes.Virtual) != 0)) &&
                 !(((attributes & MethodAttributes.Static) != 0)))
-                throw new ArgumentException("Interface method must be abstract and virtual.");
+                throw new ArgumentException(SR.InvalidOperation_BadInterfaceNotAbstractAndVirtual);
 
             returnType ??= typeof(void);
             RuntimeMethodBuilder res = new RuntimeMethodBuilder(this, name, attributes,
@@ -669,7 +668,7 @@ namespace System.Reflection.Emit
         {
             check_not_created();
             if (methodInfoBody.DeclaringType != this)
-                throw new ArgumentException("method body must belong to this type");
+                throw new ArgumentException(SR.Argument_MethodBodyMustBelongToType);
 
             if (methodInfoBody is RuntimeMethodBuilder mb)
             {
@@ -835,19 +834,19 @@ namespace System.Reflection.Emit
             if (parent != null)
             {
                 if (parent.IsSealed)
-                    throw new TypeLoadException("Could not load type '" + fullname.DisplayName + "' from assembly '" + Assembly + "' because the parent type is sealed.");
+                    throw new TypeLoadException(SR.Format(SR.TypeLoad_AssemblySealedParentTypeError, fullname.DisplayName, Assembly));
                 if (parent.IsGenericTypeDefinition)
                     throw new BadImageFormatException();
             }
 
             if (parent == typeof(Enum) && methods != null)
-                throw new TypeLoadException("Could not load type '" + fullname.DisplayName + "' from assembly '" + Assembly + "' because it is an enum with methods.");
+                throw new TypeLoadException(SR.Format(SR.TypeLoad_AssemblyEnumContainsMethodsError, fullname.DisplayName, Assembly));
             if (interfaces != null)
             {
                 foreach (Type iface in interfaces)
                 {
                     if (iface.IsNestedPrivate && iface.Assembly != Assembly)
-                        throw new TypeLoadException("Could not load type '" + fullname.DisplayName + "' from assembly '" + Assembly + "' because it is implements the inaccessible interface '" + iface.FullName + "'.");
+                        throw new TypeLoadException(SR.Format(SR.TypeLoad_AssemblyInaccessibleInterfaceError, fullname.DisplayName, Assembly, iface.FullName));
                     if (iface.IsGenericTypeDefinition)
                         throw new BadImageFormatException();
                     if (!iface.IsInterface)
@@ -864,7 +863,7 @@ namespace System.Reflection.Emit
                 {
                     RuntimeMethodBuilder mb = methods[i];
                     if (is_concrete && mb.IsAbstract)
-                        throw new InvalidOperationException("Type is concrete but has abstract method " + mb);
+                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_AbstractMethod, mb));
                     mb.check_override();
                     mb.fixup();
                 }
@@ -933,7 +932,7 @@ namespace System.Reflection.Emit
             {
                 t = t.UnderlyingSystemType;
                 if (t != null && ((t.GetType().Assembly != typeof(int).Assembly) || (t is TypeDelegator)))
-                    throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");
+                    throw new NotSupportedException(SR.PlatformNotSupported_UserDefinedSubclassesOfType);
                 return t;
             }
             else
@@ -1360,20 +1359,19 @@ namespace System.Reflection.Emit
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
-            return new ArrayType(this, 0);
+            return SymbolType.FormCompoundType("[]", this, 0)!;
         }
 
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
-            if (rank < 1)
-                throw new IndexOutOfRangeException();
-            return new ArrayType(this, rank);
+            string s = GetRankString(rank);
+            return SymbolType.FormCompoundType(s, this, 0)!;
         }
 
         public override Type MakeByRefType()
         {
-            return new ByRefType(this);
+            return SymbolType.FormCompoundType("&", this, 0)!;
         }
 
         [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
@@ -1401,7 +1399,7 @@ namespace System.Reflection.Emit
 
         public override Type MakePointerType()
         {
-            return new PointerType(this);
+            return SymbolType.FormCompoundType("*", this, 0)!;
         }
 
         public override RuntimeTypeHandle TypeHandle
@@ -1428,7 +1426,7 @@ namespace System.Reflection.Emit
                     LayoutKind.Auto => TypeAttributes.AutoLayout,
                     LayoutKind.Explicit => TypeAttributes.ExplicitLayout,
                     LayoutKind.Sequential => TypeAttributes.SequentialLayout,
-                    _ => throw new Exception("Error in customattr"), // we should ignore it since it can be any value anyway...
+                    _ => throw new Exception(SR.Argument_InvalidKindOfTypeForCA), // we should ignore it since it can be any value anyway...
                 };
 
                 Type ctor_type = customBuilder.Ctor is RuntimeConstructorBuilder builder ? builder.parameters![0] : customBuilder.Ctor.GetParametersInternal()[0].ParameterType;
@@ -1501,11 +1499,13 @@ namespace System.Reflection.Emit
                 attrs |= TypeAttributes.SpecialName;
                 return;
             }
+#pragma warning disable SYSLIB0050 // TypeAttributes.Serializable is obsolete
             else if (attrname == "System.SerializableAttribute")
             {
                 attrs |= TypeAttributes.Serializable;
                 return;
             }
+#pragma warning restore SYSLIB0050
             else if (attrname == "System.Runtime.InteropServices.ComImportAttribute")
             {
                 attrs |= TypeAttributes.Import;
@@ -1627,7 +1627,7 @@ namespace System.Reflection.Emit
         public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             if (created == null)
-                throw new NotSupportedException("This method is not implemented for incomplete types.");
+                throw new NotSupportedException(SR.NotSupported_IncompleteTypes);
 
             return created.GetInterfaceMap(interfaceType);
         }
@@ -1660,7 +1660,7 @@ namespace System.Reflection.Emit
         internal void check_not_created()
         {
             if (is_created)
-                throw new InvalidOperationException("Unable to change after type has been created.");
+                throw new InvalidOperationException(SR.InvalidOperation_TypeHasBeenCreated);
         }
 
         private void check_created()
@@ -1954,4 +1954,3 @@ namespace System.Reflection.Emit
         public override bool IsByRefLike => false;
     }
 }
-#endif

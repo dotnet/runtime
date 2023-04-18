@@ -58,6 +58,14 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_ToAscii)
     DllImportEntry(GlobalizationNative_ToUnicode)
     DllImportEntry(GlobalizationNative_WindowsIdToIanaId)
+#ifdef __APPLE__
+    DllImportEntry(GlobalizationNative_GetLocaleNameNative)
+    DllImportEntry(GlobalizationNative_GetLocaleInfoStringNative)
+    DllImportEntry(GlobalizationNative_GetLocaleInfoIntNative)
+    DllImportEntry(GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative)
+    DllImportEntry(GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative)
+    DllImportEntry(GlobalizationNative_GetLocaleTimeFormatNative)
+#endif
 };
 
 EXTERN_C const void* GlobalizationResolveDllImport(const char* name);

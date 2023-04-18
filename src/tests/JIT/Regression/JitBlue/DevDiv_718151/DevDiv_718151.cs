@@ -6,6 +6,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct Struct16bytes
 {
@@ -31,7 +32,8 @@ public class DevDiv_714266
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         StructWithStructField s = new StructWithStructField();
         s.structField.a = 100;

@@ -52,9 +52,9 @@ namespace System.ComponentModel.Design
 
         private static void SerializeWithBinaryFormatter(Stream o, string cryptoKey, DesigntimeLicenseContext context)
         {
-            var formatter = new BinaryFormatter();
 #pragma warning disable SYSLIB0011
 #pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
+            var formatter = new BinaryFormatter();
             formatter.Serialize(o, new object[] { cryptoKey, context._savedLicenseKeys });
 #pragma warning restore IL2026
 #pragma warning restore SYSLIB0011

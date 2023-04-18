@@ -5,13 +5,11 @@ import monoWasmThreads from "consts:monoWasmThreads";
 import { Module, runtimeHelpers } from "./imports";
 import { mono_assert, MemOffset, NumberOrPointer } from "./types";
 import { VoidPtr, CharPtr } from "./types/emscripten";
-import * as cuint64 from "./cuint64";
 import cwraps, { I52Error } from "./cwraps";
 
 const alloca_stack: Array<VoidPtr> = [];
 const alloca_buffer_size = 32 * 1024;
 let alloca_base: VoidPtr, alloca_offset: VoidPtr, alloca_limit: VoidPtr;
-let HEAPI64: BigInt64Array = <any>null;
 
 function _ensure_allocated(): void {
     if (alloca_base)
@@ -21,7 +19,8 @@ function _ensure_allocated(): void {
     alloca_limit = <VoidPtr>(<any>alloca_base + alloca_buffer_size);
 }
 
-const is_bigint_supported = typeof BigInt !== "undefined" && typeof BigInt64Array !== "undefined";
+const max_int64_big = BigInt("9223372036854775807");
+const min_int64_big = BigInt("-9223372036854775808");
 
 export function temp_malloc(size: number): VoidPtr {
     _ensure_allocated();
@@ -54,7 +53,7 @@ function assert_int_in_range(value: Number, min: Number, max: Number) {
 }
 
 export function _zero_region(byteOffset: VoidPtr, sizeBytes: number): void {
-    Module.HEAP8.fill(0, <any>byteOffset, sizeBytes);
+    Module.HEAP8.fill(0, <any>byteOffset, <any>byteOffset + sizeBytes);
 }
 
 export function setB32(offset: MemOffset, value: number | boolean): void {
@@ -136,11 +135,10 @@ export function setU52(offset: MemOffset, value: number): void {
 }
 
 export function setI64Big(offset: MemOffset, value: bigint): void {
-    mono_assert(is_bigint_supported, "BigInt is not supported.");
     mono_assert(typeof value === "bigint", () => `Value is not an bigint: ${value} (${typeof (value)})`);
     mono_assert(value >= min_int64_big && value <= max_int64_big, () => `Overflow: value ${value} is out of ${min_int64_big} ${max_int64_big} range`);
 
-    HEAPI64[<any>offset >>> 3] = value;
+    Module.HEAP64[<any>offset >>> 3] = value;
 }
 
 export function setF32(offset: MemOffset, value: number): void {
@@ -168,6 +166,22 @@ export function getU16(offset: MemOffset): number {
 
 export function getU32(offset: MemOffset): number {
     return Module.HEAPU32[<any>offset >>> 2];
+}
+
+export function getI32_unaligned(offset: MemOffset): number {
+    return cwraps.mono_wasm_get_i32_unaligned(<any>offset);
+}
+
+export function getU32_unaligned(offset: MemOffset): number {
+    return cwraps.mono_wasm_get_i32_unaligned(<any>offset) >>> 0;
+}
+
+export function getF32_unaligned(offset: MemOffset): number {
+    return cwraps.mono_wasm_get_f32_unaligned(<any>offset);
+}
+
+export function getF64_unaligned(offset: MemOffset): number {
+    return cwraps.mono_wasm_get_f64_unaligned(<any>offset);
 }
 
 export function getI8(offset: MemOffset): number {
@@ -203,8 +217,7 @@ export function getU52(offset: MemOffset): number {
 }
 
 export function getI64Big(offset: MemOffset): bigint {
-    mono_assert(is_bigint_supported, "BigInt is not supported.");
-    return HEAPI64[<any>offset >>> 3];
+    return Module.HEAP64[<any>offset >>> 3];
 }
 
 export function getF32(offset: MemOffset): number {
@@ -213,28 +226,6 @@ export function getF32(offset: MemOffset): number {
 
 export function getF64(offset: MemOffset): number {
     return Module.HEAPF64[<any>offset >>> 3];
-}
-
-let max_int64_big: BigInt;
-let min_int64_big: BigInt;
-export function afterUpdateGlobalBufferAndViews(buffer: ArrayBufferLike): void {
-    if (is_bigint_supported) {
-        max_int64_big = BigInt("9223372036854775807");
-        min_int64_big = BigInt("-9223372036854775808");
-        HEAPI64 = new BigInt64Array(buffer);
-    }
-}
-
-export function getCU64(offset: MemOffset): cuint64.CUInt64 {
-    const lo = getU32(offset);
-    const hi = getU32(<any>offset + 4);
-    return cuint64.pack32(lo, hi);
-}
-
-export function setCU64(offset: MemOffset, value: cuint64.CUInt64): void {
-    const [lo, hi] = cuint64.unpack32(value);
-    setU32_unchecked(offset, lo);
-    setU32_unchecked(<any>offset + 4, hi);
 }
 
 /// Allocates a new buffer of the given size on the Emscripten stack and passes a pointer to it to the callback.

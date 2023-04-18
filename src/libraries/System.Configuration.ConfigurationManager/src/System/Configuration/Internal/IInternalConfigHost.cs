@@ -103,8 +103,7 @@ namespace System.Configuration.Internal
 
         IDisposable Impersonate();
 
-#pragma warning disable SYSLIB0003 // Obsolete: CAS
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         void GetRestrictedPermissions(IInternalConfigRecord configRecord, out PermissionSet permissionSet, out bool isHostReady);
-#pragma warning restore SYSLIB0003 // Obsolete: CAS
     }
 }

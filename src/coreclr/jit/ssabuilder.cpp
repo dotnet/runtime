@@ -31,7 +31,7 @@ static inline BasicBlock* IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
         {
             return nullptr;
         }
-        while (finger1 != nullptr && finger1->bbPostOrderNum < finger2->bbPostOrderNum)
+        while (finger1 != nullptr && finger1->bbPostorderNum < finger2->bbPostorderNum)
         {
             finger1 = finger1->bbIDom;
         }
@@ -39,7 +39,7 @@ static inline BasicBlock* IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
         {
             return nullptr;
         }
-        while (finger2 != nullptr && finger2->bbPostOrderNum < finger1->bbPostOrderNum)
+        while (finger2 != nullptr && finger2->bbPostorderNum < finger1->bbPostorderNum)
         {
             finger2 = finger2->bbIDom;
         }
@@ -209,7 +209,7 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
 
             DBG_SSA_JITDUMP("[SsaBuilder::TopologicalSort] postOrder[%d] = " FMT_BB "\n", postIndex, block->bbNum);
             postOrder[postIndex]  = block;
-            block->bbPostOrderNum = postIndex;
+            block->bbPostorderNum = postIndex;
             postIndex += 1;
         }
     }
@@ -740,7 +740,7 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
         // This is perhaps temporary -- maybe should be done elsewhere.  Label GT_INDs on LHS of assignments, so we
         // can skip these during (at least) value numbering.
         GenTree* lhs = defNode->gtGetOp1()->gtEffectiveVal(/*commaOnly*/ true);
-        if (lhs->OperIs(GT_IND, GT_OBJ, GT_BLK))
+        if (lhs->OperIs(GT_IND, GT_BLK))
         {
             lhs->gtFlags |= GTF_IND_ASG_LHS;
         }
@@ -1560,7 +1560,7 @@ void SsaBuilder::Build()
     for (BasicBlock* const block : m_pCompiler->Blocks())
     {
         block->bbIDom         = nullptr;
-        block->bbPostOrderNum = 0;
+        block->bbPostorderNum = 0;
     }
 
     // Topologically sort the graph.

@@ -399,7 +399,7 @@ namespace System.Text.RegularExpressions
             return RegexCharClass.CharInClass(ch, charClass);
         }
 
-        protected static bool CharInClass(char ch, string charClass)
+        public static bool CharInClass(char ch, string charClass)
         {
             return RegexCharClass.CharInClass(ch, charClass);
         }

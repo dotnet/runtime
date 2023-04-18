@@ -127,29 +127,3 @@ Alpine
 ```sh
 apk add cmake openssl-dev openssl-libs-static
 ```
-
-## Using statically linked NUMA
-This feature can statically link NUMA library (libnuma.a) into your applications at build time.
-NativeAOT binaries built with this feature can run even when NUMA libraries are not installed.
-
-You can use this feature by adding the `StaticNumaLinking` property to your project file as follows:
-
-```xml
-<PropertyGroup>
-  <StaticNumaLinking>true</StaticNumaLinking>
-</PropertyGroup>
-```
-
-License (LGPL v2.1): https://github.com/numactl/numactl/blob/master/LICENSE.LGPL2.1. Note that this license imposes specific requirements on distribution of statically linked binaries.
-
-### Prerequisites
-
-Ubuntu
-```sh
-apt install libnuma-dev
-```
-
-Alpine
-```sh
-apk add numactl-dev
-```
