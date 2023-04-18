@@ -673,7 +673,16 @@ namespace LibraryImportGenerator.UnitTests
         public async Task ValidateSnippetsWithMultipleSources(string id, string[] sources)
         {
             TestUtils.Use(id);
-            await VerifyCS.VerifySourceGeneratorAsync(sources);
+            // To enable us to reuse snippets that have markup locations in our multiple-sources test, we'll strip out the markup locations.
+            // We need to do this as each snippet expects to be able to define all expected markup locations (starting from 0), so including multiple snippets
+            // results in multiple definitions for the same location (which doesn't work). Since we expect no diagnostics, we can strip out the locations.
+            await VerifyCS.VerifySourceGeneratorAsync(sources.Select(RemoveTestMarkup).ToArray());
+        }
+
+        private static string RemoveTestMarkup(string sourceWithMarkup)
+        {
+            TestFileMarkupParser.GetSpans(sourceWithMarkup, out string sourceWithoutMarkup, out ImmutableArray<TextSpan> _);
+            return sourceWithoutMarkup;
         }
 
         public static IEnumerable<object[]> CodeSnippetsToVerifyNoTreesProduced()
