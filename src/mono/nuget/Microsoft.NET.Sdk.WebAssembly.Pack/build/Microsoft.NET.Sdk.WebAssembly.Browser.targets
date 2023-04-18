@@ -40,6 +40,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.GenerateWasmBootJson" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmBuildAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmPublishAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebCil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
 
   <PropertyGroup>
     <SelfContained>true</SelfContained>
@@ -205,8 +206,16 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="FilesToRemove" ItemName="_WasmBuildFilesToRemove" />
     </ComputeWasmBuildAssets>
 
+    <PropertyGroup>
+      <_WasmBuildWebCilPath>$(IntermediateOutputPath)\webcil</_WasmBuildWebCilPath>
+    </PropertyGroup>
+
+    <ConvertDllsToWebCil Candidates="@(_BuildAssetsCandidates)" OutputPath="$(_WasmBuildWebCilPath)" IsEnabled="$(WasmEnableWebcil)">
+      <Output TaskParameter="WebCilCandidates" ItemName="_WebCilAssetsCandidates" />
+    </ConvertDllsToWebCil>
+
     <DefineStaticWebAssets
-      CandidateAssets="@(_BuildAssetsCandidates)"
+      CandidateAssets="@(_WebCilAssetsCandidates)"
       SourceId="$(PackageId)"
       SourceType="Computed"
       AssetKind="Build"
