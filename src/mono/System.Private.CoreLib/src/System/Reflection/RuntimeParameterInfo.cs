@@ -202,6 +202,11 @@ namespace System.Reflection
 
         private object? GetDefaultValue(bool raw)
         {
+            if (IsRetval)
+            {
+                return Type.Missing;
+            }
+
             // Prioritize metadata constant over custom attribute constant
             object? defaultValue = DefaultValueImpl;
             if (defaultValue != null && (defaultValue.GetType() == typeof(DBNull) || defaultValue.GetType() == typeof(Missing)))
