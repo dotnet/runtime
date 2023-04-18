@@ -501,10 +501,7 @@ namespace System.Collections
             }
         }
     }
-}
-
-namespace System.Collections.Extensions
-{
+    
     public static class QueueExtensions
     {
         public static Queue<T> Push<T>(this Queue<T> queue, T item)
