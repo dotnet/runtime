@@ -29,7 +29,7 @@ namespace System.Net.Security
             // RFC 6066 forbids IP literals
             if (IsValidAddress(targetHost))
             {
-                return targetHost;
+                return string.Empty;
             }
 
             try
