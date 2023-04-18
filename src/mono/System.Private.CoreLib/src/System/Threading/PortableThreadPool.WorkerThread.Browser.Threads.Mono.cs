@@ -89,7 +89,7 @@ namespace System.Threading
             private static void WorkLoopSemaphoreTimedOut(LowLevelLifoAsyncWaitSemaphore semaphore, object? stateObject)
             {
                 SemaphoreWaitState state = (SemaphoreWaitState)stateObject!;
-                if (WorkerTimedOutMaybeStop(state.ThreadPoolInstance, state.ThreadAdjustmentLock)) {
+                if (ShouldExitWorker(state.ThreadPoolInstance, state.ThreadAdjustmentLock)) {
                     // we're done, kill the thread.
 
                     // we're wrapped in an emscripten eventloop handler which will consult the
