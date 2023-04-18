@@ -148,7 +148,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 
 #ifdef TARGET_ARM64
 //------------------------------------------------------------------------
-// IsContainableBinaryOp: Is the child node a binary op that is containable from the parent node?
+// IsContainableUnaryOrBinaryOp: Is the child node a unary/binary op that is containable from the parent node?
 //
 // Return Value:
 //    True if the child node can be contained.
@@ -156,7 +156,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 // Notes:
 //    This can handle the decision to emit 'madd' or 'msub'.
 //
-bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const
+bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childNode) const
 {
 #ifdef DEBUG
     // The node we're checking should be one of the two child nodes
@@ -169,7 +169,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
         assert(parentNode->OperIsUnary());
         assert((parentNode->gtGetOp1() == childNode));
     }
-#endif
+#endif // DEBUG
 
     // We cannot contain if the parent node
     // * is contained
@@ -294,6 +294,12 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
 
     if (childNode->OperIs(GT_NEG))
     {
+        if (childNode->gtGetOp1()->isContained())
+        {
+            // Cannot contain if the childs op1 is already contained
+            return false;
+        }
+
         if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
         {
             // Cannot contain if the parent operation needs to set flags
@@ -2079,7 +2085,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 #ifdef TARGET_ARM64
     if (comp->opts.OptimizationEnabled())
     {
-        if (IsContainableBinaryOp(node, op2))
+        if (IsContainableUnaryOrBinaryOp(node, op2))
         {
             if (op2->OperIs(GT_CAST))
             {
@@ -2091,7 +2097,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
             return;
         }
 
-        if (node->OperIsCommutative() && IsContainableBinaryOp(node, op1))
+        if (node->OperIsCommutative() && IsContainableUnaryOrBinaryOp(node, op1))
         {
             if (op1->OperIs(GT_CAST))
             {
@@ -2313,13 +2319,13 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 #ifdef TARGET_ARM64
     if (comp->opts.OptimizationEnabled() && (cmp->OperIsCompare() || cmp->OperIs(GT_CMP)))
     {
-        if (IsContainableBinaryOp(cmp, op2))
+        if (IsContainableUnaryOrBinaryOp(cmp, op2))
         {
             MakeSrcContained(cmp, op2);
             return;
         }
 
-        if (IsContainableBinaryOp(cmp, op1))
+        if (IsContainableUnaryOrBinaryOp(cmp, op1))
         {
             MakeSrcContained(cmp, op1);
             std::swap(cmp->gtOp1, cmp->gtOp2);
@@ -2557,7 +2563,7 @@ void Lowering::ContainCheckNeg(GenTreeOp* neg)
         }
     }
     else if (comp->opts.OptimizationEnabled() && childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ) &&
-             IsContainableBinaryOp(neg, childNode))
+             IsContainableUnaryOrBinaryOp(neg, childNode))
     {
         MakeSrcContained(neg, childNode);
     }

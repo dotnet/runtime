@@ -3918,7 +3918,8 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
         }
 #ifdef TARGET_ARM64
         else if (optimizing && relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT) &&
-                 (IsContainableBinaryOp(relop, relop->gtGetOp1()) || IsContainableBinaryOp(relop, relop->gtGetOp2())))
+                 (IsContainableUnaryOrBinaryOp(relop, relop->gtGetOp1()) ||
+                  IsContainableUnaryOrBinaryOp(relop, relop->gtGetOp2())))
         {
             ContainCheckCompare(relop);
             relop->SetOper(GT_CMP);
