@@ -86,6 +86,7 @@ namespace System.Reflection.Tests
 
             if (PlatformDetection.IsNativeAot)
             {
+                // it's hard coded as true
                 Assert.True(parameterInfo.HasDefaultValue);
             }
             else
