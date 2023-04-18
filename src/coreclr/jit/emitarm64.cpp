@@ -6495,6 +6495,105 @@ void emitter::emitIns_R_R_R(
 
 /*****************************************************************************
  *
+ *  Add an instruction storing 2 registers into a memory (pointed by reg3) and the offset
+    (immediate).
+ */
+ 
+void emitter::emitIns_SS_R_R_R_I(instruction ins,
+                        emitAttr    attr,
+                        emitAttr    attr2,
+                        regNumber   reg1,
+                        regNumber   reg2,
+                        regNumber   reg3,
+                        ssize_t     imm,
+                        int         varx1,
+                        int         offs,
+                        int         varx2)
+{
+    assert((ins == INS_stp) || (ins == INS_stnp));
+    emitAttr  size   = EA_SIZE(attr);
+    insFormat fmt    = IF_NONE;
+    unsigned  scale  = 0;
+
+    // Is the target a vector register?
+    if (isVectorRegister(reg1))
+    {
+        assert(isValidVectorLSPDatasize(size));
+        assert(isVectorRegister(reg2));
+
+        scale  = NaturalScale_helper(size);
+        assert((scale >= 2) && (scale <= 4));
+    }
+    else
+    {
+        assert(isValidGeneralDatasize(size));
+        assert(isGeneralRegisterOrZR(reg2));
+        scale = (size == EA_8BYTE) ? 3 : 2;
+    }
+
+    reg3 = encodingSPtoZR(reg3);
+
+    fmt = IF_LS_3C;
+    ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+    if (imm == 0)
+    {
+        fmt = IF_LS_3B;
+    }
+    else
+    {
+        if ((imm & mask) == 0)
+        {
+            imm >>= scale; // The immediate is scaled by the size of the ld/st
+        }
+    }
+
+    instrDesc* id = emitNewInstrCns(attr, imm);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idInsOpt(INS_OPTS_NONE);
+
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idReg3(reg3);
+
+    // Record the attribute for the second register in the pair
+    if (EA_IS_GCREF(attr2))
+    {
+        id->idGCrefReg2(GCT_GCREF);
+    }
+    else if (EA_IS_BYREF(attr2))
+    {
+        id->idGCrefReg2(GCT_BYREF);
+    }
+    else
+    {
+        id->idGCrefReg2(GCT_NONE);
+    }
+
+    bool validVar1 = varx1 != -1;
+    bool validVar2 = varx2 != -1;
+
+    if (validVar1 && validVar2)
+    {
+        assert(id->idGCref() != GCT_NONE);
+        assert(id->idGCrefReg2() != GCT_NONE);
+    }
+    else if (validVar1)
+    {
+        id->idAddr()->iiaLclVar.initLclVarAddr(varx1, offs);
+    }
+    else if (validVar2)
+    {
+        id->idAddr()->iiaLclVar.initLclVarAddr(varx2, offs);
+    }
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
  *  Add an instruction referencing three registers and a constant.
  */
 
@@ -16196,8 +16295,16 @@ bool emitter::IsRedundantLdStr(
 // Return Value:
 //    "true" if the previous instruction has been overwritten.
 //
-bool emitter::ReplaceLdrStrWithPairInstr(
-    instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
+bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
+                                         emitAttr    reg1Attr,
+                                         regNumber   reg1,
+                                         regNumber   reg2,
+                                         ssize_t     imm,
+                                         emitAttr    size,
+                                         insFormat   fmt,
+                                         bool        localVar,
+                                         int         varx,
+                                         int         offs)
 {
     RegisterOrder optimizationOrder = IsOptimizableLdrStrWithPair(ins, reg1, reg2, imm, size, fmt);
 
@@ -16209,6 +16316,9 @@ bool emitter::ReplaceLdrStrWithPairInstr(
         instruction optIns = (ins == INS_ldr) ? INS_ldp : INS_stp;
 
         emitAttr oldReg1Attr;
+        ssize_t  oldImmSize = oldImm * size;
+        ssize_t  newImmSize = imm * size;
+
         switch (emitLastIns->idGCref())
         {
             case GCT_GCREF:
@@ -16222,28 +16332,124 @@ bool emitter::ReplaceLdrStrWithPairInstr(
                 break;
         }
 
-        // Remove the last instruction written.
-        emitRemoveLastInstruction();
+        //// Remove the last instruction written.
+        //emitRemoveLastInstruction();
+
 
         // Combine two 32 bit stores of value zero into one 64 bit store
-        if (ins == INS_str && reg1 == REG_ZR && oldReg1 == REG_ZR && size == EA_4BYTE)
+        if (ins == INS_str)
         {
+            if (reg1 == REG_ZR && oldReg1 == REG_ZR && size == EA_4BYTE)
+            {
+                // Remove the last instruction written.
+                emitRemoveLastInstruction();
 
-            // The first register is at the lower offset for the ascending order
-            ssize_t offset = (optimizationOrder == eRO_ascending ? oldImm : imm) * size;
-            emitIns_R_R_I(INS_str, EA_8BYTE, REG_ZR, reg2, offset, INS_OPTS_NONE);
-            return true;
+                // The first register is at the lower offset for the ascending order
+                ssize_t offset = (optimizationOrder == eRO_ascending ? oldImm : imm) * size;
+                emitIns_R_R_I(INS_str, EA_8BYTE, REG_ZR, reg2, offset, INS_OPTS_NONE);
+                return true;
+            }
+
+            bool isLastGCLclVar = (emitLastIns->idIsLclVar() && (emitLastIns->idGCref() != GCT_NONE));
+            bool isCurrGCLclVar = (localVar && EA_IS_GCREF_OR_BYREF(reg1Attr));
+
+            if (isLastGCLclVar && isCurrGCLclVar)
+            {
+                int oldOffset    = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
+                int oldLclVarNum = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
+                
+                //if (asending)
+                //    - idGCref() = last instruction's GCtype
+                //    - idGCrefReg2() = current instruction's GCType
+                //    - lvaVarNum = last instruction's lclVar
+                //    - lvaVarNum2 = current instruction's lclVar
+                //    - lvaOffset = last instruction's offset
+                //else
+                //    - idGCref() = current instruction's GCType
+                //    - idGCrefReg2() = last instruction's GCtype
+                //    - lvaVarNum = current instruction's lclVar
+                //    - lvaVarNum2 = last instruction's lclVar
+                //    - lvaOffset = current instruction's offset
+                
+                //if (optimizationOrder == eRO_ascending)
+                //{
+                //    emitIns_SS_R_R_R_I(optIns, oldReg1Attr, reg1Attr, oldReg1, reg1, reg2, oldImmSize, oldLclVarNum, oldOffset, varx);
+                //}
+                //else
+                //{
+                //    emitIns_SS_R_R_R_I(optIns, reg1Attr, oldReg1Attr, reg1, oldReg1, reg2, newImmSize, varx, offs, oldLclVarNum);
+                //}
+                return false;
+            }
+            else if (isLastGCLclVar)
+            {
+                int oldOffset    = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
+                int oldLclVarNum = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
+
+                // Remove the last instruction written.
+                emitRemoveLastInstruction();
+
+                //if (asending)
+                //    - idGCref() = last instruction's GCtype
+                //    - idGCrefReg2() = GCT_NONE
+                //    - lvaVarNum = last instruction's lclVar
+                //    - lvaOffset = last instruction's offset
+                //else
+                //    - idGCref() = GCT_NONE
+                //    - idGCrefReg2() = last instruction's GCtype
+                //    - lvaVarNum = last instruction's lclVar
+                //    - lvaOffset = current instruction's offset
+                
+                if (optimizationOrder == eRO_ascending)
+                {
+                    emitIns_SS_R_R_R_I(optIns, oldReg1Attr, reg1Attr, oldReg1, reg1, reg2, oldImmSize, oldLclVarNum, oldOffset);
+                }
+                else
+                {
+                    emitIns_SS_R_R_R_I(optIns, reg1Attr, oldReg1Attr, reg1, oldReg1, reg2, newImmSize, oldLclVarNum, oldOffset);
+                }
+                return true;
+            }
+            else if (isCurrGCLclVar)
+            {
+                // Remove the last instruction written.
+                emitRemoveLastInstruction();
+
+                //if (asending)
+                //    - idGCref() = GCT_NONE
+                //    - idGCrefReg2() = current instruction's GCType
+                //    - lvaVarNum = current instruction's lclVar
+                //    - lvaOffset = last instruction's offset
+                //else
+                //    - idGCref() = current instruction's GCType
+                //    - idGCrefReg2() = GCT_NONE
+                //    - lvaVarNum = current instruction's lclVar
+                //    - lvaOffset = current instruction's offset
+                
+                if (optimizationOrder == eRO_ascending)
+                {
+                    emitIns_SS_R_R_R_I(optIns, oldReg1Attr, reg1Attr, oldReg1, reg1, reg2, oldImmSize, varx, offs);
+                }
+                else
+                {
+                    emitIns_SS_R_R_R_I(optIns, reg1Attr, oldReg1Attr, reg1, oldReg1, reg2, newImmSize, varx, offs);
+                }
+                return true;
+            }
         }
+
+        // Remove the last instruction written.
+        emitRemoveLastInstruction();
 
         // Emit the new instruction. Make sure to scale the immediate value by the operand size.
         if (optimizationOrder == eRO_ascending)
         {
-            // The FIRST register is at the lower offset
+            // The last instruction is at the lower offset
             emitIns_R_R_R_I(optIns, oldReg1Attr, oldReg1, reg1, reg2, oldImm * size, INS_OPTS_NONE, reg1Attr);
         }
         else
         {
-            // The SECOND register is at the lower offset
+            // The current instruction is at the lower offset
             emitIns_R_R_R_I(optIns, reg1Attr, reg1, oldReg1, reg2, imm * size, INS_OPTS_NONE, oldReg1Attr);
         }
 

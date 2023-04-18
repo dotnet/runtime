@@ -128,8 +128,16 @@ bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src
 bool IsRedundantLdStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
 RegisterOrder IsOptimizableLdrStrWithPair(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
-bool ReplaceLdrStrWithPairInstr(
-    instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
+bool ReplaceLdrStrWithPairInstr(instruction ins,
+                                emitAttr    reg1Attr,
+                                regNumber   reg1,
+                                regNumber   reg2,
+                                ssize_t     imm,
+                                emitAttr    size,
+                                insFormat   fmt,
+                                bool        localVar = false,
+                                int         varx = 0,
+                                int         offs = 0);
 bool IsOptimizableLdrToMov(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
 
 // Try to optimize a Ldr or Str with an alternative instruction.
@@ -141,8 +149,8 @@ inline bool OptimizeLdrStr(instruction ins,
                            emitAttr    size,
                            insFormat   fmt,
                            bool        localVar = false,
-                           int         varx     = 0,
-                           int         offs     = 0)
+                           int         varx = 0,
+                           int         offs = 0)
 {
     assert(ins == INS_ldr || ins == INS_str);
 
@@ -162,20 +170,7 @@ inline bool OptimizeLdrStr(instruction ins,
 
     // If the previous instruction was a matching load/store, then try to replace it instead of emitting.
     //
-    bool canReplaceWithPair = true;
-    if (ins == INS_str)
-    {
-        // For INS_str, don't do this if either instruction had a local GC variable.
-        // For INS_ldr, it is fine to perform this optimization because the output code already handles the code of
-        // updating the gc refs. We do not need offset tracking for load cases.
-        if ((localVar && EA_IS_GCREF_OR_BYREF(reg1Attr)) ||
-            (emitLastIns->idIsLclVar() && (emitLastIns->idGCref() != GCT_NONE)))
-        {
-            canReplaceWithPair = false;
-        }
-    }
-
-    if (canReplaceWithPair && ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt))
+    if (ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt, localVar, varx, offs))
     {
         return true;
     }
@@ -889,6 +884,17 @@ void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int o
 
 void emitIns_S_S_R_R(
     instruction ins, emitAttr attr, emitAttr attr2, regNumber ireg, regNumber ireg2, int varx, int offs);
+
+void emitIns_SS_R_R_R_I(instruction ins,
+                        emitAttr    attr,
+                        emitAttr    attr2,
+                        regNumber   reg1,
+                        regNumber   reg2,
+                        regNumber   reg3,
+                        ssize_t     imm,
+                        int         varx1 = -1,
+                        int         offs  = -1,
+                        int         varx2 = -1);
 
 void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
