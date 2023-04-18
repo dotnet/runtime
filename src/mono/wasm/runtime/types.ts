@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { WebAssemblyStartOptions } from "./blazor/WebAssemblyStartOptions";
 import { DotnetHostBuilder } from "./run-outer";
 import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr, EmscriptenModuleInternal } from "./types/emscripten";
 
@@ -127,6 +128,11 @@ export type MonoConfig = {
      * hash of assets
      */
     assetsHash?: string,
+
+    /**
+     * application environment
+     */
+    applicationEnvironment?: string
 };
 
 export type MonoConfigInternal = MonoConfig & {
@@ -139,6 +145,7 @@ export type MonoConfigInternal = MonoConfig & {
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
     exitAfterSnapshot?: number,
+    startupOptions?: Partial<WebAssemblyStartOptions>
 };
 
 export type RunArguments = {
@@ -268,6 +275,8 @@ export type DotnetModuleConfig = {
     configSrc?: string,
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
+    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
+    getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
 
     imports?: any;
     exports?: string[];

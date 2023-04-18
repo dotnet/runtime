@@ -1335,12 +1335,12 @@ isUnexpectedResult = (dest != result);
 
 Dictionary<string,string> extraHelperFiles = new Dictionary<string, string>
 {
-    ["Sse2Verify"] = @"..\Sse2\Sse2Verify.cs",
-    ["ScalarSimdUnaryOpTest"] = @"..\Shared\ScalarSimdUnOpTest_DataTable.cs",
-    ["SimdScalarUnaryOpTest"] = @"..\Shared\SimdScalarUnOpTest_DataTable.cs",
-    ["SimpleBinaryOpTest"] = @"..\Shared\SimpleBinOpTest_DataTable.cs",
-    ["SimpleUnaryOpTest"] = @"..\Shared\SimpleUnOpTest_DataTable.cs",
-    ["SimpleBinaryOpConvTest"] = @"..\Shared\SimpleBinOpConvTest_DataTable.cs",
+    ["Sse2Verify"] = @"..\..\X86\Sse2\Sse2Verify.cs",
+    ["ScalarSimdUnaryOpTest"] = @"..\..\X86\Shared\ScalarSimdUnOpTest_DataTable.cs",
+    ["SimdScalarUnaryOpTest"] = @"..\..\X86\Shared\SimdScalarUnOpTest_DataTable.cs",
+    ["SimpleBinaryOpTest"] = @"..\..\X86\Shared\SimpleBinOpTest_DataTable.cs",
+    ["SimpleUnaryOpTest"] = @"..\..\X86\Shared\SimpleUnOpTest_DataTable.cs",
+    ["SimpleBinaryOpConvTest"] = @"..\..\X86\Shared\SimpleBinOpConvTest_DataTable.cs",
 };
 
 bool isImmTemplate(string name)
