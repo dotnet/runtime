@@ -1343,6 +1343,8 @@ enum free_region_kind
     count_free_region_kinds,
 };
 
+static_assert(count_free_region_kinds == FREE_REGION_KINDS, "Keep count_free_region_kinds in sync with FREE_REGION_KINDS, changing this is not a version breaking change.");
+
 class region_free_list
 {
     size_t  num_free_regions;
@@ -1379,6 +1381,8 @@ public:
     void sort_by_committed_and_age();
     static bool is_on_free_list (heap_segment* region, region_free_list free_list[count_free_region_kinds]);
 };
+
+static_assert(sizeof(region_free_list) == sizeof(dac_region_free_list), "The DAC relies on the size of these two types matching for pointer arithmetic.");
 #endif
 
 enum bookkeeping_element
@@ -4192,10 +4196,10 @@ private:
 #endif //BGC_SERVO_TUNING
 #endif //BACKGROUND_GC
 
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY uint8_t* bookkeeping_start;
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t regions_range;
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool enable_special_regions_p;
-    PER_HEAP_ISOLATED_FIELD_INIT_ONLY uint8_t* bookkeeping_covered_start;
 #else //USE_REGIONS
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t eph_gen_starts_size;
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t min_segment_size;
