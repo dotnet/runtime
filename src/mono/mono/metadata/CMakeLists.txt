@@ -49,7 +49,7 @@ set(metadata_common_sources
     assembly.c
     assembly-internals.h
     bundled-resources.c
-    bundled-resources-internal.h
+    bundled-resources-internals.h
     cil-coff.h
     class.c
     class-getters.h

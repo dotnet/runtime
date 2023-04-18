@@ -4,7 +4,7 @@
 
 #include <glib.h>
 
-#include "bundled-resources-internal.h"
+#include "bundled-resources-internals.h"
 #include "assembly-internals.h"
 
 #include <mono/metadata/assembly.h>

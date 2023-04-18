@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-#ifndef __MONO_METADATA_BUNDLED_RESOURCES_H__
-#define __MONO_METADATA_BUNDLED_RESOURCES_H__
+#ifndef __MONO_METADATA_BUNDLED_RESOURCES_INTERNALS_H__
+#define __MONO_METADATA_BUNDLED_RESOURCES_INTERNALS_H__
 
 typedef enum {
 	MONO_BUNDLED_DATA,
@@ -32,4 +32,4 @@ mono_get_bundled_resource_data (const char *name, const unsigned char **out_data
 void
 mono_register_bundled_resources (void);
 
-#endif /* __MONO_METADATA_BUNDLED_RESOURCES_H__ */
+#endif /* __MONO_METADATA_BUNDLED_RESOURCES_INTERNALS_H__ */
