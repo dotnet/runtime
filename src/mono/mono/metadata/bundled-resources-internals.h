@@ -13,12 +13,12 @@ typedef enum {
 	MONO_BUNDLED_RESOURCE_COUNT,
 } MonoBundledResourceType;
 
-typedef struct BundledResource {
+typedef struct MonoBundledResource {
 	const char *culture; // Satellite assemblies
 	const unsigned char *data;
 	unsigned int size;
 	MonoBundledResourceType type;
-} BundledResource;
+} MonoBundledResource;
 
 void
 mono_free_bundled_resources (void);

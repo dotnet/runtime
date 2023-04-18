@@ -35,7 +35,7 @@ mono_free_bundled_resources (void)
 //---------------------------------------------------------------------------------------
 //
 // mono_add_bundled_resource handles bundling of many types of resources to circumvent
-// needing to find or have those resources on disk. The BundledResource struct models
+// needing to find or have those resources on disk. The MonoBundledResource struct models
 // the union of information carried by all supported types of resources which are
 // enumerated in MonoBundledResourceType.
 //
@@ -75,7 +75,7 @@ mono_add_bundled_resource (const char *name, const char *culture, const unsigned
 
 	g_assert (!g_hash_table_contains (bundled_resources, name));
 
-	BundledResource *bundled_resource = g_new0 (BundledResource, 1);
+	MonoBundledResource *bundled_resource = g_new0 (MonoBundledResource, 1);
 	bundled_resource->culture = culture;
 	bundled_resource->data = data;
 	bundled_resource->size = size;
@@ -101,7 +101,7 @@ mono_get_bundled_resource_data (const char *name, const unsigned char **out_data
 	*out_data = NULL;
 	*out_size = 0;
 
-	BundledResource *bundled_resource;
+	MonoBundledResource *bundled_resource;
 
 	if (g_hash_table_lookup_extended (bundled_resources, name, NULL, (gpointer *)&bundled_resource)) {
 		*out_data = bundled_resource->data;
@@ -121,7 +121,7 @@ static void
 populate_bundled_assemblies (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoBundledAssembly **bundle = (MonoBundledAssembly **)user_data;
-	BundledResource *bundled_resource = (BundledResource *)value;
+	MonoBundledResource *bundled_resource = (MonoBundledResource *)value;
 	if (!bundle || !bundled_resource || bundled_resource->type != MONO_BUNDLED_ASSEMBLY)
 		return;
 
@@ -141,7 +141,7 @@ static void
 populate_bundled_satellite_assemblies (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoBundledSatelliteAssembly **bundle = (MonoBundledSatelliteAssembly **)user_data;
-	BundledResource *bundled_resource = (BundledResource *)value;
+	MonoBundledResource *bundled_resource = (MonoBundledResource *)value;
 	if (!bundle || !bundled_resource || bundled_resource->type != MONO_BUNDLED_SATELLITE_ASSEMBLY)
 		return;
 
