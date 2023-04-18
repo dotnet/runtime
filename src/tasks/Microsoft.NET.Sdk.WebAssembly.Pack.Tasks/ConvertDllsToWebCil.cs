@@ -31,6 +31,11 @@ public class ConvertDllsToWebCil : Task
     [Output]
     public ITaskItem[] WebCilCandidates { get; set; }
 
+    protected readonly List<string> _fileWrites = new();
+
+    [Output]
+    public string[]? FileWrites => _fileWrites.ToArray();
+
     public override bool Execute()
     {
         var webCilCandidates = new List<ITaskItem>();
@@ -62,6 +67,8 @@ public class ConvertDllsToWebCil : Task
                     Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
                 else
                     Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
+
+                _fileWrites.Add(finalWebcil);
 
                 var webcilItem = new TaskItem(finalWebcil, candidate.CloneCustomMetadata());
                 webcilItem.SetMetadata("RelativePath", Path.ChangeExtension(candidate.GetMetadata("RelativePath"), ".webcil"));
