@@ -138,6 +138,7 @@ namespace Sample
                 char originalLastChar = data[len-1];
                 data[len-1] = (char)random.Next(0x80);
                 strDifferentSuffix = new string(data);
+                data[len-1] = originalLastChar;
                 data[0] = (char)random.Next(0x80);
                 strDifferentPrefix = new string(data);
             }
