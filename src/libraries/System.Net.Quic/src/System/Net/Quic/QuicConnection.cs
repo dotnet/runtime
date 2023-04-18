@@ -47,6 +47,12 @@ public sealed partial class QuicConnection : IAsyncDisposable
     public static bool IsSupported => MsQuicApi.IsQuicSupported;
 
     /// <summary>
+    /// Gets the name of the server the client is trying to connect to. That name is used for server certificate validation. It can be a DNS name or an IP address.
+    /// </summary>
+    /// <returns>The name of the server the client is trying to connect to.</returns>
+    public string? TargetHostName => _sslConnectionOptions.TargetHost;
+
+    /// <summary>
     /// Creates a new <see cref="QuicConnection"/> and connects it to the peer.
     /// </summary>
     /// <param name="options">Options for the connection.</param>
@@ -282,7 +288,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _sslConnectionOptions = new SslConnectionOptions(
                 this,
                 isClient: true,
-                options.ClientAuthenticationOptions.TargetHost,
+                TargetHostNameHelper.NormalizeHostName(options.ClientAuthenticationOptions.TargetHost),
                 certificateRequired: true,
                 options.ClientAuthenticationOptions.CertificateRevocationCheckMode,
                 options.ClientAuthenticationOptions.RemoteCertificateValidationCallback,
@@ -312,7 +318,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         await valueTask.ConfigureAwait(false);
     }
 
-    internal ValueTask FinishHandshakeAsync(QuicServerConnectionOptions options, string? targetHost, CancellationToken cancellationToken = default)
+    internal ValueTask FinishHandshakeAsync(QuicServerConnectionOptions options, string targetHost, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
@@ -325,7 +331,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _sslConnectionOptions = new SslConnectionOptions(
                 this,
                 isClient: false,
-                targetHost: null,
+                targetHost: targetHost,
                 options.ServerAuthenticationOptions.ClientCertificateRequired,
                 options.ServerAuthenticationOptions.CertificateRevocationCheckMode,
                 options.ServerAuthenticationOptions.RemoteCertificateValidationCallback,
