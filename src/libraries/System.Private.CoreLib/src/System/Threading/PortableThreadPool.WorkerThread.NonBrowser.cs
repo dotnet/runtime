@@ -58,7 +58,7 @@ namespace System.Threading
                         WorkerDoWork(threadPoolInstance, ref spinWait);
                     }
 
-                    if (WorkerTimedOutMaybeStop(threadPoolInstance, threadAdjustmentLock))
+                    if (ShouldExitWorker(threadPoolInstance, threadAdjustmentLock))
                     {
                         break;
                     }
