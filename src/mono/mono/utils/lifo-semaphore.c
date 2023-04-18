@@ -140,7 +140,8 @@ lifo_js_wait_entry_push (LifoSemaphoreAsyncWaitWaitEntry **head,
 	LifoSemaphoreAsyncWaitWaitEntry *next = *head;
 	*head = entry;
 	entry->next = next;
-	next->previous = entry;
+	if (next)
+		next->previous = entry;
 }
 
 static void
