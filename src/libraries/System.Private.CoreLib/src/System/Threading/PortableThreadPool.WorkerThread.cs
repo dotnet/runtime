@@ -104,7 +104,7 @@ namespace System.Threading
                         if (counts.NumExistingThreads <= counts.NumProcessingWork)
                         {
                             // In this case, enough work came in that this thread should not time out and should go back to work.
-                            break;
+                            return false;
                         }
 
                         ThreadCounts newCounts = counts;
@@ -136,8 +136,6 @@ namespace System.Threading
                 {
                     threadAdjustmentLock.Release();
                 }
-                // if we get here new work came in and we're going to keep running
-                return false;
             }
 
             /// <summary>
