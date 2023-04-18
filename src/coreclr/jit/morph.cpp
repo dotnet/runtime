@@ -5173,6 +5173,11 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
             // A non-null context here implies our [+ some offset] parent is an indirection, one that
             // will implicitly null-check the produced address.
             addExplicitNullCheck = (mac == nullptr) || fgIsBigOffset(mac->m_totalOffset + fieldOffset);
+
+            if (!addExplicitNullCheck)
+            {
+                mac->m_used = true;
+            }
         }
     }
 
@@ -9141,7 +9146,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         MorphAddrContext indMac;
         if (tree->OperIsIndir()) // TODO-CQ: add more operators here (e. g. atomics).
         {
-            // Communicate to address morphing that the parent is an indirection.
+            // Communicate to FIELD_ADDR morphing that the parent is an indirection.
             mac = &indMac;
         }
         // For additions, if we already have a context, keep track of whether all offsets added
@@ -9165,6 +9170,13 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         }
 
         tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1, mac);
+
+        if ((mac != nullptr) && mac->m_used && tree->OperIsIndir())
+        {
+            // This context was used to elide an explicit null check on a FIELD_ADDR, with the expectation that
+            // this indirection will now be responsible for null-checking (implicitly).
+            tree->gtFlags &= ~GTF_IND_NONFAULTING;
+        }
 
         // If we are exiting the "then" part of a Qmark-Colon we must
         // save the state of the current copy assignment table
