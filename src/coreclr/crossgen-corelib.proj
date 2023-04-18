@@ -20,6 +20,7 @@
       <CrossDir>$(BuildArchitecture)</CrossDir>
     </PropertyGroup>
 
+    <PropertyGroup>
       <BuildDll>true</BuildDll>
 
       <BuildPdb>false</BuildPdb>
