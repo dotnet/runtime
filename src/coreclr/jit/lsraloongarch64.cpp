@@ -973,13 +973,13 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
             buildInternalIntRegisterDefForNode(argNode);
             buildInternalIntRegisterDefForNode(argNode);
 
-            if (putArgChild->OperGet() == GT_OBJ)
+            if (putArgChild->OperGet() == GT_BLK)
             {
                 assert(putArgChild->isContained());
                 GenTree* objChild = putArgChild->gtGetOp1();
-                if (objChild->OperGet() == GT_LCL_VAR_ADDR)
+                if (objChild->IsLclVarAddr())
                 {
-                    // We will generate all of the code for the GT_PUTARG_STK, the GT_OBJ and the GT_LCL_VAR_ADDR
+                    // We will generate all of the code for the GT_PUTARG_STK, the GT_BLK and the GT_LCL_ADDR<0>
                     // as one contained operation, and there are no source registers.
                     //
                     assert(objChild->isContained());
@@ -1073,15 +1073,15 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     else
     {
         assert(putArgChild->TypeGet() == TYP_STRUCT);
-        assert(putArgChild->OperGet() == GT_OBJ);
+        assert(putArgChild->OperGet() == GT_BLK);
 
         // We can use a ld/st sequence so we need an internal register
         buildInternalIntRegisterDefForNode(argNode, allRegs(TYP_INT) & ~argMask);
 
         GenTree* objChild = putArgChild->gtGetOp1();
-        if (objChild->OperGet() == GT_LCL_VAR_ADDR)
+        if (objChild->IsLclVarAddr())
         {
-            // We will generate all of the code for the GT_PUTARG_SPLIT, the GT_OBJ and the GT_LCL_VAR_ADDR
+            // We will generate all of the code for the GT_PUTARG_SPLIT, the GT_BLK and the GT_LCL_ADDR<0>
             // as one contained operation
             //
             assert(objChild->isContained());
@@ -1139,7 +1139,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     buildInternalIntRegisterDefForNode(blkNode);
                 }
 
-                const bool isDstRegAddrAlignmentKnown = dstAddr->OperIsLocalAddr();
+                const bool isDstRegAddrAlignmentKnown = dstAddr->OperIs(GT_LCL_ADDR);
 
                 if (isDstRegAddrAlignmentKnown && (size > FP_REGSIZE_BYTES))
                 {

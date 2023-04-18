@@ -253,6 +253,10 @@ INTRINS_OVR(SSE_SSUB_SATI16, ssub_sat, Generic, v128_i2_t)
 INTRINS_OVR(SSE_USUB_SATI16, usub_sat, Generic, v128_i2_t)
 #endif
 #if defined(TARGET_WASM)
+INTRINS_OVR(WASM_EXTADD_PAIRWISE_SIGNED_V16, wasm_extadd_pairwise_signed, Wasm, sse_i2_t)
+INTRINS_OVR(WASM_EXTADD_PAIRWISE_SIGNED_V8, wasm_extadd_pairwise_signed, Wasm, sse_i4_t)
+INTRINS_OVR(WASM_EXTADD_PAIRWISE_UNSIGNED_V16, wasm_extadd_pairwise_unsigned, Wasm, sse_i2_t)
+INTRINS_OVR(WASM_EXTADD_PAIRWISE_UNSIGNED_V8, wasm_extadd_pairwise_unsigned, Wasm, sse_i4_t)
 INTRINS_OVR(WASM_ALLTRUE_V16, wasm_alltrue, Wasm, sse_i1_t)
 INTRINS_OVR(WASM_ALLTRUE_V8, wasm_alltrue, Wasm, sse_i2_t)
 INTRINS_OVR(WASM_ALLTRUE_V4, wasm_alltrue, Wasm, sse_i4_t)
@@ -466,6 +470,12 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SRI, aarch64_neon_vsri, Arm64, V64 | V128 | I1 
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBX1, aarch64_neon_tbx1, Arm64, V64 | V128 | I1)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBL1, aarch64_neon_tbl1, Arm64, V64 | V128 | I1)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBX2, aarch64_neon_tbx2, Arm64, V64 | V128 | I1)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBL2, aarch64_neon_tbl2, Arm64, V64 | V128 | I1)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBX3, aarch64_neon_tbx3, Arm64, V64 | V128 | I1)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBL3, aarch64_neon_tbl3, Arm64, V64 | V128 | I1)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBX4, aarch64_neon_tbx4, Arm64, V64 | V128 | I1)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBL4, aarch64_neon_tbl4, Arm64, V64 | V128 | I1)
 
 INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_SDOT, aarch64_neon_sdot, Arm64, Arm64DotProd, V64 | V128 | I4)
 INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_UDOT, aarch64_neon_udot, Arm64, Arm64DotProd, V64 | V128 | I4)

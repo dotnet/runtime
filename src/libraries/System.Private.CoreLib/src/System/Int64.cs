@@ -23,7 +23,9 @@ namespace System
           IEquatable<long>,
           IBinaryInteger<long>,
           IMinMaxValue<long>,
-          ISignedNumber<long>
+          ISignedNumber<long>,
+          IUtf8SpanFormattable,
+          IBinaryIntegerParseAndFormatInfo<long>
     {
         private readonly long m_value; // Do not rename (binary serialization)
 
@@ -125,75 +127,50 @@ namespace System
             return Number.TryFormatInt64(m_value, format, provider, destination, out charsWritten);
         }
 
-        public static long Parse(string s)
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.TryFormatInt64(m_value, format, provider, utf8Destination, out bytesWritten);
         }
 
-        public static long Parse(string s, NumberStyles style)
-        {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt64(s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static long Parse(string s) => Parse(s, NumberStyles.Integer, provider: null);
 
-        public static long Parse(string s, IFormatProvider? provider)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt64(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
-        }
+        public static long Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
-        // Parses a long from a String in the given style.  If
-        // a NumberFormatInfo isn't specified, the current culture's
-        // NumberFormatInfo is assumed.
-        //
+        public static long Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
+
         public static long Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt64(s, style, NumberFormatInfo.GetInstance(provider));
+            if (s is null) { ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s); }
+            return Parse(s.AsSpan(), style, provider);
         }
 
         public static long Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseInt64(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<long>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse([NotNullWhen(true)] string? s, out long result)
-        {
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
+        public static bool TryParse([NotNullWhen(true)] string? s, out long result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-            return Number.TryParseInt64IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
-
-        public static bool TryParse(ReadOnlySpan<char> s, out long result)
-        {
-            return Number.TryParseInt64IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out long result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out long result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
-            if (s == null)
+            if (s is null)
             {
                 result = 0;
                 return false;
             }
-
-            return Number.TryParseInt64(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out long result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseInt64(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         //
@@ -1426,5 +1403,25 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static long IUnaryPlusOperators<long, long>.operator +(long value) => +value;
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<long>.IsSigned => true;
+
+        static int IBinaryIntegerParseAndFormatInfo<long>.MaxDigitCount => 19; // 9_223_372_036_854_775_807
+
+        static int IBinaryIntegerParseAndFormatInfo<long>.MaxHexDigitCount => 16; // 0x7FFF_FFFF_FFFF_FFFF
+
+        static long IBinaryIntegerParseAndFormatInfo<long>.MaxValueDiv10 => MaxValue / 10;
+
+        static string IBinaryIntegerParseAndFormatInfo<long>.OverflowMessage => SR.Overflow_Int64;
+
+        static bool IBinaryIntegerParseAndFormatInfo<long>.IsGreaterThanAsUnsigned(long left, long right) => (ulong)(left) > (ulong)(right);
+
+        static long IBinaryIntegerParseAndFormatInfo<long>.MultiplyBy10(long value) => value * 10;
+
+        static long IBinaryIntegerParseAndFormatInfo<long>.MultiplyBy16(long value) => value * 16;
     }
 }

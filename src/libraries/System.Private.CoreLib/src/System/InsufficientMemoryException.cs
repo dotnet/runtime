@@ -40,6 +40,7 @@ namespace System
             HResult = HResults.COR_E_INSUFFICIENTMEMORY;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private InsufficientMemoryException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

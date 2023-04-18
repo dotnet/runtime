@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class T
 {
@@ -27,7 +28,8 @@ public class T
     }
     static Object[] o = new Object[5];
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         o[1] = "1";
         o[2] = "2";

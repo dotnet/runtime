@@ -126,26 +126,25 @@ namespace System.Runtime.InteropServices
 
             bytes[byteLength] = 0;
         }
-
-        public static IntPtr AllocHGlobal(IntPtr cb)
+        public static unsafe IntPtr AllocHGlobal(nint cb)
         {
-            IntPtr pNewMem = Interop.Kernel32.LocalAlloc(Interop.Kernel32.LMEM_FIXED, (nuint)(nint)cb);
-            if (pNewMem == IntPtr.Zero)
+            void* pNewMem = Interop.Kernel32.LocalAlloc((nuint)cb);
+            if (pNewMem is null)
             {
                 throw new OutOfMemoryException();
             }
-            return pNewMem;
+            return (nint)pNewMem;
         }
 
-        public static void FreeHGlobal(IntPtr hglobal)
+        public static unsafe void FreeHGlobal(IntPtr hglobal)
         {
             if (!IsNullOrWin32Atom(hglobal))
             {
-                Interop.Kernel32.LocalFree(hglobal);
+                Interop.Kernel32.LocalFree((void*)hglobal);
             }
         }
 
-        public static IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
+        public static unsafe IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
         {
             if (pv == IntPtr.Zero)
             {
@@ -154,12 +153,12 @@ namespace System.Runtime.InteropServices
                 return AllocHGlobal(cb);
             }
 
-            IntPtr pNewMem = Interop.Kernel32.LocalReAlloc(pv, (nuint)(nint)cb, Interop.Kernel32.LMEM_MOVEABLE);
-            if (pNewMem == IntPtr.Zero)
+            void* pNewMem = Interop.Kernel32.LocalReAlloc((void*)pv, (nuint)cb);
+            if (pNewMem is null)
             {
                 throw new OutOfMemoryException();
             }
-            return pNewMem;
+            return (nint)pNewMem;
         }
 
         public static IntPtr AllocCoTaskMem(int cb)

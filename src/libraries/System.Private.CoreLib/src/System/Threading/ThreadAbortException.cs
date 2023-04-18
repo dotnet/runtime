@@ -28,6 +28,7 @@ namespace System.Threading
 
         public object? ExceptionState => null;
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private ThreadAbortException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

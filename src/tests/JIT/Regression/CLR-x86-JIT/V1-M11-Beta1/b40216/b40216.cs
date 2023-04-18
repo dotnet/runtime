@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -28,7 +29,8 @@ namespace Test
         ulong Method1(AA p1, uint[] p2, ref float p4, ref float[] p5, long p6) { return 0; }
         long Method4(long p1) { return 0; }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

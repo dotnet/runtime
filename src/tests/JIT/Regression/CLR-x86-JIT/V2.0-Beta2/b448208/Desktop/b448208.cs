@@ -9,6 +9,7 @@ using System.Threading;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Collections;
+using Xunit;
 
 public class GenType1<T>
 {
@@ -27,7 +28,8 @@ public class cs1
 #pragma warning restore 0414
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

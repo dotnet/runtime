@@ -27,8 +27,12 @@
     <Compile Include="ConfigurationBindingSourceGenerator.Helpers.cs" />
     <Compile Include="ConfigurationBindingSourceGenerator.Parser.cs" />
     <Compile Include="ConstructionStrategy.cs" />
+    <Compile Include="ConfigurationSectionTypeSpec.cs" />
+    <Compile Include="ExceptionMessages.cs" />
+    <Compile Include="MethodSpecifier.cs" />
     <Compile Include="NullableSpec.cs" />
     <Compile Include="ObjectSpec.cs" />
+    <Compile Include="ParsableFromStringTypeSpec.cs" />
     <Compile Include="PopulationStrategy.cs" />
     <Compile Include="PropertySpec.cs" />
     <Compile Include="SourceGenerationSpec.cs" />

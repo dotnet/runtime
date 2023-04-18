@@ -11,6 +11,7 @@
 **
 =============================================================================*/
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System.Threading
@@ -37,6 +38,8 @@ namespace System.Threading
             HResult = HResults.COR_E_SYNCHRONIZATIONLOCK;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected SynchronizationLockException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

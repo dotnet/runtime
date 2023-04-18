@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
-  <PropertyGroup Condition="'$(BuildTargetFramework)' == 'net48'">
+  <PropertyGroup Condition="'$(BuildTargetFramework)' != '' and '$(BuildTargetFramework)' == '$(NetFrameworkCurrent)'">
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
     <!-- Filter ProjectReferences to build the best matching target framework only. -->
     <FilterTraversalProjectReferences>true</FilterTraversalProjectReferences>

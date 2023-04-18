@@ -2,23 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly test {}
+.assembly 'lur_01' {}
 
 
 // The loop sould get unrolled and the else ran twice.
 // In the origial bug there was a fall through with the if.
 
 
-.class test extends [mscorlib]System.Object
+.class public test extends [mscorlib]System.Object
 {
 
 .method public static int32 main()
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .locals init (float32 V_0,
            float32 V_1,

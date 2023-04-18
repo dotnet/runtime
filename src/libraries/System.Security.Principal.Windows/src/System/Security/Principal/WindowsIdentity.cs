@@ -320,6 +320,8 @@ namespace System.Security.Principal
             _safeTokenHandle = DuplicateAccessToken(userToken);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public WindowsIdentity(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();

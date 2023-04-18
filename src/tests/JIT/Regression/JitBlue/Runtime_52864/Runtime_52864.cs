@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 
 using Point = System.Numerics.Vector2;
+using Xunit;
 
 namespace Runtime_52864
 {
@@ -65,7 +66,8 @@ namespace Runtime_52864
             );
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             returnVal     = 100;
             Random random = new Random(Seed);

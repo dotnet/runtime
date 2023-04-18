@@ -127,7 +127,7 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfpixel4a'
 
-  # run mono iOS scenarios and maui iOS scenarios
+  # run mono iOS scenarios scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
@@ -135,9 +135,6 @@ jobs:
       runtimeFlavor: mono
       platforms:
         - osx_x64
-      variables:
-        - name: mauiVersion
-          value: $[ dependencies.Build_ios_arm64_release_MACiOSAndroidMauiNet7.outputs['getMauiVersion.mauiVersion'] ]
       jobParameters:
         testGroup: perf
         runtimeType: iOSMono
@@ -146,7 +143,6 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
         iOSLlvmBuild: False
-        additionalSetupParameters: "--mauiversion $(mauiVersion)"
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -155,9 +151,6 @@ jobs:
       runtimeFlavor: mono
       platforms:
         - osx_x64
-      variables:
-        - name: mauiVersion
-          value: $[ dependencies.Build_ios_arm64_release_MACiOSAndroidMauiNet7.outputs['getMauiVersion.mauiVersion'] ]
       jobParameters:
         testGroup: perf
         runtimeType: iOSMono
@@ -166,28 +159,6 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
         iOSLlvmBuild: True
-        additionalSetupParameters: "--mauiversion $(mauiVersion)"
-
-  # run maui iOS scenarios for net6 (Maui doesn't need Llmv true build (for net6))
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-        - osx_x64
-      variables:
-        - name: mauiVersion
-          value: $[ dependencies.Build_ios_arm64_release_MACiOSAndroidMauiNet6.outputs['getMauiVersion.mauiVersion'] ]
-      jobParameters:
-        testGroup: perf
-        runtimeType: iOSMobileNet6
-        projectFile: ios_scenarios_net6.proj
-        runKind: ios_scenarios_net6
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perfiphone12mini'
-        iOSLlvmBuild: False
-        additionalSetupParameters: "--mauiversion $(mauiVersion)"
 
   # run mono microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -367,60 +338,3 @@ jobs:
   #      extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
   #      extraStepsParameters:
   #        name: MonoRuntimePacks
-
-  # build maui app net7.0
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-      - ios_arm64
-      jobParameters:
-      # Uncomment to reenable package replacement for main
-        #dependsOn:
-        #  - Build_android_arm_release_Maui_Packs_Mono
-        #  - Build_android_arm64_release_Maui_Packs_Mono
-        #  - Build_android_x86_release_Maui_Packs_Mono
-        #  - Build_android_x64_release_Maui_Packs_Mono
-        #  - Build_maccatalyst_x64_release_Maui_Packs_Mono
-        #  - Build_iossimulator_x64_release_Maui_Packs_Mono
-        #  - Build_ios_arm64_release_Maui_Packs_Mono
-        buildArgs: -s mono -c $(_BuildConfig)
-        nameSuffix: MACiOSAndroidMauiNet7
-        isOfficialBuild: false
-        pool:
-          vmImage: 'macos-12'
-        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps-net7.yml
-        extraStepsParameters:
-          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-          includeRootFolder: true
-          displayName: MAC, iOS, and Android Maui Artifacts Net7
-          artifactName: MACiOSAndroidMauiArmNet7
-          archiveExtension: '.tar.gz'
-          archiveType: tar
-          tarCompression: gz
-
-    # build maui app net6.0
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-      - ios_arm64
-      jobParameters:
-        buildArgs: -s mono -c $(_BuildConfig)
-        nameSuffix: MACiOSAndroidMauiNet6
-        isOfficialBuild: false
-        pool:
-          vmImage: 'macos-12'
-        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps-net6.yml
-        extraStepsParameters:
-          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-          includeRootFolder: true
-          displayName: MAC, iOS, and Android Maui Artifacts Net6
-          artifactName: MACiOSAndroidMauiArmNet6
-          archiveExtension: '.tar.gz'
-          archiveType: tar
-          tarCompression: gz

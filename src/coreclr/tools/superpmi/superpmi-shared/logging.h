@@ -20,6 +20,9 @@
 #define LogVerbose(...) LogMessage(LOGLEVEL_VERBOSE, __VA_ARGS__)
 #define LogDebug(...) LogMessage(LOGLEVEL_DEBUG, __VA_ARGS__)
 
+#define LogPassThroughStdout(...) LogMessage(LOGLEVEL_PASSTHROUGH_STDOUT, __VA_ARGS__)
+#define LogPassThroughStderr(...) LogMessage(LOGLEVEL_PASSTHROUGH_STDERR, __VA_ARGS__)
+
 #define LogIssue(issue, msg, ...) IssueLogger::LogIssueHelper(__FUNCTION__, __FILE__, __LINE__, issue, msg, __VA_ARGS__)
 
 // Captures the exception message before throwing so we can log it at the point of occurrence
@@ -33,13 +36,15 @@
 // These are specified as flags so subsets of the logging functionality can be enabled/disabled at once
 enum LogLevel : UINT32
 {
-    LOGLEVEL_ERROR   = 0x00000001, // Internal fatal errors that are non-recoverable
-    LOGLEVEL_WARNING = 0x00000002, // Internal conditions that are unusual, but not serious
-    LOGLEVEL_MISSING = 0x00000004, // Failures to due to missing JIT-EE details
-    LOGLEVEL_ISSUE   = 0x00000008, // Issues found with the JIT, e.g. asm diffs, asserts
-    LOGLEVEL_INFO    = 0x00000010, // Notifications/summaries, e.g. 'Loaded 5  Jitted 4  FailedCompile 1'
-    LOGLEVEL_VERBOSE = 0x00000020, // Status messages, e.g. 'Jit startup took 151.12ms'
-    LOGLEVEL_DEBUG   = 0x00000040  // Detailed output that's only useful for SuperPMI debugging
+    LOGLEVEL_ERROR              = 0x00000001, // Internal fatal errors that are non-recoverable
+    LOGLEVEL_WARNING            = 0x00000002, // Internal conditions that are unusual, but not serious
+    LOGLEVEL_MISSING            = 0x00000004, // Failures to due to missing JIT-EE details
+    LOGLEVEL_ISSUE              = 0x00000008, // Issues found with the JIT, e.g. asm diffs, asserts
+    LOGLEVEL_INFO               = 0x00000010, // Notifications/summaries, e.g. 'Loaded 5  Jitted 4  FailedCompile 1'
+    LOGLEVEL_VERBOSE            = 0x00000020, // Status messages, e.g. 'Jit startup took 151.12ms'
+    LOGLEVEL_DEBUG              = 0x00000040, // Detailed output that's only useful for SuperPMI debugging
+    LOGLEVEL_PASSTHROUGH_STDOUT = 0x00000080, // Special: pass through parallel SuperPMI stdout
+    LOGLEVEL_PASSTHROUGH_STDERR = 0x00000100  // Special: pass through parallel SuperPMI stderr
 };
 
 // Preset log level combinations
@@ -77,6 +82,10 @@ public:
     static UINT32 GetLogLevel()
     {
         return s_logLevel;
+    }
+    static bool IsPassThrough(LogLevel level)
+    {
+        return (level == LOGLEVEL_PASSTHROUGH_STDOUT) || (level == LOGLEVEL_PASSTHROUGH_STDERR);
     }
 
     // Return true if all specified log levels are enabled.

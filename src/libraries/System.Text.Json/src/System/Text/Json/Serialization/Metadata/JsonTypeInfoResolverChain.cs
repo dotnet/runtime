@@ -1,12 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-
 namespace System.Text.Json.Serialization.Metadata
 {
-    [DebuggerDisplay("{DebuggerDisplay,nq}")]
-    internal class JsonTypeInfoResolverChain : ConfigurationList<IJsonTypeInfoResolver>, IJsonTypeInfoResolver
+    internal class JsonTypeInfoResolverChain : ConfigurationList<IJsonTypeInfoResolver>, IJsonTypeInfoResolver, IBuiltInJsonTypeInfoResolver
     {
         public JsonTypeInfoResolverChain() : base(null) { }
         public override bool IsReadOnly => true;
@@ -44,23 +41,33 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal string DebuggerDisplay
+        bool IBuiltInJsonTypeInfoResolver.IsCompatibleWithOptions(JsonSerializerOptions options)
         {
-            get
+            foreach (IJsonTypeInfoResolver component in _list)
             {
-                var sb = new StringBuilder("[");
-                foreach (IJsonTypeInfoResolver resolver in _list)
+                if (!component.IsCompatibleWithOptions(options))
                 {
-                    sb.Append(resolver.GetType().Name);
-                    sb.Append(", ");
+                    return false;
                 }
-
-                if (_list.Count > 0)
-                    sb.Length -= 2;
-
-                sb.Append(']');
-                return sb.ToString();
             }
+
+            return true;
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder("[");
+            foreach (IJsonTypeInfoResolver resolver in _list)
+            {
+                sb.Append(resolver);
+                sb.Append(", ");
+            }
+
+            if (_list.Count > 0)
+                sb.Length -= 2;
+
+            sb.Append(']');
+            return sb.ToString();
         }
     }
 }

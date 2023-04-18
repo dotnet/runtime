@@ -16,6 +16,7 @@
     -->
     <type fullname="Internal.Runtime.InteropServices.ComponentActivator">
       <method name="LoadAssembly" />
+      <method name="LoadAssemblyBytes" />
       <method name="LoadAssemblyAndGetFunctionPointer" />
     </type>
   </assembly>
