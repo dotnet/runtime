@@ -60,8 +60,7 @@ jobs:
     platforms:
       - iossimulator_x64
       - tvossimulator_x64
-      - ${{ if eq(variables['isRollingBuild'], true) }}:
-        - iossimulator_arm64
+      - iossimulator_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
