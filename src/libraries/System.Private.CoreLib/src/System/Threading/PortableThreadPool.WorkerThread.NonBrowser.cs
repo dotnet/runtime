@@ -55,12 +55,12 @@ namespace System.Threading
                     bool spinWait = true;
                     while (semaphore.Wait(ThreadPoolThreadTimeoutMs, spinWait))
                     {
-                            WorkerDoWork(threadPoolInstance, ref spinWait);
+                        WorkerDoWork(threadPoolInstance, ref spinWait);
                     }
 
                     if (WorkerTimedOutMaybeStop(threadPoolInstance, threadAdjustmentLock))
                     {
-                            break;
+                        break;
                     }
                 }
             }
