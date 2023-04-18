@@ -17938,7 +17938,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_blendvps:
         case INS_blendvpd:
         case INS_pblendvb:
-        case INS_vpabsq:
         case INS_vpsllvd:
         case INS_vpsllvq:
         case INS_vpsrlvd:
@@ -18083,10 +18082,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vinserti128:
         case INS_vinserti64x4:
         case INS_vinserti32x8:
-        case INS_vpmaxuq:
-        case INS_vpmaxsq:
-        case INS_vpminuq:
-        case INS_vpminsq:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_3C;
             break;
