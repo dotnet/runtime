@@ -4046,6 +4046,9 @@
   <data name="PlatformNotSupported_NonZeroLowerBound" xml:space="preserve">
     <value>Arrays with non-zero lower bounds are not supported.</value>
   </data>
+  <data name="PlatformNotSupported_HybridGlobalization" xml:space="preserve">
+    <value>{0} is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+  </data>
   <data name="NotSupported_BodyRemoved" xml:space="preserve">
     <value>The body of this method was removed by the AOT compiler because it's not callable.</value>
   </data>

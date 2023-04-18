@@ -2645,7 +2645,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                     /* Get hold of the next register bit */
 
-                    tmpMask = genFindLowestReg(regMask);
+                    tmpMask = genFindLowestBit(regMask);
                     assert(tmpMask);
 
                     /* Remember the new state of this register */
@@ -2694,7 +2694,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                     /* Get hold of the next register bit */
 
-                    tmpMask = genFindLowestReg(regMask);
+                    tmpMask = genFindLowestBit(regMask);
                     assert(tmpMask);
 
                     /* Remember the new state of this register */
@@ -4627,7 +4627,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
     while (regMask)
     {
         // Get hold of the next register bit.
-        regMaskTP tmpMask = genFindLowestReg(regMask);
+        regMaskTP tmpMask = genFindLowestBit(regMask);
         assert(tmpMask);
 
         // Remember the new state of this register.

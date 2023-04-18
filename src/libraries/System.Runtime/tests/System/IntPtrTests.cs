@@ -287,8 +287,14 @@ namespace System.Tests
                 yield return new object[] { (nint)4567, "D99\09", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
                 yield return new object[] { (nint)(-4567), "D99\09", defaultFormat, "-000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
 
+                yield return new object[] { (nint)0, "x", defaultFormat, "0" };
                 yield return new object[] { (nint)0x2468, "x", defaultFormat, "2468" };
                 yield return new object[] { (nint)(-0x2468), "x", defaultFormat, Is64Bit ? "ffffffffffffdb98" : "ffffdb98" };
+
+                yield return new object[] { (nint)0, "b", defaultFormat, "0" };
+                yield return new object[] { (nint)0x2468, "b", defaultFormat, "10010001101000" };
+                yield return new object[] { (nint)(-0x2468), "b", defaultFormat, Is64Bit ? "1111111111111111111111111111111111111111111111111101101110011000" : "11111111111111111101101110011000" };
+
                 yield return new object[] { (nint)2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
             }
 

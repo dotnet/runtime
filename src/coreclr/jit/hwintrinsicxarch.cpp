@@ -548,6 +548,13 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
         case NI_AVX2_ShiftLeftLogical:
         case NI_AVX2_ShiftRightArithmetic:
         case NI_AVX2_ShiftRightLogical:
+        case NI_AVX512F_ShiftLeftLogical:
+        case NI_AVX512F_ShiftRightArithmetic:
+        case NI_AVX512F_ShiftRightLogical:
+        case NI_AVX512F_VL_ShiftRightArithmetic:
+        case NI_AVX512BW_ShiftLeftLogical:
+        case NI_AVX512BW_ShiftRightArithmetic:
+        case NI_AVX512BW_ShiftRightLogical:
         {
             impSpillSideEffect(true,
                                verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
@@ -1839,6 +1846,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_SSE2_LoadVector128:
         case NI_AVX_LoadVector256:
         case NI_AVX512F_LoadVector512:
+        case NI_AVX512BW_LoadVector512:
         case NI_Vector128_Load:
         case NI_Vector256_Load:
         case NI_Vector512_Load:
@@ -1961,8 +1969,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsLong(simdBaseType))
             {
-                // TODO-XARCH-CQ: We should support long/ulong multiplication
+                assert((simdSize == 16) || (simdSize == 32));
+
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
+                {
+                    // TODO-XARCH-CQ: We should support long/ulong multiplication
+                    break;
+                }
+
+#if defined(TARGET_X86)
+                // TODO-XARCH-CQ: We need to support 64-bit CreateBroadcast
                 break;
+#endif // TARGET_X86
             }
 
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
@@ -2117,10 +2135,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
+            if (varTypeIsByte(simdBaseType))
             {
-                // byte, sbyte, long, and ulong would require more work to support
+                // byte and sbyte would require more work to support
                 break;
+            }
+
+            if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
+            {
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                {
+                    // long, ulong, and double would require more work to support
+                    break;
+                }
             }
 
             if ((simdSize != 32) || compExactlyDependsOn(InstructionSet_AVX2))
@@ -2256,6 +2283,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_SSE2_Store:
         case NI_AVX_Store:
         case NI_AVX512F_Store:
+        case NI_AVX512BW_Store:
         {
             assert(retType == TYP_VOID);
             assert(sig->numArgs == 2);

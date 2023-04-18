@@ -2228,8 +2228,8 @@ size_t      gc_heap::g_bpromoted;
 #endif //MULTIPLE_HEAPS
 
 size_t      gc_heap::card_table_element_layout[total_bookkeeping_elements + 1];
+uint8_t*    gc_heap::bookkeeping_start = nullptr;
 #ifdef USE_REGIONS
-uint8_t*    gc_heap::bookkeeping_covered_start = nullptr;
 uint8_t*    gc_heap::bookkeeping_covered_committed = nullptr;
 size_t      gc_heap::bookkeeping_sizes[total_bookkeeping_elements];
 #endif //USE_REGIONS
@@ -8378,6 +8378,9 @@ class card_table_info
 {
 public:
     unsigned    recount;
+    size_t      size;
+    uint32_t*   next_card_table;
+
     uint8_t*    lowest_address;
     uint8_t*    highest_address;
     short*      brick_table;
@@ -8391,10 +8394,10 @@ public:
 #ifdef BACKGROUND_GC
     uint32_t*   mark_array;
 #endif //BACKGROUND_GC
-
-    size_t      size;
-    uint32_t*   next_card_table;
 };
+
+static_assert(offsetof(dac_card_table_info, size) == offsetof(card_table_info, size), "DAC card_table_info layout mismatch");
+static_assert(offsetof(dac_card_table_info, next_card_table) == offsetof(card_table_info, next_card_table), "DAC card_table_info layout mismatch");
 
 //These are accessors on untranslated cardtable
 inline
@@ -8623,6 +8626,9 @@ void gc_heap::clear_mark_array (uint8_t* from, uint8_t* end)
 inline
 uint32_t*& card_table_next (uint32_t* c_table)
 {
+    // NOTE:  The dac takes a dependency on card_table_info being right before c_table.
+    //        It's 100% ok to change this implementation detail as long as a matching change
+    //        is made to DacGCBookkeepingEnumerator::Init in daccess.cpp.
     return ((card_table_info*)((uint8_t*)c_table - sizeof (card_table_info)))->next_card_table;
 }
 
@@ -8907,21 +8913,21 @@ bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
             uint8_t* commit_end = nullptr;
             if (initial_commit)
             {
-                required_begin = bookkeeping_covered_start + ((i == card_table_element) ? 0 : card_table_element_layout[i]);
-                required_end = bookkeeping_covered_start + card_table_element_layout[i] + new_sizes[i];
+                required_begin = bookkeeping_start + ((i == card_table_element) ? 0 : card_table_element_layout[i]);
+                required_end = bookkeeping_start + card_table_element_layout[i] + new_sizes[i];
                 commit_begin = align_lower_page(required_begin);
             }
             else
             {
                 assert (additional_commit);
-                required_begin = bookkeeping_covered_start + card_table_element_layout[i] + bookkeeping_sizes[i];
+                required_begin = bookkeeping_start + card_table_element_layout[i] + bookkeeping_sizes[i];
                 required_end = required_begin + new_sizes[i] - bookkeeping_sizes[i];
                 commit_begin = align_on_page(required_begin);
             }
             assert (required_begin <= required_end);
             commit_end = align_on_page(required_end);
 
-            commit_end = min (commit_end, align_lower_page(bookkeeping_covered_start + card_table_element_layout[i + 1]));
+            commit_end = min (commit_end, align_lower_page(bookkeeping_start + card_table_element_layout[i + 1]));
             commit_begin = min (commit_begin, commit_end);
             assert (commit_begin <= commit_end);
 
@@ -8996,9 +9002,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
 
     size_t alloc_size = card_table_element_layout[total_bookkeeping_elements];
     uint8_t* mem = (uint8_t*)GCToOSInterface::VirtualReserve (alloc_size, 0, virtual_reserve_flags);
-#ifdef USE_REGIONS
-    bookkeeping_covered_start = mem;
-#endif //USE_REGIONS
+    bookkeeping_start = mem;
 
     if (!mem)
         return 0;
@@ -9495,6 +9499,8 @@ void gc_heap::copy_brick_card_table()
     uint32_t* ct = &g_gc_card_table[card_word (gcard_of (g_gc_lowest_address))];
     own_card_table (ct);
     card_table = translate_card_table (ct);
+    bookkeeping_start = (uint8_t*)ct - sizeof(card_table_info);
+    card_table_size(ct) = card_table_element_layout[total_bookkeeping_elements];
     /* End of global lock */
     highest_address = card_table_highest_address (ct);
     lowest_address = card_table_lowest_address (ct);
@@ -13727,8 +13733,6 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
                                            ((size_t)1 << min_segment_size_shr),
                                            &g_gc_lowest_address, &g_gc_highest_address))
             return E_OUTOFMEMORY;
-
-        bookkeeping_covered_start = global_region_allocator.get_start();
 
         if (!allocate_initial_regions(number_of_heaps))
             return E_OUTOFMEMORY;
@@ -49291,13 +49295,20 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 
     assert(gcDacVars != nullptr);
     *gcDacVars = {};
-    // Note: these version numbers are not actually checked by SOS, so if you change
-    // the GC in a way that makes it incompatible with SOS, please change
-    // SOS_BREAKING_CHANGE_VERSION in both the runtime and the diagnostics repo
-    gcDacVars->major_version_number = 1;
+    // Note: These version numbers do not need to be checked in the .Net dac/SOS because
+    // we always match the compiled dac and GC to the version used.  NativeAOT's SOS may
+    // work differently than .Net SOS.  When making breaking changes here you may need to
+    // find NativeAOT's equivalent of SOS_BREAKING_CHANGE_VERSION and increment it.
+    gcDacVars->major_version_number = 2;
     gcDacVars->minor_version_number = 0;
+    gcDacVars->total_bookkeeping_elements = total_bookkeeping_elements;
+    gcDacVars->card_table_info_size = sizeof(card_table_info);
+
 #ifdef USE_REGIONS
     gcDacVars->minor_version_number |= 1;
+    gcDacVars->count_free_region_kinds = count_free_region_kinds;
+    gcDacVars->global_regions_to_decommit = reinterpret_cast<dac_region_free_list**>(&gc_heap::global_regions_to_decommit);
+    gcDacVars->global_free_huge_regions = reinterpret_cast<dac_region_free_list**>(&gc_heap::global_free_huge_regions);
 #endif //USE_REGIONS
 #ifndef BACKGROUND_GC
     gcDacVars->minor_version_number |= 2;
@@ -49315,10 +49326,15 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #endif //BACKGROUND_GC
 #ifndef MULTIPLE_HEAPS
     gcDacVars->ephemeral_heap_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::ephemeral_heap_segment);
+#ifdef USE_REGIONS
+    gcDacVars->free_regions = reinterpret_cast<dac_region_free_list**>(&gc_heap::free_regions);
+#endif
 #ifdef BACKGROUND_GC
     gcDacVars->mark_array = &gc_heap::mark_array;
     gcDacVars->background_saved_lowest_address = &gc_heap::background_saved_lowest_address;
     gcDacVars->background_saved_highest_address = &gc_heap::background_saved_highest_address;
+    gcDacVars->freeable_soh_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::freeable_soh_segment);
+    gcDacVars->freeable_uoh_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::freeable_uoh_segment);
     gcDacVars->next_sweep_obj = &gc_heap::next_sweep_obj;
 #ifdef USE_REGIONS
     gcDacVars->saved_sweep_ephemeral_seg = 0;
@@ -49331,6 +49347,8 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->mark_array = 0;
     gcDacVars->background_saved_lowest_address = 0;
     gcDacVars->background_saved_highest_address = 0;
+    gcDacVars->freeable_soh_segment = 0;
+    gcDacVars->freeable_uoh_segment = 0;
     gcDacVars->next_sweep_obj = 0;
     gcDacVars->saved_sweep_ephemeral_seg = 0;
     gcDacVars->saved_sweep_ephemeral_start = 0;
@@ -49357,4 +49375,5 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->gc_heap_field_offsets = reinterpret_cast<int**>(&gc_heap_field_offsets);
 #endif // MULTIPLE_HEAPS
     gcDacVars->generation_field_offsets = reinterpret_cast<int**>(&generation_field_offsets);
+    gcDacVars->bookkeeping_start = &gc_heap::bookkeeping_start;
 }

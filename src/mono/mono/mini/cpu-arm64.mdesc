@@ -533,6 +533,11 @@ create_scalar_unsafe_int: dest:x src1:i len:4
 create_scalar_unsafe_float: dest:x src1:f len:4
 arm64_bic: dest:x src1:x src2:x len:4
 bitwise_select: dest:x src1:x src2:x src3:x len:12
+arm64_xtn: dest:x src1:x len:4
+arm64_xtn2: dest:x src1:x src2:x len:4 clob:1
+arm64_fcvtn: dest:x src1:x len:4
+arm64_fcvtn2: dest:x src1:x src2:x len:4 clob:1
+xunop: dest:x src1:x len:4
 arm64_ushl: dest:x src1:x src2:x len:4
 arm64_ext_imm: dest:x src1:x src2:x len:4
 
