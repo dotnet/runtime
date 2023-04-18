@@ -537,7 +537,7 @@ namespace System.Tests
         [Theory]
         [InlineData(".GlobalStructStartingWithDot")]
         [InlineData(" GlobalStructStartingWithSpace")]
-        public void GetTypeByName_NonRountripable(string typeName)
+        public void GetTypeByName_NonRoundtrippable(string typeName)
         {
             Type type = Assembly.Load("System.TestStructs").GetTypes().Single((t) => t.FullName == typeName);
             string assemblyQualifiedName = type.AssemblyQualifiedName;
