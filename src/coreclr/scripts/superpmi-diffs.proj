@@ -47,10 +47,13 @@
     <!-- Default to asmdiffs -->
     <SuperPmiDiffType Condition=" '$(_SuperPmiDiffType)' == '' ">asmdiffs</SuperPmiDiffType>
     <SuperPmiDiffType Condition=" '$(_SuperPmiDiffType)' != '' ">$(_SuperPmiDiffType)</SuperPmiDiffType>
+
+    <SuperPmiBaseJitOptionsArg Condition="'$(_SuperPmiBaseJitOptions)' != ''">-base_jit_options &quot;$(_SuperPmiBaseJitOptions)&quot;</SuperPmiBaseJitOptionsArg>
+    <SuperPmiDiffJitOptionsArg Condition="'$(_SuperPmiDiffJitOptions)' != ''">-diff_jit_options &quot;$(_SuperPmiDiffJitOptions)&quot;</SuperPmiDiffJitOptionsArg>
   </PropertyGroup>
 
   <PropertyGroup>
-    <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi_diffs.py -type $(SuperPmiDiffType) -base_jit_directory $(ProductDirectory)\base -diff_jit_directory $(ProductDirectory)\diff -log_directory $(SuperpmiLogsLocation)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi_diffs.py -type $(SuperPmiDiffType) -base_jit_directory $(ProductDirectory)\base -diff_jit_directory $(ProductDirectory)\diff $(SuperPmiBaseJitOptionsArg) $(SuperPmiDiffJitOptionsArg) -log_directory $(SuperpmiLogsLocation)</WorkItemCommand>
     <WorkItemTimeout>2:00</WorkItemTimeout>
   </PropertyGroup>
 

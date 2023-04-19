@@ -10,13 +10,13 @@ import {
     set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_b8, set_arg_date,
     set_arg_length, get_arg, get_signature_arg1_type, get_signature_arg2_type, js_to_cs_marshalers,
     get_signature_res_type, bound_js_function_symbol, set_arg_u16, array_element_size,
-    get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, MarshalerType, set_arg_i64_big, set_arg_intptr, IDisposable,
+    get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, set_arg_i64_big, set_arg_intptr, IDisposable,
     set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize
 } from "./marshal";
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
 import { _zero_region } from "./memory";
 import { js_string_to_mono_string_root } from "./strings";
-import { mono_assert, GCHandle, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs } from "./types";
+import { mono_assert, GCHandle, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types";
 import { TypedArray } from "./types/emscripten";
 
 export function initialize_marshalers_to_cs(): void {
@@ -69,10 +69,11 @@ export function bind_arg_marshal_to_cs(sig: JSMarshalerType, marshaler_type: Mar
         marshaler_type = marshaler_type_res;
     }
     const converter = get_marshaler_to_cs_by_type(marshaler_type)!;
+    const element_type = get_signature_arg1_type(sig);
 
     const arg_offset = index * JavaScriptMarshalerArgSize;
     return (args: JSMarshalerArguments, value: any) => {
-        converter(<any>args + arg_offset, value, sig, res_marshaler, arg1_marshaler, arg2_marshaler, arg3_marshaler);
+        converter(<any>args + arg_offset, value, element_type, res_marshaler, arg1_marshaler, arg2_marshaler, arg3_marshaler);
     };
 }
 
@@ -232,7 +233,7 @@ function _marshal_null_to_cs(arg: JSMarshalerArgument) {
     set_arg_type(arg, MarshalerType.None);
 }
 
-function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: JSMarshalerType, res_converter?: MarshalerToCs, arg1_converter?: MarshalerToJs, arg2_converter?: MarshalerToJs, arg3_converter?: MarshalerToJs): void {
+function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: MarshalerType, res_converter?: MarshalerToCs, arg1_converter?: MarshalerToJs, arg2_converter?: MarshalerToJs, arg3_converter?: MarshalerToJs): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
         return;
@@ -292,7 +293,7 @@ export class TaskCallbackHolder implements IDisposable {
     }
 }
 
-function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: JSMarshalerType, res_converter?: MarshalerToCs) {
+function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: MarshalerType, res_converter?: MarshalerToCs) {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
         return;
@@ -443,9 +444,8 @@ function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
     }
 }
 
-function _marshal_array_to_cs(arg: JSMarshalerArgument, value: Array<any> | TypedArray, sig?: JSMarshalerType): void {
-    mono_assert(!!sig, "Expected valid sig parameter");
-    const element_type = get_signature_arg1_type(sig);
+function _marshal_array_to_cs(arg: JSMarshalerArgument, value: Array<any> | TypedArray, element_type?: MarshalerType): void {
+    mono_assert(!!element_type, "Expected valid element_type parameter");
     marshal_array_to_cs_impl(arg, value, element_type);
 }
 
@@ -510,10 +510,10 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
     }
 }
 
-function _marshal_span_to_cs(arg: JSMarshalerArgument, value: Span, sig?: JSMarshalerType): void {
-    mono_assert(!!sig, "Expected valid sig parameter");
+function _marshal_span_to_cs(arg: JSMarshalerArgument, value: Span, element_type?: MarshalerType): void {
+    mono_assert(!!element_type, "Expected valid element_type parameter");
     mono_assert(!value.isDisposed, "ObjectDisposedException");
-    checkViewType(sig, value._viewType);
+    checkViewType(element_type, value._viewType);
 
     set_arg_type(arg, MarshalerType.Span);
     set_arg_intptr(arg, value._pointer);
@@ -521,19 +521,18 @@ function _marshal_span_to_cs(arg: JSMarshalerArgument, value: Span, sig?: JSMars
 }
 
 // this only supports round-trip
-function _marshal_array_segment_to_cs(arg: JSMarshalerArgument, value: ArraySegment, sig?: JSMarshalerType): void {
-    mono_assert(!!sig, "Expected valid sig parameter");
+function _marshal_array_segment_to_cs(arg: JSMarshalerArgument, value: ArraySegment, element_type?: MarshalerType): void {
+    mono_assert(!!element_type, "Expected valid element_type parameter");
     const gc_handle = assert_not_disposed(value);
     mono_assert(gc_handle, "Only roundtrip of ArraySegment instance created by C#");
-    checkViewType(sig, value._viewType);
+    checkViewType(element_type, value._viewType);
     set_arg_type(arg, MarshalerType.ArraySegment);
     set_arg_intptr(arg, value._pointer);
     set_arg_length(arg, value.length);
     set_gc_handle(arg, gc_handle);
 }
 
-function checkViewType(sig: JSMarshalerType, viewType: MemoryViewType) {
-    const element_type = get_signature_arg1_type(sig);
+function checkViewType(element_type: MarshalerType, viewType: MemoryViewType) {
     if (element_type == MarshalerType.Byte) {
         mono_assert(MemoryViewType.Byte == viewType, "Expected MemoryViewType.Byte");
     }

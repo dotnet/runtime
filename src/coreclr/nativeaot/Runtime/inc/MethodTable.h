@@ -202,7 +202,7 @@ public:
     enum Kinds
     {
         CanonicalEEType         = 0x00000000,
-        ClonedEEType            = 0x00010000,
+        // unused               = 0x00010000,
         ParameterizedEEType     = 0x00020000,
         GenericTypeDefEEType    = 0x00030000,
     };
@@ -215,9 +215,6 @@ public:
     PTR_PTR_Code get_SlotPtr(uint16_t slotNumber);
 
     Kinds get_Kind();
-
-    bool IsCloned()
-        { return get_Kind() == ClonedEEType; }
 
     bool IsRelatedTypeViaIAT()
         { return (m_uFlags & RelatedTypeViaIATFlag) != 0; }
@@ -242,8 +239,6 @@ public:
 
     bool IsInterface()
         { return GetElementType() == ElementType_Interface; }
-
-    MethodTable * get_CanonicalEEType();
 
     MethodTable * get_RelatedParameterType();
 
@@ -309,15 +304,6 @@ public:
             return true;
 
         MethodTable * pThisEEType = this;
-
-        if (pThisEEType->IsCloned())
-            pThisEEType = pThisEEType->get_CanonicalEEType();
-
-        if (pOtherEEType->IsCloned())
-            pOtherEEType = pOtherEEType->get_CanonicalEEType();
-
-        if (pThisEEType == pOtherEEType)
-            return true;
 
         if (pThisEEType->IsParameterizedType() && pOtherEEType->IsParameterizedType())
         {

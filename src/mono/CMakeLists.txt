@@ -8,6 +8,7 @@ project(mono)
 
 include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 if (MSVC)
   # Also set by configurecompiler.cmake, which isn't used by mono yet
@@ -712,7 +713,7 @@ elseif(HOST_ANDROID)
 elseif(HOST_LINUX)
   include(FindPkgConfig)
   if(CROSS_ROOTFS)
-    set(ENV{PKG_CONFIG_ICU_UC_INCLUDEDIR} "${CROSS_ROOTFS}/usr/include")
+    set(ENV{PKG_CONFIG_SYSROOT_DIR} "${CROSS_ROOTFS}")
   endif(CROSS_ROOTFS)
   pkg_check_modules(ICU icu-uc)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
