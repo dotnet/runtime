@@ -453,11 +453,11 @@ namespace System
                     case 'h':
                         tokenLen = ParseRepeatPattern(format, i, ch);
                         hour12 = dateTime.Hour;
-                        if (hour12 >= 12)
+                        if (hour12 > 12)
                         {
                             hour12 -= 12;
                         }
-                        if (hour12 == 0)
+                        else if (hour12 == 0)
                         {
                             hour12 = 12;
                         }
