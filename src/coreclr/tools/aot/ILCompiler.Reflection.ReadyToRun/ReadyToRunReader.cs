@@ -1443,6 +1443,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                         case Machine.Amd64:
                         case Machine.Arm64:
+                        case (Machine) 0x6264: /* LoongArch64 */
                             entrySize = 8;
                             break;
 
