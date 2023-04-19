@@ -58,7 +58,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void DotnetInstance()
         {
-#if ENABLE_LEGACY_JS_INTEROP
+#if !DISABLE_LEGACY_JS_INTEROP
             Assert.True(JSHost.DotnetInstance.HasProperty("MONO"));
             Assert.Equal("object", JSHost.DotnetInstance.GetTypeOfProperty("MONO"));
 #endif

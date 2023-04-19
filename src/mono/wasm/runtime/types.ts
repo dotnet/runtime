@@ -371,6 +371,7 @@ export type EarlyImports = {
     isShell: boolean,
     isWeb: boolean,
     isPThread: boolean,
+    disableLegacyJsInterop: boolean,
     quit_: Function,
     ExitStatus: ExitStatusError,
     requirePromise: Promise<Function>
