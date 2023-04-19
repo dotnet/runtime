@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -9,9 +10,26 @@ using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    // the public methods are protected from trimming by ILLink.Descriptors.LegacyJsInterop.xml
+    internal static unsafe partial class LegacyExportsTrimmingRoot
+    {
+        // the public methods are used from JavaScript, but the trimmer doesn't know about it.
+        // It's protected by DynamicDependencyAttribute on JSFunctionBinding.BindJSFunction.
+        public static void TrimWhenNotWasmEnableLegacyJsInterop()
+        {
+            // if MSBuild property WasmEnableLegacyJsInterop==false this call would be substituted away and LegacyExports would be trimmed.
+            LegacyExports.PreventTrimming();
+        }
+    }
+
     internal static unsafe partial class LegacyExports
     {
+        // the public methods of this class are used from JavaScript, but the trimmer doesn't know about it.
+        // They are protected by LegacyExportsTrimmingRoot.PreventTrimming and JSFunctionBinding.BindJSFunction.
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(LegacyExports))]
+        internal static void PreventTrimming()
+        {
+        }
+
         public static void GetCSOwnedObjectByJSHandleRef(nint jsHandle, int shouldAddInflight, out JSObject? result)
         {
             lock (JSHostImplementation.s_csOwnedObjects)

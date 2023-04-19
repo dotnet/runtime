@@ -244,7 +244,7 @@ extends:
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             extraStepsParameters:
               creator: dotnet-bot
-              testBuildArgs: nativeaot tree nativeaot /p:BuildNativeAotFrameworkObjects=true
+              testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;" /p:BuildNativeAotFrameworkObjects=true'
               liveLibrariesBuildConfig: Release
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:

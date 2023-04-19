@@ -27,7 +27,7 @@ extern void mono_wasm_marshal_promise(void *data);
 typedef void (*background_job_cb)(void);
 void mono_threads_schedule_background_job (background_job_cb cb);
 
-#ifdef ENABLE_LEGACY_JS_INTEROP
+#ifndef DISABLE_LEGACY_JS_INTEROP
 extern void mono_wasm_invoke_js_with_args_ref (int js_handle, MonoString **method, MonoArray **args, int *is_exception, MonoObject **result);
 extern void mono_wasm_get_object_property_ref (int js_handle, MonoString **propertyName, int *is_exception, MonoObject **result);
 extern void mono_wasm_set_object_property_ref (int js_handle, MonoString **propertyName, MonoObject **value, int createIfNotExist, int hasOwnProperty, int *is_exception, MonoObject **result);
@@ -40,7 +40,7 @@ extern void mono_wasm_typed_array_from_ref (int ptr, int begin, int end, int byt
 
 // Blazor specific custom routines - see dotnet_support.js for backing code
 extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
-#endif /* ENABLE_LEGACY_JS_INTEROP */
+#endif /* DISABLE_LEGACY_JS_INTEROP */
 
 // HybridGlobalization
 extern void mono_wasm_change_case_invariant(MonoString **exceptionMessage, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
@@ -59,7 +59,7 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::MarshalPromise", mono_wasm_marshal_promise);
 	mono_add_internal_call ("Interop/Runtime::RegisterGCRoot", mono_wasm_register_root);
 	mono_add_internal_call ("Interop/Runtime::DeregisterGCRoot", mono_wasm_deregister_root);
-#ifdef ENABLE_LEGACY_JS_INTEROP
+#ifndef DISABLE_LEGACY_JS_INTEROP
 	// legacy
 	mono_add_internal_call ("Interop/Runtime::InvokeJSWithArgsRef", mono_wasm_invoke_js_with_args_ref);
 	mono_add_internal_call ("Interop/Runtime::GetObjectPropertyRef", mono_wasm_get_object_property_ref);
@@ -73,7 +73,7 @@ void bindings_initialize_internals (void)
 
 	// Blazor specific custom routines - see dotnet_support.js for backing code
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
-#endif /* ENABLE_LEGACY_JS_INTEROP */
+#endif /* DISABLE_LEGACY_JS_INTEROP */
 	mono_add_internal_call ("Interop/JsGlobalization::ChangeCaseInvariant", mono_wasm_change_case_invariant);
 	mono_add_internal_call ("Interop/JsGlobalization::ChangeCase", mono_wasm_change_case);
 	mono_add_internal_call ("Interop/JsGlobalization::CompareString", mono_wasm_compare_string);
