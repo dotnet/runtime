@@ -54,6 +54,8 @@ namespace System.PrivateUri.Tests
 
             Assert.Equal(@"", uri.Query);
 
+            // TODO Assert.Equal(@"", uri.QueryRfc3986);
+
             Assert.Equal(@"http", uri.Scheme);
 
             string[] ss = uri.Segments;
@@ -112,6 +114,8 @@ namespace System.PrivateUri.Tests
             Assert.Equal(80, uri.Port);
 
             Assert.Equal(@"?date=today", uri.Query);
+
+            // TODO Assert.Equal(@"date=today", uri.QueryRfc3986);
 
             Assert.Equal(@"http", uri.Scheme);
 

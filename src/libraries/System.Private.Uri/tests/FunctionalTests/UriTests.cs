@@ -138,6 +138,8 @@ namespace System.PrivateUri.Tests
 
             Assert.Equal(@"?date=today", uri.Query);
 
+            // Assert.Equal(@"date=today", uri.QueryRfc3986);
+
             Assert.Equal(@"http", uri.Scheme);
 
             string[] ss = uri.Segments;
@@ -194,6 +196,8 @@ namespace System.PrivateUri.Tests
 
             Assert.Throws<InvalidOperationException>(() => uri.Query);
 
+            // TODO Assert.Throws<InvalidOperationException>(() => uri.QueryRfc3986);
+
             Assert.Throws<InvalidOperationException>(() => uri.Scheme);
 
             Assert.Throws<InvalidOperationException>(() => uri.Segments);
@@ -245,6 +249,8 @@ namespace System.PrivateUri.Tests
             Assert.Equal(80, uri.Port);
 
             Assert.Equal(@"?date=today", uri.Query);
+
+            // TODO Assert.Equal(@"date=today", uri.QueryRfc3986);
 
             Assert.Equal(@"http", uri.Scheme);
 

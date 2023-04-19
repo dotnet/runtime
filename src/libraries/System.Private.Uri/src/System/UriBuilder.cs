@@ -17,6 +17,7 @@ namespace System
         private int _port = -1;
         private string _path = "/";
         private string _query = string.Empty;
+        private string _queryRfc3986 = string.Empty;
         private string _fragment = string.Empty;
 
         private bool _changed = true;
@@ -212,6 +213,17 @@ namespace System
                 }
 
                 _query = value ?? string.Empty;
+                _changed = true;
+            }
+        }
+
+        [AllowNull]
+        public string QueryRfc3986
+        {
+            get => _queryRfc3986;
+            set
+            {
+                _queryRfc3986 = value ?? string.Empty;
                 _changed = true;
             }
         }
