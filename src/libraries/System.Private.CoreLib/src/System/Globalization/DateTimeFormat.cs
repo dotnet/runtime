@@ -512,7 +512,7 @@ namespace System
                                 else
                                 {
                                     // No fraction to emit, so see if we should remove decimal also.
-                                    if (result.Length > 0 && result[result.Length - 1] == TChar.CastFrom('.'))
+                                    if (result.Length > 0 && result[^1] == TChar.CastFrom('.'))
                                     {
                                         result.Length--;
                                     }
@@ -1113,8 +1113,21 @@ namespace System
             var vlb = new ValueListBuilder<TChar>(destination);
             FormatCustomized(dateTime, format, dtfi, offset, ref vlb);
             bool success = Unsafe.AreSame(ref MemoryMarshal.GetReference(destination), ref MemoryMarshal.GetReference(vlb.AsSpan()));
-            Debug.Assert(success || vlb.Length > destination.Length);
-            charsWritten = success ? vlb.Length : 0;
+            if (success)
+            {
+                // The reference inside of the builder is still the destination.  That means the builder didn't need to grow to beyond
+                // the space in the destination, which means the formatting operation was successful and fully wrote the data to
+                // the destination.  All we need to do now is store how much was written.
+                charsWritten = vlb.Length;
+            }
+            else
+            {
+                // The reference inside of the builder is no longer the destination.  That means the builder needed to grow beyond
+                // the builder.  However, it's possible it grew unnecessarily, e.g. when formatting a fraction it might grow but then
+                // realize it didn't need to write any data and remove a preceding period. As such, we need to try to copy the data
+                // just in case it does actually fit.
+                success = vlb.TryCopyTo(destination, out charsWritten);
+            }
             vlb.Dispose();
             return success;
         }
