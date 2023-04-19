@@ -4500,22 +4500,9 @@ void CodeGen::genCkzero(GenTree* treeNode)
 //
 void CodeGen::genCkoverflow(GenTree* treeNode)
 {
+    // TODO: Implement this!
     assert(!"WIP");
     assert(treeNode->OperGet() == GT_CKOVERFLOW);
-
-    emitter* emit = GetEmitter();
-    GenTree* op1  = treeNode->gtGetOp1();
-    emitAttr size = EA_ATTR(genTypeSize(op1));
-
-    regNumber op1Reg = genConsumeReg(op1);
-
-    assert(emit->isGeneralRegister(op1Reg));
-
-    genConsumeRegs(op1);
-
-    emit->emitIns_R_I(INS_cmp, size, op1->GetRegNum(), 1);
-    genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flags is set throw
-                                                  // ArithmeticException
 }
 
 //------------------------------------------------------------------------

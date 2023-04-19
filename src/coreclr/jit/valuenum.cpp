@@ -12848,7 +12848,6 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
 #ifdef TARGET_ARM64
             case GT_CKZERO:
             case GT_CKOVERFLOW:
-                assert(!"CKZERO and CKOVERFLOW is not valid here.");
                 break;
 #endif // TARGET_ARM64
 

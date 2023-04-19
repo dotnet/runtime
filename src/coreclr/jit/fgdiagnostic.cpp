@@ -3300,22 +3300,23 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
         //
         GenTreeFlags flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
 
-        //if ((actualFlags & ~expectedFlags & flagsToCheck) != 0)
-        //{
-        //    // Print the tree so we can see it in the log.
-        //    printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
-        //    Compiler::fgDebugCheckDispFlags(tree, actualFlags & ~expectedFlags, GTF_DEBUG_NONE);
-        //    printf("\n");
-        //    gtDispTree(tree);
+        if ((actualFlags & ~expectedFlags & flagsToCheck) != 0)
+        {
+            // Print the tree so we can see it in the log.
+            printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
+            Compiler::fgDebugCheckDispFlags(tree, actualFlags & ~expectedFlags, GTF_DEBUG_NONE);
+            printf("\n");
+            gtDispTree(tree);
 
-        //    noway_assert(!"Extra flags on tree");
+            // TODO: Uncomment this.
+            //noway_assert(!"Extra flags on tree");
 
-        //    // Print the tree again so we can see it right after we hook up the debugger.
-        //    printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
-        //    Compiler::fgDebugCheckDispFlags(tree, actualFlags & ~expectedFlags, GTF_DEBUG_NONE);
-        //    printf("\n");
-        //    gtDispTree(tree);
-        //}
+            // Print the tree again so we can see it right after we hook up the debugger.
+            printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
+            Compiler::fgDebugCheckDispFlags(tree, actualFlags & ~expectedFlags, GTF_DEBUG_NONE);
+            printf("\n");
+            gtDispTree(tree);
+        }
     }
 }
 
