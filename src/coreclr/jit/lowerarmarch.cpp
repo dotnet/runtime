@@ -2533,12 +2533,13 @@ void Lowering::TryLowerCselToCinv(GenTreeOp* select, GenTree* cond)
 
     GenTree* trueVal       = select->gtOp1;
     GenTree* falseVal      = select->gtOp2;
-    GenTree* negatedVal    = (trueVal->gtOper == GT_NOT) ? trueVal : falseVal;
+    GenTree* negatedVal    = ((trueVal->gtOper == GT_NOT) ? trueVal : falseVal)->AsOp()->gtOp1;
     GenTree* nonNegatedVal = (trueVal->gtOper == GT_NOT) ? falseVal : trueVal;
 
-    if (GenTree::Compare(negatedVal->AsOp()->gtOp1, nonNegatedVal))
+    if (GenTree::Compare(negatedVal, nonNegatedVal) && IsInvariantInRange(negatedVal, select) &&
+        IsInvariantInRange(nonNegatedVal, select))
     {
-        LowerToCincOrCinv(select, cond, (trueVal->gtOper == GT_NOT), false);
+        LowerToCincOrCinv(select, cond, (trueVal->gtOper != GT_NOT), false);
     }
 }
 
@@ -2579,6 +2580,7 @@ void Lowering::LowerToCincOrCinv(GenTreeOp* select, GenTree* cond, bool shouldRe
     {
         GenTreeOpCC* selectcc   = select->AsOpCC();
         GenCondition selectCond = selectcc->gtCondition;
+
         if (shouldReverseCondition)
         {
             // Reverse the condition so that op2 will be selected
@@ -2588,6 +2590,7 @@ void Lowering::LowerToCincOrCinv(GenTreeOp* select, GenTree* cond, bool shouldRe
         {
             std::swap(selectcc->gtOp1, selectcc->gtOp2);
         }
+
         BlockRange().Remove(selectcc->gtOp2, true);
         selectcc->SetOper(isCinc ? GT_CINCCC : GT_CINVCC);
         JITDUMP("Converted to ", (isCinc ? "GT_CINCCC" : "GT_CINVCC"), " :\n");
