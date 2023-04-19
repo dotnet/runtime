@@ -384,7 +384,7 @@ export function _decide_if_result_is_marshaled(converter: Converter, argc: numbe
 
 export function mono_bind_method(method: MonoMethod, args_marshal: string/*ArgsMarshalString*/, has_this_arg: boolean, friendly_name?: string): Function {
     if (MonoWasmThreads && ENVIRONMENT_IS_PTHREAD) {
-        throw new Error("Legacy interop in not supported with WebAssembly threads.");
+        throw new Error("Legacy interop is not supported with WebAssembly threads.");
     }
     if (typeof (args_marshal) !== "string")
         throw new Error("args_marshal argument invalid, expected string");
