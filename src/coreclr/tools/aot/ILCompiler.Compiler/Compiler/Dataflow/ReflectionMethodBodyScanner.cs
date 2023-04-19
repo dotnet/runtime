@@ -142,10 +142,13 @@ namespace ILCompiler.Dataflow
             MessageOrigin origin = new MessageOrigin(type);
             if (type.HasBaseType)
             {
-                if (!flowAnnotations.GetTypeAnnotation(type.BaseType).HasFlag(annotation))
-                {
-                    reflectionMarker.MarkTypeForDynamicallyAccessedMembers(origin, type.BaseType, annotation, type.GetDisplayName(), declaredOnly: false);
-                }
+                var baseAnnotation = flowAnnotations.GetTypeAnnotation(type.BaseType);
+                var annotationToApplyToBase = Annotations.GetMissingMemberTypes(annotation, baseAnnotation);
+
+                // Apply any annotations that didn't exist on the base type to the base type.
+                // This may produce redundant warnings when the annotation is DAMT.All or DAMT.PublicConstructors and the base already has a
+                // subset of those annotations.
+                reflectionMarker.MarkTypeForDynamicallyAccessedMembers(origin, type.BaseType, annotationToApplyToBase, type.GetDisplayName(), declaredOnly: false);
             }
 
             // Most of the DynamicallyAccessedMemberTypes don't select members on interfaces. We only need to apply
