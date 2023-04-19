@@ -83,13 +83,16 @@ internal static class WebWorkerEventLoop
 
     /// <summary>returns true if the current WebWorker has JavaScript objects that depend on the
     /// current managed thread.</summary>
-    //
+    ///
     /// <remarks>If this returns false, the runtime is allowed to allow the current managed thread
     /// to exit and for the WebWorker to be recycled by Emscripten for another managed
     /// thread.</remarks>
-    //
-    // FIXME:
-    // https://github.com/dotnet/runtime/issues/85052 - unsettled promises are not the only relevant
-    // reasons for keeping a worker thread alive. We will need to add other conditions here.
-    internal static bool HasJavaScriptInteropDependents => HasUnsettledInteropPromises;
+    internal static bool HasJavaScriptInteropDependents
+    {
+        //
+        // FIXME:
+        // https://github.com/dotnet/runtime/issues/85052 - unsettled promises are not the only relevant
+        // reasons for keeping a worker thread alive. We will need to add other conditions here.
+        get => HasUnsettledInteropPromises;
+    }
 }
