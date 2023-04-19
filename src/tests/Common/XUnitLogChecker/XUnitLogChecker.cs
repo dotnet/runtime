@@ -31,18 +31,18 @@ public class XUnitLogChecker
     }
 
     private enum TagCategory { OPENING, CLOSING }
-
-    private const int SUCCESS = 0;
     private const int MISSING_ARGS = -1;
-    private const int FAILURE = -2;
+
+    private int TestExitCode;
 
     static int Main(string[] args)
     {
-        if (args.Length < 2)
+        if (args.Length < 3)
         {
-            Console.WriteLine("[XUnitLogChecker]: The path to the log file and"
-                              + " the name of the wrapper are required for an"
-                              + " accurate check and fixing.");
+            Console.WriteLine("[XUnitLogChecker]: The path to the log file,"
+                              + " the name of the wrapper, and the test's"
+                              + " exit code are required for an accurate check"
+                              + " and fixing.");
             return MISSING_ARGS;
         }
 
@@ -50,6 +50,13 @@ public class XUnitLogChecker
 
         string resultsDir = args[0];
         string wrapperName = args[1];
+
+        // Bug Fix: GH Issue #85056 - Helix takes the exit code of the last ran
+        // executable. Since that spot has now been taken by the log fixer, it's
+        // its exit code that gets reported to Helix, and thus eclipsing the test's
+        // one. This might lead to test failures being identified as passed. So,
+        // we will have the log checker also return the test's code instead.
+        TestExitCode = Int32.Parse(args[2]);
 
         string tempLogName = $"{wrapperName}.tempLog.xml";
         string finalLogName = $"{wrapperName}.testResults.xml";
@@ -75,7 +82,7 @@ public class XUnitLogChecker
             Console.WriteLine($"[XUnitLogChecker]: If this is a mistake, then"
                               + " something went very wrong. The expected temp"
                               + $" log name would be: '{tempLogName}'");
-            return SUCCESS;
+            return TestExitCode;
         }
 
         // If the final results log file is present, then we can assume everything
@@ -85,7 +92,7 @@ public class XUnitLogChecker
         {
             Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did"
                               + " complete successfully!");
-            return SUCCESS;
+            return TestExitCode;
         }
 
         // If we're here, then that means we've got something to fix.
@@ -97,7 +104,7 @@ public class XUnitLogChecker
         {
             Console.WriteLine("[XUnitLogChecker]: An error occurred. No stats csv"
                             + $" was found. The expected name would be '{statsCsvPath}'.");
-            return FAILURE;
+            return TestExitCode;
         }
 
         // Read the tests run stats csv.
@@ -107,7 +114,7 @@ public class XUnitLogChecker
         {
             Console.WriteLine("[XUnitLogChecker]: Timed out trying to read the"
                             + $" stats file '{statsCsvPath}'.");
-            return FAILURE;
+            return TestExitCode;
         }
 
         // The first value at the top of the csv represents the amount of tests
@@ -135,7 +142,7 @@ public class XUnitLogChecker
         if (!success)
         {
             Console.WriteLine("[XUnitLogChecker]: Fixing the log failed.");
-            return FAILURE;
+            return TestExitCode;
         }
 
         PrintWorkItemSummary(numExpectedTests, workItemEndStatus);
@@ -164,7 +171,7 @@ public class XUnitLogChecker
         // knowing what transpired here.
         File.Move(tempLogPath, finalLogPath);
         Console.WriteLine("[XUnitLogChecker]: Finished!");
-        return SUCCESS;
+        return TestExitCode;
     }
 
     static IEnumerable<string> TryReadFile(string filePath)
