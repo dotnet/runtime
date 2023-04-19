@@ -30,12 +30,20 @@ add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIM
 
 add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
 
+if (CLR_CMAKE_TARGET_WIN32)
+  add_library(Runtime.VxsortSupport STATIC ${VXSORT_SOURCES})
+  add_library(Runtime.VxsortStub STATIC ${DUMMY_VXSORT_SOURCES})
+endif (CLR_CMAKE_TARGET_WIN32)
+
 target_compile_definitions(Runtime.ServerGC PRIVATE -DFEATURE_SVR_GC)
 
 if (CLR_CMAKE_TARGET_WIN32)
   add_library(Runtime.ServerGC.GuardCF STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
   target_compile_definitions(Runtime.ServerGC.GuardCF PRIVATE -DFEATURE_SVR_GC)
   target_compile_options(Runtime.ServerGC.GuardCF PRIVATE $<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/guard:cf>)
+
+  add_library(Runtime.VxsortSupport.GuardCF STATIC ${VXSORT_SOURCES})
+  target_compile_options(Runtime.VxsortSupport.GuardCF PRIVATE $<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/guard:cf>)
 endif (CLR_CMAKE_TARGET_WIN32)
 
 # Get the current list of definitions
@@ -85,5 +93,8 @@ endif (CLR_CMAKE_TARGET_WIN32)
 install_static_library(Runtime.WorkstationGC aotsdk nativeaot)
 install_static_library(Runtime.ServerGC aotsdk nativeaot)
 if (CLR_CMAKE_TARGET_WIN32)
+  install_static_library(Runtime.VxsortSupport aotsdk nativeaot)
+  install_static_library(Runtime.VxsortStub aotsdk nativeaot)
   install_static_library(Runtime.ServerGC.GuardCF aotsdk nativeaot)
+  install_static_library(Runtime.VxsortSupport.GuardCF aotsdk nativeaot)
 endif (CLR_CMAKE_TARGET_WIN32)
