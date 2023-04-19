@@ -1076,8 +1076,12 @@ namespace System
             }
         }
 
-        //
-        //  Gets the escaped query.
+        /// <summary>
+        /// Legacy implementation that pre-dates RFC 3986 (January 2005),
+        /// that incorrectly starts with a question mark.
+        /// Please see: https://github.com/dotnet/runtime/issues/84955
+        /// </summary>
+        [Obsolete]
         public string Query
         {
             get
@@ -1089,6 +1093,24 @@ namespace System
 
                 MoreInfo info = EnsureUriInfo().MoreInfo;
                 return info.Query ??= GetParts(UriComponents.Query | UriComponents.KeepDelimiter, UriFormat.UriEscaped);
+            }
+        }
+
+        /// <summary>
+        /// "Query" implementation compliant with RFC 3986.
+        /// Does NOT start with a question mark.
+        /// </summary>
+        public string QueryRfc3986
+        {
+            get
+            {
+                if (IsNotAbsoluteUri)
+                {
+                    throw new InvalidOperationException(SR.net_uri_NotAbsolute);
+                }
+
+                MoreInfo info = EnsureUriInfo().MoreInfo;
+                return info.Query ??= GetParts(UriComponents.Query, UriFormat.UriEscaped);
             }
         }
 
