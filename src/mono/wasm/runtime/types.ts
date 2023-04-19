@@ -445,10 +445,43 @@ export interface JavaScriptExports {
     get_managed_stack_trace(exception_gc_handle: GCHandle): string | null
 }
 
-export type MarshalerToJs = (arg: JSMarshalerArgument, sig?: JSMarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) => any;
-export type MarshalerToCs = (arg: JSMarshalerArgument, value: any, sig?: JSMarshalerType, res_converter?: MarshalerToCs, arg1_converter?: MarshalerToJs, arg2_converter?: MarshalerToJs, arg3_converter?: MarshalerToJs) => void;
+export type MarshalerToJs = (arg: JSMarshalerArgument, element_type?: MarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) => any;
+export type MarshalerToCs = (arg: JSMarshalerArgument, value: any, element_type?: MarshalerType, res_converter?: MarshalerToCs, arg1_converter?: MarshalerToJs, arg2_converter?: MarshalerToJs, arg3_converter?: MarshalerToJs) => void;
 export type BoundMarshalerToJs = (args: JSMarshalerArguments) => any;
 export type BoundMarshalerToCs = (args: JSMarshalerArguments, value: any) => void;
+// please keep in sync with src\libraries\System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\MarshalerType.cs
+export enum MarshalerType {
+    None = 0,
+    Void = 1,
+    Discard,
+    Boolean,
+    Byte,
+    Char,
+    Int16,
+    Int32,
+    Int52,
+    BigInt64,
+    Double,
+    Single,
+    IntPtr,
+    JSObject,
+    Object,
+    String,
+    Exception,
+    DateTime,
+    DateTimeOffset,
+
+    Nullable,
+    Task,
+    Array,
+    ArraySegment,
+    Span,
+    Action,
+    Function,
+
+    // only on runtime
+    JSException,
+}
 
 export interface JSMarshalerArguments extends NativePointer {
     __brand: "JSMarshalerArguments"
