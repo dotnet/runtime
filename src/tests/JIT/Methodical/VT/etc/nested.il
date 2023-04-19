@@ -8,7 +8,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'nested' // as "nested"
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}

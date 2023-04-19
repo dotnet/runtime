@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+    <SizeOfStackReserve>2000000</SizeOfStackReserve>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="throwincascadedexceptnofin_d.il" />
+    <Compile Include="throwincascadedexceptnofin.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\common\eh_common.csproj" />
+  </ItemGroup>
+</Project>

@@ -5,6 +5,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="muldiv_d.il" />
     <Compile Include="muldiv.il" />
   </ItemGroup>
 </Project>

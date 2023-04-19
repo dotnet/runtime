@@ -15,7 +15,7 @@
 }
 .assembly extern eh_common{}
 
-.assembly 'severaldeadehregions'
+.assembly ASSEMBLY_NAME
 {
   .ver 0:0:0:0
 }

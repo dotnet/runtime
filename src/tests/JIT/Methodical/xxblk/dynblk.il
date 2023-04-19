@@ -11,7 +11,7 @@
   .ver 4:0:0:0
 }
 
-.assembly dynblk {}
+.assembly ASSEMBLY_NAME {}
 .assembly extern xunit.core {}
 
 .namespace Test_dynblk_il

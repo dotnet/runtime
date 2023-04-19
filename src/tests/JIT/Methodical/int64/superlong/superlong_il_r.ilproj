@@ -5,6 +5,7 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="superlong_r.il" />
     <Compile Include="superlong.il" />
   </ItemGroup>
 </Project>

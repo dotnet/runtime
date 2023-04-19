@@ -16,7 +16,7 @@
 {
 }
 
-.assembly 'jumps2' // as "jumps"
+.assembly ASSEMBLY_NAME // as "jumps"
 {
                         }
 .assembly extern xunit.core {}
