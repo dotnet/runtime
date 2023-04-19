@@ -1210,13 +1210,16 @@ void GCInterface::EnumerateConfigurationValues(void* configurationContext, Enume
     pHeap->EnumerateConfigurationValues(configurationContext, callback);
 }
 
-extern "C" int QCALLTYPE GCInterface_RefreshMemoryLimit()
+GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
+
+extern "C" int QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo)
 {
     QCALL_CONTRACT;
 
     int result = 0;
 
     BEGIN_QCALL;
+    g_gcHeapHardLimitInfo = heapHardLimitInfo;
     result = GCInterface::RefreshMemoryLimit();
     END_QCALL;
 
@@ -1234,17 +1237,6 @@ int GCInterface::RefreshMemoryLimit()
     CONTRACTL_END;
 
     return GCHeapUtilities::GetGCHeap()->RefreshMemoryLimit();
-}
-
-GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
-
-extern "C" void QCALLTYPE GCInterface_UpdateHeapHardLimits(GCHeapHardLimitInfo heapHardLimitInfo)
-{
-    QCALL_CONTRACT_NO_GC_TRANSITION;
-
-    BEGIN_QCALL;
-    g_gcHeapHardLimitInfo = heapHardLimitInfo;
-    END_QCALL;
 }
 
 #ifdef HOST_64BIT

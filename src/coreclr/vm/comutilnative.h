@@ -137,7 +137,6 @@ struct GCHeapHardLimitInfo
     UINT64 heapHardLimitSOHPercent;
     UINT64 heapHardLimitLOHPercent;
     UINT64 heapHardLimitPOHPercent;
-    UINT64 specifiedFlags;
 };
 
 class GCInterface {
@@ -189,7 +188,6 @@ public:
 
     static void EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
     static int  RefreshMemoryLimit();
-    static void GCInterface_UpdateHeapHardLimits(GCHeapHardLimitInfo pHeapHardLimitInfo);
 
 private:
     // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
@@ -217,9 +215,7 @@ extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated
 
 extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
 
-extern "C" int  QCALLTYPE GCInterface_RefreshMemoryLimit();
-
-extern "C" void QCALLTYPE GCInterface_UpdateHeapHardLimits(GCHeapHardLimitInfo heapHardLimitInfo);
+extern "C" int  QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
 
 class COMInterlocked
 {

@@ -49487,7 +49487,7 @@ int gc_heap::refresh_memory_limit()
 #ifdef MULTIPLE_HEAPS
         for (int h = 0; h < n_heaps; h++)
         {
-            gc_heap* heap = g_heaps [h];
+            gc_heap* heap = g_heaps[h];
 #else
         {
             gc_heap* heap = pGenGCHeap;
@@ -49506,11 +49506,11 @@ int gc_heap::refresh_memory_limit()
                 heap->accumulate_committed_bytes (heap->freeable_uoh_segment, total_committed_per_heap, committed_bookkeeping, (gc_oh_num)oh);
             }
 #if defined(MULTIPLE_HEAPS) && defined(_DEBUG)
-            heap->committed_by_oh_per_heap_refresh [oh] = total_committed_per_heap;
+            heap->committed_by_oh_per_heap_refresh[oh] = total_committed_per_heap;
 #endif //MULTIPLE_HEAPS && _DEBUG
             total_committed_per_oh += total_committed_per_heap;
         }
-        new_committed_by_oh [oh] = total_committed_per_oh;
+        new_committed_by_oh[oh] = total_committed_per_oh;
         total_committed += total_committed_per_oh;
     }
 
@@ -49519,22 +49519,22 @@ int gc_heap::refresh_memory_limit()
 #ifdef MULTIPLE_HEAPS
     for (int h = 0; h < n_heaps; h++)
     {
-        gc_heap* heap = g_heaps [h];
+        gc_heap* heap = g_heaps[h];
 #else
     {
         gc_heap* heap = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
         for (int i = 0; i < count_free_region_kinds; i++)
         {
-            heap_segment* seg = heap->free_regions [i].get_first_free_region();
+            heap_segment* seg = heap->free_regions[i].get_first_free_region();
             heap->accumulate_committed_bytes (seg, committed_free, committed_bookkeeping);
         }
     }
     for (int i = 0; i < count_free_region_kinds; i++)
     {
-        heap_segment* seg = global_regions_to_decommit [i].get_first_free_region();
+        heap_segment* seg = global_regions_to_decommit[i].get_first_free_region();
 #ifdef MULTIPLE_HEAPS
-        gc_heap* heap = g_heaps [0];
+        gc_heap* heap = g_heaps[0];
 #else
         gc_heap* heap = nullptr;
 #endif //MULTIPLE_HEAPS
@@ -49543,14 +49543,14 @@ int gc_heap::refresh_memory_limit()
     {
         heap_segment* seg = global_free_huge_regions.get_first_free_region();
 #ifdef MULTIPLE_HEAPS
-        gc_heap* heap = g_heaps [0];
+        gc_heap* heap = g_heaps[0];
 #else
         gc_heap* heap = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
         heap->accumulate_committed_bytes (seg, committed_free, committed_bookkeeping);
     }
 
-    new_committed_by_oh [recorded_committed_free_bucket] = committed_free;
+    new_committed_by_oh[recorded_committed_free_bucket] = committed_free;
     total_committed += committed_free;
 
     // Accounting for the bytes committed for the book keeping elements
@@ -49564,12 +49564,12 @@ int gc_heap::refresh_memory_limit()
     {
         // In case background GC is disabled - the software write watch table is still there
         // but with size 0
-        assert (commit_sizes [i] >= 0);
-        committed_bookkeeping += commit_sizes [i];
+        assert (commit_sizes[i] >= 0);
+        committed_bookkeeping += commit_sizes[i];
     }
 
     new_current_total_committed_bookkeeping = committed_bookkeeping;
-    new_committed_by_oh [recorded_committed_bookkeeping_bucket] = committed_bookkeeping;
+    new_committed_by_oh[recorded_committed_bookkeeping_bucket] = committed_bookkeeping;
     total_committed += committed_bookkeeping;
     new_current_total_committed = total_committed;
 #endif //USE_REGIONS
@@ -49640,9 +49640,9 @@ int gc_heap::refresh_memory_limit()
         for (int i = 0; i < recorded_committed_bucket_counts; i++)
         {
 #ifdef COMMITTED_BYTES_SHADOW
-            assert (new_committed_by_oh [i] == committed_by_oh [i]);
+            assert (new_committed_by_oh[i] == committed_by_oh[i]);
 #else
-            new_committed_by_oh [i] = committed_by_oh [i];
+            new_committed_by_oh[i] = committed_by_oh[i];
 #endif
         }
 #ifdef MULTIPLE_HEAPS
@@ -49652,9 +49652,9 @@ int gc_heap::refresh_memory_limit()
             for (int oh = soh; oh < total_oh_count; oh++)
             {
 #ifdef COMMITTED_BYTES_SHADOW
-                assert (g_heaps [h]->committed_by_oh_per_heap [oh] == g_heaps [h]->committed_by_oh_per_heap_refresh [oh]);
+                assert (g_heaps[h]->committed_by_oh_per_heap[oh] == g_heaps[h]->committed_by_oh_per_heap_refresh[oh]);
 #else
-                g_heaps [h]->committed_by_oh_per_heap [oh] = g_heaps [h]->committed_by_oh_per_heap_refresh [oh];
+                g_heaps[h]->committed_by_oh_per_heap[oh] = g_heaps[h]->committed_by_oh_per_heap_refresh[oh];
 #endif
             }
         }

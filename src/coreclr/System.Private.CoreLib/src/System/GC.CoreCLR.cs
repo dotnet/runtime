@@ -792,36 +792,30 @@ namespace System
 
         private static int _RefreshMemoryLimit()
         {
-            ulong specifiedFlags = 0;
-            ulong? heapHardLimit = AppContext.GetData("GCHeapHardLimit") as ulong?; if (heapHardLimit != null) { specifiedFlags |= 1; } else { heapHardLimit = 0; }
-            ulong? heapHardLimitPercent = AppContext.GetData("GCHeapHardLimitPercent") as ulong?; if (heapHardLimitPercent != null) { specifiedFlags |= 2; } else { heapHardLimitPercent = 0; }
-            ulong? heapHardLimitSOH = AppContext.GetData("GCHeapHardLimitSOH") as ulong?; if (heapHardLimitSOH != null) { specifiedFlags |= 4; } else { heapHardLimitSOH = 0; }
-            ulong? heapHardLimitLOH = AppContext.GetData("GCHeapHardLimitLOH") as ulong?; if (heapHardLimitLOH != null) { specifiedFlags |= 8; } else { heapHardLimitLOH = 0; }
-            ulong? heapHardLimitPOH = AppContext.GetData("GCHeapHardLimitPOH") as ulong?; if (heapHardLimitPOH != null) { specifiedFlags |= 16; } else { heapHardLimitPOH = 0; }
-            ulong? heapHardLimitSOHPercent = AppContext.GetData("GCHeapHardLimitSOHPercent") as ulong?; if (heapHardLimitSOHPercent != null) { specifiedFlags |= 32; } else { heapHardLimitSOHPercent = 0; }
-            ulong? heapHardLimitLOHPercent = AppContext.GetData("GCHeapHardLimitLOHPercent") as ulong?; if (heapHardLimitLOHPercent != null) { specifiedFlags |= 64; } else { heapHardLimitLOHPercent = 0; }
-            ulong? heapHardLimitPOHPercent = AppContext.GetData("GCHeapHardLimitPOHPercent") as ulong?; if (heapHardLimitPOHPercent != null) { specifiedFlags |= 128; } else { heapHardLimitPOHPercent = 0; }
-            if (specifiedFlags != 0)
+            ulong heapHardLimit = (AppContext.GetData("GCHeapHardLimit") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitPercent = (AppContext.GetData("GCHeapHardLimitPercent") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitSOH = (AppContext.GetData("GCHeapHardLimitSOH") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitLOH = (AppContext.GetData("GCHeapHardLimitLOH") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitPOH = (AppContext.GetData("GCHeapHardLimitPOH") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitSOHPercent = (AppContext.GetData("GCHeapHardLimitSOHPercent") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitLOHPercent = (AppContext.GetData("GCHeapHardLimitLOHPercent") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitPOHPercent = (AppContext.GetData("GCHeapHardLimitPOHPercent") as ulong?) ?? ulong.MaxValue;
+            GCHeapHardLimitInfo heapHardLimitInfo = new GCHeapHardLimitInfo
             {
-                GCHeapHardLimitInfo heapHardLimitInfo = new GCHeapHardLimitInfo
-                {
-                    HeapHardLimit = heapHardLimit.Value!,
-                    HeapHardLimitPercent = heapHardLimitPercent.Value!,
-                    HeapHardLimitSOH = heapHardLimitSOH.Value!,
-                    HeapHardLimitLOH = heapHardLimitLOH.Value!,
-                    HeapHardLimitPOH = heapHardLimitPOH.Value!,
-                    HeapHardLimitSOHPercent = heapHardLimitSOHPercent.Value!,
-                    HeapHardLimitLOHPercent = heapHardLimitLOHPercent.Value!,
-                    HeapHardLimitPOHPercent = heapHardLimitPOHPercent.Value!,
-                    SpecifiedFlags = specifiedFlags
-                };
-                UpdateHeapHardLimits(heapHardLimitInfo);
-            }
-            return RefreshMemoryLimit();
+                HeapHardLimit = heapHardLimit,
+                HeapHardLimitPercent = heapHardLimitPercent,
+                HeapHardLimitSOH = heapHardLimitSOH,
+                HeapHardLimitLOH = heapHardLimitLOH,
+                HeapHardLimitPOH = heapHardLimitPOH,
+                HeapHardLimitSOHPercent = heapHardLimitSOHPercent,
+                HeapHardLimitLOHPercent = heapHardLimitLOHPercent,
+                HeapHardLimitPOHPercent = heapHardLimitPOHPercent,
+            };
+            return RefreshMemoryLimit(heapHardLimitInfo);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RefreshMemoryLimit")]
-        internal static partial int RefreshMemoryLimit();
+        internal static partial int RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
 
         internal struct GCHeapHardLimitInfo
         {
@@ -833,11 +827,6 @@ namespace System
             internal ulong HeapHardLimitSOHPercent;
             internal ulong HeapHardLimitLOHPercent;
             internal ulong HeapHardLimitPOHPercent;
-            internal ulong SpecifiedFlags;
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_UpdateHeapHardLimits")]
-        [SuppressGCTransition]
-        internal static partial int UpdateHeapHardLimits(GCHeapHardLimitInfo heapHardLimitInfo);
     }
 }
