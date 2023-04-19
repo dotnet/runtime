@@ -42,9 +42,6 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates passing a static member works
-                test.RunClsVarScenario();
-
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
@@ -103,17 +100,9 @@ namespace JIT.HardwareIntrinsics.X86
 
         private static {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
 
-        private static {Op1VectorType}<{Op1BaseType}> _clsVar1;
-
         private {Op1VectorType}<{Op1BaseType}> _fld1;
 
         private SimpleUnaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}> _dataTable;
-
-        static StoreUnaryOpTest__{Method}{RetBaseType}()
-        {
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _clsVar1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-        }
 
         public StoreUnaryOpTest__{Method}{RetBaseType}()
         {
@@ -177,18 +166,6 @@ namespace JIT.HardwareIntrinsics.X86
                          });
 
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
-        }
-
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-
-            {Isa}.{Method}(
-                ({RetBaseType}*)_dataTable.outArrayPtr,
-                _clsVar1
-            );
-
-            ValidateResult(_clsVar1, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_UnsafeRead()

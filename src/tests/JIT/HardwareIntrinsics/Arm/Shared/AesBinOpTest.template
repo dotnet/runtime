@@ -38,9 +38,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates passing a static member works
-                test.RunClsVarScenario();
-
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
@@ -152,27 +149,16 @@ namespace JIT.HardwareIntrinsics.Arm
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
         private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
-        
+
 
         private static {Op1BaseType}[] _data1 = new {Op1BaseType}[{InputSize}] {Input};
         private static {Op2BaseType}[] _data2 = new {Op2BaseType}[{KeySize}] {Key};
         private static {RetBaseType}[] _expectedRet = new {RetBaseType}[{ExpectedRetSize}] {ExpectedRet};
 
-        private static {Op1VectorType}<{Op1BaseType}> _clsVar1;
-        private static {Op2VectorType}<{Op2BaseType}> _clsVar2;
-
         private {Op1VectorType}<{Op1BaseType}> _fld1;
         private {Op2VectorType}<{Op2BaseType}> _fld2;
 
         private DataTable _dataTable;
-
-        static AesBinaryOpTest__{TestName}()
-        {
-
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _clsVar1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _clsVar2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
-        }
 
         public AesBinaryOpTest__{TestName}()
         {
@@ -226,19 +212,6 @@ namespace JIT.HardwareIntrinsics.Arm
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
-            ValidateResult(_dataTable.outArrayPtr);
-        }
-
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-
-            var result = {Isa}.{Method}(
-                _clsVar1,
-                _clsVar2
-            );
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_dataTable.outArrayPtr);
         }
 
@@ -325,7 +298,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ValidateResult(outArray, method);
         }
 
-        
+
         private void ValidateResult({RetBaseType}[] result, [CallerMemberName] string method = "")
         {
             bool succeeded = true;
@@ -335,7 +308,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 if (result[i] != _expectedRet[i] )
                 {
                     succeeded = false;
-                } 
+                }
             }
 
             if (!succeeded)

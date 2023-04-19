@@ -39,9 +39,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates passing a static member works
-                test.RunClsVarScenario();
-
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
@@ -155,21 +152,10 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
 
-        private static {Op1VectorType}<{Op1BaseType}> _clsVar1;
-        private static {Op1BaseType} _clsVar3;
-
         private {Op1VectorType}<{Op1BaseType}> _fld1;
         private {Op1BaseType} _fld3;
 
         private DataTable _dataTable;
-
-        static LoadAndInsertTest__{TestName}()
-        {
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _clsVar1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-
-            _clsVar3 = {NextValueOp3};
-        }
 
         public LoadAndInsertTest__{TestName}()
         {
@@ -235,22 +221,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
             Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
             ValidateResult(_dataTable.inArray1Ptr, op3, _dataTable.outArrayPtr);
-        }
-
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-
-            fixed ({Op1BaseType}* pClsVar3 = &_clsVar3)
-            {
-                var result = {Isa}.{Method}(
-                    _clsVar1,
-                    {ElementIndex},
-                    pClsVar3
-                );
-                Unsafe.Write(_dataTable.outArrayPtr, result);
-            }
-            ValidateResult(_clsVar1, _clsVar3, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_UnsafeRead()

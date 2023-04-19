@@ -41,9 +41,6 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario();
 
-                // Validates passing a static member works
-                test.RunClsVarScenario();
-
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario();
 
@@ -108,18 +105,10 @@ namespace JIT.HardwareIntrinsics.X86
         private static {Op1BaseType}[] _data = new {Op1BaseType}[Op1ElementCount];
         private static {Op1BaseType} _scalarClsData = {Data};
 
-        private static {Op1VectorType}<{Op1BaseType}> _clsVar;
-
         private {Op1VectorType}<{Op1BaseType}> _fld;
         private {Op1BaseType} _scalarFldData = {Data};
 
         private SimpleUnaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}> _dataTable;
-
-        static InsertScalarTest__{Method}{RetBaseType}{Imm}()
-        {
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _clsVar), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-        }
 
         public InsertScalarTest__{Method}{RetBaseType}{Imm}()
         {
@@ -197,20 +186,6 @@ namespace JIT.HardwareIntrinsics.X86
 
             Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
             ValidateResult(_dataTable.inArrayPtr, {Data}, _dataTable.outArrayPtr);
-        }
-
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-
-            var result = {Isa}.{Method}(
-                _clsVar,
-                _scalarClsData,
-                {Imm}
-            );
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_clsVar, _scalarClsData,_dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario()

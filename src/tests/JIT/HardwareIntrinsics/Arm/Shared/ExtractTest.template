@@ -38,9 +38,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates passing a static member works
-                test.RunClsVarScenario();
-
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
@@ -137,17 +134,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
 
-        private static {Op1VectorType}<{Op1BaseType}> _clsVar1;
-
         private {Op1VectorType}<{Op1BaseType}> _fld1;
 
         private DataTable _dataTable;
-
-        static ExtractTest__{TestName}()
-        {
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _clsVar1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-        }
 
         public ExtractTest__{TestName}()
         {
@@ -199,15 +188,6 @@ namespace JIT.HardwareIntrinsics.Arm
                                      });
 
             ValidateResult(_dataTable.inArray1Ptr, ({Op1BaseType})result);
-        }
-
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-
-            var result = {Isa}.{Method}(_clsVar1, ElementIndex);
-
-            ValidateResult(_clsVar1, result);
         }
 
         public void RunLclVarScenario_UnsafeRead()

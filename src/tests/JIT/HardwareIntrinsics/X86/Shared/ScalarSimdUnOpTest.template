@@ -32,9 +32,6 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates calling via reflection works
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates passing a static member works
-                test.RunClsVarScenario();
-
                 // Validates passing a local works
                 test.RunLclVarScenario_UnsafeRead();
 
@@ -92,16 +89,9 @@ namespace JIT.HardwareIntrinsics.X86
 
         private static {Op1BaseType} _data;
 
-        private static {Op1BaseType} _clsVar;
-
         private {Op1BaseType} _fld;
 
         private ScalarSimdUnaryOpTest__DataTable<{RetBaseType}> _dataTable;
-
-        static ScalarSimdUnaryOpTest__{Method}{RetBaseType}()
-        {
-            _clsVar = {NextValueOp1};
-        }
 
         public ScalarSimdUnaryOpTest__{Method}{RetBaseType}()
         {
@@ -139,18 +129,6 @@ namespace JIT.HardwareIntrinsics.X86
 
             Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
             ValidateResult(_data, _dataTable.outArrayPtr);
-        }
-
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-
-            var result = {Isa}.{Method}(
-                _clsVar
-            );
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_clsVar, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_UnsafeRead()

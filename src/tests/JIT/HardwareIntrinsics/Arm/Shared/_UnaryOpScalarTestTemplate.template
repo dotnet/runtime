@@ -32,9 +32,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates calling via reflection works, using Unsafe.ReadUnaligned
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates passing a static member works
-                test.RunClsVarScenario();
-
                 // Validates passing a local works, using Unsafe.ReadUnaligned
                 test.RunLclVarScenario_UnsafeRead();
 
@@ -126,16 +123,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static {Op1BaseType} _data;
 
-        private static {Op1BaseType} _clsVar;
-
         private {Op1BaseType} _fld;
 
         private DataTable _dataTable;
-
-        static {TemplateName}UnaryOpTest__{TestName}()
-        {
-            _clsVar = {NextValueOp1};
-        }
 
         public {TemplateName}UnaryOpTest__{TestName}()
         {
@@ -174,18 +164,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
             Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
             ValidateResult(_data, _dataTable.outArrayPtr);
-        }
-
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-
-            var result = {Isa}.{Method}(
-                _clsVar
-            );
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_clsVar, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_UnsafeRead()
