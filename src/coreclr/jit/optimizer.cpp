@@ -7448,7 +7448,9 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             JITDUMP("----- PostOrderVisit for [%06u] %s\n", dspTreeID(tree), GenTree::OpName(tree->OperGet()));
 
 #ifdef TARGET_ARM64
-            if (m_compiler->opts.OptimizationEnabled() && tree->OperIs(GT_DIV) &&
+            // TODO: This is currently a hack, but it gets the point across.
+            // Lazily construct CKZERO and CKOVERFLOW nodes if we detect we could hoist the checks.
+            if (m_compiler->opts.OptimizationEnabled() && tree->OperIs(GT_DIV) && varTypeIsIntegral(tree) &&
                 tree->gtGetOp2()->OperIs(GT_LCL_VAR) && IsTreeVNInvariant(tree->gtGetOp2()))
             {
                 GenTreeLclVarCommon* lclVar = tree->gtGetOp2()->AsLclVarCommon();
@@ -7457,11 +7459,12 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 {
                     tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
                     m_compiler->optPerformHoistExpr(m_compiler->gtNewOperNode(GT_CKZERO, TYP_VOID,
-                                                                                m_compiler->gtCloneExpr(lclVar)),
+                                                                              m_compiler->gtCloneExpr(lclVar)),
                                                     m_currentBlock, m_loopNum);
                     m_compiler->optLoopTable[m_loopNum].lpHoistedExprCount++;
                 }
 
+                // TODO: Uncomment this.
                 // if (!(tree->gtFlags & GTF_DIV_MOD_NO_OVERFLOW))
                 //{
                 //     tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;

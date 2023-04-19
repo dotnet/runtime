@@ -4478,14 +4478,12 @@ void CodeGen::genCkzero(GenTree* treeNode)
     GenTree* op1  = treeNode->gtGetOp1();
     emitAttr size = EA_ATTR(genTypeSize(op1));
 
-    assert(emit->isGeneralRegister(op1->GetRegNum()));
+    regNumber op1Reg = genConsumeReg(op1);
 
-    genConsumeRegs(op1);
+    assert(emit->isGeneralRegister(op1Reg));
 
-    emit->emitIns_R_I(INS_cmp, size, op1->GetRegNum(), 0);
+    emit->emitIns_R_I(INS_cmp, size, op1Reg, 0);
     genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
-
-    genProduceReg(op1);
 }
 
 //------------------------------------------------------------------------
@@ -4509,13 +4507,15 @@ void CodeGen::genCkoverflow(GenTree* treeNode)
     GenTree* op1  = treeNode->gtGetOp1();
     emitAttr size = EA_ATTR(genTypeSize(op1));
 
+    regNumber op1Reg = genConsumeReg(op1);
+
+    assert(emit->isGeneralRegister(op1Reg));
+
     genConsumeRegs(op1);
 
     emit->emitIns_R_I(INS_cmp, size, op1->GetRegNum(), 1);
     genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flags is set throw
                                                   // ArithmeticException
-
-    genProduceReg(op1);
 }
 
 //------------------------------------------------------------------------
