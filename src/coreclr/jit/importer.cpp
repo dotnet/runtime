@@ -6846,12 +6846,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     tiRetVal      = se.seTypeInfo;
                 }
 
-                // TODO-ADDR: delete once all RET_EXPRs are typed properly.
-                if (varTypeIsSIMD(lclTyp))
-                {
-                    op1->gtType = lclTyp;
-                }
-
                 // Note this will downcast TYP_I_IMPL into a 32-bit Int on 64 bit (for x86 JIT compatibility).
                 op1 = impImplicitIorI4Cast(op1, lclTyp);
                 op1 = impImplicitR4orR8Cast(op1, lclTyp);
@@ -9375,11 +9369,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 #endif
 
-                        if (fgAddrCouldBeNull(obj))
-                        {
-                            op1->gtFlags |= GTF_EXCEPT;
-                        }
-
                         if (StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass)))
                         {
                             op1->AsField()->gtFldMayOverlap = true;
@@ -9663,11 +9652,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             op1->AsField()->gtFieldLookup = fieldInfo.fieldLookup;
                         }
 #endif
-
-                        if (fgAddrCouldBeNull(obj))
-                        {
-                            op1->gtFlags |= GTF_EXCEPT;
-                        }
 
                         if (compIsForInlining() &&
                             impInlineIsGuaranteedThisDerefBeforeAnySideEffects(op2, nullptr, obj,

@@ -7769,6 +7769,11 @@ GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHn
         fieldNode->gtFlags |= GTF_GLOB_REF;
     }
 
+    if ((obj != nullptr) && fgAddrCouldBeNull(obj))
+    {
+        fieldNode->gtFlags |= GTF_EXCEPT;
+    }
+
     return fieldNode;
 }
 
@@ -7801,7 +7806,11 @@ GenTreeField* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HANDLE 
         varDsc->lvFieldAccessed = 1;
     }
 
-    // TODO-ADDR: add GTF_EXCEPT handling here and delete it from callers.
+    if ((obj != nullptr) && fgAddrCouldBeNull(obj))
+    {
+        fieldNode->gtFlags |= GTF_EXCEPT;
+    }
+
     return fieldNode;
 }
 

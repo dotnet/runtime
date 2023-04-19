@@ -934,6 +934,10 @@ protected:
     void genLoadIndTypeSimd12(GenTreeIndir* treeNode);
     void genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode);
     void genLoadLclTypeSimd12(GenTreeLclVarCommon* treeNode);
+#ifdef TARGET_XARCH
+    void genEmitStoreLclTypeSimd12(GenTree* store, unsigned lclNum, unsigned offset);
+    void genEmitLoadLclTypeSimd12(regNumber tgtReg, unsigned lclNum, unsigned offset);
+#endif // TARGET_XARCH
 #ifdef TARGET_X86
     void genStoreSimd12ToStack(regNumber dataReg, regNumber tmpReg);
     void genPutArgStkSimd12(GenTreePutArgStk* treeNode);
