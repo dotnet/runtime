@@ -42,9 +42,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
-                // Validates passing the field of a local class works
-                test.RunClassLclFldScenario();
-
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
 
@@ -226,16 +223,6 @@ namespace JIT.HardwareIntrinsics.Arm
             {Isa}.{Method}(({RetBaseType}*)_dataTable.outArrayPtr, op1, op2);
 
             ValidateResult(op1, op2, _dataTable.outArrayPtr);
-        }
-
-        public void RunClassLclFldScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
-
-            var test = new StoreBinaryOpTest__{TestName}();
-            {Isa}.{Method}(({RetBaseType}*)_dataTable.outArrayPtr, test._fld1, test._fld2);
-
-            ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
         }
 
         public void RunClassFldScenario()

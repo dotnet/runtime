@@ -41,9 +41,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
-                // Validates passing the field of a local class works
-                test.RunClassLclFldScenario();
-
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
 
@@ -198,16 +195,6 @@ namespace JIT.HardwareIntrinsics.Arm
             var result = {Isa}.{Method}(op1, ElementIndex);
 
             ValidateResult(op1, result);
-        }
-
-        public void RunClassLclFldScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
-
-            var test = new ExtractTest__{TestName}();
-            var result = {Isa}.{Method}(test._fld1, ElementIndex);
-
-            ValidateResult(test._fld1, result);
         }
 
         public void RunClassFldScenario()

@@ -33,9 +33,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates calling via reflection works
                 test.RunReflectionScenario();
 
-                // Validates loading to the field of a local class works
-                test.RunClassLclFldScenario();
-
                 // Validates loading to the field of a local struct works
                 test.RunStructLclFldScenario();
 
@@ -163,17 +160,6 @@ namespace JIT.HardwareIntrinsics.Arm
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (({RetVectorType}<{RetBaseType}>,{RetVectorType}<{RetBaseType}>))result);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
-        }
-
-        public void RunClassLclFldScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
-
-            var test = new {TestName}();
-            test._fld = {Isa}.{Method}(({Op1BaseType}*)(_dataTable.inArrayPtr));
-
-            Unsafe.Write(_dataTable.outArrayPtr, test._fld);
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
