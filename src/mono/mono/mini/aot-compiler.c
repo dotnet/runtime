@@ -4317,10 +4317,11 @@ collect_dedup_method (MonoAotCompile *acfg, MonoMethod *method)
 {
 	// Check if the dedup is enabled, and if the current method can be deduplicated
 	if ((acfg->dedup_phase == DEDUP_SKIP || acfg->dedup_phase == DEDUP_COLLECT) && mono_aot_can_dedup (method)) {
+		if (acfg->dedup_phase == DEDUP_SKIP)
+			return TRUE;
 		// Remember for later
 		if (acfg->dedup_phase == DEDUP_COLLECT && !g_hash_table_lookup (dedup_methods, method))
 				g_hash_table_insert (dedup_methods, method, method);
-		return TRUE;
 	}
 	return FALSE;
 }
