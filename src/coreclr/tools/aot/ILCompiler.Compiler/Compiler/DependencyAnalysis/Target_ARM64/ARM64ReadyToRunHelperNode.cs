@@ -70,19 +70,21 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.GetThreadStaticBase:
                     {
+                        bool isMultiFile = !factory.CompilationModuleGroup.IsSingleFileCompilation;
+
                         MetadataType target = (MetadataType)Target;
-                        encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeThreadStaticIndex(target));
+                        encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.TypeThreadStaticIndex(target));
 
                         // First arg: index of the type in the ThreadStatic section of the modules
-                        encoder.EmitLDR(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
+                        encoder.EmitLDR(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg1, factory.Target.PointerSize);
 
-                        // Second arg: address of the TypeManager slot that provides the helper with
-                        // information about module index and the type manager instance.
-                        encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2);
+                        ISymbolNode helper = isMultiFile ?
+                            factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType) :
+                            factory.ExternSymbol("RhpGetThreadStaticBaseForType");
 
                         if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                         {
-                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
+                            encoder.EmitJMP(helper);
                         }
                         else
                         {
@@ -91,8 +93,11 @@ namespace ILCompiler.DependencyAnalysis
 
                             encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2);
                             encoder.EmitCMP(encoder.TargetRegister.Arg3, 0);
-                            encoder.EmitJE(factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
+                            encoder.EmitJE(helper);
 
+                            // Second arg: address of the TypeManager slot that provides the helper with
+                            // information about module index and the type manager instance.
+                            encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg1);
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
                         }
                     }
