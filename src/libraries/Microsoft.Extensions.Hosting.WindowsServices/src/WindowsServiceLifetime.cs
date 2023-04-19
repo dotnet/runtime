@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         private IHostEnvironment Environment { get; }
         private ILogger Logger { get; }
 
-        /// <summary>Asynchronously waits until start is complete before continuing. This method is called at the beginning of <see cref="Microsoft.Extensions.Hosting.IHost.StartAsync(System.Threading.CancellationToken)" />. This can be used to delay startup until signaled by an external event.</summary>
+        /// <summary>Asynchronously waits until start is complete before continuing. This method is called at the beginning of <see cref="IHost.StartAsync(CancellationToken)" />. This can be used to delay startup until signaled by an external event.</summary>
         /// <param name="cancellationToken">A cancellation token that indicates when stop should no longer be graceful.</param>
         /// <returns>A task that represents the asynchronous waiting for start operation.</returns>
         public Task WaitForStartAsync(CancellationToken cancellationToken)
@@ -101,7 +101,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             }
         }
 
-        /// <summary>Asynchronously stops and shuts down the host. This method is called from <see cref="Microsoft.Extensions.Hosting.IHost.StopAsync(System.Threading.CancellationToken)" />.</summary>
+        /// <summary>Asynchronously stops and shuts down the host. This method is called from <see cref="IHost.StopAsync(CancellationToken)" />.</summary>
         /// <param name="cancellationToken">A cancellation token that indicates when stop should no longer be graceful.</param>
         /// <returns>A task that represents the asynchronous stop operation.</returns>
         public async Task StopAsync(CancellationToken cancellationToken)
