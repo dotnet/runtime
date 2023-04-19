@@ -420,7 +420,7 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
 #ifdef DEBUG
     if (getStressLimitRegs() != LSRA_LIMIT_NONE)
     {
-        // For stress, make only alternate registers available so we can stress the selectoin of free/busy registers.
+        // For stress, make only alternate registers available so we can stress the selection of free/busy registers.
         freeCandidates &= (RBM_V0 | RBM_V2 | RBM_V4 | RBM_V6 | RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14 | RBM_V16 |
                            RBM_V18 | RBM_V20 | RBM_V22 | RBM_V24 | RBM_V26 | RBM_V28 | RBM_V30);
     }
@@ -1816,7 +1816,7 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
 //------------------------------------------------------------------------
 // isLiveAtConsecutiveRegistersLoc: Check if the refPosition is live at the location
 //    where consecutive registers are needed. This is used during JitStressRegs to
-//    not constrained the register requirements for such refpositions, because lot
+//    not constrain the register requirements for such refpositions, because a lot
 //    of registers will be busy. For RefTypeUse, it will just see if the nodeLocation
 //    matches with the tracking `consecutiveRegistersLocation`. For Def, it will check
 //    the underlying `GenTree*` to see if the tree that produced it had consecutive

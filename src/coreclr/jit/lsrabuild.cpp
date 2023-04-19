@@ -1897,9 +1897,9 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                     {
                         // If a method has consecutive registers and we are assigning to use refPosition whose
                         // definition was from a location that has consecutive registers, skip the limit stress for
-                        // them,
-                        // because there are high chances that many registers are busy for consecutive requirements and
-                        // marked as "delayRegFree" state. We do not have enough remaining for other refpositions.
+                        // them, because there are high chances that many registers are busy for consecutive
+                        // requirements and marked as "delayRegFree" state. We do not have enough remaining for other
+                        // refpositions.
                     }
                     else
 #endif // TARGET_ARM64

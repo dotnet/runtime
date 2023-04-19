@@ -368,18 +368,13 @@ void LinearScan::updateSpillCost(regNumber reg, Interval* interval)
 //   registers that are free and busy.
 //
 // Arguments:
-//    refPosition -
-//    assignedRegMask -
-//    copyRegMask -
-//    regsToFree -
-//    delayRegsToFree -
+//    refPosition - RefPosition for which we need to update the state.
+//    regsBusy - Mask of registers that are busy.
+//    regsToFree - Mask of registers that are set to be free.
+//    delayRegsToFree - Mask of registers that are set to be delayed free.
+//    interval - Interval of Refposition.
+//    assignedReg - Assigned register for this refposition.
 //
-// Notes:
-//    compFloatingPointUsed is only required to be set if it is possible that we
-//    will use floating point callee-save registers.
-//    It is unlikely, if an internal register is the only use of floating point,
-//    that it will select a callee-save register.  But to be safe, we restrict
-//    the set of candidates if compFloatingPointUsed is not already set.
 void LinearScan::updateRegsFreeBusyState(RefPosition& refPosition,
                                          regMaskTP    regsBusy,
                                          regMaskTP*   regsToFree,
@@ -6695,8 +6690,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
         LIR::Use treeUse;
         GenTree* useNode  = nullptr;
         bool     foundUse = blockRange.TryGetUse(tree, &treeUse);
-        assert(foundUse);
-        useNode = treeUse.User();
+        useNode           = treeUse.User();
 
 #ifdef TARGET_ARM64
         if (refPosition->needsConsecutive && useNode->OperIs(GT_FIELD_LIST))
@@ -6707,13 +6701,12 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
             // will always be at GT_FIELD_LIST creation time. That way, we will restore the
             // upper vector just before the use of them in the intrinsic.
             LIR::Use fieldListUse;
-            if (blockRange.TryGetUse(useNode, &fieldListUse))
-            {
-                treeUse = fieldListUse;
-                useNode = treeUse.User();
-            }
+            foundUse = blockRange.TryGetUse(useNode, &fieldListUse);
+            treeUse  = fieldListUse;
+            useNode  = treeUse.User();
         }
 #endif
+        assert(foundUse);
         JITDUMP("before %d.%s:\n", useNode->gtTreeID, GenTree::OpName(useNode->gtOper));
 
         // We need to insert the restore prior to the use, not (necessarily) immediately after the lclVar.
