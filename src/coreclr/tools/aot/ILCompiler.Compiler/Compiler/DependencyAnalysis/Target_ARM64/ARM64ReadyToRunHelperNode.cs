@@ -84,10 +84,21 @@ namespace ILCompiler.DependencyAnalysis
 
                         if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                         {
+                            if (isMultiFile)
+                            {
+                                // Second arg: address of the TypeManager slot that provides the helper with
+                                // information about module index and the type manager instance.
+                                encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg1);
+                            }
+
                             encoder.EmitJMP(helper);
                         }
                         else
                         {
+                            // Second arg: address of the TypeManager slot that provides the helper with
+                            // information about module index and the type manager instance.
+                            encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg1);
+
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
                             encoder.EmitSUB(encoder.TargetRegister.Arg2, NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
 
@@ -95,9 +106,6 @@ namespace ILCompiler.DependencyAnalysis
                             encoder.EmitCMP(encoder.TargetRegister.Arg3, 0);
                             encoder.EmitJE(helper);
 
-                            // Second arg: address of the TypeManager slot that provides the helper with
-                            // information about module index and the type manager instance.
-                            encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg1);
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
                         }
                     }

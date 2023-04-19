@@ -86,6 +86,15 @@ namespace ILCompiler.DependencyAnalysis
 
                         if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                         {
+                            if (isMultiFile)
+                            {
+                                // Second arg: address of the TypeManager slot that provides the helper with
+                                // information about module index and the type manager instance (which is used
+                                // for initialization on first access).
+                                AddrMode loadFromArg2 = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
+                                encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromArg2);
+                            }
+
                             encoder.EmitJMP(helper);
                         }
                         else
