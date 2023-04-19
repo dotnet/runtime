@@ -126,7 +126,7 @@ namespace Sample
             public override void RunStep() => textInfo.ToTitleCase(str);
         }
 
-        public class StringsCompare : StringMeasurement
+        public abstract class StringsCompare : StringMeasurement
         {
             protected string strDifferentSuffix;
             protected string strDifferentPrefix;
@@ -222,7 +222,7 @@ namespace Sample
                 InitializeStringsForComparison();
                 return Task.CompletedTask;
             }
-            public override string Name => "String IsPrefix";
+            public override string Name => "String StartsWith";
             public override void RunStep() => str.StartsWith(strDifferentSuffix, false, cultureInfo);
         }
 
@@ -236,7 +236,7 @@ namespace Sample
                 InitializeStringsForComparison();
                 return Task.CompletedTask;
             }
-            public override string Name => "String IsSuffix";
+            public override string Name => "String EndsWith";
             public override void RunStep() => str.EndsWith(strDifferentPrefix, false, cultureInfo);
         }
     }
