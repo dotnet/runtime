@@ -1315,6 +1315,10 @@ QueueUserAPC(
          IN HANDLE hThread,
          IN ULONG_PTR dwData);
 
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif
+
 #if defined(HOST_X86) || defined(HOST_AMD64)
 // MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
 // We define matching signatures for use on Unix platforms.
@@ -4226,10 +4230,6 @@ inline WCHAR *PAL_wcspbrk(WCHAR* S, const WCHAR* P)
 inline WCHAR *PAL_wcsstr(WCHAR* S, const WCHAR* P)
         {return ((WCHAR *)PAL_wcsstr((const WCHAR *)S, P)); }
 }
-#endif
-
-#ifndef __has_builtin
-#define __has_builtin(x) 0
 #endif
 
 #if !__has_builtin(_rotl)
