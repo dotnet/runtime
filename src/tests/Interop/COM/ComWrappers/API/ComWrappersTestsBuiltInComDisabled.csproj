@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NativeAotIncompatible>false</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
