@@ -340,7 +340,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     catch (Exception e)
                     {
-                        Log("error", $"DevToolsProxy::Run: Exception {e}");
+                        //Log("error", $"DevToolsProxy::Run: Exception {e}");
                         _channelWriter.Complete(e);
                         //throw;
                     }
