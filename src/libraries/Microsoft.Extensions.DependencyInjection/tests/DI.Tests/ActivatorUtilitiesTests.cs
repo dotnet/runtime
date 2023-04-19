@@ -204,12 +204,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 #if NETCOREAPP
         [InlineData(false)]
 #endif
-        public void CreateFactory_RemoteExecutor_CreatesFactoryMethod(bool isDynamicCodeSupported)
+        public void CreateFactory_RemoteExecutor_CreatesFactoryMethod(bool useDynamicCode)
         {
             var options = new RemoteInvokeOptions();
-            if (!isDynamicCodeSupported)
+            if (!useDynamicCode)
             {
-                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+                DisableDynamicCode(options);
             }
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
@@ -238,12 +238,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 #if NETCOREAPP
         [InlineData(false)]
 #endif
-        public void CreateFactory_RemoteExecutor_NullArguments_Throws(bool isDynamicCodeSupported)
+        public void CreateFactory_RemoteExecutor_NullArguments_Throws(bool useDynamicCode)
         {
             var options = new RemoteInvokeOptions();
-            if (!isDynamicCodeSupported)
+            if (!useDynamicCode)
             {
-                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+                DisableDynamicCode(options);
             }
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
@@ -261,12 +261,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 #if NETCOREAPP
         [InlineData(false)]
 #endif
-        public void CreateFactory_RemoteExecutor_NoArguments_UseNullDefaultValue(bool isDynamicCodeSupported)
+        public void CreateFactory_RemoteExecutor_NoArguments_UseNullDefaultValue(bool useDynamicCode)
         {
             var options = new RemoteInvokeOptions();
-            if (!isDynamicCodeSupported)
+            if (!useDynamicCode)
             {
-                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+                DisableDynamicCode(options);
             }
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
@@ -285,12 +285,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 #if NETCOREAPP
         [InlineData(false)]
 #endif
-        public void CreateFactory_RemoteExecutor_NoArguments_ThrowRequiredValue(bool isDynamicCodeSupported)
+        public void CreateFactory_RemoteExecutor_NoArguments_ThrowRequiredValue(bool useDynamicCode)
         {
             var options = new RemoteInvokeOptions();
-            if (!isDynamicCodeSupported)
+            if (!useDynamicCode)
             {
-                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+                DisableDynamicCode(options);
             }
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
@@ -309,12 +309,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 #if NETCOREAPP
         [InlineData(false)]
 #endif
-        public void CreateFactory_RemoteExecutor_NullArgument_UseDefaultValue(bool isDynamicCodeSupported)
+        public void CreateFactory_RemoteExecutor_NullArgument_UseDefaultValue(bool useDynamicCode)
         {
             var options = new RemoteInvokeOptions();
-            if (!isDynamicCodeSupported)
+            if (!useDynamicCode)
             {
-                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+                DisableDynamicCode(options);
             }
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
@@ -333,12 +333,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 #if NETCOREAPP
         [InlineData(false)]
 #endif
-        public void CreateFactory_RemoteExecutor_NoParameters_Success(bool isDynamicCodeSupported)
+        public void CreateFactory_RemoteExecutor_NoParameters_Success(bool useDynamicCode)
         {
             var options = new RemoteInvokeOptions();
-            if (!isDynamicCodeSupported)
+            if (!useDynamicCode)
             {
-                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+                DisableDynamicCode(options);
             }
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
@@ -351,7 +351,16 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 Assert.NotNull(item);
             }, options);
         }
+
+        private static void DisableDynamicCode(RemoteInvokeOptions options)
+        {
+            // We probably only need to set 'IsDynamicCodeCompiled' since only that is checked,
+            // but also set 'IsDynamicCodeSupported' for correctness.
+            options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+            options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled", "false");
+        }
     }
+}
 
     internal class A { }
     internal class B { }
@@ -532,4 +541,4 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Text = text;
         }
     }
-}
+

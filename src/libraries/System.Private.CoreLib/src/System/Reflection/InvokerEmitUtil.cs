@@ -66,11 +66,13 @@ namespace System.Reflection
 
             // Invoke the method.
             // For CallStack reasons, don't inline target method.
-#if MONO
-            il.Emit(OpCodes.Call, Methods.DisableInline());
+#if TARGET_WASM
+            // Mono interpreter does not support\need this intrinsic.
+#elif MONO
+             il.Emit(OpCodes.Call, Methods.DisableInline());
 #else
-            il.Emit(OpCodes.Call, Methods.NextCallReturnAddress());
-            il.Emit(OpCodes.Pop);
+             il.Emit(OpCodes.Call, Methods.NextCallReturnAddress());
+             il.Emit(OpCodes.Pop);
 #endif
 
             if (emitNew)
