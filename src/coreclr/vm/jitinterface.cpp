@@ -12138,8 +12138,9 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
         ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(m_pMethodBeingCompiled);
         NativeCodeVersion currentVersion = ilVersion.GetActiveNativeCodeVersion(m_pMethodBeingCompiled);
 
-        if ((currentVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier::OptimizationTier0) ||
-            (currentVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier::OptimizationTier1))
+        NativeCodeVersion::OptimizationTier currentOptTier = currentVersion.GetOptimizationTier();
+        if ((currentOptTier == NativeCodeVersion::OptimizationTier::OptimizationTier0) ||
+            (currentOptTier == NativeCodeVersion::OptimizationTier::OptimizationTier1))
         {
             // Current tier is not marked as instrumented, but it requested the schemas so it means it doesn't
             // need to be re-instrumented in future and can be promoted straight to Tier1 if hot enough.
