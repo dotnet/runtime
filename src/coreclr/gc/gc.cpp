@@ -45798,14 +45798,22 @@ void GCHeap::SetYieldProcessorScalingFactor (float scalingFactor)
     }
 }
 
-unsigned int GCHeap::WhichGeneration (Object* object)
+unsigned int GCHeap::WhichGeneration (Object* object, bool maxGenForNonGcObjects)
 {
     uint8_t* o = (uint8_t*)object;
 #ifdef FEATURE_BASICFREEZE
-    if (!((o < g_gc_highest_address) && (o >= g_gc_lowest_address)) || GCHeap::IsInFrozenSegment (object))
+    if (!((o < g_gc_highest_address) && (o >= g_gc_lowest_address)))
     {
-        return -1;
+        return maxGenForNonGcObjects ? max_generation : -1;
     }
+#ifndef USE_REGIONS
+    if (GCHeap::IsInFrozenSegment (object))
+    {
+        // in case if the object belongs to an in-range frozen segment
+        // For regions those are never in-range.
+        return maxGenForNonGcObjects ? max_generation : -1;
+    }
+#endif
 #endif //FEATURE_BASICFREEZE
     gc_heap* hp = gc_heap::heap_of (o);
     unsigned int g = hp->object_gennum (o);

@@ -726,7 +726,7 @@ FCIMPL1(int, GCInterface::GetGeneration, Object* objUNSAFE)
     if (objUNSAFE == NULL)
         FCThrowArgumentNull(W("obj"));
 
-    int result = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(objUNSAFE);
+    int result = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(objUNSAFE, false);
     FC_GC_POLL_RET();
     return result;
 }
@@ -826,7 +826,7 @@ FCIMPL1(int, GCInterface::GetGenerationWR, LPVOID handle)
     if (temp == NULL)
         COMPlusThrowArgumentNull(W("wo"));
 
-    iRetVal = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(OBJECTREFToObject(temp));
+    iRetVal = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(OBJECTREFToObject(temp), false);
 
     HELPER_METHOD_FRAME_END();
 
