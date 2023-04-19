@@ -18,15 +18,21 @@ static class Utils
     public static bool TryReturnTypeFirstAttributeValue<T>(this IMethodSymbol methodSymbol, string attributeName, out T? value)
         => methodSymbol.GetReturnTypeAttributes().TryFirstAttributeValue(attributeName, out value);
 
-    public static bool TryFirstAttributeValue<T>(this IMethodSymbol methodSymbol, string attributeName, out T? value)
-        => methodSymbol.GetAttributes().TryFirstAttributeValue<T>(attributeName, out value);
+    public static bool TryFirstAttributeValue<T>(this IMethodSymbol methodSymbol, string attributeName, out T? value, int ctorParameterIndex = 0)
+        => methodSymbol.GetAttributes().TryFirstAttributeValue<T>(attributeName, out value, ctorParameterIndex: ctorParameterIndex);
 
-    public static bool TryFirstAttributeValue<T>(this ImmutableArray<AttributeData> attributes, string attributeName, out T? value)
+    public static bool TryFirstAttributeValue<T>(this ImmutableArray<AttributeData> attributes, string attributeName, out T? value, int ctorParameterIndex = 0)
     {
         var explicitNativeTypeAttribute = attributes.FirstOrDefault(attr => attr.AttributeClass!.Name == attributeName);
-        if (explicitNativeTypeAttribute != null)
+        if (explicitNativeTypeAttribute != null && explicitNativeTypeAttribute.ConstructorArguments.Length > ctorParameterIndex)
         {
-            value = (T)explicitNativeTypeAttribute.ConstructorArguments[0].Value!;
+            if (explicitNativeTypeAttribute.ConstructorArguments[ctorParameterIndex].Value is not T)
+            {
+                value = default;
+                return false;
+            }
+
+            value = (T)explicitNativeTypeAttribute.ConstructorArguments[ctorParameterIndex].Value!;
             return true;
         }
 

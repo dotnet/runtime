@@ -3,14 +3,26 @@
 
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
+using Unity.CoreCLRHelpers;
 
 namespace UnityEmbedHost.Generator;
 
 static class NativeUtils
 {
+    public static NativeFunctionOptions NativeFunctionOptions(this IMethodSymbol methodSymbol)
+    {
+        // There are 2 ctor overloads to handle
+        //   NativeFunctionAttribute(NativeFunctionOptions)
+        //   NativeFunctionAttribute(String, NativeFunctionOptions)
+        if (methodSymbol.TryFirstAttributeValue(NativeGeneration.NativeFunctionAttributeName, out int value) || methodSymbol.TryFirstAttributeValue(NativeGeneration.NativeFunctionAttributeName, out value, ctorParameterIndex: 1))
+            return (NativeFunctionOptions)value;
+
+        return Unity.CoreCLRHelpers.NativeFunctionOptions.Default;
+    }
+
     public static string NativeWrapperName(this IMethodSymbol methodSymbol)
     {
-        if (methodSymbol.TryFirstAttributeValue<string>(NativeGeneration.NativeWrapperNameAttributeName, out var value))
+        if (methodSymbol.TryFirstAttributeValue<string>(NativeGeneration.NativeFunctionAttributeName, out var value))
             return value!;
         return $"mono_{methodSymbol.Name}";
     }
