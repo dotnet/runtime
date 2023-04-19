@@ -14,8 +14,8 @@ public class XUnitLogChecker
 {
     private static class Patterns
     {
-        public const string OpenTag = @"(\B<\w+)|(\B<!\[CDATA\[)";
-        public const string CloseTag = @"(\B</\w+>)|(\]\]>)";
+        public const string OpenTag = @"(\B<\w+[-]?(\w+)?)|(\B<!\[CDATA\[)";
+        public const string CloseTag = @"(\B</\w+[-]?(\w+)?)|(\]\]>)";
     }
 
     private readonly struct TagResult
@@ -144,9 +144,9 @@ public class XUnitLogChecker
         // be located. If passed, then search that path accordingly. Otherwise,
         // just skip and finish running.
 
-        if (args.Length > 2)
+        if (args.Length > 3)
         {
-            string dumpsPath = args[2];
+            string dumpsPath = args[3];
 
             if (Directory.Exists(dumpsPath))
             {
@@ -197,24 +197,22 @@ public class XUnitLogChecker
         return fileContents;
     }
 
-    static void PrintMissingCrashPath(string wrapperName,
-                                      string crashFileType,
-                                      string crashFilePath)
-    {
-        Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did not complete"
-                        + $" successfully, but there was no {crashFileType} found."
-                        + " The XML log was fixed successfully though.");
-
-        Console.WriteLine($"[XUnitLogChecker]: Expected {crashFileType} path"
-                        + $" was '{crashFilePath}'");
-    }
-
     static void PrintWorkItemSummary(int numExpectedTests, int[] workItemEndStatus)
     {
         Console.WriteLine($"\n{workItemEndStatus[0]}/{numExpectedTests} tests run.");
         Console.WriteLine($"* {workItemEndStatus[1]} tests passed.");
         Console.WriteLine($"* {workItemEndStatus[2]} tests failed.");
         Console.WriteLine($"* {workItemEndStatus[3]} tests skipped.\n");
+    }
+
+    private static void PrintStackElements(Stack<string> stack)
+    {
+        Console.Write("Stack: ");
+        foreach (string element in stack)
+        {
+            Console.Write($"{element}->");
+        }
+        Console.Write("\n");
     }
 
     static bool FixTheXml(string xFile)
@@ -251,15 +249,24 @@ public class XUnitLogChecker
                     // Get the name of the next tag. We need solely the text, so we
                     // ask LINQ to lend us a hand in removing the symbols from the string.
                     tagText = new String(tr.Value.Where(c => char.IsLetter(c)).ToArray());
+                    Console.WriteLine($"OPENING: {tagText}");
 
                     // We are beginning to process a test's output. Set the flag to
                     // treat everything as such, until we get the closing output tag.
                     if (tagText.Equals("output") && !inOutput && !inCData)
+                    {
+                        Console.WriteLine("Setting in Output");
                         inOutput = true;
+                    }
                     else if (tagText.Equals("CDATA") && !inCData)
+                    {
+                        Console.WriteLine("Setting in CDATA");
                         inCData = true;
+                    }
 
                     tags.Push(tagText);
+                    Console.WriteLine($"Pushing {tagText}");
+                    PrintStackElements(tags);
                     continue;
                 }
 
@@ -278,11 +285,15 @@ public class XUnitLogChecker
                                            .Where(c => char.IsLetter(c))
                                            .ToArray());
 
+                    Console.WriteLine($"CLOSING: {tagText}");
                     if (inCData)
                     {
+                        Console.WriteLine("In CDATA");
                         if (tagText.Equals("CDATA"))
                         {
+                            Console.WriteLine($"Exiting CDATA with {tagText}");
                             tags.Pop();
+                            PrintStackElements(tags);
                             inCData = false;
                         }
                         else continue;
@@ -290,17 +301,22 @@ public class XUnitLogChecker
 
                     if (inOutput)
                     {
-                         if (tagText.Equals("output"))
-                         {
-                             tags.Pop();
-                             inOutput = false;
-                         }
-                         else continue;
+                        Console.WriteLine("In Output");
+                        if (tagText.Equals("output"))
+                        {
+                            Console.WriteLine($"Exiting Output with {tagText}");
+                            tags.Pop();
+                            PrintStackElements(tags);
+                            inOutput = false;
+                        }
+                        else continue;
                     }
 
                     if (tagText.Equals(tags.Peek()))
                     {
+                        Console.WriteLine($"Popping {tagText}");
                         tags.Pop();
+                        PrintStackElements(tags);
                     }
                 }
             }
