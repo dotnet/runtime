@@ -106,6 +106,27 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ushort> Average(Vector512<ushort> left, Vector512<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m512i _mm512_broadcastb_epi8 (__m128i a)
+        ///   VPBROADCASTB zmm1 {k1}{z}, xmm2/m8
+        /// </summary>
+        public static Vector512<byte> BroadcastScalarToVector512(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_broadcastb_epi8 (__m128i a)
+        ///   VPBROADCASTB zmm1 {k1}{z}, xmm2/m8
+        /// </summary>
+        public static Vector512<sbyte> BroadcastScalarToVector512(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_broadcastw_epi16 (__m128i a)
+        ///   VPBROADCASTW zmm1 {k1}{z}, xmm2/m16
+        /// </summary>
+        public static Vector512<short> BroadcastScalarToVector512(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_broadcastw_epi16 (__m128i a)
+        ///   VPBROADCASTW zmm1 {k1}{z}, xmm2/m16
+        /// </summary>
+        public static Vector512<ushort> BroadcastScalarToVector512(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m512i _mm512_cvtepi8_epi16 (__m128i a)
         ///   VPMOVSXBW zmm1 {k1}{z}, ymm2/m256
         /// </summary>

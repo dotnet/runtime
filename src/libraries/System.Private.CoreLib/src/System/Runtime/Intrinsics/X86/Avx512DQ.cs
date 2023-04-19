@@ -22,6 +22,38 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { get => IsSupported; }
 
             /// <summary>
+            /// __m128i _mm_broadcast_i32x2 (__m128i a)
+            ///   VBROADCASTI32x2 xmm1 {k1}{z}, xmm2/m64
+            /// </summary>
+            public static Vector128<int> BroadcastPairScalarToVector128(Vector128<int> value) => BroadcastPairScalarToVector128(value);
+            /// <summary>
+            /// __m128i _mm_broadcast_i32x2 (__m128i a)
+            ///   VBROADCASTI32x2 xmm1 {k1}{z}, xmm2/m64
+            /// </summary>
+            public static Vector128<uint> BroadcastPairScalarToVector128(Vector128<uint> value) => BroadcastPairScalarToVector128(value);
+            /// <summary>
+            /// __m128 _mm_broadcast_f32x2 (__m128 a)
+            ///   VBROADCASTF32x2 xmm1 {k1}{z}, xmm2/m64
+            /// </summary>
+            public static Vector128<float> BroadcastPairScalarToVector128(Vector128<float> value) => BroadcastPairScalarToVector128(value);
+
+            /// <summary>
+            /// __m256i _mm256_broadcast_i32x2 (__m128i a)
+            ///   VBROADCASTI32x2 ymm1 {k1}{z}, xmm2/m64
+            /// </summary>
+            public static Vector256<int> BroadcastPairScalarToVector256(Vector128<int> value) => BroadcastPairScalarToVector256(value);
+            /// <summary>
+            /// __m256i _mm256_broadcast_i32x2 (__m128i a)
+            ///   VBROADCASTI32x2 ymm1 {k1}{z}, xmm2/m64
+            /// </summary>
+            public static Vector256<uint> BroadcastPairScalarToVector256(Vector128<uint> value) => BroadcastPairScalarToVector256(value);
+            /// <summary>
+            /// __m256 _mm256_broadcast_f32x2 (__m128 a)
+            ///   VBROADCASTF32x2 ymm1 {k1}{z}, xmm2/m64
+            /// </summary>
+            public static Vector256<float> BroadcastPairScalarToVector256(Vector128<float> value) => BroadcastPairScalarToVector256(value);
+
+            /// <summary>
             /// __m128i _mm_mullo_epi64 (__m128i a, __m128i b)
             ///   VPMULLQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
             /// </summary>
@@ -72,6 +104,54 @@ namespace System.Runtime.Intrinsics.X86
         ///   VANDNPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
         /// </summary>
         public static Vector512<double> AndNot(Vector512<double> left, Vector512<double> right) => AndNot(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_broadcast_i32x2 (__m128i a)
+        ///   VBROADCASTI32x2 zmm1 {k1}{z}, xmm2/m64
+        /// </summary>
+        public static Vector512<int> BroadcastPairScalarToVector512(Vector128<int> value) => BroadcastPairScalarToVector512(value);
+        /// <summary>
+        /// __m512i _mm512_broadcast_i32x2 (__m128i a)
+        ///   VBROADCASTI32x2 zmm1 {k1}{z}, xmm2/m64
+        /// </summary>
+        public static Vector512<uint> BroadcastPairScalarToVector512(Vector128<uint> value) => BroadcastPairScalarToVector512(value);
+        /// <summary>
+        /// __m512 _mm512_broadcast_f32x2 (__m128 a)
+        ///   VBROADCASTF32x2 zmm1 {k1}{z}, xmm2/m64
+        /// </summary>
+        public static Vector512<float> BroadcastPairScalarToVector512(Vector128<float> value) => BroadcastPairScalarToVector512(value);
+
+        /// <summary>
+        /// __m512i _mm512_broadcast_i64x2 (__m128i const * mem_addr)
+        ///   VBROADCASTI64x2 zmm1 {k1}{z}, m128
+        /// </summary>
+        public static unsafe Vector512<long> BroadcastVector128ToVector512(long* address) => BroadcastVector128ToVector512(address);
+        /// <summary>
+        /// __m512i _mm512_broadcast_i64x2 (__m128i const * mem_addr)
+        ///   VBROADCASTI64x2 zmm1 {k1}{z}, m128
+        /// </summary>
+        public static unsafe Vector512<ulong> BroadcastVector128ToVector512(ulong* address) => BroadcastVector128ToVector512(address);
+        /// <summary>
+        /// __m512d _mm512_broadcast_f64x2 (__m128d const * mem_addr)
+        ///   VBROADCASTF64x2 zmm1 {k1}{z}, m128
+        /// </summary>
+        public static unsafe Vector512<double> BroadcastVector128ToVector512(double* address) => BroadcastVector128ToVector512(address);
+
+        /// <summary>
+        /// __m512i _mm512_broadcast_i32x8 (__m256i const * mem_addr)
+        ///   VBROADCASTI32x8 zmm1 {k1}{z}, m256
+        /// </summary>
+        public static unsafe Vector512<int> BroadcastVector256ToVector512(int* address) => BroadcastVector256ToVector512(address);
+        /// <summary>
+        /// __m512i _mm512_broadcast_i32x8 (__m256i const * mem_addr)
+        ///   VBROADCASTI32x8 zmm1 {k1}{z}, m256
+        /// </summary>
+        public static unsafe Vector512<uint> BroadcastVector256ToVector512(uint* address) => BroadcastVector256ToVector512(address);
+        /// <summary>
+        /// __m512 _mm512_broadcast_f32x8 (__m256 const * mem_addr)
+        ///   VBROADCASTF32x8 zmm1 {k1}{z}, m256
+        /// </summary>
+        public static unsafe Vector512<float> BroadcastVector256ToVector512(float* address) => BroadcastVector256ToVector512(address);
 
         /// <summary>
         /// __m512i _mm512_mullo_epi64 (__m512i a, __m512i b)
