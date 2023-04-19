@@ -9143,7 +9143,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
 
     if (hp->IsInFrozenSegment((Object*)objectId))
     {
-        range->generation = (COR_PRF_GC_GENERATION)-1;
+        range->generation = (COR_PRF_GC_GENERATION)INT32_MAX;
         range->rangeStart = 0;
         range->rangeLength = 0;
         range->rangeLengthReserved = 0;
