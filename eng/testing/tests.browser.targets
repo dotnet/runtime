@@ -41,6 +41,21 @@
     <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(BuildAOTTestsOn)' == 'local'">
+    <!--
+      When building for BuildAOTTestsOnHelix=true, the WasmApp*targets are *not* imported, because
+      they get instead used by the AOT proxy project on helix.
+
+      On the build machine only the regular part of the build is run, which includes trimming. But if
+      WasmApp*targets modify any trimming arguments, then those will not get picked up by this build.
+      For example - linker substitution files used with simd builds.
+
+      So, set those parameters explicitly here.
+      -->
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MonoProjectRoot)\wasm\build\ILLink.Substitutions.LegacyJsInterop.xml&quot;</_ExtraTrimmerArgs>
+  </PropertyGroup>
+
+
   <!-- On CI this is installed as part of pretest, but it should still be installed
        for WBT, and debugger tests -->
   <Import Project="$(MSBuildThisFileDirectory)wasm-provisioning.targets"
@@ -125,11 +140,6 @@
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
     <!-- wasm targets are not imported at all, in this case, because we run the wasm build on helix -->
   </PropertyGroup>
-  <ItemGroup Condition="'$(BuildAOTTestsOn)' == 'helix'">
-    <TrimmerRootDescriptor
-      Condition="'$(WasmEnableLegacyJsInterop)' == 'true'"
-      Include="$(MonoProjectRoot)\wasm\build\ILLink.Descriptors.LegacyJsInterop.xml" />
-  </ItemGroup>
 
   <PropertyGroup Condition="'$(IsWasmProject)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
     <WasmBuildOnlyAfterPublish>true</WasmBuildOnlyAfterPublish>

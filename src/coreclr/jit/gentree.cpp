@@ -3264,7 +3264,6 @@ AGAIN:
                     break;
 
                 case GT_STORE_BLK:
-                case GT_STORE_OBJ:
                     hash ^= PtrToUlong(tree->AsBlk()->GetLayout());
                     break;
 
@@ -6673,7 +6672,6 @@ bool GenTree::OperIsImplicitIndir() const
         case GT_CMPXCHG:
         case GT_BLK:
         case GT_STORE_BLK:
-        case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
         case GT_BOX:
         case GT_ARR_INDEX:
@@ -6973,7 +6971,6 @@ GenTree::VtablePtr GenTree::GetVtableForOper(genTreeOps oper)
 
         // Handle the special cases.
         // The following opers are in GTSTRUCT_N but no other place (namely, no subtypes).
-        case GT_STORE_OBJ:
         case GT_STORE_BLK:
         case GT_BLK:
         {
@@ -7769,6 +7766,11 @@ GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHn
         fieldNode->gtFlags |= GTF_GLOB_REF;
     }
 
+    if ((obj != nullptr) && fgAddrCouldBeNull(obj))
+    {
+        fieldNode->gtFlags |= GTF_EXCEPT;
+    }
+
     return fieldNode;
 }
 
@@ -7801,7 +7803,11 @@ GenTreeField* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HANDLE 
         varDsc->lvFieldAccessed = 1;
     }
 
-    // TODO-ADDR: add GTF_EXCEPT handling here and delete it from callers.
+    if ((obj != nullptr) && fgAddrCouldBeNull(obj))
+    {
+        fieldNode->gtFlags |= GTF_EXCEPT;
+    }
+
     return fieldNode;
 }
 
@@ -10494,7 +10500,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             case GT_LEA:
             case GT_BLK:
             case GT_STORE_BLK:
-            case GT_STORE_OBJ:
             case GT_STORE_DYN_BLK:
 
             case GT_IND:
@@ -10806,7 +10811,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             {
                 ClassLayout* layout = nullptr;
 
-                if (tree->OperIs(GT_BLK, GT_STORE_BLK, GT_STORE_OBJ))
+                if (tree->OperIs(GT_BLK, GT_STORE_BLK))
                 {
                     layout = tree->AsBlk()->GetLayout();
                 }

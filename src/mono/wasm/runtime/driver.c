@@ -57,7 +57,7 @@ extern void mono_wasm_register_timezones_bundle();
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 static void mono_wasm_init_finalizer_thread (void);
 
-#ifdef ENABLE_LEGACY_JS_INTEROP
+#ifndef DISABLE_LEGACY_JS_INTEROP
 
 #define MARSHAL_TYPE_NULL 0
 #define MARSHAL_TYPE_INT 1
@@ -113,7 +113,7 @@ static int resolved_datetime_class = 0,
 	resolved_safehandle_class = 0,
 	resolved_voidtaskresult_class = 0;
 
-#endif /* ENABLE_LEGACY_JS_INTEROP */
+#endif /* DISABLE_LEGACY_JS_INTEROP */
 
 int mono_wasm_enable_gc = 1;
 
@@ -781,7 +781,7 @@ mono_wasm_string_from_utf16_ref (const mono_unichar2 * chars, int length, MonoSt
 	MONO_EXIT_GC_UNSAFE;
 }
 
-#ifdef ENABLE_LEGACY_JS_INTEROP
+#ifndef DISABLE_LEGACY_JS_INTEROP
 
 static int
 class_is_task (MonoClass *klass)
@@ -1215,7 +1215,7 @@ mono_wasm_string_array_new_ref (int size, MonoArray **result)
 	MONO_EXIT_GC_UNSAFE;
 }
 
-#endif /* ENABLE_LEGACY_JS_INTEROP */
+#endif /* DISABLE_LEGACY_JS_INTEROP */
 
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_exec_regression (int verbose_level, char *image)
