@@ -130,7 +130,7 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
     {
         if (id->idIsLclVarPair())
         {
-            return sizeof(instrDescStrPairCns);
+            return sizeof(instrDescLclVarPairCns);
         }
         else if (id->idIsLargeDsp())
         {
@@ -145,7 +145,7 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
     {
         if (id->idIsLclVarPair())
         {
-            return sizeof(instrDescStrPair);
+            return sizeof(instrDescLclVarPair);
         }
         else if (id->idIsLargeDsp())
         {
@@ -6568,16 +6568,16 @@ void emitter::emitIns_SS_R_R_R_I(instruction ins,
 
     if (validVar1 && validVar2)
     {
-        id = emitNewInstrStrPair(attr, imm);
+        id = emitNewInstrLclVarPair(attr, imm);
         id->idAddr()->iiaLclVar.initLclVarAddr(varx1, offs);
 
         if (id->idSmallCns())
         {
-            ((instrDescStrPair*)id)->iiaLclVar2.initLclVarAddr(varx2, offs);
+            ((instrDescLclVarPair*)id)->iiaLclVar2.initLclVarAddr(varx2, offs);
         }
         else
         {
-            ((instrDescStrPairCns*)id)->iiaLclVar2.initLclVarAddr(varx2, offs);
+            ((instrDescLclVarPairCns*)id)->iiaLclVar2.initLclVarAddr(varx2, offs);
         }
     }
     else
@@ -11879,11 +11879,11 @@ SKIP_GC_UPDATE:
                     // that should be tracked.
                     if (id->idSmallCns())
                     {
-                        varNum2 = ((instrDescStrPair*)id)->iiaLclVar2.lvaVarNum();
+                        varNum2 = ((instrDescLclVarPair*)id)->iiaLclVar2.lvaVarNum();
                     }
                     else
                     {
-                        varNum2 = ((instrDescStrPairCns*)id)->iiaLclVar2.lvaVarNum();
+                        varNum2 = ((instrDescLclVarPairCns*)id)->iiaLclVar2.lvaVarNum();
                     }
                 }
                 assert(varNum2 != -1);
