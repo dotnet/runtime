@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -358,6 +357,12 @@ namespace Internal.TypeSystem
                 layoutMetadata.Size,
                 out instanceByteSizeAndAlignment);
 
+            // inline array cannot have explicit layout
+            if (type.IsInlineArray)
+            {
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayExplicit, type);
+            }
+
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
             {
                 IsAutoLayoutOrHasAutoLayoutFields = hasAutoLayoutField,
@@ -429,6 +434,11 @@ namespace Internal.TypeSystem
                 layoutMetadata.Size,
                 out instanceByteSizeAndAlignment);
 
+            if (type.IsInlineArray)
+            {
+                AdjustForInlineArray(type, numInstanceFields, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
+            }
+
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
             {
                 IsAutoLayoutOrHasAutoLayoutFields = hasAutoLayoutField,
@@ -442,6 +452,45 @@ namespace Internal.TypeSystem
             computedLayout.LayoutAbiStable = layoutAbiStable;
 
             return computedLayout;
+        }
+
+        private static void AdjustForInlineArray(
+            MetadataType type,
+            int instanceFieldCount,
+            ref SizeAndAlignment instanceByteSizeAndAlignment,
+            ref SizeAndAlignment instanceSizeAndAlignment)
+        {
+            int repeat = type.GetInlineArrayLength();
+
+            if (repeat <= 0)
+            {
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayLength, type);
+            }
+
+            if (instanceFieldCount != 1)
+            {
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayFieldCount, type);
+            }
+
+            if (!instanceByteSizeAndAlignment.Size.IsIndeterminate)
+            {
+                long size = instanceByteSizeAndAlignment.Size.AsInt;
+                size *= repeat;
+
+                // limit the max size of array instance to 1MiB
+                const int maxSize = 1024 * 1024;
+                if (size > maxSize)
+                {
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, type);
+                }
+
+                instanceByteSizeAndAlignment.Size = new LayoutInt((int)size);
+            }
+
+            if (!instanceSizeAndAlignment.Size.IsIndeterminate)
+            {
+                instanceSizeAndAlignment.Size = new LayoutInt(instanceSizeAndAlignment.Size.AsInt * repeat);
+            }
         }
 
         protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8, bool requiresAlignedBase)
@@ -745,6 +794,11 @@ namespace Internal.TypeSystem
                 minAlign,
                 classLayoutSize: 0,
                 byteCount: out instanceByteSizeAndAlignment);
+
+            if (type.IsInlineArray)
+            {
+                AdjustForInlineArray(type, numInstanceFields, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
+            }
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
             {

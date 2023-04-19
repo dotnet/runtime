@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using Xunit;
 
@@ -1442,26 +1443,53 @@ namespace System.Tests
         [Fact]
         public static void TryFormat_ToString_EqualResults()
         {
-            DateTimeOffset expected = DateTimeOffset.MaxValue;
-            string expectedString = expected.ToString();
+            // UTF16
+            {
+                DateTimeOffset expected = DateTimeOffset.MaxValue;
+                string expectedString = expected.ToString();
 
-            // Just the right amount of space, succeeds
-            Span<char> actual = new char[expectedString.Length];
-            Assert.True(expected.TryFormat(actual, out int charsWritten));
-            Assert.Equal(expectedString.Length, charsWritten);
-            Assert.Equal<char>(expectedString.ToCharArray(), actual.ToArray());
+                // Just the right amount of space, succeeds
+                Span<char> actual = new char[expectedString.Length];
+                Assert.True(expected.TryFormat(actual, out int charsWritten));
+                Assert.Equal(expectedString.Length, charsWritten);
+                Assert.Equal<char>(expectedString.ToCharArray(), actual.ToArray());
 
-            // Too little space, fails
-            actual = new char[expectedString.Length - 1];
-            Assert.False(expected.TryFormat(actual, out charsWritten));
-            Assert.Equal(0, charsWritten);
+                // Too little space, fails
+                actual = new char[expectedString.Length - 1];
+                Assert.False(expected.TryFormat(actual, out charsWritten));
+                Assert.Equal(0, charsWritten);
 
-            // More than enough space, succeeds
-            actual = new char[expectedString.Length + 1];
-            Assert.True(expected.TryFormat(actual, out charsWritten));
-            Assert.Equal(expectedString.Length, charsWritten);
-            Assert.Equal<char>(expectedString.ToCharArray(), actual.Slice(0, expectedString.Length).ToArray());
-            Assert.Equal(0, actual[actual.Length - 1]);
+                // More than enough space, succeeds
+                actual = new char[expectedString.Length + 1];
+                Assert.True(expected.TryFormat(actual, out charsWritten));
+                Assert.Equal(expectedString.Length, charsWritten);
+                Assert.Equal<char>(expectedString.ToCharArray(), actual.Slice(0, expectedString.Length).ToArray());
+                Assert.Equal(0, actual[actual.Length - 1]);
+            }
+
+            // UTF8
+            {
+                DateTimeOffset expected = DateTimeOffset.MaxValue;
+                string expectedString = expected.ToString();
+
+                // Just the right amount of space, succeeds
+                Span<byte> actual = new byte[expectedString.Length];
+                Assert.True(expected.TryFormat(actual, out int bytesWritten, default, null));
+                Assert.Equal(expectedString.Length, bytesWritten);
+                Assert.Equal(expectedString, Encoding.UTF8.GetString(actual));
+
+                // Too little space, fails
+                actual = new byte[expectedString.Length - 1];
+                Assert.False(expected.TryFormat(actual, out bytesWritten, default, null));
+                Assert.Equal(0, bytesWritten);
+
+                // More than enough space, succeeds
+                actual = new byte[expectedString.Length + 1];
+                Assert.True(expected.TryFormat(actual, out bytesWritten, default, null));
+                Assert.Equal(expectedString.Length, bytesWritten);
+                Assert.Equal(expectedString, Encoding.UTF8.GetString(actual.Slice(0, expectedString.Length)));
+                Assert.Equal(0, actual[actual.Length - 1]);
+            }
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
@@ -1469,13 +1497,27 @@ namespace System.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60562", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void TryFormat_MatchesExpected(DateTimeOffset dateTimeOffset, string format, IFormatProvider provider, string expected)
         {
-            var destination = new char[expected.Length];
+            // UTF16
+            {
+                var destination = new char[expected.Length];
 
-            Assert.False(dateTimeOffset.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
+                Assert.False(dateTimeOffset.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
 
-            Assert.True(dateTimeOffset.TryFormat(destination, out int charsWritten, format, provider));
-            Assert.Equal(destination.Length, charsWritten);
-            Assert.Equal(expected, new string(destination));
+                Assert.True(dateTimeOffset.TryFormat(destination, out int charsWritten, format, provider));
+                Assert.Equal(destination.Length, charsWritten);
+                Assert.Equal(expected, new string(destination));
+            }
+
+            // UTF8
+            {
+                var destination = new byte[expected.Length];
+
+                Assert.False(dateTimeOffset.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
+
+                Assert.True(dateTimeOffset.TryFormat(destination, out int bytesWritten, format, provider));
+                Assert.Equal(destination.Length, bytesWritten);
+                Assert.Equal(expected, Encoding.UTF8.GetString(destination));
+            }
         }
 
         [Fact]

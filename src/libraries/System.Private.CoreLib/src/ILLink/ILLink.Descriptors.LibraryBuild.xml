@@ -30,6 +30,8 @@
     </type>
     <type fullname="Internal.Runtime.InteropServices.ComponentActivator">
       <!-- Used by hostpolicy.cpp -->
+      <method name="LoadAssembly" />
+      <method name="LoadAssemblyBytes" />
       <method name="LoadAssemblyAndGetFunctionPointer" />
       <method name="GetFunctionPointer" />
     </type>

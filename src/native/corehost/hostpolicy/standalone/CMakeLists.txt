@@ -33,4 +33,4 @@ if(CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 install_with_stripped_symbols(hostpolicy TARGETS corehost)
-target_link_libraries(hostpolicy libhostcommon)
+target_link_libraries(hostpolicy PRIVATE libhostcommon)

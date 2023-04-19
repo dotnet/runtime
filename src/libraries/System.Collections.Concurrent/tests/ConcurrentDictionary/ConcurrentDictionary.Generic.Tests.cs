@@ -189,6 +189,7 @@ namespace System.Collections.Concurrent.Tests
 
         protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations) => new List<ModifyEnumerable>();
 
+        protected override bool Enumerator_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
         protected override bool IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified => false;
 
         protected override bool IDictionary_Generic_Keys_Values_ModifyingTheDictionaryUpdatesTheCollection => false;

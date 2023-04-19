@@ -14,10 +14,10 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		// Maps from suite name to a set of testcase names.
 		// Suite name is:
-		// - The namespace of the test class, minus "Mono.Linker.Tests.Cases", for linker tests
+		// - The namespace of the test class, minus "Mono.Linker.Tests.Cases", for ILLink tests
 		// - The namespace + test class name, minus "ILLink.RoslynAnalyzer.Tests", for analyzer tests
 		// Testcase name is:
-		// - The test class name, for linker tests
+		// - The test class name, for ILLink tests
 		// - The test fact method name, minus "Tests", for analyzer tests
 		// For example:
 		// | Testcase                | Suite name           | Linker                                     | Analyzer                                |

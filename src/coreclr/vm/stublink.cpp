@@ -1891,7 +1891,6 @@ UINT StubLinker::GetStackFrameSize()
     return m_cbStackSpace + (2 + m_cCalleeSavedRegs + m_cIntRegArgs + m_cVecRegArgs)*sizeof(void*);
 }
 
-
 #endif // ifdef TARGET_ARM, elif defined(TARGET_ARM64)
 
 #endif // #ifndef DACCESS_COMPILE

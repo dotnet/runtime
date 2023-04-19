@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="ru" original="../Strings.resx">
+    <body>
+      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
+        <source>The project's language version has to be at least 'C# 11'.</source>
+        <target state="translated">Версия языка проекта должна быть не ниже "C# 11".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LanguageVersionIsNotSupportedTitle">
+        <source>Language version is required to be at least C# 11</source>
+        <target state="translated">Версия языка должна быть не ниже C# 11</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyNotSupportedMessageFormat">
+        <source>Property '{0}' on type '{1}' is not supported.</source>
+        <target state="translated">Свойство "{0}" типа "{1}" не поддерживается.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyNotSupportedTitle">
+        <source>Did not generate binding logic for a property on a type</source>
+        <target state="translated">Не создана логика привязки для свойства типа</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageFormat">
+        <source>Type '{0}' is not supported: {1}.</source>
+        <target state="translated">Тип "{0}" не поддерживается: {1}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedTitle">
+        <source>Did not generate binding logic for a type</source>
+        <target state="translated">Не создана логика привязки для типа</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

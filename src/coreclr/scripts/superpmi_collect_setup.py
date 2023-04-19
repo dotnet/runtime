@@ -47,7 +47,7 @@ from jitutil import run_command, copy_directory, copy_files, set_pipeline_variab
 
 parser = argparse.ArgumentParser(description="description")
 
-parser.add_argument("-collection_type", required=True, help="Type of the SPMI collection to be done (crossgen2, pmi, run)")
+parser.add_argument("-collection_type", required=True, help="Type of the SPMI collection to be done (crossgen2, pmi, run, run_tiered, run_pgo)")
 parser.add_argument("-collection_name", required=True, help="Name of the SPMI collection to be done (e.g., libraries, libraries_tests, coreclr_tests, benchmarks)")
 parser.add_argument("-payload_directory", required=True, help="Path to payload directory to create: subdirectories are created for the correlation payload as well as the per-partition work items")
 parser.add_argument("-source_directory", required=True, help="Path to source directory")
@@ -60,7 +60,7 @@ parser.add_argument("-max_size", help="Max size of each partition in MB (for pmi
 
 is_windows = platform.system() == "Windows"
 
-legal_collection_types = [ "crossgen2", "pmi", "run" ]
+legal_collection_types = [ "crossgen2", "pmi", "run", "run_tiered", "run_pgo" ]
 
 directories_to_ignore = [
     "runtimes", # This appears to be the result of a nuget package that includes a bunch of native code
@@ -405,7 +405,7 @@ def setup_microbenchmark(workitem_directory, arch):
         # have not published yet. As a result, we hit errors of "dotnet restore". As a workaround, hard code the
         # working version until we move to ".NET 8" in the script.
         run_command(
-            get_python_name() + [dotnet_install_script, "install", "--dotnet-versions", "8.0.100-alpha.1.22558.2", "--architecture", arch, "--install-dir",
+            get_python_name() + [dotnet_install_script, "install", "--channels", "8.0-preview", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
 
 

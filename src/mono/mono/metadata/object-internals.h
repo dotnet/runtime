@@ -687,7 +687,6 @@ typedef struct {
 	gpointer (*create_jit_trampoline) (MonoMethod *method, MonoError *error);
 	/* used to free a dynamic method */
 	void     (*free_method) (MonoMethod *method);
-	gpointer (*create_delegate_trampoline) (MonoClass *klass);
 	GHashTable *(*get_weak_field_indexes) (MonoImage *image);
 	gboolean (*is_interpreter_enabled) (void);
 	void (*init_mem_manager)(MonoMemoryManager*);
@@ -836,17 +835,15 @@ struct _MonoDelegate {
 	gpointer delegate_trampoline;
 	/* Extra argument passed to the target method in llvmonly mode */
 	gpointer extra_arg;
-	/*
-	 * If non-NULL, this points to a memory location which stores the address of
-	 * the compiled code of the method, or NULL if it is not yet compiled.
-	 */
-	guint8 **method_code;
+	/* MonoDelegateTrampInfo */
+	gpointer invoke_info;
 	gpointer interp_method;
 	/* Interp method that is executed when invoking the delegate */
 	gpointer interp_invoke_impl;
 	MonoReflectionMethod *method_info;
 	MonoReflectionMethod *original_method_info;
 	MonoObject *data;
+	/* Whenever to resolve the target method using ldvirtftn at call time */
 	MonoBoolean method_is_virtual;
 	MonoBoolean bound;
 };

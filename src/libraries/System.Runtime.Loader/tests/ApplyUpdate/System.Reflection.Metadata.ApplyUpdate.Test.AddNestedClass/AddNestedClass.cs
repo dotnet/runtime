@@ -7,7 +7,7 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
 {
     public class AddNestedClass
     {
-        public static Action<string> X; // make the linker happy
+        public static Action<string> X; // make the trimming tools happy
         public static Delegate Y;
         public event Action<string> Evt;
         public void R () { Evt ("123"); }

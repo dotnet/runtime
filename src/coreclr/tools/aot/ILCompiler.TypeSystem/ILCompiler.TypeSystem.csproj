@@ -177,6 +177,12 @@
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.cs">
+      <Link>Utilities\TypeNameParser.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs">
+      <Link>Utilities\ValueStringBuilder.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\GCPointerMap.Algorithm.cs">
       <Link>Utilities\GCPointerMap.Algorithm.cs</Link>
     </Compile>
@@ -390,9 +396,6 @@
     <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaField.CodeGen.cs">
       <Link>Ecma\EcmaField.CodeGen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaField.Serialization.cs">
-      <Link>Ecma\EcmaField.Serialization.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaGenericParameter.Sorting.cs">
       <Link>Ecma\EcmaGenericParameter.Sorting.cs</Link>
     </Compile>
@@ -401,9 +404,6 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaModule.Sorting.cs">
       <Link>Ecma\EcmaModule.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaType.Serialization.cs">
-      <Link>Ecma\EcmaType.Serialization.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaType.Sorting.cs">
       <Link>Ecma\EcmaType.Sorting.cs</Link>
@@ -524,12 +524,6 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.Sorting.cs">
       <Link>IL\Stubs\PInvokeTargetNativeMethod.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Serialization\FieldDesc.Serialization.cs">
-      <Link>TypeSystem\CodeGen\FieldDesc.Serialization.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Serialization\TypeDesc.Serialization.cs">
-      <Link>TypeSystem\CodeGen\TypeDesc.Serialization.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Sorting\FieldDesc.Sorting.cs">
       <Link>TypeSystem\Sorting\FieldDesc.Sorting.cs</Link>

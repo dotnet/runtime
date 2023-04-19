@@ -369,8 +369,6 @@ namespace System.Threading.Tasks
         // internal helper function breaks out logic used by TaskCompletionSource
         internal bool TrySetResult(TResult? result)
         {
-            Debug.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
-
             bool returnValue = false;
 
             // "Reserve" the completion for this task, while making sure that: (1) No prior reservation
@@ -538,22 +536,47 @@ namespace System.Threading.Tasks
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
         /// <returns>The <see cref="Task{TResult}"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
         public new Task<TResult> WaitAsync(CancellationToken cancellationToken) =>
-            WaitAsync(Timeout.UnsignedInfinite, cancellationToken);
+            WaitAsync(Timeout.UnsignedInfinite, TimeProvider.System, cancellationToken);
 
         /// <summary>Gets a <see cref="Task{TResult}"/> that will complete when this <see cref="Task{TResult}"/> completes or when the specified timeout expires.</summary>
         /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
         /// <returns>The <see cref="Task{TResult}"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
         public new Task<TResult> WaitAsync(TimeSpan timeout) =>
-            WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), default);
+            WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), TimeProvider.System, default);
+
+        /// <summary>
+        /// Gets a <see cref="Task{TResult}"/> that will complete when this <see cref="Task{TResult}"/> completes or when the specified timeout expires.
+        /// </summary>
+        /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret <paramref name="timeout"/>.</param>
+        /// <returns>The <see cref="Task{TResult}"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        public new Task<TResult> WaitAsync(TimeSpan timeout, TimeProvider timeProvider)
+        {
+            ArgumentNullException.ThrowIfNull(timeProvider);
+            return WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), timeProvider, default);
+        }
 
         /// <summary>Gets a <see cref="Task{TResult}"/> that will complete when this <see cref="Task{TResult}"/> completes, when the specified timeout expires, or when the specified <see cref="CancellationToken"/> has cancellation requested.</summary>
         /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
         /// <returns>The <see cref="Task{TResult}"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
         public new Task<TResult> WaitAsync(TimeSpan timeout, CancellationToken cancellationToken) =>
-            WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), cancellationToken);
+            WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), TimeProvider.System, cancellationToken);
 
-        private Task<TResult> WaitAsync(uint millisecondsTimeout, CancellationToken cancellationToken)
+        /// <summary>
+        /// Gets a <see cref="Task{TResult}"/> that will complete when this <see cref="Task{TResult}"/> completes, when the specified timeout expires, or when the specified <see cref="CancellationToken"/> has cancellation requested.
+        /// </summary>
+        /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret <paramref name="timeout"/>.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
+        /// <returns>The <see cref="Task{TResult}"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        public new Task<TResult> WaitAsync(TimeSpan timeout, TimeProvider timeProvider, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(timeProvider);
+            return WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), timeProvider, cancellationToken);
+        }
+
+        private Task<TResult> WaitAsync(uint millisecondsTimeout, TimeProvider timeProvider, CancellationToken cancellationToken)
         {
             if (IsCompleted || (!cancellationToken.CanBeCanceled && millisecondsTimeout == Timeout.UnsignedInfinite))
             {
@@ -570,7 +593,7 @@ namespace System.Threading.Tasks
                 return FromException<TResult>(new TimeoutException());
             }
 
-            return new CancellationPromise<TResult>(this, millisecondsTimeout, cancellationToken);
+            return new CancellationPromise<TResult>(this, millisecondsTimeout, timeProvider, cancellationToken);
         }
         #endregion
 

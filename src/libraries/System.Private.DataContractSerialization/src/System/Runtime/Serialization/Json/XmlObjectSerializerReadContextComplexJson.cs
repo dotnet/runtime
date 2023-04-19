@@ -19,7 +19,9 @@ namespace System.Runtime.Serialization.Json
         private readonly bool _useSimpleDictionaryFormat;
 
         internal XmlObjectSerializerReadContextComplexJson(DataContractJsonSerializer serializer, DataContract rootTypeDataContract)
+#pragma warning disable SYSLIB0050 // StreamingContext ctor is obsolete
             : base(serializer, serializer.MaxItemsInObjectGraph, new StreamingContext(StreamingContextStates.All), serializer.IgnoreExtensionDataObject)
+#pragma warning restore SYSLIB0050
         {
             this.rootTypeDataContract = rootTypeDataContract;
             this.serializerKnownTypeList = serializer.knownTypeList;
@@ -107,8 +109,7 @@ namespace System.Runtime.Serialization.Json
                     dataNode = ReadNumericalPrimitiveExtensionDataValue(xmlReader);
                     break;
                 default:
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                        XmlObjectSerializer.CreateSerializationException(SR.Format(SR.JsonUnexpectedAttributeValue, _extensionDataValueType)));
+                    throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.JsonUnexpectedAttributeValue, _extensionDataValueType));
             }
 
             xmlReader.ReadEndElement();
@@ -311,8 +312,8 @@ namespace System.Runtime.Serialization.Json
 
         public static void ThrowDuplicateMemberException(object obj, XmlDictionaryString[] memberNames, int memberIndex)
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(
-                SR.Format(SR.JsonDuplicateMemberInInput, DataContract.GetClrTypeFullName(obj.GetType()), memberNames[memberIndex])));
+            throw new SerializationException(
+                SR.Format(SR.JsonDuplicateMemberInInput, DataContract.GetClrTypeFullName(obj.GetType()), memberNames[memberIndex]));
         }
 
         public static void ThrowMissingRequiredMembers(object obj, XmlDictionaryString[] memberNames, byte[] expectedElements, byte[] requiredElements)
@@ -332,13 +333,13 @@ namespace System.Runtime.Serialization.Json
 
             if (missingMembersCount == 1)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.Format(
-                 SR.JsonOneRequiredMemberNotFound, DataContract.GetClrTypeFullName(obj.GetType()), stringBuilder.ToString())));
+                throw new SerializationException(SR.Format(
+                 SR.JsonOneRequiredMemberNotFound, DataContract.GetClrTypeFullName(obj.GetType()), stringBuilder.ToString()));
             }
             else
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.Format(
-                    SR.JsonRequiredMembersNotFound, DataContract.GetClrTypeFullName(obj.GetType()), stringBuilder.ToString())));
+                throw new SerializationException(SR.Format(
+                    SR.JsonRequiredMembersNotFound, DataContract.GetClrTypeFullName(obj.GetType()), stringBuilder.ToString()));
             }
         }
 

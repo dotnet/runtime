@@ -29,7 +29,6 @@
           dotnet/icu
           dotnet/sdk
           dotnet/windowsdesktop
-          dotnet/linker
       -->
 
       <TpnRepo Condition="'%(TpnRepo.Branch)' == ''" Branch="main" />

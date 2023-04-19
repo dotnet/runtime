@@ -34,7 +34,10 @@ namespace System
           ISpanFormattable,
           IBinaryInteger<char>,
           IMinMaxValue<char>,
-          IUnsignedNumber<char>
+          IUnsignedNumber<char>,
+          IUtf8SpanFormattable,
+          IUtfChar<char>,
+          IBinaryIntegerParseAndFormatInfo<char>
     {
         //
         // Member Variables
@@ -191,33 +194,45 @@ namespace System
             return false;
         }
 
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            new Rune(this).TryEncodeToUtf8(utf8Destination, out bytesWritten);
+
         string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString(m_value);
 
         public static char Parse(string s)
         {
-            if (s == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            }
+            if (s is null) { ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s); }
+            return Parse(s.AsSpan());
+        }
 
+        internal static char Parse(ReadOnlySpan<char> s)
+        {
             if (s.Length != 1)
             {
-                throw new FormatException(SR.Format_NeedSingleChar);
+                ThrowHelper.ThrowFormatException_NeedSingleChar();
             }
             return s[0];
         }
 
         public static bool TryParse([NotNullWhen(true)] string? s, out char result)
         {
-            result = '\0';
-            if (s == null)
+            if (s is null)
             {
+                result = '\0';
                 return false;
             }
+            return TryParse(s.AsSpan(), out result);
+        }
+
+        internal static bool TryParse(ReadOnlySpan<char> s, out char result)
+        {
             if (s.Length != 1)
             {
+                result = '\0';
                 return false;
             }
+
             result = s[0];
             return true;
         }
@@ -410,11 +425,9 @@ namespace System
         // Determines whether a character is a punctuation mark.
         public static bool IsPunctuation(char c)
         {
-            if (IsLatin1(c))
-            {
-                return CheckPunctuation(GetLatin1UnicodeCategory(c));
-            }
-            return CheckPunctuation(CharUnicodeInfo.GetUnicodeCategory(c));
+            return CheckPunctuation(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategory(c));
         }
 
         /*=================================CheckLetterOrDigit=====================================
@@ -422,17 +435,23 @@ namespace System
         ==============================================================================*/
         internal static bool CheckLetterOrDigit(UnicodeCategory uc)
         {
-            return CheckLetter(uc) || uc == UnicodeCategory.DecimalDigitNumber;
+            const int LetterOrDigitCategories =
+                1 << (int)UnicodeCategory.UppercaseLetter |
+                1 << (int)UnicodeCategory.LowercaseLetter |
+                1 << (int)UnicodeCategory.TitlecaseLetter |
+                1 << (int)UnicodeCategory.ModifierLetter |
+                1 << (int)UnicodeCategory.OtherLetter |
+                1 << (int)UnicodeCategory.DecimalDigitNumber;
+
+            return (LetterOrDigitCategories & (1 << (int)uc)) != 0;
         }
 
         // Determines whether a character is a letter or a digit.
         public static bool IsLetterOrDigit(char c)
         {
-            if (IsLatin1(c))
-            {
-                return CheckLetterOrDigit(GetLatin1UnicodeCategory(c));
-            }
-            return CheckLetterOrDigit(CharUnicodeInfo.GetUnicodeCategory(c));
+            return CheckLetterOrDigit(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategory(c));
         }
 
         /*===================================ToUpper====================================
@@ -653,12 +672,9 @@ namespace System
             }
 
             char c = s[index];
-            if (IsLatin1(c))
-            {
-                return CheckLetterOrDigit(GetLatin1UnicodeCategory(c));
-            }
-
-            return CheckLetterOrDigit(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
+            return CheckLetterOrDigit(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsLower(string s, int index)
@@ -748,12 +764,9 @@ namespace System
             }
 
             char c = s[index];
-            if (IsLatin1(c))
-            {
-                return CheckPunctuation(GetLatin1UnicodeCategory(c));
-            }
-
-            return CheckPunctuation(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
+            return CheckPunctuation(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         /*================================= CheckSeparator ============================
@@ -831,11 +844,9 @@ namespace System
 
         public static bool IsSymbol(char c)
         {
-            if (IsLatin1(c))
-            {
-                return CheckSymbol(GetLatin1UnicodeCategory(c));
-            }
-            return CheckSymbol(CharUnicodeInfo.GetUnicodeCategory(c));
+            return CheckSymbol(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategory(c));
         }
 
         public static bool IsSymbol(string s, int index)
@@ -850,12 +861,9 @@ namespace System
             }
 
             char c = s[index];
-            if (IsLatin1(c))
-            {
-                return CheckSymbol(GetLatin1UnicodeCategory(c));
-            }
-
-            return CheckSymbol(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
+            return CheckSymbol(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsUpper(string s, int index)
@@ -1000,7 +1008,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            if (index + 1 < s.Length)
+            if ((uint)(index + 1) < (uint)s.Length)
             {
                 return IsSurrogatePair(s[index], s[index + 1]);
             }
@@ -1102,45 +1110,39 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
-            if (index < 0 || index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
             }
+
             // Check if the character at index is a high surrogate.
-            int temp1 = (int)s[index] - CharUnicodeInfo.HIGH_SURROGATE_START;
-            if (temp1 >= 0 && temp1 <= 0x7ff)
+            int temp1 = s[index] - CharUnicodeInfo.HIGH_SURROGATE_START;
+            if ((uint)temp1 <= 0x7ff)
             {
                 // Found a surrogate char.
+                bool invalidIsLow = true;
                 if (temp1 <= 0x3ff)
                 {
                     // Found a high surrogate.
-                    if (index < s.Length - 1)
+                    if ((uint)(index + 1) < (uint)s.Length)
                     {
-                        int temp2 = (int)s[index + 1] - CharUnicodeInfo.LOW_SURROGATE_START;
-                        if (temp2 >= 0 && temp2 <= 0x3ff)
+                        int temp2 = s[index + 1] - CharUnicodeInfo.LOW_SURROGATE_START;
+                        if ((uint)temp2 <= 0x3ff)
                         {
                             // Found a low surrogate.
                             return (temp1 * 0x400) + temp2 + UNICODE_PLANE01_START;
                         }
-                        else
-                        {
-                            throw new ArgumentException(SR.Format(SR.Argument_InvalidHighSurrogate, index), nameof(s));
-                        }
                     }
-                    else
-                    {
-                        // Found a high surrogate at the end of the string.
-                        throw new ArgumentException(SR.Format(SR.Argument_InvalidHighSurrogate, index), nameof(s));
-                    }
+
+                    invalidIsLow = false;
                 }
-                else
-                {
-                    // Find a low surrogate at the character pointed by index.
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidLowSurrogate, index), nameof(s));
-                }
+
+                throw new ArgumentException(SR.Format(invalidIsLow ? SR.Argument_InvalidLowSurrogate : SR.Argument_InvalidHighSurrogate, index), nameof(s));
+
             }
-            // Not a high-surrogate or low-surrogate. Genereate the UTF32 value for the BMP characters.
-            return (int)s[index];
+
+            // Not a high-surrogate or low-surrogate. Generate the UTF32 value for the BMP characters.
+            return s[index];
         }
 
         //
@@ -1516,14 +1518,7 @@ namespace System
 
         static char INumberBase<char>.Parse(string s, NumberStyles style, IFormatProvider? provider) => Parse(s);
 
-        static char INumberBase<char>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
-        {
-            if (s.Length != 1)
-            {
-                throw new FormatException(SR.Format_NeedSingleChar);
-            }
-            return s[0];
-        }
+        static char INumberBase<char>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider) => Parse(s);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1937,16 +1932,7 @@ namespace System
 
         static bool INumberBase<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
-        static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result)
-        {
-            if (s.Length != 1)
-            {
-                result = default;
-                return false;
-            }
-            result = s[0];
-            return true;
-        }
+        static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
         //
         // IParsable
@@ -1973,25 +1959,9 @@ namespace System
         // ISpanParsable
         //
 
-        static char ISpanParsable<char>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-        {
-            if (s.Length != 1)
-            {
-                throw new FormatException(SR.Format_NeedSingleChar);
-            }
-            return s[0];
-        }
+        static char ISpanParsable<char>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
 
-        static bool ISpanParsable<char>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out char result)
-        {
-            if (s.Length != 1)
-            {
-                result = default;
-                return false;
-            }
-            result = s[0];
-            return true;
-        }
+        static bool ISpanParsable<char>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
         //
         // ISubtractionOperators
@@ -2019,5 +1989,35 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static char IUnaryPlusOperators<char, char>.operator +(char value) => (char)(+value);
+
+        //
+        // IUtfChar
+        //
+
+        static char IUtfChar<char>.CastFrom(byte value) => (char)value;
+        static char IUtfChar<char>.CastFrom(char value) => value;
+        static char IUtfChar<char>.CastFrom(int value) => (char)value;
+        static char IUtfChar<char>.CastFrom(uint value) => (char)value;
+        static char IUtfChar<char>.CastFrom(ulong value) => (char)value;
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<char>.IsSigned => false;
+
+        static int IBinaryIntegerParseAndFormatInfo<char>.MaxDigitCount => 5; // 65_535
+
+        static int IBinaryIntegerParseAndFormatInfo<char>.MaxHexDigitCount => 4; // 0xFFFF
+
+        static char IBinaryIntegerParseAndFormatInfo<char>.MaxValueDiv10 => (char)(MaxValue / 10);
+
+        static string IBinaryIntegerParseAndFormatInfo<char>.OverflowMessage => SR.Overflow_Char;
+
+        static bool IBinaryIntegerParseAndFormatInfo<char>.IsGreaterThanAsUnsigned(char left, char right) => left > right;
+
+        static char IBinaryIntegerParseAndFormatInfo<char>.MultiplyBy10(char value) => (char)(value * 10);
+
+        static char IBinaryIntegerParseAndFormatInfo<char>.MultiplyBy16(char value) => (char)(value * 16);
     }
 }

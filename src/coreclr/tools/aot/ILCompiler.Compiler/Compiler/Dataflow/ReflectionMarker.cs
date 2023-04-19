@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -70,7 +71,7 @@ namespace ILCompiler.Dataflow
                     MarkEvent(origin, @event, reason);
                     break;
                     // case InterfaceImplementation
-                    //  Nothing to do currently as Native AOT will presere all interfaces on a preserved type
+                    //  Nothing to do currently as Native AOT will preserve all interfaces on a preserved type
             }
         }
 
@@ -78,19 +79,26 @@ namespace ILCompiler.Dataflow
         {
             ModuleDesc? callingModule = ((diagnosticContext.Origin.MemberDefinition as MethodDesc)?.OwningType as MetadataType)?.Module;
 
-            // NativeAOT doesn't have a fully capable type name resolver yet
-            // Once this is implemented don't forget to wire up marking of type forwards which are used in generic parameters
-            if (!DependencyAnalysis.ReflectionMethodBodyScanner.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context, out TypeDesc foundType, out ModuleDesc referenceModule))
+            List<ModuleDesc> referencedModules = new();
+            TypeDesc foundType = System.Reflection.TypeNameParser.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context,
+                referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary);
+            if (foundType == null)
             {
+                if (needsAssemblyName && typeWasNotFoundInAssemblyNorBaseLibrary)
+                    diagnosticContext.AddDiagnostic(DiagnosticId.TypeWasNotFoundInAssemblyNorBaseLibrary, typeName);
+
                 type = default;
                 return false;
             }
 
             if (_enabled)
             {
-                // Also add module metadata in case this reference was through a type forward
-                if (Factory.MetadataManager.CanGenerateMetadata(referenceModule.GetGlobalModuleType()))
-                    _dependencies.Add(Factory.ModuleMetadata(referenceModule), reason);
+                foreach (ModuleDesc referencedModule in referencedModules)
+                {
+                    // Also add module metadata in case this reference was through a type forward
+                    if (Factory.MetadataManager.CanGenerateMetadata(referencedModule.GetGlobalModuleType()))
+                        _dependencies.Add(Factory.ModuleMetadata(referencedModule), reason);
+                }
 
                 MarkType(diagnosticContext.Origin, foundType, reason);
             }
@@ -190,6 +198,9 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
+            if (type.HasStaticConstructor)
+                CheckAndWarnOnReflectionAccess(origin, type.GetStaticConstructor());
+
             if (!type.IsGenericDefinition && !type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true) && Factory.PreinitializationManager.HasLazyStaticConstructor(type))
             {
                 // Mark the GC static base - it contains a pointer to the class constructor, but also info
@@ -203,7 +214,11 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
-            if (entity.DoesMemberRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute))
+            // Note that we're using `ShouldSuppressAnalysisWarningsForRequires` instead of `DoesMemberRequire`.
+            // This is because reflection access is actually problematic on all members which are in a "requires" scope
+            // so for example even instance methods. See for example https://github.com/dotnet/linker/issues/3140 - it's possible
+            // to call a method on a "null" instance via reflection.
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute))
             {
                 if (_typeHierarchyDataFlowOrigin is not null)
                 {
@@ -215,17 +230,35 @@ namespace ILCompiler.Dataflow
                 }
                 else
                 {
-                    var diagnosticContext = new DiagnosticContext(
-                        origin,
-                        _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
-                        _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
-                        _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
-                        _logger);
+                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, requiresAttribute.Value);
+                }
+            }
 
-                    string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute.Value));
-                    string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute.Value));
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out requiresAttribute))
+            {
+                if (_typeHierarchyDataFlowOrigin is not null)
+                {
+                    // For now we decided to not report single-file warnings due to type hierarchy marking.
+                    // It is considered too complex to figure out for the user and the likelihood of this
+                    // causing problems is pretty low.
+                }
+                else
+                {
+                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, requiresAttribute.Value);
+                }
+            }
 
-                    diagnosticContext.AddDiagnostic(DiagnosticId.RequiresUnreferencedCode, entity.GetDisplayName(), arg1, arg2);
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, out requiresAttribute))
+            {
+                if (_typeHierarchyDataFlowOrigin is not null)
+                {
+                    // For now we decided to not report dynamic code warnings due to type hierarchy marking.
+                    // It is considered too complex to figure out for the user and the likelihood of this
+                    // causing problems is pretty low.
+                }
+                else
+                {
+                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, requiresAttribute.Value);
                 }
             }
 
@@ -257,6 +290,18 @@ namespace ILCompiler.Dataflow
                     }
                 }
             }
+        }
+
+        private void ReportRequires(in MessageOrigin origin, TypeSystemEntity entity, string requiresAttributeName, in CustomAttributeValue<TypeDesc> requiresAttribute)
+        {
+            var diagnosticContext = new DiagnosticContext(
+                origin,
+                _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
+                _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
+                _logger);
+
+            ReflectionMethodBodyScanner.ReportRequires(diagnosticContext, entity, requiresAttributeName, requiresAttribute);
         }
     }
 }

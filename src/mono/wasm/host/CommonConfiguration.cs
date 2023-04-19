@@ -74,7 +74,7 @@ internal sealed class CommonConfiguration
 
         HostProperties = rconfig.RuntimeOptions.WasmHostProperties;
         if (HostProperties == null)
-            throw new CommandLineException($"Failed to deserialize {_runtimeConfigPath} - config");
+            throw new CommandLineException($"Could not find any {nameof(RuntimeOptions.WasmHostProperties)} in {_runtimeConfigPath}");
 
         if (HostProperties.HostConfigs is null || HostProperties.HostConfigs.Count == 0)
             throw new CommandLineException($"no perHostConfigs found");

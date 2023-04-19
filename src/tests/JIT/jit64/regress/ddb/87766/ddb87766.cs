@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class VInline
 {
@@ -32,7 +33,8 @@ public class VInline
 }
 public class VIMain
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int ret = 100;
         VInline vi = new VInline(1);

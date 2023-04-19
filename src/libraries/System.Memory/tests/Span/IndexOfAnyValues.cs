@@ -496,8 +496,8 @@ namespace System.SpanTests
             private static void AssertionFailed<T>(ReadOnlySpan<T> haystack, ReadOnlySpan<T> needle, int expected, int actual, string approach)
                 where T : INumber<T>
             {
-                string readableHaystack = string.Join(", ", haystack.ToString().Select(c => int.CreateChecked(c)));
-                string readableNeedle = string.Join(", ", needle.ToString().Select(c => int.CreateChecked(c)));
+                string readableHaystack = string.Join(", ", haystack.ToArray().Select(c => int.CreateChecked(c)));
+                string readableNeedle = string.Join(", ", needle.ToArray().Select(c => int.CreateChecked(c)));
 
                 Assert.True(false, $"Expected {expected}, got {approach}={actual} for needle='{readableNeedle}', haystack='{readableHaystack}'");
             }

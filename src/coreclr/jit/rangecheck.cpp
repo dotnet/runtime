@@ -278,6 +278,68 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     GetOverflowMap()->RemoveAll();
     m_pSearchPath = new (m_alloc) SearchPath(m_alloc);
 
+    // Special case: arr[arr.Length - CNS] if we know that arr.Length >= CNS
+    // We assume that SUB(x, CNS) is canonized into ADD(x, -CNS)
+    VNFuncApp funcApp;
+    if (m_pCompiler->vnStore->GetVNFunc(idxVn, &funcApp) && funcApp.m_func == (VNFunc)GT_ADD)
+    {
+        bool     isArrlenAddCns = false;
+        ValueNum cnsVN          = {};
+        if ((arrLenVn == funcApp.m_args[1]) && m_pCompiler->vnStore->IsVNInt32Constant(funcApp.m_args[0]))
+        {
+            // ADD(cnsVN, arrLenVn);
+            isArrlenAddCns = true;
+            cnsVN          = funcApp.m_args[0];
+        }
+        else if ((arrLenVn == funcApp.m_args[0]) && m_pCompiler->vnStore->IsVNInt32Constant(funcApp.m_args[1]))
+        {
+            // ADD(arrLenVn, cnsVN);
+            isArrlenAddCns = true;
+            cnsVN          = funcApp.m_args[1];
+        }
+
+        if (isArrlenAddCns)
+        {
+            // Calculate range for arrLength from assertions, e.g. for
+            //
+            //   bool result = (arr.Length == 0) || (arr[arr.Length - 1] == 0);
+            //
+            // here for the array access we know that arr.Length >= 1
+            Range arrLenRange = GetRange(block, bndsChk->GetArrayLength(), false DEBUGARG(0));
+            if (arrLenRange.LowerLimit().IsConstant())
+            {
+                // Lower known limit of ArrLen:
+                const int lenLowerLimit = arrLenRange.LowerLimit().GetConstant();
+
+                // Negative delta in the array access (ArrLen + -CNS)
+                const int delta = m_pCompiler->vnStore->GetConstantInt32(cnsVN);
+                if ((lenLowerLimit > 0) && (delta < 0) && (delta > -CORINFO_Array_MaxLength) &&
+                    (lenLowerLimit >= -delta))
+                {
+                    JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
+                    m_pCompiler->optRemoveRangeCheck(bndsChk, comma, stmt);
+                    m_updateStmt = true;
+                    return;
+                }
+            }
+        }
+    }
+
+    if (m_pCompiler->vnStore->GetVNFunc(idxVn, &funcApp) && (funcApp.m_func == (VNFunc)GT_UMOD))
+    {
+        // We can always omit bound checks for Arr[X u% Arr.Length] pattern (unsigned MOD).
+        //
+        // if arr.Length is 0 we technically should keep the bounds check, but since the expression
+        // has to throw DividedByZeroException anyway - no special handling needed.
+        if (funcApp.m_args[1] == arrLenVn)
+        {
+            JITDUMP("[RangeCheck::OptimizeRangeCheck] UMOD(X, ARR_LEN) is always between bounds\n");
+            m_pCompiler->optRemoveRangeCheck(bndsChk, comma, stmt);
+            m_updateStmt = true;
+            return;
+        }
+    }
+
     // Get the range for this index.
     Range range = GetRange(block, treeIndex, false DEBUGARG(0));
 

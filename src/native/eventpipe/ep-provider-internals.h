@@ -21,7 +21,8 @@ provider_set_config (
 	int64_t keywords,
 	EventPipeEventLevel level,
 	const ep_char8_t *filter_data,
-	EventPipeProviderCallbackData *callback_data);
+	EventPipeProviderCallbackData *callback_data,
+	EventPipeSessionID session_id);
 
 // Unset the provider configuration for the specified session (disable sets of events).
 // _Requires_lock_held (ep)

@@ -10,11 +10,11 @@ The System.Collections.Immutable library is built-in as part of the shared frame
 
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />
-    
+
     <Compile Include="System\Polyfills.cs" />
     <Compile Include="System\Collections\ThrowHelper.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs" Link="System\Collections\HashHelpers.cs" />
-  
+
     <Compile Include="System\Collections\Frozen\Constants.cs" />
     <Compile Include="System\Collections\Frozen\DefaultFrozenDictionary.cs" />
     <Compile Include="System\Collections\Frozen\DefaultFrozenSet.cs" />
@@ -29,8 +29,10 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <Compile Include="System\Collections\Frozen\KeysAndValuesFrozenDictionary.cs" />
     <Compile Include="System\Collections\Frozen\SmallFrozenDictionary.cs" />
     <Compile Include="System\Collections\Frozen\SmallFrozenSet.cs" />
-    <Compile Include="System\Collections\Frozen\SmallComparableValueTypeFrozenDictionary.cs" />
-    <Compile Include="System\Collections\Frozen\SmallComparableValueTypeFrozenSet.cs" />
+    <Compile Include="System\Collections\Frozen\SmallValueTypeComparableFrozenDictionary.cs" />
+    <Compile Include="System\Collections\Frozen\SmallValueTypeComparableFrozenSet.cs" />
+    <Compile Include="System\Collections\Frozen\SmallValueTypeDefaultComparerFrozenDictionary.cs" />
+    <Compile Include="System\Collections\Frozen\SmallValueTypeDefaultComparerFrozenSet.cs" />
     <Compile Include="System\Collections\Frozen\ValueTypeDefaultComparerFrozenDictionary.cs" />
     <Compile Include="System\Collections\Frozen\ValueTypeDefaultComparerFrozenSet.cs" />
     <Compile Include="System\Collections\Frozen\Int32\Int32FrozenDictionary.cs" />
@@ -55,15 +57,15 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_FullCaseInsensitiveAscii.cs" />
     <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_FullCaseInsensitive.cs" />
     <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_Full.cs" />
-    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveSubstrring.cs" />
-    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveAsciiSubstrring.cs" />
-    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_LeftJustifiedSubstrring.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveSubstring.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveAsciiSubstring.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_LeftJustifiedSubstring.cs" />
     <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_LeftJustifiedSingleChar.cs" />
     <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveAsciiSubstring.cs" />
     <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveSubstring.cs" />
     <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_RightJustifiedSubstring.cs" />
     <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_RightJustifiedSingleChar.cs" />
-    
+
     <Compile Include="System\Collections\Generic\IHashKeyCollection.cs" />
     <Compile Include="System\Collections\Generic\ISortKeyCollection.cs" />
 

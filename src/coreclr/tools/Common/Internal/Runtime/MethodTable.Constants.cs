@@ -98,10 +98,7 @@ namespace Internal.Runtime
         /// </summary>
         CanonicalEEType = 0x00000000,
 
-        /// <summary>
-        /// Represents a type cloned from another MethodTable
-        /// </summary>
-        ClonedEEType = 0x00010000,
+        // unused = 0x00010000,
 
         /// <summary>
         /// Represents a parameterized type. For example a single dimensional array or pointer type
@@ -197,7 +194,7 @@ namespace Internal.Runtime
         ETF_DynamicThreadStaticOffset,
     }
 
-    // Subset of the managed TypeFlags enum understood by Redhawk.
+    // Subset of the managed TypeFlags enum understood by the runtime.
     // This should match the values in the TypeFlags enum except for the special
     // entry that marks System.Array specifically.
     internal enum EETypeElementType

@@ -8,9 +8,9 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib{}
 .assembly extern localloc_common{}
-.assembly 'eh05_large'{}
+.assembly 'eh05_large_il'{}
 
-.class private auto ansi beforefieldinit LocallocTest
+.class public auto ansi beforefieldinit LocallocTest
        extends [mscorlib]System.Object
 {
   .method private hidebysig static void  func() cil managed

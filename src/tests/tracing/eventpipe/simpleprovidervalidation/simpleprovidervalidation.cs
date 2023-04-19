@@ -25,9 +25,9 @@ namespace Tracing.Tests.SimpleProviderValidation
     {
         public static int Main()
         {
-            // This test validates that the rundown events are present
-            // and that providers turned on that generate events are being written to
-            // the stream.
+            // This test is meant to validate NativeAOT EventPipe implementation and is meant to run in regular CI
+            // Its currently not enabled in NativeAOT runs and the below issue tracks the work
+            // https://github.com/dotnet/runtime/issues/84701
 
             var providers = new List<EventPipeProvider>()
             {
@@ -44,14 +44,18 @@ namespace Tracing.Tests.SimpleProviderValidation
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()
         {
-            { "MyEventSource", 1 },
+            { "MyEventSource", 100_000 },
             { "Microsoft-DotNETCore-EventPipe", 1}
         };
 
         private static Action _eventGeneratingAction = () => 
         {
-            Logger.logger.Log($"Firing an event...");
-            MyEventSource.Log.MyEvent();
+            for (int i = 0; i < 100_000; i++)
+            {
+                if (i % 10_000 == 0)
+                    Logger.logger.Log($"Fired MyEvent {i:N0}/100,000 times...");
+                MyEventSource.Log.MyEvent();
+            }
         };
     }
 }

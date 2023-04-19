@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 public class test
 {
     public struct VT
@@ -51,7 +52,8 @@ public class test
         return Convert.ToDouble((((vtstatic.a4 * clstatic.a5) + (asgop0 - (0.25F - 0.235290527F))) / (cl.arr3d[4, 0, 3] - (vt.a1))));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double retval = Func();
         if ((retval > -191) && (retval < -188))

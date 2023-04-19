@@ -2491,7 +2491,7 @@ emit_managed_wrapper_validate_signature (MonoMethodSignature* sig, MonoMarshalSp
 }
 
 static void
-emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, MonoError *error)
+emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, gboolean runtime_init_callback, MonoError *error)
 {
 	MonoMethodSignature *sig, *csig;
 	int i, *tmp_locals;
@@ -2550,8 +2550,17 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	 * return ret;
 	 */
 
+	/* delete_old = FALSE */
 	mono_mb_emit_icon (mb, 0);
 	mono_mb_emit_stloc (mb, 2);
+
+	/*
+	* Transformed into a direct icall when runtime init callback is enabled for a native-to-managed wrapper.
+	* This icall is special cased in the JIT so it can be called in native-to-managed wrapper before
+	* runtime has been initialized. On return, runtime must be fully initialized.
+	*/
+	if (runtime_init_callback)
+		mono_mb_emit_icall (mb, mono_dummy_runtime_init_callback);
 
 	gc_unsafe_transition_builder_emit_enter(&gc_unsafe_builder);
 

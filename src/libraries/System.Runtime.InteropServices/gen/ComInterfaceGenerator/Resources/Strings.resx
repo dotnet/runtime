@@ -219,4 +219,22 @@
   <data name="MethodNotDeclaredInAttributedInterfaceTitle" xml:space="preserve">
     <value>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</value>
   </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageDescription" xml:space="preserve">
+    <value>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute" xml:space="preserve">
+    <value>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageTitle" xml:space="preserve">
+    <value>Invalid 'GeneratedComInterfaceAttribute' usage.</value>
+  </data>
+  <data name="MultipleComInterfaceBaseTypesDescription" xml:space="preserve">
+    <value>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</value>
+  </data>
+  <data name="MultipleComInterfaceBaseTypesMessage" xml:space="preserve">
+    <value>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</value>
+  </data>
+  <data name="MultipleComInterfaceBaseTypesTitle" xml:space="preserve">
+    <value>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</value>
+  </data>
 </root>

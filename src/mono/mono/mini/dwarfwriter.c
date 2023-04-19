@@ -1805,7 +1805,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 
 	/* Subprogram */
 	names = g_new0 (char *, sig->param_count);
-	mono_method_get_param_names (method, (const char **) names);
+	mono_method_get_param_names_internal (method, (const char **) names);
 
 	emit_uleb128 (w, ABBREV_SUBPROGRAM);
 	/* DW_AT_name */
