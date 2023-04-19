@@ -35,7 +35,7 @@ bool emitter::IsSSEOrAVXInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// IsKInstruction: Does this instruction require K register.
+// IsKInstruction: Does this instruction require K register?
 //
 // Arguments:
 //    ins - The instruction to check.
