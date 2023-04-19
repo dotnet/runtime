@@ -58,7 +58,6 @@ internal sealed partial class LowLevelLifoAsyncWaitSemaphore : LowLevelLifoSemap
 
     public void PrepareAsyncWait(int timeoutMs, Action<LowLevelLifoAsyncWaitSemaphore, object?> onSuccess, Action<LowLevelLifoAsyncWaitSemaphore, object?> onTimeout, object? state)
     {
-        //FIXME(ak): the async wait never spins. Shoudl we spin a little?
         Debug.Assert(timeoutMs >= -1);
 
         // Try to acquire the semaphore or
@@ -112,16 +111,12 @@ internal sealed partial class LowLevelLifoAsyncWaitSemaphore : LowLevelLifoSemap
 
         _onWait();
 
-        if (timeoutMs == 0) {
-            onTimeout (this, state);
-            return;
-        }
         WaitEntry we = new WaitEntry(this, onSuccess, onTimeout, state)
         {
             TimeoutMs = timeoutMs,
             StartWaitTicks = timeoutMs != -1 ? Environment.TickCount : 0,
         };
-        PrepareAsyncWaitCore(timeoutMs, we);
+        PrepareAsyncWaitCore(we);
         // on success calls InternalAsyncWaitSuccess, on timeout calls InternalAsyncWaitTimeout
     }
 
@@ -180,17 +175,23 @@ internal sealed partial class LowLevelLifoAsyncWaitSemaphore : LowLevelLifoSemap
                 we.TimeoutMs = 0;
             we.StartWaitTicks = endWaitTicks;
         }
-        self.PrepareAsyncWaitCore (we.TimeoutMs, we);
+        PrepareAsyncWaitCore (we);
         // on success calls InternalAsyncWaitSuccess, on timeout calls InternalAsyncWaitTimeout
     }
 
-    private void PrepareAsyncWaitCore(int timeout_ms, WaitEntry internalWaitEntry)
+    private static void PrepareAsyncWaitCore(WaitEntry internalWaitEntry)
     {
+        int timeoutMs = internalWaitEntry.TimeoutMs;
+        LowLevelLifoAsyncWaitSemaphore semaphore = internalWaitEntry.Semaphore;
+        if (timeoutMs == 0) {
+            internalWaitEntry.OnTimeout (semaphore, internalWaitEntry.State);
+            return;
+        }
         GCHandle gchandle = GCHandle.Alloc (internalWaitEntry);
         unsafe {
             delegate* unmanaged<IntPtr, IntPtr, void> successCallback = &SuccessCallback;
             delegate* unmanaged<IntPtr, IntPtr, void> timeoutCallback = &TimeoutCallback;
-            PrepareAsyncWaitInternal (lifo_semaphore, timeout_ms, successCallback, timeoutCallback, GCHandle.ToIntPtr(gchandle));
+            PrepareAsyncWaitInternal (semaphore.lifo_semaphore, timeoutMs, successCallback, timeoutCallback, GCHandle.ToIntPtr(gchandle));
         }
     }
 
