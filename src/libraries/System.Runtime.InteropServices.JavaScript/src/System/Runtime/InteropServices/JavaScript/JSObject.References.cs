@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript
         // the JavaScript object could only exist on the single web worker and can't migrate to other workers
         internal int OwnerThreadId;
 #endif
-#if ENABLE_LEGACY_JS_INTEROP
+#if !DISABLE_LEGACY_JS_INTEROP
         internal GCHandle? InFlight;
         internal int InFlightCounter;
 #endif
@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         }
 
-#if ENABLE_LEGACY_JS_INTEROP
+#if !DISABLE_LEGACY_JS_INTEROP
         internal void AddInFlight()
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
