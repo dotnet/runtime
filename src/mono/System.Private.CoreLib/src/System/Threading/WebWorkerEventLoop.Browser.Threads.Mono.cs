@@ -75,9 +75,21 @@ internal static class WebWorkerEventLoop
     }
 
     /// returns true if the current thread has unsettled JS Interop promises
-    internal static bool HasUnsettledInteropPromises => HasUnsettledInteropPromisesNative();
+    private static bool HasUnsettledInteropPromises => HasUnsettledInteropPromisesNative();
 
     // FIXME: this could be a qcall with a SuppressGCTransitionAttribute
     [MethodImpl(MethodImplOptions.InternalCall)]
     private static extern bool HasUnsettledInteropPromisesNative();
+
+    /// <summary>returns true if the current WebWorker has JavaScript objects that depend on the
+    /// current managed thread.</summary>
+    //
+    /// <remarks>If this returns false, the runtime is allowed to allow the current managed thread
+    /// to exit and for the WebWorker to be recycled by Emscripten for another managed
+    /// thread.</remarks>
+    //
+    // FIXME:
+    // https://github.com/dotnet/runtime/issues/85052 - unsettled promises are not the only relevant
+    // reasons for keeping a worker thread alive. We will need to add other conditions here.
+    internal static bool HasJavaScriptInteropDependents => HasUnsettledInteropPromises;
 }
