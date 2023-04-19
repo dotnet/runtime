@@ -11,17 +11,13 @@ using System.Diagnostics;
 
 namespace Microsoft.Extensions.Hosting.Systemd
 {
-    /// <summary>
-    /// Helper methods for systemd Services.
-    /// </summary>
+    /// <summary>Helper methods for systemd Services.</summary>
     public static partial class SystemdHelpers
     {
         private static bool? _isSystemdService;
 
-        /// <summary>
-        /// Check if the current process is hosted as a systemd Service.
-        /// </summary>
-        /// <returns><c>True</c> if the current process is hosted as a systemd Service, otherwise <c>false</c>.</returns>
+        /// <summary>Check if the current process is hosted as a systemd Service.</summary>
+        /// <returns><see langword="true" /> if the current process is hosted as a systemd Service; otherwise, <see langword="false" />.</returns>
         public static bool IsSystemdService()
             => _isSystemdService ??= GetIsSystemdService();
 
