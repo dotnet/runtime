@@ -316,11 +316,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             src = src->AsUnOp()->gtGetOp1();
         }
 
-        if (blkNode->OperIs(GT_STORE_OBJ))
-        {
-            blkNode->SetOper(GT_STORE_BLK);
-        }
-
         if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)))
         {
             if (!src->OperIs(GT_CNS_INT))
@@ -409,41 +404,29 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
         src->SetContained();
 
-        if (src->OperIs(GT_IND))
-        {
-            // TODO-Cleanup: Make sure that GT_IND lowering didn't mark the source address as contained.
-            // Sometimes the GT_IND type is a non-struct type and then GT_IND lowering may contain the
-            // address, not knowing that GT_IND is part of a block op that has containment restrictions.
-            src->AsIndir()->Addr()->ClearContained();
-        }
-        else if (src->OperIs(GT_LCL_VAR))
+        if (src->OperIs(GT_LCL_VAR))
         {
             // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
             const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
             comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
         }
 
-        if (blkNode->OperIs(GT_STORE_OBJ))
-        {
-            if (!blkNode->AsBlk()->GetLayout()->HasGCPtr())
-            {
-                blkNode->SetOper(GT_STORE_BLK);
-            }
-#ifndef JIT32_GCENCODER
-            else if (dstAddr->OperIs(GT_LCL_ADDR) &&
-                     (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, false)))
-            {
-                // If the size is small enough to unroll then we need to mark the block as non-interruptible
-                // to actually allow unrolling. The generated code does not report GC references loaded in the
-                // temporary register(s) used for copying.
-                // This is not supported for the JIT32_GCENCODER.
-                blkNode->SetOper(GT_STORE_BLK);
-                blkNode->gtBlkOpGcUnsafe = true;
-            }
-#endif
-        }
+        ClassLayout* layout  = blkNode->GetLayout();
+        bool         doCpObj = !blkNode->OperIs(GT_STORE_DYN_BLK) && layout->HasGCPtr();
 
-        if (blkNode->OperIs(GT_STORE_OBJ))
+#ifndef JIT32_GCENCODER
+        if (doCpObj && dstAddr->OperIs(GT_LCL_ADDR) &&
+            (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, false)))
+        {
+            // If the size is small enough to unroll then we need to mark the block as non-interruptible
+            // to actually allow unrolling. The generated code does not report GC references loaded in the
+            // temporary register(s) used for copying. This is not supported for the JIT32_GCENCODER.
+            doCpObj                  = false;
+            blkNode->gtBlkOpGcUnsafe = true;
+        }
+#endif
+
+        if (doCpObj)
         {
             assert((dstAddr->TypeGet() == TYP_BYREF) || (dstAddr->TypeGet() == TYP_I_IMPL));
 
@@ -456,14 +439,13 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             if (dstAddr->OperIs(GT_LCL_ADDR))
             {
                 // If the destination is on the stack then no write barriers are needed.
-                nonGCSlots = blkNode->GetLayout()->GetSlotCount();
+                nonGCSlots = layout->GetSlotCount();
             }
             else
             {
                 // Otherwise a write barrier is needed for every GC pointer in the layout
                 // so we need to check if there's a long enough sequence of non-GC slots.
-                ClassLayout* layout = blkNode->GetLayout();
-                unsigned     slots  = layout->GetSlotCount();
+                unsigned slots = layout->GetSlotCount();
                 for (unsigned i = 0; i < slots; i++)
                 {
                     if (layout->IsGCPtr(i))
@@ -484,15 +466,15 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             if (nonGCSlots >= CPOBJ_NONGC_SLOTS_LIMIT)
             {
-                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindRepInstr;
+                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjRepInstr;
             }
             else
             {
-                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
             }
         }
         else if (blkNode->OperIs(GT_STORE_BLK) &&
-                 (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, !blkNode->GetLayout()->HasGCPtr())))
+                 (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, !layout->HasGCPtr())))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -515,6 +497,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 #endif
         }
     }
+
+    assert(blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindInvalid);
 
 #ifndef TARGET_X86
     if ((MIN_ARG_AREA_FOR_CALL > 0) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindHelper))
@@ -6835,6 +6819,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX_DotProduct:
                 case NI_AVX_Permute:
                 case NI_AVX_Permute2x128:
+                case NI_AVX_Shuffle:
+                case NI_AVX2_AlignRight:
                 case NI_AVX2_Blend:
                 case NI_AVX2_MultipleSumAbsoluteDifferences:
                 case NI_AVX2_Permute2x128:
@@ -6842,8 +6828,20 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX2_ShiftLeftLogical:
                 case NI_AVX2_ShiftRightArithmetic:
                 case NI_AVX2_ShiftRightLogical:
+                case NI_AVX2_Shuffle:
                 case NI_AVX2_ShuffleHigh:
                 case NI_AVX2_ShuffleLow:
+                case NI_AVX512F_ShiftLeftLogical:
+                case NI_AVX512F_ShiftRightArithmetic:
+                case NI_AVX512F_ShiftRightLogical:
+                case NI_AVX512F_Shuffle:
+                case NI_AVX512F_VL_ShiftRightArithmetic:
+                case NI_AVX512BW_AlignRight:
+                case NI_AVX512BW_ShiftLeftLogical:
+                case NI_AVX512BW_ShiftRightArithmetic:
+                case NI_AVX512BW_ShiftRightLogical:
+                case NI_AVX512BW_ShuffleHigh:
+                case NI_AVX512BW_ShuffleLow:
                 {
                     assert(!supportsSIMDScalarLoads);
 
@@ -7244,6 +7242,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
         return;
     }
 
+    bool isContainedImm = false;
+
     if (HWIntrinsicInfo::lookupCategory(intrinsicId) == HW_Category_IMM)
     {
         GenTree* lastOp = node->Op(numArgs);
@@ -7251,6 +7251,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
         if (HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI())
         {
             MakeSrcContained(node, lastOp);
+            isContainedImm = true;
         }
     }
 
@@ -7509,6 +7510,13 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_ShiftLeftLogical:
                         case NI_AVX2_ShiftRightArithmetic:
                         case NI_AVX2_ShiftRightLogical:
+                        case NI_AVX512F_ShiftLeftLogical:
+                        case NI_AVX512F_ShiftRightArithmetic:
+                        case NI_AVX512F_ShiftRightLogical:
+                        case NI_AVX512F_VL_ShiftRightArithmetic:
+                        case NI_AVX512BW_ShiftLeftLogical:
+                        case NI_AVX512BW_ShiftRightArithmetic:
+                        case NI_AVX512BW_ShiftRightLogical:
                         {
                             // These intrinsics can have op2 be imm or reg/mem
 
@@ -7526,15 +7534,45 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
+                        case NI_AVX2_Shuffle:
+                        {
+                            if (varTypeIsByte(simdBaseType))
+                            {
+                                // byte and sbyte are: pshufb ymm1, ymm2, ymm3/m256
+                                assert(!isCommutative);
+
+                                bool supportsRegOptional = false;
+
+                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                                {
+                                    MakeSrcContained(node, op2);
+                                }
+                                else if (supportsRegOptional)
+                                {
+                                    MakeSrcRegOptional(node, op2);
+                                }
+                                break;
+                            }
+                            FALLTHROUGH;
+                        }
+
                         case NI_SSE2_Shuffle:
                         case NI_SSE2_ShuffleHigh:
                         case NI_SSE2_ShuffleLow:
                         case NI_AVX2_Permute4x64:
-                        case NI_AVX2_Shuffle:
                         case NI_AVX2_ShuffleHigh:
                         case NI_AVX2_ShuffleLow:
+                        case NI_AVX512F_Shuffle:
+                        case NI_AVX512BW_ShuffleHigh:
+                        case NI_AVX512BW_ShuffleLow:
                         {
                             // These intrinsics have op2 as an imm and op1 as a reg/mem
+
+                            if (!isContainedImm)
+                            {
+                                // Don't contain if we're generating a jmp table fallback
+                                break;
+                            }
 
                             if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
                             {
@@ -7564,6 +7602,12 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             if (HWIntrinsicInfo::isImmOp(intrinsicId, op2))
                             {
+                                if (!isContainedImm)
+                                {
+                                    // Don't contain if we're generating a jmp table fallback
+                                    break;
+                                }
+
                                 if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
                                 {
                                     MakeSrcContained(node, op1);
@@ -7586,6 +7630,12 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         case NI_AES_KeygenAssist:
                         {
+                            if (!isContainedImm)
+                            {
+                                // Don't contain if we're generating a jmp table fallback
+                                break;
+                            }
+
                             if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
                             {
                                 MakeSrcContained(node, op1);
@@ -7601,6 +7651,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_SSE2_ShiftRightLogical128BitLane:
                         case NI_AVX2_ShiftLeftLogical128BitLane:
                         case NI_AVX2_ShiftRightLogical128BitLane:
+                        case NI_AVX512BW_ShiftLeftLogical128BitLane:
+                        case NI_AVX512BW_ShiftRightLogical128BitLane:
                         {
 #if DEBUG
                             // These intrinsics should have been marked contained by the general-purpose handling
@@ -7852,8 +7904,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_MultipleSumAbsoluteDifferences:
                         case NI_AVX2_Permute2x128:
                         case NI_AVX512F_InsertVector256:
+                        case NI_AVX512F_Shuffle:
+                        case NI_AVX512BW_AlignRight:
                         case NI_PCLMULQDQ_CarrylessMultiply:
                         {
+                            if (!isContainedImm)
+                            {
+                                // Don't contain if we're generating a jmp table fallback
+                                break;
+                            }
+
                             if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
                             {
                                 MakeSrcContained(node, op2);
@@ -7869,8 +7929,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         {
                             GenTree* lastOp = node->Op(numArgs);
 
-                            if ((simdBaseType == TYP_FLOAT) && lastOp->IsCnsIntOrI())
+                            if (!isContainedImm)
                             {
+                                // Don't contain if we're generating a jmp table fallback
+                                break;
+                            }
+
+                            if (simdBaseType == TYP_FLOAT)
+                            {
+                                assert(lastOp->IsCnsIntOrI());
+
                                 // Sse41.Insert has:
                                 //  * Bits 0-3: zmask
                                 //  * Bits 4-5: count_d
