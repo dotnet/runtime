@@ -387,7 +387,7 @@ function _marshal_cs_object_to_js(arg: JSMarshalerArgument): any {
 }
 
 function _marshal_array_to_js(arg: JSMarshalerArgument, element_type?: MarshalerType): Array<any> | TypedArray | null {
-    mono_assert(!!element_type, "Expected valid sig parameter");
+    mono_assert(!!element_type, "Expected valid element_type parameter");
     return _marshal_array_to_js_impl(arg, element_type);
 }
 
