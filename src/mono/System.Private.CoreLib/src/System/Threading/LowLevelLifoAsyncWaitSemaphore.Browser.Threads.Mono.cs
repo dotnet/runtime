@@ -112,10 +112,14 @@ internal sealed partial class LowLevelLifoAsyncWaitSemaphore : LowLevelLifoSemap
 
         _onWait();
 
+        if (timeoutMs == 0) {
+            onTimeout (this, state);
+            return;
+        }
         WaitEntry we = new WaitEntry(this, onSuccess, onTimeout, state)
         {
             TimeoutMs = timeoutMs,
-            StartWaitTicks = Environment.TickCount,
+            StartWaitTicks = timeoutMs != -1 ? Environment.TickCount : 0,
         };
         PrepareAsyncWaitCore(timeoutMs, we);
         // on success calls InternalAsyncWaitSuccess, on timeout calls InternalAsyncWaitTimeout
@@ -133,7 +137,7 @@ internal sealed partial class LowLevelLifoAsyncWaitSemaphore : LowLevelLifoSemap
     private static void InternalAsyncWaitSuccess(LowLevelLifoAsyncWaitSemaphore self, WaitEntry internalWaitEntry)
     {
         WaitEntry we = internalWaitEntry!;
-        int elapsedTicks = Environment.TickCount;
+        int endWaitTicks = we.TimeoutMs != -1 ? Environment.TickCount : 0;
         // Unregister the waiter if this thread will not be waiting anymore, and try to acquire the semaphore
         Counts counts = self._separated._counts;
         while (true)
@@ -169,10 +173,12 @@ internal sealed partial class LowLevelLifoAsyncWaitSemaphore : LowLevelLifoSemap
         // the CompareExchange - someone took the signal before us.
 
         if (we.TimeoutMs != -1) {
-            int waitMs = elapsedTicks - we.StartWaitTicks;
-            if (waitMs <= we.TimeoutMs)
+            int waitMs = endWaitTicks - we.StartWaitTicks;
+            if (waitMs >= 0 && waitMs < we.TimeoutMs)
                 we.TimeoutMs -= waitMs;
-            we.StartWaitTicks = elapsedTicks;
+            else
+                we.TimeoutMs = 0;
+            we.StartWaitTicks = endWaitTicks;
         }
         self.PrepareAsyncWaitCore (we.TimeoutMs, we);
         // on success calls InternalAsyncWaitSuccess, on timeout calls InternalAsyncWaitTimeout
