@@ -18,6 +18,22 @@ namespace Sample
             return 0;
         }
 
+        [JSExport]
+        public static async Task TestCanStartThread()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            var t = new Thread(() =>
+            {
+                var childTid = Thread.CurrentThread.ManagedThreadId;
+                tcs.SetResult(childTid);
+            });
+            t.Start();
+            var childTid = await tcs.Task;
+            t.Join();
+            if (childTid == Thread.CurrentThread.ManagedThreadId)
+                throw new Exception("Child thread ran on same thread as parent");
+        }
+
         [JSImport("globalThis.setTimeout")]
         static partial void GlobalThisSetTimeout([JSMarshalAs<JSType.Function>] Action cb, int timeoutMs);
 
@@ -25,7 +41,7 @@ namespace Sample
         private static partial Task<JSObject> GlobalThisFetch(string url);
 
         [JSExport]
-        public static async Task Hello()
+        public static async Task TestCallSetTimeoutOnWorker()
         {
             var t = Task.Run(TimeOutThenComplete);
             await t;
