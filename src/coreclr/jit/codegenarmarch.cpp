@@ -330,6 +330,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCkfinite(treeNode);
             break;
 
+#ifdef TARGET_ARM64
+        case GT_CKZERO:
+            genCkzero(treeNode);
+            break;
+
+        case GT_CKOVERFLOW:
+            genCkoverflow(treeNode);
+            break;
+#endif // TAREGET_ARM64
+
         case GT_INTRINSIC:
             genIntrinsic(treeNode->AsIntrinsic());
             break;

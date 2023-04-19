@@ -7447,6 +7447,32 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             GenTree* tree = *use;
             JITDUMP("----- PostOrderVisit for [%06u] %s\n", dspTreeID(tree), GenTree::OpName(tree->OperGet()));
 
+#ifdef TARGET_ARM64
+            if (m_compiler->opts.OptimizationEnabled() && tree->OperIs(GT_DIV) &&
+                tree->gtGetOp2()->OperIs(GT_LCL_VAR) && IsTreeVNInvariant(tree->gtGetOp2()))
+            {
+                GenTreeLclVarCommon* lclVar = tree->gtGetOp2()->AsLclVarCommon();
+
+                if (!(tree->gtFlags & GTF_DIV_MOD_NO_BY_ZERO))
+                {
+                    tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
+                    m_compiler->optPerformHoistExpr(m_compiler->gtNewOperNode(GT_CKZERO, TYP_VOID,
+                                                                                m_compiler->gtCloneExpr(lclVar)),
+                                                    m_currentBlock, m_loopNum);
+                    m_compiler->optLoopTable[m_loopNum].lpHoistedExprCount++;
+                }
+
+                // if (!(tree->gtFlags & GTF_DIV_MOD_NO_OVERFLOW))
+                //{
+                //     tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
+                //     m_compiler->optPerformHoistExpr(m_compiler->gtNewOperNode(GT_CKOVERFLOW, TYP_VOID,
+                //     m_compiler->gtCloneExpr(lclVar)),
+                //                                     m_currentBlock, m_loopNum);
+                //     m_compiler->optLoopTable[m_loopNum].lpHoistedExprCount++;
+                // }
+            }
+#endif // TARGET_ARM64
+
             if (tree->OperIsLocal())
             {
                 GenTreeLclVarCommon* lclVar = tree->AsLclVarCommon();

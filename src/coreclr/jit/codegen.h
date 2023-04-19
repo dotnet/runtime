@@ -896,6 +896,8 @@ protected:
 #ifdef TARGET_ARM64
     void genCodeForCCMP(GenTreeCCMP* ccmp);
     void genCodeForCinc(GenTreeOp* cinc);
+    void genCkzero(GenTree* treeNode);
+    void genCkoverflow(GenTree* treeNode);
 #endif
     void genCodeForSelect(GenTreeOp* select);
     void genIntrinsic(GenTreeIntrinsic* treeNode);

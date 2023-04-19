@@ -8673,6 +8673,10 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  GT_MDARR_LOWER_BOUND, // 'dim' value must be considered
                                                  GT_BITCAST,           // Needs to encode the target type.
 
+#ifdef TARGET_ARM64
+                                                 GT_CKZERO, GT_CKOVERFLOW,                                             
+#endif // TARGET_ARM64
+
                                                  // These control-flow operations need no values.
                                                  GT_JTRUE, GT_RETURN, GT_SWITCH, GT_RETFILT, GT_CKFINITE};
 
@@ -10947,6 +10951,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     // BOX and CKFINITE are passthrough nodes (like NOP). We'll add the exception for the latter later.
                     case GT_BOX:
                     case GT_CKFINITE:
+#ifdef TARGET_ARM64
+                    case GT_CKZERO:
+                    case GT_CKOVERFLOW:
+#endif // TARGET_ARM64
                         tree->gtVNPair = tree->gtGetOp1()->gtVNPair;
                         break;
 
@@ -12836,6 +12844,13 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
             case GT_CKFINITE:
                 fgValueNumberAddExceptionSetForCkFinite(tree);
                 break;
+
+#ifdef TARGET_ARM64
+            case GT_CKZERO:
+            case GT_CKOVERFLOW:
+                assert(!"CKZERO and CKOVERFLOW is not valid here.");
+                break;
+#endif // TARGET_ARM64
 
 #ifdef FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:

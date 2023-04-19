@@ -74,6 +74,10 @@ GTNODE(BITCAST          , GenTreeMultiRegOp  ,0,GTK_UNOP)               // reint
 GTNODE(BITCAST          , GenTreeOp          ,0,GTK_UNOP)               // reinterpretation of bits as another type
 #endif
 GTNODE(CKFINITE         , GenTreeOp          ,0,GTK_UNOP|DBK_NOCONTAIN) // Check for NaN
+#ifdef TARGET_ARM64
+GTNODE(CKZERO           , GenTreeOp          ,0,GTK_UNOP|DBK_NOCONTAIN) // Check for Zero - div by zero
+GTNODE(CKOVERFLOW       , GenTreeOp          ,0,GTK_UNOP|DBK_NOCONTAIN) // Check for Overflow
+#endif // TARGET_ARM64
 GTNODE(LCLHEAP          , GenTreeOp          ,0,GTK_UNOP|DBK_NOCONTAIN) // alloca()
 
 GTNODE(BOUNDS_CHECK     , GenTreeBoundsChk   ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // a bounds check - for arrays/spans/SIMDs/HWINTRINSICs

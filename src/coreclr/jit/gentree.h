@@ -1063,9 +1063,16 @@ public:
 
         if (gtType == TYP_VOID)
         {
+#ifdef TARGET_ARM64
             // These are the only operators which can produce either VOID or non-VOID results.
+            assert(OperIs(GT_NOP, GT_CALL, GT_COMMA, GT_CKZERO, GT_CKOVERFLOW) || OperIsCompare() || OperIsLong() ||
+                   OperIsHWIntrinsic() || IsCnsVec());
+#else  // TARGET_ARM64
+       // These are the only operators which can produce either VOID or non-VOID results.
             assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsLong() || OperIsHWIntrinsic() ||
                    IsCnsVec());
+#endif // !TARGET_ARM64
+            
             return false;
         }
 

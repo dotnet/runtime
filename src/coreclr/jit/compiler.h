@@ -11050,6 +11050,10 @@ public:
             case GT_CAST:
             case GT_BITCAST:
             case GT_CKFINITE:
+#ifdef TARGET_ARM64
+            case GT_CKZERO:
+            case GT_CKOVERFLOW:
+#endif // TARGET_ARM64
             case GT_LCLHEAP:
             case GT_IND:
             case GT_BLK:

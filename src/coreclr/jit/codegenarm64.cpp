@@ -4459,6 +4459,66 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genCkzero: Generate code for ckzero opcode.
+//
+// Arguments:
+//    treeNode - The GT_CKZERO node
+//
+// Return Value:
+//    None.
+//
+// Assumptions:
+//    GT_CKZERO node has reserved an internal register.
+//
+void CodeGen::genCkzero(GenTree* treeNode)
+{
+    assert(treeNode->OperGet() == GT_CKZERO);
+
+    emitter* emit = GetEmitter();
+    GenTree* op1  = treeNode->gtGetOp1();
+    emitAttr size = EA_ATTR(genTypeSize(op1));
+
+    assert(emit->isGeneralRegister(op1->GetRegNum()));
+
+    genConsumeRegs(op1);
+
+    emit->emitIns_R_I(INS_cmp, size, op1->GetRegNum(), 0);
+    genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
+
+    genProduceReg(op1);
+}
+
+//------------------------------------------------------------------------
+// genCkoverflow: Generate code for ckoverflow opcode.
+//
+// Arguments:
+//    treeNode - The GT_CKOVERFLOW node
+//
+// Return Value:
+//    None.
+//
+// Assumptions:
+//    GT_CKOVERFLOW node has reserved an internal register.
+//
+void CodeGen::genCkoverflow(GenTree* treeNode)
+{
+    assert(!"WIP");
+    assert(treeNode->OperGet() == GT_CKOVERFLOW);
+
+    emitter* emit = GetEmitter();
+    GenTree* op1  = treeNode->gtGetOp1();
+    emitAttr size = EA_ATTR(genTypeSize(op1));
+
+    genConsumeRegs(op1);
+
+    emit->emitIns_R_I(INS_cmp, size, op1->GetRegNum(), 1);
+    genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flags is set throw
+                                                  // ArithmeticException
+
+    genProduceReg(op1);
+}
+
+//------------------------------------------------------------------------
 // genCodeForCompare: Produce code for a GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT/GT_TEST_EQ/GT_TEST_NE node.
 //
 // Arguments:
