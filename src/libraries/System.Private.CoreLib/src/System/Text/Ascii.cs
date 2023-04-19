@@ -142,6 +142,7 @@ namespace System.Text
                     // They may also be unaligned if the input chars aren't 2-byte aligned.
                     nuint misalignedElements = ((nuint)Unsafe.AsPointer(ref searchSpace) & (nuint)(Vector256<byte>.Count - 1)) / (nuint)sizeof(T);
                     i -= misalignedElements;
+                    Debug.Assert((int)i > 3 * Vector256<T>.Count);
 
                     nuint finalStart = (nuint)length - 4 * (nuint)Vector256<T>.Count;
 
@@ -195,6 +196,7 @@ namespace System.Text
                     // They may also be unaligned if the input chars aren't 2-byte aligned.
                     nuint misalignedElements = ((nuint)Unsafe.AsPointer(ref searchSpace) & (nuint)(Vector128<byte>.Count - 1)) / (nuint)sizeof(T);
                     i -= misalignedElements;
+                    Debug.Assert((int)i > 3 * Vector128<T>.Count);
 
                     nuint finalStart = (nuint)length - 4 * (nuint)Vector128<T>.Count;
 
