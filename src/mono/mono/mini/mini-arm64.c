@@ -980,6 +980,42 @@ get_switch_case (guint8* code, int ncaselen, int ncase)
 }
 
 static guint8*
+emit_xextract_i8 (guint8* code, int dreg, int sreg1, int sreg2)
+{
+	guint8* ret = code;
+	/* code: */
+	arm_cbnzw (ret, sreg2, code + 12 /*upper*/);
+	arm_neon_umov (ret, TYPE_I64, dreg, sreg1, 0);
+	arm_b (ret, code + 16 /*done*/);
+	/* upper: */
+	arm_neon_umov (ret, TYPE_I64, dreg, sreg1, 1);
+	/* done: */
+	return ret;
+}
+
+static guint8*
+emit_xextract_r8 (guint8* code, int dreg, int sreg1, int sreg2)
+{
+	guint8* ret = code;
+	
+	if (dreg == sreg1) {
+		/* code: */
+		arm_cbzw (ret, sreg2, code + 8 /*done*/);
+		arm_neon_fdup_e (ret, VREG_FULL, TYPE_F64, dreg, sreg1, 1);
+		/* done: */
+	} else {
+		/* code: */
+		arm_cbnzw (ret, sreg2, code + 12 /*upper*/);
+		arm_neon_fdup_e (ret, VREG_FULL, TYPE_F64, dreg, sreg1, 0);
+		arm_b (ret, code + 16 /*done*/);
+		/* upper: */
+		arm_neon_fdup_e (ret, VREG_FULL, TYPE_F64, dreg, sreg1, 1);
+		/* done: */
+	}
+	return ret;
+}
+
+static guint8*
 emit_call (MonoCompile *cfg, guint8* code, MonoJumpInfoType patch_type, gconstpointer data)
 {
 	/*
@@ -3883,66 +3919,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		
+		case OP_XEXTRACT_I8:
+			code = emit_xextract_i8 (code, dreg, sreg1, sreg2);
+			break;
+		
+		case OP_XEXTRACT_R8:
+			code = emit_xextract_r8 (code, dreg, sreg1, sreg2);
+			break;
+
 		case OP_XEXTRACT_I1:
 		case OP_XEXTRACT_I2:
-		case OP_XEXTRACT_I4:
-		case OP_XEXTRACT_I8: {
-			int num_elems = 16;
-			int elem_type = TYPE_I8;
-			gboolean is_unsigned = is_type_unsigned_macro (ins->inst_c1);
-			switch (ins->opcode) {
-			case OP_XEXTRACT_I2:
-				num_elems = 8;
-				elem_type = TYPE_I16;
-				break;
-			case OP_XEXTRACT_I4:
-				num_elems = 4;
-				elem_type = TYPE_I32;
-				break;
-			case OP_XEXTRACT_I8:
-				num_elems = 2;
-				elem_type = TYPE_I64;
-				is_unsigned = TRUE; // there is no smov for i64
-				break;
-			}
-
-			// TODO: elide switch if the selector is constant
-			guint8* switch_start = code;
-			code = emit_switch (code, num_elems, 1, sreg2);
-			for (int i = 0; i < num_elems; i++)
-			{
-				guint8* case_start = get_switch_case (switch_start, 1, i);
-				if (is_unsigned) {
-					arm_neon_umov (case_start, elem_type, dreg, sreg1, i);
-				} else {
-					arm_neon_smov (case_start, elem_type, dreg, sreg1, i);
-				}
-			}
+		case OP_XEXTRACT_I4: 
+		case OP_XEXTRACT_R4: 
+			g_assert_not_reached ();
 			break;
-		}
-
-		case OP_XEXTRACT_R4:
-		case OP_XEXTRACT_R8: {
-			int num_elems = 4;
-			int elem_type = TYPE_F32;
-			// TODO: elide switch if the selector is constant
-
-			if (ins->opcode == OP_XEXTRACT_R8) {
-				num_elems = 2;
-				elem_type = TYPE_F64;
-			}
-
-			guint8* switch_start = code;
-			code = emit_switch (code, num_elems, 1, sreg2);
-			for (int i = 0; i < num_elems; i++)
-			{
-				// TODO: solve i=0 trivially by branching directly to the end of the switch
-				// TODO: optimize f64 with a single conditional branch
-				guint8* case_start = get_switch_case (switch_start, 1, i);
-				arm_neon_fdup_e (case_start, VREG_FULL, elem_type, dreg, sreg1, i);
-			}
-			break;
-		}
+		
 
 		case OP_INSERT_I1:
 		case OP_INSERT_I2:
