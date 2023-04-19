@@ -166,7 +166,10 @@ namespace System.Text.Json
                 // 1. Find the JsonTypeInfo for the runtime type with fallback to the nearest ancestor, if not available.
                 // 2. If the resolved type is deriving from a polymorphic type, use the contract of the polymorphic type instead.
                 polymorphicTypeInfo = GetTypeInfoForRootType(runtimeType, fallBackToNearestAncestorType: true);
-                polymorphicTypeInfo = polymorphicTypeInfo.AncestorPolymorphicType ?? polymorphicTypeInfo;
+                if (polymorphicTypeInfo.AncestorPolymorphicType is { } ancestorPolymorphicType)
+                {
+                    polymorphicTypeInfo = ancestorPolymorphicType;
+                }
                 return true;
             }
 

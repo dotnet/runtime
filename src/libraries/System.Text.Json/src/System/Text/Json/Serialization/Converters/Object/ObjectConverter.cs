@@ -113,8 +113,8 @@ namespace System.Text.Json.Serialization.Converters
     }
 
     /// <summary>
-    /// A placeholder ObjectConverter used for driving boxed root value serialization only
-    /// and does not root JsonNode/JsonDocument.
+    /// A placeholder ObjectConverter used for driving object root value
+    /// serialization only and does not root JsonNode/JsonDocument.
     /// </summary>
     internal sealed class ObjectConverterSlim : JsonConverter<object?>
     {
