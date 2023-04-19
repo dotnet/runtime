@@ -410,6 +410,106 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
+        public void GetStaticFunctionPointerTypeComponents(RuntimeTypeHandle functionPointerHandle, out RuntimeTypeHandle returnTypeHandle, out RuntimeTypeHandle[] parameterHandles, out bool isUnmanaged)
+        {
+            Debug.Assert(!RuntimeAugments.IsDynamicType(functionPointerHandle));
+            Debug.Assert(RuntimeAugments.IsFunctionPointerType(functionPointerHandle));
+
+            int hashCode = functionPointerHandle.GetHashCode();
+
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
+            {
+                if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.FunctionPointerTypeMap, out NativeReader fnPtrMapReader))
+                {
+                    NativeParser fnPtrMapParser = new NativeParser(fnPtrMapReader, 0);
+                    NativeHashtable fnPtrHashtable = new NativeHashtable(fnPtrMapParser);
+
+                    ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
+                    externalReferences.InitializeCommonFixupsTable(module);
+
+                    var lookup = fnPtrHashtable.Lookup(hashCode);
+                    NativeParser entryParser;
+                    while (!(entryParser = lookup.GetNext()).IsNull)
+                    {
+                        RuntimeTypeHandle foundFnPtrType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                        if (!foundFnPtrType.Equals(functionPointerHandle))
+                            continue;
+
+                        uint countAndUnmanagedBit = entryParser.GetUnsigned();
+                        isUnmanaged = (countAndUnmanagedBit & FunctionPointerMapEntry.IsUnmanagedFlag) != 0;
+
+                        returnTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+
+                        uint count = countAndUnmanagedBit >> FunctionPointerMapEntry.ParameterCountShift;
+
+                        parameterHandles = new RuntimeTypeHandle[count];
+                        for (int i = 0; i < parameterHandles.Length; i++)
+                            parameterHandles[i] = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+
+                        return;
+                    }
+                }
+            }
+
+            // Unreachable unless there's a compiler bug
+            Debug.Fail("Should have found a static function pointer in the hashtable");
+            throw new NotSupportedException();
+        }
+
+        public bool TryGetStaticFunctionPointerTypeForComponents(RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, bool isUnmanaged, out RuntimeTypeHandle runtimeTypeHandle)
+        {
+            int hashCode = TypeHashingAlgorithms.ComputeMethodSignatureHashCode(returnTypeHandle.GetHashCode(), parameterHandles);
+
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
+            {
+                if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.FunctionPointerTypeMap, out NativeReader fnPtrMapReader))
+                {
+                    NativeParser fnPtrMapParser = new NativeParser(fnPtrMapReader, 0);
+                    NativeHashtable fnPtrHashtable = new NativeHashtable(fnPtrMapParser);
+
+                    ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
+                    externalReferences.InitializeCommonFixupsTable(module);
+
+                    var lookup = fnPtrHashtable.Lookup(hashCode);
+                    NativeParser entryParser;
+                    while (!(entryParser = lookup.GetNext()).IsNull)
+                    {
+                        uint foundFnPtrTypeIndex = entryParser.GetUnsigned();
+
+                        uint countAndUnmanagedBit = entryParser.GetUnsigned();
+                        bool foundIsUnmanaged = (countAndUnmanagedBit & FunctionPointerMapEntry.IsUnmanagedFlag) != 0;
+                        uint foundParamCount = countAndUnmanagedBit >> FunctionPointerMapEntry.ParameterCountShift;
+
+                        if (foundIsUnmanaged != isUnmanaged || foundParamCount != parameterHandles.Length)
+                            continue;
+
+                        RuntimeTypeHandle foundReturnTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                        if (!foundReturnTypeHandle.Equals(returnTypeHandle))
+                            continue;
+
+                        bool matches = true;
+                        for (int i = 0; i < foundParamCount; i++)
+                        {
+                            if (!externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned()).Equals(parameterHandles[i]))
+                            {
+                                matches = false;
+                                break;
+                            }
+                        }
+
+                        if (matches)
+                        {
+                            runtimeTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(foundFnPtrTypeIndex);
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            runtimeTypeHandle = default;
+            return false;
+        }
+
         /// <summary>
         /// Locate the static constructor context given the runtime type handle (MethodTable) for the type in question.
         /// </summary>

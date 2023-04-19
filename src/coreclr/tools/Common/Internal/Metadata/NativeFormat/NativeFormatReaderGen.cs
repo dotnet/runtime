@@ -5141,7 +5141,7 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public CallingConventions CallingConvention
+        public SignatureCallingConvention CallingConvention
         {
             get
             {
@@ -5149,7 +5149,7 @@ namespace Internal.Metadata.NativeFormat
             }
         } // CallingConvention
 
-        internal CallingConventions _callingConvention;
+        internal SignatureCallingConvention _callingConvention;
 
         public int GenericParameterCount
         {
