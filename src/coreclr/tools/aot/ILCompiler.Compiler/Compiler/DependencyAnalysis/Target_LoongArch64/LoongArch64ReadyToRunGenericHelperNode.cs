@@ -152,13 +152,12 @@ namespace ILCompiler.DependencyAnalysis
                             helperEntrypoint = factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType);
                         }
 
-                        // First arg: address of the TypeManager slot that provides the helper with
-                        // information about module index and the type manager instance (which is used
-                        // for initialization on first access).
-                        encoder.EmitLD(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg1, 0);
+                        // First arg: index of the type in the ThreadStatic section of the modules
+                        encoder.EmitLD(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg1, factory.Target.PointerSize);
 
-                        // Second arg: index of the type in the ThreadStatic section of the modules
-                        encoder.EmitLD(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg1, factory.Target.PointerSize);
+                        // Second arg: address of the TypeManager slot that provides the helper with
+                        // information about module index and the type manager instance.
+                        encoder.EmitLD(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg1, 0);
 
                         encoder.EmitJMP(helperEntrypoint);
                     }

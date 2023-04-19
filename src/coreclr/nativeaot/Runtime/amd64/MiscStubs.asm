@@ -41,8 +41,7 @@ LEAF_END RhpStackProbe, _TEXT
 
 LEAF_ENTRY RhpGetThreadStaticBaseForType, _TEXT
         ; On entry and thorough the procedure:
-        ;   rcx - TypeManagerSlot*
-        ;   rdx - type index
+        ;   rcx - type index
         ; On exit:
         ;   rax - the thread static base for the given type
 
@@ -54,7 +53,7 @@ LEAF_ENTRY RhpGetThreadStaticBaseForType, _TEXT
         jz      RhpGetInlinedThreadStaticBaseSlow
 
         ;; get the per-type storage
-        mov     rax, [rax + rdx * 8 + 10h]
+        mov     rax, [rax + rcx * 8 + 10h]
         ;; return it
         ret
 

@@ -286,6 +286,14 @@ TypeManager* RuntimeInstance::GetSingleTypeManager()
     return NULL;
 }
 
+COOP_PINVOKE_HELPER(TypeManagerHandle, RhGetSingleTypeManager, ())
+{
+    TypeManager* typeManager = GetRuntimeInstance()->GetSingleTypeManager();
+    ASSERT(typeManager != NULL);
+
+    return TypeManagerHandle::Create(typeManager);
+}
+
 // static
 bool RuntimeInstance::Initialize(HANDLE hPalInstance)
 {

@@ -76,15 +76,9 @@ namespace ILCompiler.DependencyAnalysis
 
                         encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.TypeThreadStaticIndex(target));
 
-                        // First arg: address of the TypeManager slot that provides the helper with
-                        // information about module index and the type manager instance (which is used
-                        // for initialization on first access).
-                        AddrMode loadFromArg2 = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
-                        encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadFromArg2);
-
-                        // Second arg: index of the type in the ThreadStatic section of the modules
+                        // First arg: index of the type in the ThreadStatic section of the modules
                         AddrMode loadFromArg2AndDelta = new AddrMode(encoder.TargetRegister.Arg2, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
-                        encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromArg2AndDelta);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadFromArg2AndDelta);
 
                         ISymbolNode helper = isMultiFile ?
                             factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType) :
@@ -96,6 +90,12 @@ namespace ILCompiler.DependencyAnalysis
                         }
                         else
                         {
+                            // Second arg: address of the TypeManager slot that provides the helper with
+                            // information about module index and the type manager instance (which is used
+                            // for initialization on first access).
+                            AddrMode loadFromArg2 = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
+                            encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromArg2);
+
                             encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target), - NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
 
                             AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
