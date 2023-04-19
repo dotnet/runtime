@@ -1250,14 +1250,8 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 #if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
 	if (returns_to_js_event_loop) {
 		/* if the thread wants to stay alive, don't clean up after it */
-#ifdef MONO_EMSCRIPTEN_KEEPALIVE_WORKAROUND_HACK
-		/* we "know" that threadpool threads set their keepalive count correctly and will return here */
-		g_assert (mono_emscripten_keepalive_hack_count > 0);
-		return 0;
-#else
 		if (emscripten_runtime_keepalive_check())
 			return 0;
-#endif
 	}
 #endif
 
@@ -1296,15 +1290,8 @@ start_wrapper (gpointer data)
 #if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
 	if (returns_to_js_event_loop) {
 		/* if the thread wants to stay alive, don't clean up after it */
-#ifdef MONO_EMSCRIPTEN_KEEPALIVE_WORKAROUND_HACK
-		/* we "know" the keepalive count is positive at this point for threadpool threads. Keep it alive */
-		g_assert (mono_emscripten_keepalive_hack_count > 0);
-		emscripten_unwind_to_js_event_loop ();
-		g_assert_not_reached();
-#else
 		if (emscripten_runtime_keepalive_check())
 			return 0;
-#endif
 	}
 #endif
 
