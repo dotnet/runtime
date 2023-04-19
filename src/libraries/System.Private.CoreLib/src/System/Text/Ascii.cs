@@ -63,7 +63,7 @@ namespace System.Text
                     }
 
                     // Process inputs with lengths [0, 3]
-                    for (int j = 0; j < length; j++)
+                    for (nuint j = 0; j < (uint)length; j++)
                     {
                         if (typeof(T) == typeof(byte)
                             ? (Unsafe.BitCast<T, byte>(Unsafe.Add(ref searchSpace, j)) > 127)
