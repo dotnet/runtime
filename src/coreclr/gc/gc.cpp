@@ -45893,9 +45893,8 @@ unsigned int GCHeap::WhichGeneration (Object* object)
 {
     uint8_t* o = (uint8_t*)object;
 #ifdef FEATURE_BASICFREEZE
-    if (GCHeap::IsInFrozenSegment (object))
+    if (!((o < g_gc_highest_address) && (o >= g_gc_lowest_address)) || GCHeap::IsInFrozenSegment (object))
     {
-        // Report -1 for objects allocated on NonGC heaps (aka frozen segments)
         return -1;
     }
 #endif //FEATURE_BASICFREEZE
