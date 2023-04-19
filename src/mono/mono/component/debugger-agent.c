@@ -8240,6 +8240,9 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 	guint8 b;
 	int nnested;
 	ErrorCode err;
+	int i = 0;
+	int len = 0;
+	MonoClassField *f = NULL;
 
 	switch (command) {
 	case CMD_TYPE_GET_INFO: {
@@ -8305,16 +8308,16 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 				guint count = inst->type_argc;
 				buffer_add_int (buf, count);
-				for (guint i = 0; i < count; i++)
-					buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (inst->type_argv [i]));
+				for (guint k = 0; k < count; k++)
+					buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (inst->type_argv [k]));
 			} else if (mono_class_is_gtd (klass)) {
 				MonoGenericContainer *container = mono_class_get_generic_container (klass);
 				MonoClass *pklass;
 
 				int count = container->type_argc;
 				buffer_add_int (buf, count);
-				for (int i = 0; i < count; i++) {
-					pklass = mono_class_create_generic_parameter (mono_generic_container_get_param (container, i));
+				for (int k = 0; k < count; k++) {
+					pklass = mono_class_create_generic_parameter (mono_generic_container_get_param (container, k));
 					buffer_add_typeid (buf, domain, pklass);
 				}
 			} else {
@@ -8325,7 +8328,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 	}
 	case CMD_TYPE_GET_METHODS: {
 		int nmethods;
-		int i = 0;
+		i = 0;
 		gpointer iter = NULL;
 		MonoMethod *m;
 
@@ -8346,9 +8349,8 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 	}
 	case CMD_TYPE_GET_FIELDS: {
 		int nfields;
-		int i = 0;
+		i = 0;
 		gpointer iter = NULL;
-		MonoClassField *f;
 
 		nfields = mono_class_num_fields (klass);
 
@@ -8368,7 +8370,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 	}
 	case CMD_TYPE_GET_PROPERTIES: {
 		int nprops;
-		int i = 0;
+		i = 0;
 		gpointer iter = NULL;
 		MonoProperty *prop;
 
@@ -8465,7 +8467,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 				thread = THREAD_TO_INTERNAL (thread_obj);
 		}
 
-		MonoClassField *f = NULL;
+		f = NULL;
 		gpointer iter = NULL;
 
 		while ((f = mono_class_get_fields_internal (klass, &iter))) {
@@ -8483,8 +8485,6 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 	}
 	case CMD_TYPE_GET_VALUES:
 	case CMD_TYPE_GET_VALUES_2: {
-		MonoClassField *f;
-		int len;
 		MonoThread *thread_obj;
 		MonoInternalThread *thread = NULL;
 
@@ -8499,7 +8499,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		}
 
 		len = decode_int (p, &p, end);
-		for (int i = 0; i < len; ++i) {
+		for (i = 0; i < len; ++i) {
 			f = decode_fieldid (p, &p, end, NULL, &err);
 			if (err != ERR_NONE)
 				goto exit;
@@ -8508,16 +8508,33 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		}
 		break;
 	}
+	case MDBGPROT_CMD_TYPE_SET_VALUES_BY_FIELD_TOKEN: {
+		len = 0;
+		gpointer iter = NULL;		
+		len = decode_int (p, &p, end);
+		int field_token = decode_int (p, &p, end);
+		while ((f = mono_class_get_fields_internal (klass, &iter))) {
+			if (mono_class_get_field_token (f) == field_token)
+				break;
+		}
+		if (f) {
+			if (get_static_field_value(f, klass, domain, NULL, buf) == -1)
+				goto invalid_fieldid;
+		}
+		else
+			goto invalid_fieldid;
+		goto set_value;
+		break;
+	}
 	case CMD_TYPE_SET_VALUES: {
 		guint8 *val;
-		MonoClassField *f;
 		MonoVTable *vtable;
 		MonoClass *k;
-		int len;
+		len = 0;
 		gboolean found;
 
 		len = decode_int (p, &p, end);
-		for (int i = 0; i < len; ++i) {
+		for (i = 0; i < len; ++i) {
 			f = decode_fieldid (p, &p, end, NULL, &err);
 			if (err != ERR_NONE)
 				goto exit;
@@ -8540,7 +8557,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 				goto invalid_fieldid;
 
 			// FIXME: Check for literal/const
-
+set_value:
 			vtable = mono_class_vtable_checked (m_field_get_parent (f), error);
 			if (!is_ok (error)) {
 				mono_error_cleanup (error);
@@ -8583,8 +8600,8 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		files = get_source_files_for_type (klass);
 
 		buffer_add_int (buf, files->len);
-		for (guint i = 0; i < files->len; ++i) {
-			source_file = (char *)g_ptr_array_index (files, i);
+		for (guint k = 0; k < files->len; ++k) {
+			source_file = (char *)g_ptr_array_index (files, k);
 			if (command == CMD_TYPE_GET_SOURCE_FILES_2) {
 				buffer_add_string (buf, source_file);
 			} else {
@@ -8627,8 +8644,8 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			goto loader_error;
 		}
 		buffer_add_int (buf, array->len);
-		for (guint i = 0; i < array->len; ++i) {
-			MonoMethod *method = (MonoMethod *)g_ptr_array_index (array, i);
+		for (guint k = 0; k < array->len; ++k) {
+			MonoMethod *method = (MonoMethod *)g_ptr_array_index (array, k);
 			buffer_add_methodid (buf, domain, method);
 		}
 
@@ -8670,7 +8687,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		int tindex, ioffset;
 		gboolean variance_used;
 		MonoClass *iclass;
-		int len, nmethods;
+		int nmethods;
 		gpointer iter;
 		MonoMethod *method;
 
@@ -8694,7 +8711,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 				buffer_add_methodid (buf, domain, method);
 			}
 			MonoMethod **klass_vtable = m_class_get_vtable (klass);
-			for (int i = 0; i < nmethods; ++i)
+			for (i = 0; i < nmethods; ++i)
 				buffer_add_methodid (buf, domain, klass_vtable [i + ioffset]);
 		}
 		break;
@@ -8759,7 +8776,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 	}
 	case MDBGPROT_CMD_TYPE_BIND_GENERIC_PARAMETERS: {
 		MonoType **type_argv;
-		int i, type_argc;
+		int type_argc;
 		MonoDomain *d;
 		if (!mono_class_is_gtd (klass))
 		{
