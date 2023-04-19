@@ -6512,22 +6512,22 @@ void emitter::emitIns_R_R_R(
  *  Add an instruction storing 2 registers into a memory (pointed by reg3) and the offset
     (immediate).
  */
- 
+
 void emitter::emitIns_SS_R_R_R_I(instruction ins,
-                        emitAttr    attr,
-                        emitAttr    attr2,
-                        regNumber   reg1,
-                        regNumber   reg2,
-                        regNumber   reg3,
-                        ssize_t     imm,
-                        int         varx1,
-                        int         offs,
-                        int         varx2)
+                                 emitAttr    attr,
+                                 emitAttr    attr2,
+                                 regNumber   reg1,
+                                 regNumber   reg2,
+                                 regNumber   reg3,
+                                 ssize_t     imm,
+                                 int         varx1,
+                                 int         offs,
+                                 int         varx2)
 {
     assert((ins == INS_stp) || (ins == INS_stnp));
-    emitAttr  size   = EA_SIZE(attr);
-    insFormat fmt    = IF_NONE;
-    unsigned  scale  = 0;
+    emitAttr  size  = EA_SIZE(attr);
+    insFormat fmt   = IF_NONE;
+    unsigned  scale = 0;
 
     // Is the target a vector register?
     if (isVectorRegister(reg1))
@@ -6535,7 +6535,7 @@ void emitter::emitIns_SS_R_R_R_I(instruction ins,
         assert(isValidVectorLSPDatasize(size));
         assert(isVectorRegister(reg2));
 
-        scale  = NaturalScale_helper(size);
+        scale = NaturalScale_helper(size);
         assert((scale >= 2) && (scale <= 4));
     }
     else
@@ -6547,7 +6547,7 @@ void emitter::emitIns_SS_R_R_R_I(instruction ins,
 
     reg3 = encodingSPtoZR(reg3);
 
-    fmt = IF_LS_3C;
+    fmt          = IF_LS_3C;
     ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
     if (imm == 0)
     {
@@ -11872,14 +11872,19 @@ SKIP_GC_UPDATE:
             unsigned ofs2 = ofs + TARGET_POINTER_SIZE;
             if (id->idGCrefReg2() != GCT_NONE)
             {
-                int varNum2 = -1;
-                if (id->idSmallCns())
+                int varNum2 = varNum;
+                if (id->idIsLclVarPair())
                 {
-                    varNum2 = ((instrDescStrPair*)id)->iiaLclVar2.lvaVarNum();
-                }
-                else
-                {
-                    varNum2 = ((instrDescStrPairCns*)id)->iiaLclVar2.lvaVarNum();
+                    // If there are 2 GC vars in this instrDesc, get the 2nd variable
+                    // that should be tracked.
+                    if (id->idSmallCns())
+                    {
+                        varNum2 = ((instrDescStrPair*)id)->iiaLclVar2.lvaVarNum();
+                    }
+                    else
+                    {
+                        varNum2 = ((instrDescStrPairCns*)id)->iiaLclVar2.lvaVarNum();
+                    }
                 }
                 assert(varNum2 != -1);
                 emitGCvarLiveUpd(adr + ofs2, varNum2, id->idGCrefReg2(), dst DEBUG_ARG(varNum2));
@@ -16355,35 +16360,35 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
 
     if (optimizationOrder != eRO_none)
     {
-        regNumber oldReg1 = emitLastIns->idReg1();
+        regNumber prevReg1 = emitLastIns->idReg1();
 
-        ssize_t     oldImm = emitGetInsSC(emitLastIns);
-        instruction optIns = (ins == INS_ldr) ? INS_ldp : INS_stp;
+        ssize_t     prevImm = emitGetInsSC(emitLastIns);
+        instruction optIns  = (ins == INS_ldr) ? INS_ldp : INS_stp;
 
-        emitAttr oldReg1Attr;
-        ssize_t  oldImmSize = oldImm * size;
-        ssize_t  newImmSize = imm * size;
+        emitAttr prevReg1Attr;
+        ssize_t  prevImmSize    = prevImm * size;
+        ssize_t  newImmSize     = imm * size;
         bool     isLastGCLclVar = (emitLastIns->idIsLclVar() && (emitLastIns->idGCref() != GCT_NONE));
         bool     isCurrGCLclVar = (localVar && EA_IS_GCREF_OR_BYREF(reg1Attr));
-        int      oldOffset      = -1;
-        int      oldLclVarNum   = -1;
+        int      prevOffset     = -1;
+        int      prevLclVarNum  = -1;
 
         if (emitLastIns->idIsLclVar())
         {
-            oldOffset    = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
-            oldLclVarNum = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
+            prevOffset    = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
+            prevLclVarNum = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
         }
 
         switch (emitLastIns->idGCref())
         {
             case GCT_GCREF:
-                oldReg1Attr = EA_GCREF;
+                prevReg1Attr = EA_GCREF;
                 break;
             case GCT_BYREF:
-                oldReg1Attr = EA_BYREF;
+                prevReg1Attr = EA_BYREF;
                 break;
             default:
-                oldReg1Attr = emitLastIns->idOpSize();
+                prevReg1Attr = emitLastIns->idOpSize();
                 break;
         }
 
@@ -16393,82 +16398,86 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
         // Combine two 32 bit stores of value zero into one 64 bit store
         if (ins == INS_str)
         {
-            if (reg1 == REG_ZR && oldReg1 == REG_ZR && size == EA_4BYTE)
+            if (reg1 == REG_ZR && prevReg1 == REG_ZR && size == EA_4BYTE)
             {
                 // The first register is at the lower offset for the ascending order
-                ssize_t offset = (optimizationOrder == eRO_ascending ? oldImm : imm) * size;
+                ssize_t offset = (optimizationOrder == eRO_ascending ? prevImm : imm) * size;
                 emitIns_R_R_I(INS_str, EA_8BYTE, REG_ZR, reg2, offset, INS_OPTS_NONE);
                 return true;
             }
 
             if (isLastGCLclVar && isCurrGCLclVar)
             {
-                //if (asending)
+                // if (asending)
                 //    - idGCref() = last instruction's GCtype
                 //    - idGCrefReg2() = current instruction's GCType
                 //    - lvaVarNum = last instruction's lclVar
                 //    - lvaVarNum2 = current instruction's lclVar
                 //    - lvaOffset = last instruction's offset
-                //else
+                // else
                 //    - idGCref() = current instruction's GCType
                 //    - idGCrefReg2() = last instruction's GCtype
                 //    - lvaVarNum = current instruction's lclVar
                 //    - lvaVarNum2 = last instruction's lclVar
                 //    - lvaOffset = current instruction's offset
-                
+
                 if (optimizationOrder == eRO_ascending)
                 {
-                    emitIns_SS_R_R_R_I(optIns, oldReg1Attr, reg1Attr, oldReg1, reg1, reg2, oldImmSize, oldLclVarNum, oldOffset, varx);
+                    emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum,
+                                       prevOffset, varx);
                 }
                 else
                 {
-                    emitIns_SS_R_R_R_I(optIns, reg1Attr, oldReg1Attr, reg1, oldReg1, reg2, newImmSize, varx, offs, oldLclVarNum);
+                    emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, varx, offs,
+                                       prevLclVarNum);
                 }
                 return true;
             }
             else if (isLastGCLclVar)
             {
-                //if (asending)
+                // if (asending)
                 //    - idGCref() = last instruction's GCtype
                 //    - idGCrefReg2() = GCT_NONE
                 //    - lvaVarNum = last instruction's lclVar
                 //    - lvaOffset = last instruction's offset
-                //else
+                // else
                 //    - idGCref() = GCT_NONE
                 //    - idGCrefReg2() = last instruction's GCtype
                 //    - lvaVarNum = last instruction's lclVar
                 //    - lvaOffset = current instruction's offset
-                
+
                 if (optimizationOrder == eRO_ascending)
                 {
-                    emitIns_SS_R_R_R_I(optIns, oldReg1Attr, reg1Attr, oldReg1, reg1, reg2, oldImmSize, oldLclVarNum, oldOffset);
+                    emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum,
+                                       prevOffset);
                 }
                 else
                 {
-                    emitIns_SS_R_R_R_I(optIns, reg1Attr, oldReg1Attr, reg1, oldReg1, reg2, newImmSize, oldLclVarNum, oldOffset);
+                    emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, prevLclVarNum,
+                                       prevOffset);
                 }
                 return true;
             }
             else if (isCurrGCLclVar)
             {
-                //if (asending)
+                // if (asending)
                 //    - idGCref() = GCT_NONE
                 //    - idGCrefReg2() = current instruction's GCType
                 //    - lvaVarNum = current instruction's lclVar
                 //    - lvaOffset = last instruction's offset
-                //else
+                // else
                 //    - idGCref() = current instruction's GCType
                 //    - idGCrefReg2() = GCT_NONE
                 //    - lvaVarNum = current instruction's lclVar
                 //    - lvaOffset = current instruction's offset
-                
+
                 if (optimizationOrder == eRO_ascending)
                 {
-                    emitIns_SS_R_R_R_I(optIns, oldReg1Attr, reg1Attr, oldReg1, reg1, reg2, oldImmSize, varx, offs);
+                    emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, varx, offs);
                 }
                 else
                 {
-                    emitIns_SS_R_R_R_I(optIns, reg1Attr, oldReg1Attr, reg1, oldReg1, reg2, newImmSize, varx, offs);
+                    emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, varx, offs);
                 }
                 return true;
             }
@@ -16478,12 +16487,12 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
         if (optimizationOrder == eRO_ascending)
         {
             // The last instruction is at the lower offset
-            emitIns_R_R_R_I(optIns, oldReg1Attr, oldReg1, reg1, reg2, oldImm * size, INS_OPTS_NONE, reg1Attr);
+            emitIns_R_R_R_I(optIns, prevReg1Attr, prevReg1, reg1, reg2, prevImm * size, INS_OPTS_NONE, reg1Attr);
         }
         else
         {
             // The current instruction is at the lower offset
-            emitIns_R_R_R_I(optIns, reg1Attr, reg1, oldReg1, reg2, imm * size, INS_OPTS_NONE, oldReg1Attr);
+            emitIns_R_R_R_I(optIns, reg1Attr, reg1, prevReg1, reg2, imm * size, INS_OPTS_NONE, prevReg1Attr);
         }
 
         return true;
