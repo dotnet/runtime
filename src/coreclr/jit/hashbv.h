@@ -323,12 +323,10 @@ HbvWalk ForEachHbvBitSet(const hashBv& bv, TFunctor func)
             indexType base = node->baseIndex;
             for (int el = 0; el < node->numElements(); el++)
             {
-                elemType i = 0;
                 elemType e = node->elements[el];
                 while (e)
                 {
-                    int result = BitScanForwardPtr((DWORD*)&i, e);
-                    assert(result);
+                    unsigned  i     = BitOperations::BitScanForward(e);
                     indexType index = base + (el * BITS_PER_ELEMENT) + i;
                     e ^= (elemType(1) << i);
 

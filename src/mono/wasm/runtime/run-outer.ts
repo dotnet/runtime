@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // WARNING: code in this file is executed before any of the emscripten code, so there is very little initialized already
+import { WebAssemblyStartOptions } from "./blazor/WebAssemblyStartOptions";
 import { emscriptenEntrypoint, runtimeHelpers } from "./imports";
 import { setup_proxy_console } from "./logging";
 import { mono_exit } from "./run";
@@ -244,7 +245,7 @@ class HostBuilder implements DotnetHostBuilder {
         try {
             mono_assert(runtimeOptions && Array.isArray(runtimeOptions), "must be array of strings");
             const configInternal = this.moduleConfig.config as MonoConfigInternal;
-            configInternal.runtimeOptions = [...(configInternal.runtimeOptions || []), ...(runtimeOptions|| [])];
+            configInternal.runtimeOptions = [...(configInternal.runtimeOptions || []), ...(runtimeOptions || [])];
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -279,6 +280,12 @@ class HostBuilder implements DotnetHostBuilder {
             mono_exit(1, err);
             throw err;
         }
+    }
+
+    withStartupOptions(startupOptions: Partial<WebAssemblyStartOptions>): DotnetHostBuilder {
+        const configInternal = this.moduleConfig.config as MonoConfigInternal;
+        configInternal.startupOptions = startupOptions;
+        return this.withConfigSrc("blazor.boot.json");
     }
 
     async create(): Promise<RuntimeAPI> {

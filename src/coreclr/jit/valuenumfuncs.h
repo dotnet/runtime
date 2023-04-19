@@ -128,6 +128,7 @@ ValueNumFuncDef(GetsharedGcthreadstaticBase, 2, false, true, true)
 ValueNumFuncDef(GetsharedNongcthreadstaticBase, 2, false, true, true)
 ValueNumFuncDef(GetsharedGcthreadstaticBaseNoctor, 2, false, true, true)
 ValueNumFuncDef(GetsharedNongcthreadstaticBaseNoctor, 2, false, true, true)
+ValueNumFuncDef(GetsharedNongcthreadstaticBaseNoctorOptimized, 1, false, true, true)
 ValueNumFuncDef(GetsharedGcthreadstaticBaseDynamicclass, 2, false, true, true)
 ValueNumFuncDef(GetsharedNongcthreadstaticBaseDynamicclass, 2, false, true, true)
 

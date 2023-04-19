@@ -1443,7 +1443,7 @@ emit_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMValueRef PointerVal,
  *   If vreg is volatile, emit a load from its address.
  */
 static LLVMValueRef
-emit_volatile_load (EmitContext *ctx, int vreg)
+emit_volatile_load (EmitContext *ctx, MonoInst *var, int vreg)
 {
 	MonoType *t;
 	LLVMValueRef v;
@@ -1451,7 +1451,8 @@ emit_volatile_load (EmitContext *ctx, int vreg)
 	// On arm64, we pass the rgctx in a callee saved
 	// register on arm64 (x15), and llvm might keep the value in that register
 	// even through the register is marked as 'reserved' inside llvm.
-	v = emit_load (ctx->builder, ctx->addresses [vreg]->type, ctx->addresses [vreg]->value, "", TRUE);
+	gboolean is_volatile = (var->flags & MONO_INST_VOLATILE) != 0;
+	v = emit_load (ctx->builder, ctx->addresses [vreg]->type, ctx->addresses [vreg]->value, "", is_volatile);
 	t = ctx->vreg_cli_types [vreg];
 	if (t && !m_type_is_byref (t)) {
 		/*
@@ -1482,8 +1483,9 @@ emit_volatile_store (EmitContext *ctx, int vreg)
 	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
 		g_assert (ctx->addresses [vreg]);
 #ifdef TARGET_WASM
+		gboolean is_volatile = (var->flags & MONO_INST_VOLATILE) != 0;
 		/* Need volatile stores otherwise the compiler might move them */
-		emit_store (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg]->value, TRUE);
+		emit_store (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg]->value, is_volatile);
 #else
 		LLVMBuildStore (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg]->value);
 #endif
@@ -1912,6 +1914,15 @@ create_builder (EmitContext *ctx)
 
 	return builder;
 }
+static char*
+ji_type_to_string_lower (MonoJumpInfoType type)
+{
+	char *name = g_strdup (mono_ji_type_to_string (type));
+	size_t len = strlen (name);
+	for (size_t i = 0; i < len; ++i)
+		name [i] = GINT_TO_CHAR (tolower (name [i]));
+	return name;
+}
 
 static char*
 get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
@@ -1937,17 +1948,29 @@ get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
 	case MONO_PATCH_INFO_GC_NURSERY_START:
 	case MONO_PATCH_INFO_GC_NURSERY_BITS:
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
-		name = g_strdup_printf ("%s", mono_ji_type_to_string (type));
-		len = strlen (name);
-		for (size_t i = 0; i < len; ++i)
-			name [i] = GINT_TO_CHAR (tolower (name [i]));
+		name = ji_type_to_string_lower (type);
 		break;
-	default:
-		name = g_strdup_printf ("%s_%d", mono_ji_type_to_string (type), got_offset);
-		len = strlen (name);
-		for (size_t i = 0; i < len; ++i)
-			name [i] = GINT_TO_CHAR (tolower (name [i]));
+	case MONO_PATCH_INFO_METHOD:
+	case MONO_PATCH_INFO_METHOD_RGCTX: {
+		MonoMethod *method = (MonoMethod*)data;
+		char *typestr = ji_type_to_string_lower (type);
+		char *n = g_strdup (method->name);
+		len = strlen (n);
+		for (size_t i = 0; i < len; ++i) {
+			if (!isalnum (n [i]))
+				n [i] = '_';
+		}
+		name = g_strdup_printf ("%s_%s_%d", typestr, n, got_offset);
+		g_free (typestr);
+		g_free (n);
 		break;
+	}
+	default: {
+		char *typestr = ji_type_to_string_lower (type);
+		name = g_strdup_printf ("%s_%d", typestr, got_offset);
+		g_free (typestr);
+		break;
+	}
 	}
 
 	return name;
@@ -3807,7 +3830,8 @@ emit_gc_pin (EmitContext *ctx, LLVMBuilderRef builder, int vreg)
 	if (ctx->values [vreg] == LLVMConstNull (IntPtrType ()))
 		return;
 	MonoInst *var = get_vreg_to_inst (ctx->cfg, vreg);
-	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))
+	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_IS_DEAD))
+		/* Volatile variables are stored to the stack already */
 		return;
 	g_assert (vreg < ctx->gc_var_indexes_len);
 	LLVMValueRef index0 = const_int32 (0);
@@ -3851,7 +3875,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	for (guint32 i = 0; i < cfg->next_vreg; ++i) {
 		if (vreg_is_ref (cfg, i)) {
 			MonoInst *var = get_vreg_to_inst (ctx->cfg, i);
-			if (!(var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))) {
+			if (!(var && var->flags & (MONO_INST_VOLATILE|MONO_INST_IS_DEAD))) {
 				ctx->gc_var_indexes [i] = ngc_vars + 1;
 				ngc_vars ++;
 				ctx->gc_var_indexes_len = i + 1;
@@ -5154,15 +5178,28 @@ bitcast_to_integral (EmitContext *ctx, LLVMValueRef vec)
 }
 
 static LLVMValueRef
-extract_high_elements (EmitContext *ctx, LLVMValueRef src_vec)
+extract_half_elements (EmitContext *ctx, LLVMValueRef src_vec, gboolean high)
 {
 	LLVMTypeRef src_t = LLVMTypeOf (src_vec);
 	unsigned int src_elems = LLVMGetVectorSize (src_t);
 	unsigned int dst_elems = src_elems / 2;
+	unsigned int offset = high ? dst_elems : 0;
 	int mask [MAX_VECTOR_ELEMS] = { 0 };
 	for (guint i = 0; i < dst_elems; ++i)
-		mask [i] = dst_elems + i;
-	return LLVMBuildShuffleVector (ctx->builder, src_vec, LLVMGetUndef (src_t), create_const_vector_i32 (mask, dst_elems), "extract_high");
+		mask [i] = offset + i;
+	return LLVMBuildShuffleVector (ctx->builder, src_vec, LLVMGetUndef (src_t), create_const_vector_i32 (mask, dst_elems), high ? "extract_high" : "extract_low");
+}
+
+static LLVMValueRef
+extract_high_elements (EmitContext *ctx, LLVMValueRef src_vec)
+{
+	return extract_half_elements (ctx, src_vec, TRUE);
+}
+
+static LLVMValueRef
+extract_low_elements (EmitContext *ctx, LLVMValueRef src_vec)
+{
+	return extract_half_elements (ctx, src_vec, FALSE);
 }
 
 static LLVMValueRef
@@ -5740,7 +5777,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			MonoInst *var = get_vreg_to_inst (cfg, ins->sreg1);
 
 			if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) && var->opcode != OP_GSHAREDVT_ARG_REGOFFSET) {
-				lhs = emit_volatile_load (ctx, ins->sreg1);
+				lhs = emit_volatile_load (ctx, var, ins->sreg1);
 			} else {
 				/* It is ok for SETRET to have an uninitialized argument */
 				if (!values [ins->sreg1] && ins->opcode != OP_SETRET) {
@@ -5756,7 +5793,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		if (spec [MONO_INST_SRC2] != ' ' && spec [MONO_INST_SRC2] != 'v') {
 			MonoInst *var = get_vreg_to_inst (cfg, ins->sreg2);
 			if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
-				rhs = emit_volatile_load (ctx, ins->sreg2);
+				rhs = emit_volatile_load (ctx, var, ins->sreg2);
 			} else {
 				if (!values [ins->sreg2]) {
 					set_failure (ctx, "sreg2");
@@ -5771,7 +5808,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		if (spec [MONO_INST_SRC3] != ' ' && spec [MONO_INST_SRC3] != 'v') {
 			MonoInst *var = get_vreg_to_inst (cfg, ins->sreg3);
 			if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
-				arg3 = emit_volatile_load (ctx, ins->sreg3);
+				arg3 = emit_volatile_load (ctx, var, ins->sreg3);
 			} else {
 				if (!values [ins->sreg3]) {
 					set_failure (ctx, "sreg3");
@@ -9948,6 +9985,25 @@ MONO_RESTORE_WARNING
 
 			LLVMValueRef shuffle = LLVMBuildShuffleVector (builder, LLVMBuildBitCast (builder, lhs, LLVMVectorType (i1_t, 16), ""), LLVMBuildBitCast (builder, rhs, LLVMVectorType (i1_t, 16), ""), mask, "");
 			values [ins->dreg] = LLVMBuildBitCast (builder, shuffle, LLVMVectorType (itype, nelems * 2), "");
+			break;
+		}
+		case OP_WASM_EXTMUL_LOWER_U:
+		case OP_WASM_EXTMUL_UPPER_U:
+		case OP_WASM_EXTMUL_LOWER:
+		case OP_WASM_EXTMUL_UPPER: {
+			LLVMTypeRef src_t = LLVMTypeOf (lhs);
+			int nelems = LLVMGetVectorSize (src_t) / 2;
+			unsigned int width = mono_llvm_get_prim_size_bits (LLVMGetElementType(src_t));
+			LLVMTypeRef int_t = LLVMIntType (width * 2);
+			LLVMTypeRef ret_t = LLVMVectorType (int_t, nelems);
+			int lower = ins->opcode == OP_WASM_EXTMUL_LOWER || ins->opcode == OP_WASM_EXTMUL_LOWER_U;
+			gboolean is_unsigned = ins->opcode == OP_WASM_EXTMUL_LOWER_U || ins->opcode == OP_WASM_EXTMUL_UPPER_U;
+			LLVMValueRef part1 = lower ? extract_low_elements (ctx, lhs) : extract_high_elements(ctx, lhs);
+			LLVMValueRef part2 = lower ? extract_low_elements (ctx, rhs) : extract_high_elements(ctx, rhs);
+			LLVMValueRef ext1 = is_unsigned ? LLVMBuildZExt (builder, part1, ret_t, "") : LLVMBuildSExt (builder, part1, ret_t, "");
+			LLVMValueRef ext2 = is_unsigned ? LLVMBuildZExt (builder, part2, ret_t, "") : LLVMBuildSExt (builder, part2, ret_t, "");
+			values [ins->dreg] = LLVMBuildMul (builder, ext1, ext2, "");
+
 			break;
 		}
 #endif
