@@ -92,7 +92,7 @@ export function mono_call_assembly_entry_point(assembly: string, args?: any[], s
 
 export function mono_wasm_invoke_js_with_args_ref(js_handle: JSHandle, method_name: MonoStringRef, args: MonoObjectRef, is_exception: Int32Ptr, result_address: MonoObjectRef): any {
     if (MonoWasmThreads && ENVIRONMENT_IS_PTHREAD) {
-        throw new Error("Legacy interop in not supported with WebAssembly threads.");
+        throw new Error("Legacy interop is not supported with WebAssembly threads.");
     }
     const argsRoot = mono_wasm_new_external_root<MonoArray>(args),
         nameRoot = mono_wasm_new_external_root<MonoString>(method_name),
