@@ -32,7 +32,7 @@ HRESULT STDMETHODCALLTYPE NonGcHeapProfiler::ObjectAllocated(ObjectID objectId, 
     HRESULT hr = pCorProfilerInfo->GetObjectGeneration(objectId, &gen);
 
     // non-GC objects (same for GC.GetGeneration() API) have generation = -1
-    if (gen.generation == (COR_PRF_GC_GENERATION)-1)
+    if (gen.generation == (COR_PRF_GC_GENERATION)INT32_MAX)
     {
         if (!FAILED(hr))
         {

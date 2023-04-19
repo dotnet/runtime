@@ -151,7 +151,7 @@ public:
     void    SetFinalizationRun (Object* obj);
 
     //returns the generation number of an object (not valid during relocation)
-    unsigned WhichGeneration (Object* object, bool maxGenForNonGcObjects = true);
+    unsigned WhichGeneration (Object* object);
     // returns TRUE is the object is ephemeral
     bool IsEphemeral (Object* object);
     bool IsHeapPointer (void* object, bool small_heap_only = false);

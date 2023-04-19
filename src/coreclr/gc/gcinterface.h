@@ -722,7 +722,7 @@ public:
 
     // Returns the generation in which obj is found. Also used by the VM
     // in some places, in particular syncblk code.
-    virtual unsigned WhichGeneration(Object* obj, bool maxGenForNonGcObjects = true) PURE_VIRTUAL
+    virtual unsigned WhichGeneration(Object* obj) PURE_VIRTUAL
 
     // Returns the number of GCs that have transpired in the given generation
     // since the beginning of the life of the process. Also used by the VM

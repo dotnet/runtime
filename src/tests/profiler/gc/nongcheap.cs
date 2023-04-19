@@ -22,6 +22,15 @@ namespace Profiler.Tests
             Consume("string4");
             Consume("string5");
             Consume("string6");
+
+            int gen = GC.GetGeneration("string7");
+            if (gen != int.MaxValue)
+                throw new Exception("object is expected to be in a non-gc heaps");
+
+            GC.Collect(gen);
+            GC.Collect(gen, GCCollectionMode.Aggressive);
+            GC.Collect(gen, GCCollectionMode.Optimized, true);
+            GC.Collect(gen, GCCollectionMode.Forced, true, true);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

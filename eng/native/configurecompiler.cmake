@@ -87,6 +87,7 @@ if (MSVC)
 
   # Checked build specific flags
   add_linker_flag(/INCREMENTAL:NO CHECKED) # prevent "warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:REF' specification"
+  add_linker_flag(/INCREMENTAL:NO DEBUG) # prevent "warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:REF' specification"
   add_linker_flag(/OPT:REF CHECKED)
   add_linker_flag(/OPT:NOICF CHECKED)
 

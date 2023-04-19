@@ -104,7 +104,7 @@ COOP_PINVOKE_HELPER(int32_t, RhGetGcCollectionCount, (int32_t generation, CLR_BO
 
 COOP_PINVOKE_HELPER(int32_t, RhGetGeneration, (OBJECTREF obj))
 {
-    return GCHeapUtilities::GetGCHeap()->WhichGeneration(obj, false);
+    return GCHeapUtilities::GetGCHeap()->WhichGeneration(obj);
 }
 
 COOP_PINVOKE_HELPER(int32_t, RhGetGcLatencyMode, ())
