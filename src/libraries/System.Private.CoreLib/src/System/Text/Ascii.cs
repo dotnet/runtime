@@ -189,8 +189,6 @@ namespace System.Text
 
                     nuint i = 4 * (nuint)Vector128<T>.Count;
 
-                    searchSpace = ref Unsafe.Add(ref searchSpace, 4 * Vector128<T>.Count);
-
                     // Try to opportunistically align the reads below. The input isn't pinned, so the GC
                     // is free to move the references. We're therefore assuming that reads may still be unaligned.
                     // They may also be unaligned if the input chars aren't 2-byte aligned.
