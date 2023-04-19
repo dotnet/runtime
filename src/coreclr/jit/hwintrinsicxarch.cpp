@@ -1975,13 +1975,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsLong(simdBaseType))
             {
-                assert((simdSize == 16) || (simdSize == 32));
-
-                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
+                if (simdSize != 64 && !compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
                 {
                     // TODO-XARCH-CQ: We should support long/ulong multiplication
                     break;
                 }
+// else if simdSize == 64 then above assert would check if baseline isa supported
 
 #if defined(TARGET_X86)
                 // TODO-XARCH-CQ: We need to support 64-bit CreateBroadcast
