@@ -7850,12 +7850,13 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                               (intrinsicId == NI_BMI2_X64_MultiplyNoFlags)) &&
                              IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                     {
-                        if(op1->OperIs(GT_HWINTRINSIC) && op1->IsEmbBroadcast())
+                        if (op1->OperIs(GT_HWINTRINSIC) && op1->IsEmbBroadcast())
                         {
-                            GenTree* CreateScalar = op1->AsHWIntrinsic()->Op(1);
-                            GenTree* local = CreateScalar->AsHWIntrinsic()->Op(1);
-                            const unsigned opLclNum = local->AsLclVar()->GetLclNum();
-                            comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+                            GenTree*       CreateScalar = op1->AsHWIntrinsic()->Op(1);
+                            GenTree*       local        = CreateScalar->AsHWIntrinsic()->Op(1);
+                            const unsigned opLclNum     = local->AsLclVar()->GetLclNum();
+                            comp->lvaSetVarDoNotEnregister(
+                                opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
                             MakeSrcContained(CreateScalar, local);
                             MakeSrcContained(op1, CreateScalar);
                         }
