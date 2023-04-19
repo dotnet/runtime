@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal nint JSHandle;
 
-#if ENABLE_LEGACY_JS_INTEROP
+#if !DISABLE_LEGACY_JS_INTEROP
         internal GCHandle? InFlight;
         internal int InFlightCounter;
 #endif
@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.JavaScript
             JSHandle = jsHandle;
         }
 
-#if ENABLE_LEGACY_JS_INTEROP
+#if !DISABLE_LEGACY_JS_INTEROP
         internal void AddInFlight()
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
