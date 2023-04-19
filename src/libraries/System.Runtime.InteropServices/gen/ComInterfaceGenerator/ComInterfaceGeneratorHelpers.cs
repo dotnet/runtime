@@ -65,33 +65,5 @@ namespace Microsoft.Interop
 
             return MarshallingGeneratorFactoryKey.Create((env.TargetFramework, env.TargetFrameworkVersion), generatorFactory);
         }
-
-        enum ComInterfaceMethodValidity
-        {
-            Valid,
-            NotDefinedInAttributedSyntax,
-
-        }
-        public static bool IsComMethod(ISymbol member, InterfaceDeclarationSyntax iface)
-        {
-            Location? locationInAttributeSyntax = null;
-            if (member.Kind == SymbolKind.Method && !member.IsStatic)
-            {
-                Location interfaceLocation = iface.GetLocation();
-                // We only support methods that are defined in the same partial interface definition as the
-                // [GeneratedComInterface] attribute.
-                // This restriction not only makes finding the syntax for a given method cheaper,
-                // but it also enables us to ensure that we can determine vtable method order easily.
-                foreach (var location in member.Locations)
-                {
-                    if (location.SourceTree == interfaceLocation.SourceTree
-                        && interfaceLocation.SourceSpan.Contains(location.SourceSpan))
-                    {
-                        locationInAttributeSyntax = location;
-                    }
-                }
-            }
-            return locationInAttributeSyntax is not null;
-        }
     }
 }
