@@ -19745,10 +19745,18 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 case TYP_LONG:
                 case TYP_ULONG:
                 {
-                    assert((simdSize == 16) || (simdSize == 32));
+                    assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
                     assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ_VL));
 
-                    intrinsic = NI_AVX512DQ_VL_MultiplyLow;
+                    if (simdSize != 64)
+                    {
+                        intrinsic = NI_AVX512DQ_VL_MultiplyLow;
+                    }
+                    else
+                    {
+                        intrinsic = NI_AVX512DQ_MultiplyLow;
+                    }
+
                     break;
                 }
 

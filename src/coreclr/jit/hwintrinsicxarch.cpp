@@ -1965,11 +1965,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-            if (simdSize == 64 && !IsBaselineVector512IsaSupported())
-            {
-                // We use AVX512F for all compatible base types (float, int, uint, double)
-                break;
-            }
+            assert(simdSize != 64 || IsBaselineVector512IsaSupportedDebugOnly());
 
             if ((simdBaseType == TYP_BYTE) || (simdBaseType == TYP_UBYTE))
             {
