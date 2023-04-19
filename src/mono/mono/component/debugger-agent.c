@@ -7332,6 +7332,52 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_string (buf, mono_enc_capabilities ());
 		break;
 	}
+	case MDBGPROT_CMD_GET_INTERNAL_TYPE_CLASS: {
+		int internal_type = decode_int (p, &p, end);
+		switch (internal_type) {
+			case MONO_TYPE_BOOLEAN:
+				buffer_add_typeid (buf, mono_get_root_domain (), mono_get_boolean_class ());
+				break;
+			case MONO_TYPE_I1:
+				buffer_add_typeid (buf, mono_get_root_domain (), mono_get_sbyte_class ());
+				break;
+			case MONO_TYPE_U1:
+				buffer_add_typeid (buf, mono_get_root_domain (), mono_get_byte_class ());
+				break;
+			case MONO_TYPE_CHAR:
+				buffer_add_typeid (buf, mono_get_root_domain (), mono_get_char_class ());
+				break;
+			case MONO_TYPE_I2:
+				buffer_add_typeid (buf, mono_get_root_domain (), mono_get_int16_class ());
+				break;
+			case MONO_TYPE_U2:
+				buffer_add_typeid (buf, mono_get_root_domain (), mono_get_uint16_class ());
+				break;
+			case MONO_TYPE_I4:
+				buffer_add_typeid (buf, mono_get_root_domain (), mono_get_int32_class ());
+				break;
+			case MONO_TYPE_U4:
+				buffer_add_typeid (buf, mono_get_root_domain (), mono_get_uint32_class ());
+				break;
+			case MONO_TYPE_R4:
+				buffer_add_typeid (buf, mono_get_root_domain (), mono_get_single_class ());
+				break;
+			case MONO_TYPE_I8:
+				buffer_add_typeid (buf, mono_get_root_domain (), mono_get_int64_class ());
+				break;			
+			case MONO_TYPE_U8:
+				buffer_add_typeid (buf, mono_get_root_domain (), mono_get_uint64_class ());
+				break;
+			case MONO_TYPE_R8:
+				buffer_add_typeid (buf, mono_get_root_domain (), mono_get_double_class ());
+				break;
+			default: {
+				buffer_add_int (buf, -1);
+				break;
+			}
+		}
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -8407,7 +8453,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			goto exit;
 		break;
 	}
-	case MDBGPROT_CMD_TYPE_GET_VALUES_ICORDBG: {
+	case MDBGPROT_CMD_TYPE_GET_VALUES_BY_FIELD_TOKEN: {
 		MonoThread *thread_obj;
 		MonoInternalThread *thread = NULL;
 		int field_token =  decode_int (p, &p, end);
@@ -8715,6 +8761,11 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		MonoType **type_argv;
 		int i, type_argc;
 		MonoDomain *d;
+		if (!mono_class_is_gtd (klass))
+		{
+			buffer_add_typeid (buf, domain, klass);
+			break;
+		}
 		type_argc = decode_int (p, &p, end);
 		type_argv = g_new0 (MonoType*, type_argc);
 		for (i = 0; i < type_argc; ++i) {
@@ -10132,7 +10183,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	case CMD_OBJECT_REF_GET_TYPE:
 		buffer_add_typeid (buf, obj->vtable->domain, mono_class_from_mono_type_internal (((MonoReflectionType*)obj->vtable->type)->type));
 		break;
-	case CMD_OBJECT_REF_GET_VALUES_ICORDBG: {
+	case CMD_OBJECT_REF_GET_VALUES_BY_FIELD_TOKEN: {
 		len = 1;
 		i = 0;
 		MonoClass* klass =  decode_typeid (p, &p, end, NULL, &err);
@@ -10201,6 +10252,17 @@ get_field_value:
 			}
 		}
 		break;
+	case MDBGPROT_CMD_OBJECT_REF_SET_VALUES_BY_FIELD_TOKEN:
+		len = decode_int (p, &p, end);
+		i = 0;
+		int field_token =  decode_int (p, &p, end);
+		gpointer iter = NULL;
+
+		while ((f = mono_class_get_fields_internal (obj_type, &iter))) {
+			if (mono_class_get_field_token (f) == field_token)
+				goto set_field_value;
+		}
+		goto invalid_fieldid;
 	case CMD_OBJECT_REF_SET_VALUES:
 		len = decode_int (p, &p, end);
 
@@ -10219,7 +10281,7 @@ get_field_value:
 			}
 			if (!found)
 				goto invalid_fieldid;
-
+set_field_value:
 			if (f->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				guint8 *val;
 				MonoVTable *vtable;
