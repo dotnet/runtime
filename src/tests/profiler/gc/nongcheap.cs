@@ -28,7 +28,6 @@ namespace Profiler.Tests
                 throw new Exception("object is expected to be in a non-gc heaps");
 
             GC.Collect(gen);
-            GC.Collect(gen, GCCollectionMode.Aggressive);
             GC.Collect(gen, GCCollectionMode.Optimized, true);
             GC.Collect(gen, GCCollectionMode.Forced, true, true);
         }
