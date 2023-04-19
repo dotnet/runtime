@@ -12,7 +12,7 @@
 // anytime soon, but a good case to have.
 
 .assembly extern mscorlib{}
-.assembly test{}
+.assembly 'test_102974'{}
 
 .class public auto ansi beforefieldinit Test
        extends [mscorlib]System.Object

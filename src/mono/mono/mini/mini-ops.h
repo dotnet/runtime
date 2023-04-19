@@ -855,6 +855,10 @@ MINI_OP3(OP_WASM_SIMD_SHUFFLE, "wasm_shuffle", XREG, XREG, XREG, XREG)
 MINI_OP(OP_WASM_SIMD_SUM, "wasm_sum", XREG, XREG, NONE)
 MINI_OP(OP_WASM_SIMD_SWIZZLE, "wasm_swizzle", XREG, XREG, XREG)
 MINI_OP(OP_WASM_EXTRACT_NARROW, "wasm_extract_narrow", XREG, XREG, XREG)
+MINI_OP(OP_WASM_EXTMUL_LOWER, "wasm_extmul_lower", XREG, XREG, XREG)
+MINI_OP(OP_WASM_EXTMUL_UPPER, "wasm_extmul_upper", XREG, XREG, XREG)
+MINI_OP(OP_WASM_EXTMUL_LOWER_U, "wasm_extmul_lower_u", XREG, XREG, XREG)
+MINI_OP(OP_WASM_EXTMUL_UPPER_U, "wasm_extmul_upper_u", XREG, XREG, XREG)
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
@@ -1167,6 +1171,11 @@ MINI_OP3(OP_MULX_HL64, "mulxhl64", LREG, LREG, LREG, LREG)
 
 MINI_OP(OP_CREATE_SCALAR_UNSAFE, "create_scalar_unsafe", XREG, XREG, NONE)
 MINI_OP(OP_CREATE_SCALAR, "create_scalar", XREG, XREG, NONE)
+
+MINI_OP(OP_CREATE_SCALAR_UNSAFE_INT, "create_scalar_unsafe_int", XREG, IREG, NONE)
+MINI_OP(OP_CREATE_SCALAR_UNSAFE_FLOAT, "create_scalar_unsafe_float", XREG, FREG, NONE)
+MINI_OP(OP_CREATE_SCALAR_INT, "create_scalar_int", XREG, IREG, NONE)
+MINI_OP(OP_CREATE_SCALAR_FLOAT, "create_scalar_float", XREG, FREG, NONE)
 
 MINI_OP(OP_XMOVE,   "xmove", XREG, XREG, NONE)
 MINI_OP(OP_XZERO,   "xzero", XREG, NONE, NONE)
@@ -1493,6 +1502,7 @@ MINI_OP(OP_XEXTRACT, "xextract", IREG, XREG, NONE)
 /*
  * Generic SIMD operations, the rest of the JIT doesn't care about the exact operation.
  */
+MINI_OP(OP_XUNOP, "xunop", XREG, XREG, NONE)
 MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_FORCEINT, "xbinop_forceint", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_SCALAR, "xbinop_scalar", XREG, XREG, XREG)
@@ -1754,6 +1764,7 @@ MINI_OP(OP_ARM64_ABSCOMPARE, "arm64_abscompare", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_XNARROW_SCALAR, "arm64_xnarrow_scalar", XREG, XREG, NONE)
 
 MINI_OP3(OP_ARM64_EXT, "arm64_ext", XREG, XREG, XREG, IREG)
+MINI_OP(OP_ARM64_EXT_IMM, "arm64_ext_imm", XREG, XREG, XREG)
 
 MINI_OP3(OP_ARM64_SQRDMLAH, "arm64_sqrdmlah", XREG, XREG, XREG, XREG)
 MINI_OP3(OP_ARM64_SQRDMLAH_BYSCALAR, "arm64_sqrdmlah_byscalar", XREG, XREG, XREG, XREG)
@@ -1769,6 +1780,8 @@ MINI_OP3(OP_ARM64_SQRDMLSH_SCALAR, "arm64_sqrdmlsh_scalar", XREG, XREG, XREG, XR
  */
 MINI_OP(OP_ARM64_TBL_INDIRECT, "arm64_tbl_indirect", XREG, IREG, XREG)
 MINI_OP3(OP_ARM64_TBX_INDIRECT, "arm64_tbx_indirect", XREG, IREG, XREG, XREG)
+
+MINI_OP(OP_ARM64_USHL, "arm64_ushl", XREG, XREG, XREG)
 
 #endif // TARGET_ARM64
 

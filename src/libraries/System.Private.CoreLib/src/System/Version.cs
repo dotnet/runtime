@@ -185,7 +185,22 @@ namespace System
         public bool TryFormat(Span<char> destination, int fieldCount, out int charsWritten) =>
             TryFormatCore(destination, fieldCount, out charsWritten);
 
-        private bool TryFormatCore<TChar>(Span<TChar> destination, int fieldCount, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        /// <summary>Tries to format this version instance into a span of bytes.</summary>
+        /// <param name="utf8Destination">The span in which to write this instance's value formatted as a span of UTF8 bytes.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="utf8Destination"/>.</param>
+        /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/>.</returns>
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten) =>
+            TryFormatCore(utf8Destination, DefaultFormatFieldCount, out bytesWritten);
+
+        /// <summary>Tries to format this version instance into a span of bytes.</summary>
+        /// <param name="utf8Destination">The span in which to write this instance's value formatted as a span of UTF8 bytes.</param>
+        /// <param name="fieldCount">The number of components to return. This value ranges from 0 to 4.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="utf8Destination"/>.</param>
+        /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/>.</returns>
+        public bool TryFormat(Span<byte> utf8Destination, int fieldCount, out int bytesWritten) =>
+            TryFormatCore(utf8Destination, fieldCount, out bytesWritten);
+
+        private bool TryFormatCore<TChar>(Span<TChar> destination, int fieldCount, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -219,7 +234,7 @@ namespace System
                         return false;
                     }
 
-                    destination[0] = TChar.CreateTruncating('.');
+                    destination[0] = TChar.CastFrom('.');
                     destination = destination.Slice(1);
                     totalCharsWritten++;
                 }
@@ -235,7 +250,7 @@ namespace System
                 int valueCharsWritten;
                 bool formatted = typeof(TChar) == typeof(char) ?
                     ((uint)value).TryFormat(MemoryMarshal.Cast<TChar, char>(destination), out valueCharsWritten) :
-                    Utf8Formatter.TryFormat((uint)value, MemoryMarshal.Cast<TChar, byte>(destination), out valueCharsWritten); // TODO https://github.com/dotnet/runtime/issues/84527: Use UInt32's IUtf8SpanFormattable when available
+                    ((uint)value).TryFormat(MemoryMarshal.Cast<TChar, byte>(destination), out valueCharsWritten, default, CultureInfo.InvariantCulture);
 
                 if (!formatted)
                 {
@@ -255,6 +270,7 @@ namespace System
             // format and provider are ignored.
             TryFormatCore(destination, DefaultFormatFieldCount, out charsWritten);
 
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
         bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
             // format and provider are ignored.
             TryFormatCore(utf8Destination, DefaultFormatFieldCount, out bytesWritten);

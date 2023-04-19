@@ -863,6 +863,9 @@ public:
 #elif defined(TARGET_LOONGARCH64)
             Object** firstIntReg = (Object**)&this->GetContext()->Tp;
             Object** lastIntReg  = (Object**)&this->GetContext()->S8;
+#elif defined(TARGET_RISCV64)
+            Object** firstIntReg = (Object**)&this->GetContext()->Gp;
+            Object** lastIntReg  = (Object**)&this->GetContext()->T6;
 #else
             _ASSERTE(!"nyi for platform");
 #endif
@@ -1904,7 +1907,7 @@ protected:
     TADDR           m_ReturnAddress;
     TADDR           m_x8; // ret buff arg
     ArgumentRegisters m_argumentRegisters;
-#elif defined (TARGET_LOONGARCH64)
+#elif defined (TARGET_LOONGARCH64) || defined (TARGET_RISCV64)
     TADDR           m_fp;
     TADDR           m_ReturnAddress;
     ArgumentRegisters m_argumentRegisters;

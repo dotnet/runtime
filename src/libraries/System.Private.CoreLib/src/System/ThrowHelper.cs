@@ -522,6 +522,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowFormatException_NeedSingleChar()
+        {
+            throw new FormatException(SR.Format_NeedSingleChar);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge()
         {
             throw new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));

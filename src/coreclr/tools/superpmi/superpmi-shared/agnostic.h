@@ -518,6 +518,19 @@ struct Agnostic_GetProfilingHandle
     DWORD     bIndirectedHandles;
 };
 
+struct Agnostic_GetThreadLocalStaticBlocksInfo
+{
+    Agnostic_CORINFO_CONST_LOOKUP tlsIndex;
+    UINT                          offsetOfThreadLocalStoragePointer;
+    UINT                          offsetOfMaxThreadStaticBlocks;
+    UINT                          offsetOfThreadStaticBlocks;
+};
+
+struct Agnostic_GetThreadLocalFieldInfo
+{
+    DWORD staticBlockIndex;
+};
+
 struct Agnostic_GetTailCallHelpers
 {
     Agnostic_CORINFO_RESOLVED_TOKEN callToken;

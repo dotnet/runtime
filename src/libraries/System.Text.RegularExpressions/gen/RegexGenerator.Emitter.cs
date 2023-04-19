@@ -4932,19 +4932,6 @@ namespace System.Text.RegularExpressions.Generator
                     $"({range0Clause} | {range1Clause})";
             }
 
-            const string Base = nameof(Base);
-            if (!requiredHelpers.ContainsKey(Base))
-            {
-                requiredHelpers.Add(Base, new string[]
-                {
-                    $"internal class {Base} : RegexRunner",
-                    $"{{",
-                    $"    /// <summary>Determines whether the specified character in is in the specified character class.</summary>",
-                    $"    internal static new bool CharInClass(char ch, string charClass) => RegexRunner.CharInClass(ch, charClass);",
-                    $"}}",
-                });
-            }
-
             if (analysis.ContainsNoAscii)
             {
                 // We determined that the character class contains only non-ASCII,
@@ -5041,20 +5028,20 @@ namespace System.Text.RegularExpressions.Generator
 
                 _ => $"({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) {(negate ? "=" : "!")}= 0",
             };
-            return $"((ch = {chExpr}) < 128 ? {asciiExpr} : {(negate ? "!" : "")}{HelpersTypeName}.{Base}.CharInClass((char)ch, {Literal(charClass)}))";
+            return $"((ch = {chExpr}) < 128 ? {asciiExpr} : {(negate ? "!" : "")}RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
 
             string EmitContainsNoAscii()
             {
                 return negate ?
-                    $"((ch = {chExpr}) < 128 || !{HelpersTypeName}.{Base}.CharInClass((char)ch, {Literal(charClass)}))" :
-                    $"((ch = {chExpr}) >= 128 && {HelpersTypeName}.{Base}.CharInClass((char)ch, {Literal(charClass)}))";
+                    $"((ch = {chExpr}) < 128 || !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
+                    $"((ch = {chExpr}) >= 128 && RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
             }
 
             string EmitAllAsciiContained()
             {
                 return negate ?
-                    $"((ch = {chExpr}) >= 128 && !{HelpersTypeName}.{Base}.CharInClass((char)ch, {Literal(charClass)}))" :
-                    $"((ch = {chExpr}) < 128 || {HelpersTypeName}.{Base}.CharInClass((char)ch, {Literal(charClass)}))";
+                    $"((ch = {chExpr}) >= 128 && !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
+                    $"((ch = {chExpr}) < 128 || RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
             }
         }
 
