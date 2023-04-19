@@ -35,6 +35,8 @@
 #define EXPAND(x) x
 #define PARENTHESIZE(...) (__VA_ARGS__)
 #define EXPAND_FUN(m, ...) EXPAND(m PARENTHESIZE(__VA_ARGS__))
+#define OPFMT_DS dreg, sreg1
+#define OPFMT_TDS _t, dreg, sreg1
 #define OPFMT_WDSS _w, dreg, sreg1, sreg2
 #define OPFMT_WTDS _w, _t, dreg, sreg1
 #define OPFMT_WTDSS _w, _t, dreg, sreg1, sreg2
@@ -3774,7 +3776,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_ldrfpq (code, dreg, sreg1, ins->inst_offset);
 			break;
 		case OP_XMOVE:
-			arm_neon_mov (code, dreg, sreg1);
+			if(dreg != sreg1)
+				arm_neon_mov (code, dreg, sreg1);
 			break;
 		case OP_XCONST: {
 			if (cfg->compile_aot && cfg->code_exec_only) {
@@ -3848,6 +3851,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_neon_ins_e(code, t, dreg, sreg1, ins->inst_c0, 0);
 			break;
 		}
+		case OP_ARM64_XTN:
+			// The '-1' here and in XTN2 is to account for the arm_neon_xtn macro defining
+			// its type as the type of the destination. Here inst_c1 is the type of the 
+			// source data. Since XTN(2) steps down the type by one; e.g. I4 to I2, we 
+			// subtract unity.
+			arm_neon_xtn (code, get_type_size_macro (ins->inst_c1) - 1, dreg, sreg1);
+			break;
+
+		case OP_ARM64_XTN2: 
+			g_assert (dreg == sreg1);
+			arm_neon_xtn2 (code, get_type_size_macro (ins->inst_c1) - 1, dreg, sreg2);
+			break;
+
+		case OP_ARM64_FCVTN:
+			// Only double->float is supported here, while arm64 can also do float->half.
+			arm_neon_fcvtn (code, dreg, sreg1);
+			break;
+
+		case OP_ARM64_FCVTN2:
+			g_assert (dreg == sreg1);
+			arm_neon_fcvtn2 (code, dreg, sreg2); 
+			break;
+
 		case OP_ARM64_XADDV: {
 			switch (ins->inst_c0) {
 			case INTRINS_AARCH64_ADV_SIMD_FADDV:
