@@ -339,12 +339,10 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
         case GT_BLK:
         {
             assert(varTypeIsStruct(location));
-            GenTreeBlk* storeBlk  = location->AsBlk();
-            genTreeOps  storeOper = location->AsBlk()->GetLayout()->HasGCPtr() ? GT_STORE_OBJ : GT_STORE_BLK;
+            JITDUMP("Rewriting GT_ASG(%s(X), Y) to STORE_BLK(X,Y):\n", GenTree::OpName(location->gtOper));
 
-            JITDUMP("Rewriting GT_ASG(%s(X), Y) to %s(X,Y):\n", GenTree::OpName(location->gtOper),
-                    GenTree::OpName(storeOper));
-            storeBlk->SetOperRaw(storeOper);
+            GenTreeBlk* storeBlk = location->AsBlk();
+            storeBlk->SetOperRaw(GT_STORE_BLK);
             storeBlk->gtFlags &= ~GTF_DONT_CSE;
             storeBlk->gtFlags |= (assignment->gtFlags & (GTF_ALL_EFFECT | GTF_DONT_CSE));
             storeBlk->AsBlk()->Data() = value;
