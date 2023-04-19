@@ -2387,11 +2387,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     // RUIHAN: Should we contain this 2 lowered intrinsics or contain the original "Create"
                     if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) && op1->TypeIs(TYP_FLOAT))
                     {
-                        const unsigned opLclNum = op1->AsLclVar()->GetLclNum();
-                        comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-                        MakeSrcContained(tmp1, op1);
-                        MakeSrcContained(node, tmp1);
-                        MakeSrcContained(CreateUser, node);
                         node->SetEmbBroadcast();
                     }
                 }
@@ -7855,6 +7850,15 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                               (intrinsicId == NI_BMI2_X64_MultiplyNoFlags)) &&
                              IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                     {
+                        if(op1->OperIs(GT_HWINTRINSIC) && op1->IsEmbBroadcast())
+                        {
+                            GenTree* CreateScalar = op1->AsHWIntrinsic()->Op(1);
+                            GenTree* local = CreateScalar->AsHWIntrinsic()->Op(1);
+                            const unsigned opLclNum = local->AsLclVar()->GetLclNum();
+                            comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+                            MakeSrcContained(CreateScalar, local);
+                            MakeSrcContained(op1, CreateScalar);
+                        }
                         MakeSrcContained(node, op1);
 
                         // Swap the operands here to make the containment checks in codegen significantly simpler

@@ -1271,10 +1271,8 @@ emitter::code_t emitter::AddEvexPrefix(instruction ins, code_t code, emitAttr at
 
 emitter::code_t emitter::AddEmbeddedBroadcast(const instrDesc* id, code_t code)
 {
-    if (id->idIsEmbBroadcast())
+    if (hasEvexPrefix(code) && id->idIsEmbBroadcast())
     {
-        // Shouldn have already added EVEX prefix
-        assert(hasEvexPrefix(code));
         code |= EMBEDDED_BROADCAST_BIT;
     }
     return code;
@@ -6815,7 +6813,7 @@ void emitter::emitIns_R_R_C(instruction          ins,
     id->idReg2(reg2);
     id->idAddr()->iiaFieldHnd = fldHnd;
 #if defined(TARGET_XARCH)
-    if (isEmbBroadcast)
+    if (isEmbBroadcast && UseEvexEncoding())
     {
         id->idSetEmbBroadcast();
     }
@@ -6867,7 +6865,7 @@ void emitter::emitIns_R_R_S(
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
 
 #if defined(TARGET_XARCH)
-    if (isEmbBroadcast)
+    if (isEmbBroadcast && UseEvexEncoding())
     {
         id->idSetEmbBroadcast();
     }

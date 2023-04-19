@@ -1113,7 +1113,7 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
     }
 }
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 {
     // need to check if the datatype is EB compatible, say 32-, 64-bit.
@@ -1154,7 +1154,7 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 
     return IsEmbBroadcastCompatible && IsEmbBroadcastEnabled;
 }
-#endif //  TARGET_XARCH
+#endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
 // inst_RV_RV_TT: Generates an instruction that takes 2 operands:
@@ -1180,7 +1180,7 @@ void CodeGen::inst_RV_RV_TT(
 
     OperandDesc op2Desc        = genOperandDesc(op2);
     bool        IsEmbBroadcast = false;
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
     IsEmbBroadcast = CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2);
     if (IsEmbBroadcast && op2->OperIs(GT_CNS_VEC) && op2->AsVecCon()->IsCreatedFromScalar())
     {
@@ -1197,7 +1197,7 @@ void CodeGen::inst_RV_RV_TT(
                 break;
         }
     }
-#endif //  TARGET_XARCH
+#endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
     switch (op2Desc.GetKind())
     {
         case OperandKind::ClsVar:
