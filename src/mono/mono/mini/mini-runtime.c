@@ -2817,11 +2817,11 @@ mono_jit_compile_method_jit_only (MonoMethod *method, MonoError *error)
  * On llvmonly, this returns a MonoFtnDesc, otherwise it returns a normal function pointer.
  */
 static gpointer
-get_ftnptr_for_method (MonoMethod *method, MonoError *error)
+get_ftnptr_for_method (MonoMethod *method, gboolean need_unbox, MonoError *error)
 {
 	if (!mono_llvm_only) {
 		gpointer res = mono_jit_compile_method (method, error);
-		res = mini_add_method_trampoline (method, res, mono_method_needs_static_rgctx_invoke (method, TRUE), FALSE);
+		res = mini_add_method_trampoline (method, res, mono_method_needs_static_rgctx_invoke (method, TRUE), need_unbox);
 		return res;
 	} else {
 		return mini_llvmonly_load_method_ftndesc (method, FALSE, FALSE, error);

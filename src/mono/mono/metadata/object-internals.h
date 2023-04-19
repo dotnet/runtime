@@ -695,7 +695,7 @@ typedef struct {
 	void (*get_jit_stats)(gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes, gint64 *jit_time);
 	void (*get_exception_stats)(guint32 *exception_count);
 	// Same as compile_method, but returns a MonoFtnDesc in llvmonly mode
-	gpointer (*get_ftnptr)(MonoMethod *method, MonoError *error);
+	gpointer (*get_ftnptr)(MonoMethod *method, gboolean need_unbox, MonoError *error);
 	void (*interp_jit_info_foreach)(InterpJitInfoFunc func, gpointer user_data);
 	gboolean (*interp_sufficient_stack)(gsize size);
 	void (*init_class) (MonoClass *klass);

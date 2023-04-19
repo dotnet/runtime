@@ -324,7 +324,7 @@ mono_marshal_init (void)
 		register_icall (monoeg_g_free, mono_icall_sig_void_ptr, FALSE);
 		register_icall (mono_object_isinst_icall, mono_icall_sig_object_object_ptr, TRUE);
 		register_icall (mono_struct_delete_old, mono_icall_sig_void_ptr_ptr, FALSE);
-		register_icall (mono_get_addr_compiled_method, mono_icall_sig_ptr_object_ptr, FALSE);
+		register_icall (mono_get_addr_compiled_method, mono_icall_sig_ptr_ptr_object, FALSE);
 		register_icall (mono_delegate_begin_invoke, mono_icall_sig_object_object_ptr, FALSE);
 		register_icall (mono_delegate_end_invoke, mono_icall_sig_object_object_ptr, FALSE);
 		register_icall (mono_gc_wbarrier_generic_nostore_internal, mono_icall_sig_void_ptr, TRUE);
@@ -5477,22 +5477,32 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 }
 
 void*
-mono_get_addr_compiled_method (MonoObject *object, MonoDelegate *del)
+mono_get_addr_compiled_method (gpointer arg, MonoDelegate *del)
 {
 	ERROR_DECL (error);
 	MonoMethod *res, *method = del->method;
 	gpointer addr;
 	gboolean need_unbox = FALSE;
 
-	if (object == NULL) {
+	if (arg == NULL) {
 		mono_error_set_null_reference (error);
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}
 
-	res = mono_object_get_virtual_method_internal (object, method);
+	MonoClass *klass = del->object.vtable->klass;
+	MonoMethod *invoke = mono_get_delegate_invoke_internal (klass);
+	MonoMethodSignature *invoke_sig = mono_method_signature_internal (invoke);
 
-	addr = mono_compile_method_checked (res, error);
+	MonoClass *arg_class = NULL;
+	if (m_type_is_byref (invoke_sig->params [0])) {
+		arg_class = mono_class_from_mono_type_internal (invoke_sig->params [0]);
+	} else {
+		MonoObject *object = (MonoObject*)arg;
+		arg_class = object->vtable->klass;
+	}
+
+	res = mono_class_get_virtual_method (arg_class, method, error);
 
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
@@ -5500,7 +5510,11 @@ mono_get_addr_compiled_method (MonoObject *object, MonoDelegate *del)
 	}
 
 	need_unbox = m_class_is_valuetype (res->klass) && !m_class_is_valuetype (method->klass);
-	addr = mono_get_runtime_callbacks ()->add_delegate_trampolines (res, addr, need_unbox);
+	addr = mono_get_runtime_callbacks ()->get_ftnptr (res, need_unbox, error);
+	if (!is_ok (error)) {
+		mono_error_set_pending_exception (error);
+		return NULL;
+	}
 
 	return addr;
 }
