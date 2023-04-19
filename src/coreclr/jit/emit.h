@@ -785,6 +785,7 @@ protected:
         opSize   _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
         insOpts  _idInsOpt : 6; // options for instructions
         unsigned _idLclVar : 1; // access a local on stack
+        unsigned _idLclVarPair : 1 // carries information for 2 GC lcl vars.
 #endif
 
 #ifdef TARGET_LOONGARCH64
@@ -815,7 +816,7 @@ protected:
         // x86:   46 bits
         // amd64: 46 bits
         // arm:   48 bits
-        // arm64: 49 bits
+        // arm64: 50 bits
         // loongarch64: 46 bits
 
         //
@@ -827,7 +828,7 @@ protected:
 #if defined(TARGET_ARM)
 #define ID_EXTRA_BITFIELD_BITS (16)
 #elif defined(TARGET_ARM64)
-#define ID_EXTRA_BITFIELD_BITS (17)
+#define ID_EXTRA_BITFIELD_BITS (18)
 #elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #else
@@ -1371,6 +1372,17 @@ protected:
             _idLargeCns = 1;
         }
 
+#ifdef TARGET_ARM64
+        bool idIsLclVarPair() const
+        {
+            return _idLclVarPair != 0;
+        }
+        void isSetLclVarPair()
+        {
+            _idLclVarPair = 1;
+        }
+#endif // TARGET_ARM64
+
         bool idIsLargeDsp() const
         {
             return _idLargeDsp != 0;
@@ -1818,6 +1830,20 @@ protected:
     };
 
 #endif // TARGET_XARCH
+
+#ifdef TARGET_ARM64
+    struct instrDescStrPair : instrDesc
+    {
+        instrDescStrPair() = delete;
+
+        emitLclVarAddr iiaLclVar2;
+    };
+
+    struct instrDescStrPairCns : instrDescCns
+    {
+        emitLclVarAddr iiaLclVar2;
+    };
+#endif
 
     struct instrDescCGCA : instrDesc // call with ...
     {
@@ -2600,6 +2626,22 @@ private:
 #endif // EMITTER_STATS
         return (instrDescLbl*)emitAllocAnyInstr(sizeof(instrDescLbl), EA_4BYTE);
     }
+#else
+    instrDescStrPair* emitAllocInstrStrPair(emitAttr attr)
+    {
+        instrDescStrPair* result = (instrDescStrPair*)emitAllocAnyInstr(sizeof(instrDescStrPair), attr);
+        result->isSetLclVarPair();
+        return result;
+    }
+
+    instrDescStrPairCns* emitAllocInstrStrPairCns(emitAttr attr, cnsval_size_t cns)
+    {
+        instrDescStrPairCns* result = (instrDescStrPairCns*)emitAllocAnyInstr(sizeof(instrDescStrPairCns), attr);
+        result->idSetIsLargeCns();
+        result->isSetLclVarPair();
+        result->idcCnsVal = cns;
+        return result;
+    }
 #endif // !TARGET_ARM64
 
     instrDescCns* emitAllocInstrCns(emitAttr attr)
@@ -2686,6 +2728,8 @@ private:
 
 #if !defined(TARGET_ARM64)
     instrDescLbl* emitNewInstrLbl();
+#else
+    instrDesc* emitNewInstrStrPair(emitAttr attr, cnsval_ssize_t cns);
 #endif // !TARGET_ARM64
 
     static const BYTE emitFmtToOps[];
@@ -3249,6 +3293,36 @@ inline emitter::instrDescLbl* emitter::emitNewInstrLbl()
 {
     return emitAllocInstrLbl();
 }
+#else
+inline emitter::instrDesc* emitter::emitNewInstrStrPair(emitAttr attr, cnsval_ssize_t cns)
+{
+#if EMITTER_STATS
+    emitTotalIDescCnt++;
+    emitTotalIDescCnsCnt++;
+#endif // EMITTER_STATS
+
+    if (instrDesc::fitsInSmallCns(cns))
+    {
+        instrDescStrPair* id = emitAllocInstrStrPair(attr);
+        id->idSmallCns(cns);
+#if EMITTER_STATS
+        emitSmallCnsCnt++;
+        if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
+            emitSmallCns[SMALL_CNS_TSZ - 1]++;
+        else
+            emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
+#endif
+        return id;
+    }
+    else
+    {
+        instrDescStrPairCns* id = emitAllocInstrStrPairCns(attr, cns);
+#if EMITTER_STATS
+        emitLargeCnsCnt++;
+#endif
+        return id;
+    }
+}
 #endif // !TARGET_ARM64
 
 inline emitter::instrDesc* emitter::emitNewInstrDsp(emitAttr attr, target_ssize_t dsp)
@@ -3329,10 +3403,22 @@ inline size_t emitter::emitGetInstrDescSize(const instrDesc* id)
     }
     else if (id->idIsLargeCns())
     {
+#ifdef TARGET_ARM64
+        if (id->idIsLclVarPair())
+        {
+            return sizeof(instrDescStrPairCns);
+        }
+#endif
         return sizeof(instrDescCns);
     }
     else
     {
+#ifdef TARGET_ARM64
+        if (id->idIsLclVarPair())
+        {
+            return sizeof(instrDescStrPair);
+        }
+#endif
         return sizeof(instrDesc);
     }
 }
