@@ -1911,11 +1911,14 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
 #ifdef FEATURE_SIMD
             MaxUnrollSize = 32;
 #ifdef TARGET_XARCH
-            if (comp->compOpportunisticallyDependsOn(InstructionSet_Vector256))
+            if (comp->compOpportunisticallyDependsOn(InstructionSet_Vector512))
+            {
+                MaxUnrollSize = 128;
+            }
+            else if (comp->compOpportunisticallyDependsOn(InstructionSet_Vector256))
             {
                 MaxUnrollSize = 64;
             }
-// TODO-XARCH-AVX512: Consider enabling this for AVX512
 #endif
 #endif
 
@@ -1951,6 +1954,11 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                 {
                     loadWidth = 32;
                     loadType  = TYP_SIMD32;
+                }
+                else if ((loadWidth == 64) || (MaxUnrollSize == 128))
+                {
+                    loadWidth = 64;
+                    loadType  = TYP_SIMD64;
                 }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD

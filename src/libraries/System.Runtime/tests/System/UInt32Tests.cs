@@ -100,9 +100,13 @@ namespace System.Tests
                 yield return new object[] { (uint)4567, "D", defaultFormat, "4567" };
                 yield return new object[] { (uint)4567, "D18", defaultFormat, "000000000000004567" };
 
+                yield return new object[] { (uint)0, "x", defaultFormat, "0" };
                 yield return new object[] { (uint)0x2468, "x", defaultFormat, "2468" };
-                yield return new object[] { (uint)2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
 
+                yield return new object[] { (uint)0, "b", defaultFormat, "0" };
+                yield return new object[] { (uint)0x2468, "b", defaultFormat, "10010001101000" };
+
+                yield return new object[] { (uint)2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
             }
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
@@ -113,6 +117,7 @@ namespace System.Tests
             yield return new object[] { (uint)32, "F100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (uint)32, "N100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (uint)32, "X100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020" };
+            yield return new object[] { (uint)32, "B100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000" };
 
             var customFormat = new NumberFormatInfo()
             {

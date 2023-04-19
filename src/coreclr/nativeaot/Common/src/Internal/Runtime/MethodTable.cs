@@ -357,10 +357,25 @@ namespace Internal.Runtime
 #endif
         }
 
+        internal uint RawBaseSize
+        {
+            get
+            {
+                return _uBaseSize;
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                _uBaseSize = value;
+            }
+#endif
+        }
+
         internal uint BaseSize
         {
             get
             {
+                Debug.Assert(IsCanonical || IsArray);
                 return _uBaseSize;
             }
 #if TYPE_LOADER_IMPLEMENTATION
@@ -503,7 +518,8 @@ namespace Internal.Runtime
         {
             get
             {
-                return ElementType == EETypeElementType.SzArray;
+                Debug.Assert(IsArray);
+                return BaseSize == SZARRAY_BASE_SIZE;
             }
         }
 
@@ -713,6 +729,7 @@ namespace Internal.Runtime
         {
             get
             {
+                Debug.Assert(IsParameterizedType);
                 return _uBaseSize;
             }
 #if TYPE_LOADER_IMPLEMENTATION
@@ -830,22 +847,6 @@ namespace Internal.Runtime
                 // padding for GC heap alignment. Must subtract all of these to get the size used for locals, array
                 // elements or fields of another type.
                 return BaseSize - ((uint)sizeof(ObjHeader) + (uint)sizeof(MethodTable*) + ValueTypeFieldPadding);
-            }
-        }
-
-        internal uint FieldByteCountNonGCAligned
-        {
-            get
-            {
-                // This api is designed to return correct results for EETypes which can be derived from
-                // And results indistinguishable from correct for DefTypes which cannot be derived from (sealed classes)
-                // (For sealed classes, this should always return BaseSize-((uint)sizeof(ObjHeader));
-                Debug.Assert(!IsInterface && !IsParameterizedType);
-
-                // get_BaseSize returns the GC size including space for the sync block index field, the MethodTable* and
-                // padding for GC heap alignment. Must subtract all of these to get the size used for the fields of
-                // the type (where the fields of the type includes the MethodTable*)
-                return BaseSize - ((uint)sizeof(ObjHeader) + ValueTypeFieldPadding);
             }
         }
 
@@ -1337,7 +1338,8 @@ namespace Internal.Runtime
         {
             get
             {
-                return (EETypeElementType)((_uFlags & (uint)EETypeFlags.ElementTypeMask) >> (byte)EETypeFlags.ElementTypeShift);
+                return (EETypeElementType)((_uFlags >> (byte)EETypeFlags.ElementTypeShift) &
+                    ((uint)EETypeFlags.ElementTypeMask >> (byte)EETypeFlags.ElementTypeShift));
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set

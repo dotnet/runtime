@@ -929,6 +929,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
 
         case NI_Vector128_GetElement:
         case NI_Vector256_GetElement:
+        case NI_Vector512_GetElement:
         {
             if (simdType == TYP_SIMD12)
             {
@@ -1085,10 +1086,9 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector128_AsVector3:
         case NI_Vector128_ToScalar:
         case NI_Vector256_ToScalar:
+        case NI_Vector512_ToScalar:
         {
             assert(varTypeIsFloating(baseType));
-
-            attr = emitTypeSize(TYP_SIMD16);
 
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
@@ -1799,13 +1799,20 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AVX512BW_ConvertToVector256Byte:
         case NI_AVX512BW_ConvertToVector256SByte:
         {
-            // These instructions are RM_R and so we need to ensure the targetReg
-            // is passed in as the RM register and op1 is passed as the R register
-
-            op1Reg          = op1->GetRegNum();
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
 
-            emit->emitIns_R_R(ins, attr, op1Reg, targetReg);
+            if (varTypeIsFloating(baseType))
+            {
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1);
+            }
+            else
+            {
+                // These instructions are RM_R and so we need to ensure the targetReg
+                // is passed in as the RM register and op1 is passed as the R register
+
+                op1Reg = op1->GetRegNum();
+                emit->emitIns_R_R(ins, attr, op1Reg, targetReg);
+            }
             break;
         }
 

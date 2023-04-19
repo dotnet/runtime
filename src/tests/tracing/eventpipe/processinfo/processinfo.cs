@@ -142,16 +142,17 @@ namespace Tracing.Tests.ProcessInfoValidation
             string commandLine = System.Text.Encoding.Unicode.GetString(response.Payload[start..end]).TrimEnd('\0');
             Logger.logger.Log($"commandLine: \"{commandLine}\"");
 
-            // The following logic is tailored to this specific test where the cmdline _should_ look like the following:
-            // /path/to/corerun /path/to/processinfo.dll
-            // or
-            // "C:\path\to\CoreRun.exe" C:\path\to\processinfo.dll
-            string currentProcessCommandLine = $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
-            string receivedCommandLine = NormalizeCommandLine(commandLine);
-
             // ActiveIssue https://github.com/dotnet/runtime/issues/62729
-            if (!OperatingSystem.IsAndroid())
+            if (!OperatingSystem.IsAndroid() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS())
+            {
+                // The following logic is tailored to this specific test where the cmdline _should_ look like the following:
+                // /path/to/corerun /path/to/processinfo.dll
+                // or
+                // "C:\path\to\CoreRun.exe" C:\path\to\processinfo.dll
+                string currentProcessCommandLine = $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
+                string receivedCommandLine = NormalizeCommandLine(commandLine);
                 Utils.Assert(currentProcessCommandLine.Equals(receivedCommandLine, StringComparison.OrdinalIgnoreCase), $"CommandLine must match current process. Expected: {currentProcessCommandLine}, Received: {receivedCommandLine} (original: {commandLine})");
+            }
 
             // VALIDATE OS
             start = end;
@@ -183,6 +184,10 @@ namespace Tracing.Tests.ProcessInfoValidation
             else if (OperatingSystem.IsAndroid())
             {
                 expectedOSValue = "Android";
+            }
+            else if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            {
+                expectedOSValue = "iOS";
             }
             else
             {

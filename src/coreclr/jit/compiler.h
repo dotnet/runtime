@@ -1355,7 +1355,7 @@ public:
 
     static IntegralRange ForNode(GenTree* node, Compiler* compiler);
     static IntegralRange ForCastInput(GenTreeCast* cast);
-    static IntegralRange ForCastOutput(GenTreeCast* cast);
+    static IntegralRange ForCastOutput(GenTreeCast* cast, Compiler* compiler);
     static IntegralRange Union(IntegralRange range1, IntegralRange range2);
 
 #ifdef DEBUG
@@ -2500,6 +2500,8 @@ public:
     GenTree* gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle);
 
     GenTreeVecCon* gtNewVconNode(var_types type);
+
+    GenTreeVecCon* gtNewVconNode(var_types type, void* data);
 
     GenTree* gtNewAllBitsSetConNode(var_types type);
 
