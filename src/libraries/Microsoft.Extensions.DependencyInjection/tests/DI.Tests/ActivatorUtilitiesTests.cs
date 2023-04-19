@@ -355,12 +355,11 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         private static void DisableDynamicCode(RemoteInvokeOptions options)
         {
             // We probably only need to set 'IsDynamicCodeCompiled' since only that is checked,
-            // but also set 'IsDynamicCodeSupported' for correctness.
+            // but also set 'IsDynamicCodeSupported for correctness.
             options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
             options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled", "false");
         }
     }
-}
 
     internal class A { }
     internal class B { }
@@ -370,8 +369,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     internal class ClassWithABCS : ClassWithABC
     {
         public S S { get; }
-        public ClassWithABCS(A a, B b, C c, S s) : base (a, b, c) { S = s; }
-        public ClassWithABCS(A a, C c, S s) : this (a, null, c, s) { }
+        public ClassWithABCS(A a, B b, C c, S s) : base(a, b, c) { S = s; }
+        public ClassWithABCS(A a, C c, S s) : this(a, null, c, s) { }
     }
 
     internal class ClassWithABC_FirstConstructorWithAttribute : ClassWithABC
@@ -383,9 +382,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
     internal class ClassWithABC_LastConstructorWithAttribute : ClassWithABC
     {
-        public ClassWithABC_LastConstructorWithAttribute(B b, C c) : this(null, b, c) {  }
+        public ClassWithABC_LastConstructorWithAttribute(B b, C c) : this(null, b, c) { }
         [ActivatorUtilitiesConstructor]
-        public ClassWithABC_LastConstructorWithAttribute(A a, B b, C c) : base(a, b , c) { }
+        public ClassWithABC_LastConstructorWithAttribute(A a, B b, C c) : base(a, b, c) { }
     }
 
     internal class FakeServiceProvider : IServiceProvider
@@ -521,14 +520,14 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     {
         public ClassWithABC_DefaultConstructorFirst() : base() { }
         public ClassWithABC_DefaultConstructorFirst(A a) : base(a) { }
-        public ClassWithABC_DefaultConstructorFirst(A a, B b) : base (a, b) { }
-        public ClassWithABC_DefaultConstructorFirst(A a, B b, C c) : base (a, b, c) { }
+        public ClassWithABC_DefaultConstructorFirst(A a, B b) : base(a, b) { }
+        public ClassWithABC_DefaultConstructorFirst(A a, B b, C c) : base(a, b, c) { }
     }
 
     internal class ClassWithABC_DefaultConstructorLast : ClassWithABC
     {
-        public ClassWithABC_DefaultConstructorLast(A a, B b, C c) : base (a, b, c) { }
-        public ClassWithABC_DefaultConstructorLast(A a, B b) : base (a, b) { }
+        public ClassWithABC_DefaultConstructorLast(A a, B b, C c) : base(a, b, c) { }
+        public ClassWithABC_DefaultConstructorLast(A a, B b) : base(a, b) { }
         public ClassWithABC_DefaultConstructorLast(A a) : base(a) { }
         public ClassWithABC_DefaultConstructorLast() : base() { }
     }
@@ -541,4 +540,5 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Text = text;
         }
     }
+}
 
