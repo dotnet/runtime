@@ -3,6 +3,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- 
     <WasmSingleFileBundle>true</WasmSingleFileBundle>
+    <InvariantGlobalization>true</InvariantGlobalization>
     -->
   </PropertyGroup>
 

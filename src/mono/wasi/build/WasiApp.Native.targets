@@ -169,6 +169,7 @@
     <ItemGroup>
       <_WasmCommonCFlags Include="-DGEN_PINVOKE=1" />
       <_WasmCommonCFlags Condition="'$(WasmSingleFileBundle)' == 'true'" Include="-DBUNDLED_ASSEMBLIES=1" />
+      <_WasmCommonCFlags Condition="'$(InvariantGlobalization)' == 'true'" Include="-DINVARIANT_GLOBALIZATION=1" />
 
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <!--<_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />-->
@@ -178,7 +179,6 @@
       <!--<_EmccCFlags Include="-DDISABLE_PERFTRACING_LISTEN_PORTS=1" />-->
       <!--<_EmccCFlags Include="-DENABLE_AOT=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />-->
       <!--<_EmccCFlags Include="-DDRIVER_GEN=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />-->
-      <!--<_EmccCFlags Include="-DINVARIANT_GLOBALIZATION=1"       Condition="'$(InvariantGlobalization)' == 'true'" />-->
       <!--<_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />-->
       <!--<_EmccCFlags Include="-DENABLE_AOT_PROFILER=1"           Condition="$(WasmProfilers.Contains('aot'))" />-->
       <!--<_EmccCFlags Include="-DENABLE_BROWSER_PROFILER=1"       Condition="$(WasmProfilers.Contains('browser'))" />-->
