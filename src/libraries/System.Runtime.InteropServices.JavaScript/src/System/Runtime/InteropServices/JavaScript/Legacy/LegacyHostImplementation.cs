@@ -227,7 +227,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (Thread.CurrentThread.ManagedThreadId != 1)
             {
-                throw new PlatformNotSupportedException("Legacy interop is not supported with WebAssembly threads."+Thread.CurrentThread.ManagedThreadId);
+                throw new PlatformNotSupportedException("Legacy interop is not supported with WebAssembly threads.");
             }
         }
 #endif
