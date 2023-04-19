@@ -5759,12 +5759,20 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                     break;
                 }
 
+                case NI_AVX512F_ConvertToVector256Int32:
+                {
+                    if (varTypeIsFloating(simdBaseType))
+                    {
+                        break;
+                    }
+                    FALLTHROUGH;
+                }
+
                 case NI_AVX512F_ConvertToVector128Int16:
                 case NI_AVX512F_ConvertToVector128Int32:
                 case NI_AVX512F_ConvertToVector128UInt16:
                 case NI_AVX512F_ConvertToVector128UInt32:
                 case NI_AVX512F_ConvertToVector256Int16:
-                case NI_AVX512F_ConvertToVector256Int32:
                 case NI_AVX512F_ConvertToVector256UInt16:
                 case NI_AVX512F_ConvertToVector256UInt32:
                 case NI_AVX512BW_ConvertToVector128Byte:
@@ -7402,12 +7410,22 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         break;
                     }
 
+                    case NI_AVX512F_ConvertToVector256Int32:
+                    {
+                        if (varTypeIsFloating(simdBaseType))
+                        {
+                            // This version is "ins xmm, xmm/mem" and
+                            // gets the default containment handling
+                            break;
+                        }
+                        FALLTHROUGH;
+                    }
+
                     case NI_AVX512F_ConvertToVector128Int16:
                     case NI_AVX512F_ConvertToVector128Int32:
                     case NI_AVX512F_ConvertToVector128UInt16:
                     case NI_AVX512F_ConvertToVector128UInt32:
                     case NI_AVX512F_ConvertToVector256Int16:
-                    case NI_AVX512F_ConvertToVector256Int32:
                     case NI_AVX512F_ConvertToVector256UInt16:
                     case NI_AVX512F_ConvertToVector256UInt32:
                     case NI_AVX512BW_ConvertToVector128Byte:
