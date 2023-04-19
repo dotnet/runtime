@@ -210,7 +210,5 @@ namespace IntelHardwareIntrinsicTest._Avx2
                 outHandle.Free();
             }
         }
-
-
     }
 }
