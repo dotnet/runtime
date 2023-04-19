@@ -13,7 +13,11 @@
       TODOWASI - - tcplisten localhost:64000 - - env DEBUGGER_FD=4
     -->
     <Exec WorkingDirectory="bin/wasi-wasm/AppBundle"
+          Condition="'$(WasmSingleFileBundle)' == 'true'"
           Command="$(WasmtimeDir)wasmtime$(_ExeExt) --dir . $([System.IO.Path]::ChangeExtension($(_SampleAssembly), '.wasm'))" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="bin/wasi-wasm/AppBundle"
+          Condition="'$(WasmSingleFileBundle)' != 'true'"
+          Command="$(WasmtimeDir)wasmtime$(_ExeExt) --dir . dotnet.wasm Wasi.Console.Sample" IgnoreExitCode="true" />
   </Target>
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" />

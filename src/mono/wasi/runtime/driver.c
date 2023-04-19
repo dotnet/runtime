@@ -65,6 +65,8 @@ char *mono_method_get_full_name (MonoMethod *method);
 extern void mono_wasm_register_timezones_bundle();
 #ifdef BUNDLED_ASSEMBLIES
 extern void mono_wasm_register_assemblies_bundle();
+extern void mono_wasm_register_icu_bundle();
+extern const unsigned char* mono_wasm_get_bundled_file (const char *name, int* out_length);
 #endif
 
 extern const char* dotnet_wasi_getentrypointassemblyname();
@@ -338,6 +340,16 @@ mono_wasm_register_bundled_satellite_assemblies (void)
 
 void load_icu_data (void)
 {
+#ifdef BUNDLED_ASSEMBLIES
+	mono_wasm_register_icu_bundle();
+
+	int length = -1;
+	const unsigned char* buffer = mono_wasm_get_bundled_file("icudt.dat", &length);
+	if (!buffer) {
+		printf("Could not load icudt.dat from the bundle");
+		assert(buffer);
+	}
+#else
 	FILE *fileptr;
 	unsigned char *buffer;
 	long filelen;
@@ -360,6 +372,7 @@ void load_icu_data (void)
 		fflush(stdout);
 	}
 	fclose(fileptr);
+#endif
 
 	assert(mono_wasi_load_icu_data(buffer));
 }
@@ -376,18 +389,10 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
 
-    char* invariant_globalization = monoeg_g_getenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
-    if (strcmp(invariant_globalization, "true") != 0 && strcmp(invariant_globalization, "1") != 0)
-	    load_icu_data();
+	char* invariant_globalization = monoeg_g_getenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
+	if (strcmp(invariant_globalization, "true") != 0 && strcmp(invariant_globalization, "1") != 0)
+		load_icu_data();
 
-#ifdef DEBUG
-	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
-	monoeg_g_setenv ("MONO_LOG_MASK", "all", 0);
-	// Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
-	// output will be sent to the console.  Right now this is the only way to emit debug logging from
-	// corlib assemblies.
-	// monoeg_g_setenv ("DOTNET_DebugWriteToStdErr", "1", 0);
-#endif
 
 	char* debugger_fd = monoeg_g_getenv ("DEBUGGER_FD");
 	if (debugger_fd != 0)
