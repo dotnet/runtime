@@ -287,7 +287,7 @@ export function mono_wasm_get_global_object_ref(global_name: MonoStringRef, is_e
 export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo: any, arg0: any, arg1: any, arg2: any): void | number {
     try {
         if (MonoWasmThreads) {
-            throw new Error("Legacy interop in not supported with WebAssembly threads.");
+            throw new Error("Legacy interop is not supported with WebAssembly threads.");
         }
         const blazorExports = (<any>globalThis).Blazor;
         if (!blazorExports) {
