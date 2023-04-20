@@ -1340,13 +1340,6 @@ void Compiler::compStartup()
  *  One time finalization code
  */
 
-extern long long s_copiesBetweenPhysPromd;
-extern long long s_copiesFromPhysToOldPromd;
-extern long long s_copiesFromOldToPhysPromd;
-extern long long s_copiesFromPhys;
-extern long long s_copiesToPhys;
-extern long long s_initsToPhys;
-
 /* static */
 void Compiler::compShutdown()
 {
@@ -1503,15 +1496,6 @@ void Compiler::compShutdown()
     }
 
 #endif // COUNT_AST_OPERS
-
-    fprintf(fout, "\n");
-    fprintf(fout, "Copies physical -> physical: %lld\n", s_copiesBetweenPhysPromd);
-    fprintf(fout, "Copies physical -> old:      %lld\n", s_copiesFromPhysToOldPromd);
-    fprintf(fout, "Copies old      -> physical: %lld\n", s_copiesFromOldToPhysPromd);
-    fprintf(fout, "Copies physical ->         : %lld\n", s_copiesFromPhys);
-    fprintf(fout, "Copies          -> physical: %lld\n", s_copiesToPhys);
-    fprintf(fout, "Inits           -> physical: %lld\n", s_initsToPhys);
-    fprintf(fout, "\n");
 
 #if DISPLAY_SIZES
 

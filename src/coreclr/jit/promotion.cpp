@@ -672,13 +672,6 @@ private:
     }
 };
 
-long long s_copiesBetweenPhysPromd;
-long long s_copiesFromPhysToOldPromd;
-long long s_copiesFromOldToPhysPromd;
-long long s_copiesFromPhys;
-long long s_copiesToPhys;
-long long s_initsToPhys;
-
 class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
 {
     Promotion*                    m_prom;
@@ -985,13 +978,12 @@ public:
             GenTree* srcVal;
             if ((initPattern != 0) && (varTypeIsSIMD(rep->AccessType) || varTypeIsGC(rep->AccessType)))
             {
-                // Leave unhandled.
+                // Leave unhandled, we will do this via a read back on the next access.
                 continue;
             }
 
             switch (rep->AccessType)
             {
-                // TODO: Unify this with block morphing.
                 case TYP_BOOL:
                 case TYP_BYTE:
                 case TYP_UBYTE:

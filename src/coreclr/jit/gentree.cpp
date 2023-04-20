@@ -3013,7 +3013,7 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
 // Return Value:
 //    True if any sub tree is such a local.
 //
-bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
+bool Compiler::gtHasAddressExposedLocals(GenTree* tree)
 {
     struct Visitor : GenTreeVisitor<Visitor>
     {
