@@ -822,8 +822,7 @@ MethodTableBuilder::bmtRTType::GetEnclosingTypeToken() const
     if (IsNested())
     {   // This is guaranteed to succeed because the EEClass would not have been
         // set as nested unless a valid token was stored in metadata.
-        if (FAILED(GetModule()->GetMDImport()->GetNestedClassProps(
-            GetTypeDefToken(), &tok)))
+        if (FAILED(GetModule()->m_pEnclosingTypeMap->GetEnclosingTypeNoThrow(GetTypeDefToken(), &tok, GetModule()->GetMDImport())))
         {
             return mdTypeDefNil;
         }
@@ -969,7 +968,8 @@ MethodTableBuilder::bmtMDType::bmtMDType(
 
     IfFailThrow(m_pModule->GetMDImport()->GetTypeDefProps(m_tok, &m_dwAttrs, NULL));
 
-    HRESULT hr = m_pModule->GetMDImport()->GetNestedClassProps(m_tok, &m_enclTok);
+    HRESULT hr = m_pModule->m_pEnclosingTypeMap->GetEnclosingTypeNoThrow(m_tok, &m_enclTok, m_pModule->GetMDImport());
+
     if (FAILED(hr))
     {
         if (hr != CLDB_E_RECORD_NOTFOUND)
@@ -1440,17 +1440,17 @@ MethodTableBuilder::BuildMethodTableThrowing(
             }
 
             mdTypeDef tdEnclosing = mdTypeDefNil;
-            HRESULT hr = GetMDImport()->GetNestedClassProps(GetCl(), &tdEnclosing);
+            HRESULT hr = GetModule()->m_pEnclosingTypeMap->GetEnclosingTypeNoThrow(GetCl(), &tdEnclosing, GetModule()->GetMDImport());
             if (FAILED(hr))
                 ThrowHR(hr, BFA_UNABLE_TO_GET_NESTED_PROPS);
 
-            HENUMInternalHolder   hEnumGenericPars(GetMDImport());
-            if (FAILED(hEnumGenericPars.EnumInitNoThrow(mdtGenericParam, tdEnclosing)))
+            uint32_t genericArgCount;
+            if (FAILED(GetModule()->m_pTypeGenericInfoMap->GetGenericArgumentCountNoThrow(tdEnclosing, &genericArgCount, GetMDImport())))
             {
                 GetAssembly()->ThrowTypeLoadException(GetMDImport(), tdEnclosing, IDS_CLASSLOAD_BADFORMAT);
             }
 
-            if (hEnumGenericPars.EnumGetCount() != bmtGenerics->GetNumGenericArgs())
+            if (genericArgCount != bmtGenerics->GetNumGenericArgs())
             {
                 BuildMethodTableThrowException(IDS_CLASSLOAD_ENUM_EXTRA_GENERIC_TYPE_PARAM);
             }
@@ -2662,8 +2662,8 @@ MethodTableBuilder::EnumerateClassMethods()
     BOOL fIsClassValueType = IsValueClass();
     BOOL fIsClassComImport = IsComImport();
     BOOL fIsClassNotAbstract = (IsTdAbstract(GetAttrClass()) == 0);
-    PCCOR_SIGNATURE pMemberSignature;
-    ULONG           cMemberSignature;
+    PCCOR_SIGNATURE pMemberSignature = NULL;
+    ULONG           cMemberSignature = 0;
 
     //
     // Run through the method list and calculate the following:
@@ -2701,6 +2701,9 @@ MethodTableBuilder::EnumerateClassMethods()
         METHOD_IMPL_TYPE implType;
         LPSTR strMethodName;
 
+        pMemberSignature = NULL;
+        cMemberSignature = 0;
+
         //
         // Go to the next method and retrieve its attributes.
         //
@@ -2711,7 +2714,7 @@ MethodTableBuilder::EnumerateClassMethods()
         {
             BuildMethodTableThrowException(BFA_METHOD_TOKEN_OUT_OF_RANGE);
         }
-        if (FAILED(pMDInternalImport->GetSigOfMethodDef(tok, &cMemberSignature, &pMemberSignature)))
+        if (!bmtProp->fNoSanityChecks && FAILED(pMDInternalImport->GetSigOfMethodDef(tok, &cMemberSignature, &pMemberSignature)))
         {
             BuildMethodTableThrowException(hr, BFA_BAD_SIGNATURE, mdMethodDefNil);
         }
@@ -2757,9 +2760,17 @@ MethodTableBuilder::EnumerateClassMethods()
             }
         }
 
-        DWORD numGenericMethodArgs = 0;
-
+        bool hasGenericMethodArgsComputed;
+        bool hasGenericMethodArgs = this->GetModule()->m_pMethodIsGenericMap->IsGeneric(tok, &hasGenericMethodArgsComputed);
+        if (!hasGenericMethodArgsComputed)
         {
+            if (pMemberSignature == NULL)
+            {
+                if (FAILED(pMDInternalImport->GetSigOfMethodDef(tok, &cMemberSignature, &pMemberSignature)))
+                {
+                    BuildMethodTableThrowException(hr, BFA_BAD_SIGNATURE, mdMethodDefNil);
+                }
+            }
             SigParser genericArgParser(pMemberSignature, cMemberSignature);
             uint32_t ulCallConv;
             hr = genericArgParser.GetCallingConvInfo(&ulCallConv);
@@ -2769,50 +2780,52 @@ MethodTableBuilder::EnumerateClassMethods()
             }
 
             // Only read the generic parameter table if the method signature is generic
-            if (ulCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
+            hasGenericMethodArgs = !!(ulCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC);
+            hasGenericMethodArgsComputed = true;
+        }
+
+        if (hasGenericMethodArgs && !bmtProp->fNoSanityChecks)
+        {
+            HENUMInternalHolder hEnumTyPars(pMDInternalImport);
+            hr = hEnumTyPars.EnumInitNoThrow(mdtGenericParam, tok);
+            if (FAILED(hr))
             {
-                HENUMInternalHolder hEnumTyPars(pMDInternalImport);
-                hr = hEnumTyPars.EnumInitNoThrow(mdtGenericParam, tok);
-                if (FAILED(hr))
+                BuildMethodTableThrowException(hr, *bmtError);
+            }
+
+            uint32_t numGenericMethodArgs = hEnumTyPars.EnumGetCount();
+            if (numGenericMethodArgs != 0)
+            {
+                HENUMInternalHolder hEnumGenericPars(pMDInternalImport);
+
+                hEnumGenericPars.EnumInit(mdtGenericParam, tok);
+
+                for (unsigned methIdx = 0; methIdx < numGenericMethodArgs; methIdx++)
                 {
-                    BuildMethodTableThrowException(hr, *bmtError);
-                }
-
-                numGenericMethodArgs = hEnumTyPars.EnumGetCount();
-                if (numGenericMethodArgs != 0)
-                {
-                    HENUMInternalHolder hEnumGenericPars(pMDInternalImport);
-
-                    hEnumGenericPars.EnumInit(mdtGenericParam, tok);
-
-                    for (unsigned methIdx = 0; methIdx < numGenericMethodArgs; methIdx++)
+                    mdGenericParam tkTyPar;
+                    pMDInternalImport->EnumNext(&hEnumGenericPars, &tkTyPar);
+                    DWORD flags;
+                    if (FAILED(pMDInternalImport->GetGenericParamProps(tkTyPar, NULL, &flags, NULL, NULL, NULL)))
                     {
-                        mdGenericParam tkTyPar;
-                        pMDInternalImport->EnumNext(&hEnumGenericPars, &tkTyPar);
-                        DWORD flags;
-                        if (FAILED(pMDInternalImport->GetGenericParamProps(tkTyPar, NULL, &flags, NULL, NULL, NULL)))
-                        {
+                        BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+                    }
+
+                    if (0 != (flags & ~(gpVarianceMask | gpSpecialConstraintMask)))
+                    {
+                        BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+                    }
+                    switch (flags & gpVarianceMask)
+                    {
+                        case gpNonVariant:
+                            break;
+
+                        case gpCovariant: // intentional fallthru
+                        case gpContravariant:
+                            BuildMethodTableThrowException(VLDTR_E_GP_ILLEGAL_VARIANT_MVAR);
+                            break;
+
+                        default:
                             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
-                        }
-
-                        if (0 != (flags & ~(gpVarianceMask | gpSpecialConstraintMask)))
-                        {
-                            BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
-                        }
-                        switch (flags & gpVarianceMask)
-                        {
-                            case gpNonVariant:
-                                break;
-
-                            case gpCovariant: // intentional fallthru
-                            case gpContravariant:
-                                BuildMethodTableThrowException(VLDTR_E_GP_ILLEGAL_VARIANT_MVAR);
-                                break;
-
-                            default:
-                                BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
-                        }
-
                     }
                 }
             }
@@ -3041,7 +3054,7 @@ MethodTableBuilder::EnumerateClassMethods()
             //@GENERICS:
             // Generic methods or methods in generic classes
             // may not be part of a COM Import class, PInvoke, internal call outside CoreLib.
-            if ((bmtGenerics->GetNumGenericArgs() != 0 || numGenericMethodArgs != 0) &&
+            if ((bmtGenerics->GetNumGenericArgs() != 0 || hasGenericMethodArgs) &&
                 (
 #ifdef FEATURE_COMINTEROP
                 fIsClassComImport ||
@@ -3056,7 +3069,7 @@ MethodTableBuilder::EnumerateClassMethods()
             // Generic methods may not be marked "runtime".  However note that
             // methods in generic delegate classes are, hence we don't apply this to
             // methods in generic classes in general.
-            if (numGenericMethodArgs != 0 && IsMiRuntime(dwImplFlags))
+            if (hasGenericMethodArgs && IsMiRuntime(dwImplFlags))
             {
                 BuildMethodTableThrowException(BFA_GENERIC_METHOD_RUNTIME_IMPL);
             }
@@ -3066,6 +3079,14 @@ MethodTableBuilder::EnumerateClassMethods()
             // checked for non-virtual static methods as they cannot be called variantly.
             if ((bmtGenerics->pVarianceInfo != NULL) && (IsMdVirtual(dwMemberAttrs) || !IsMdStatic(dwMemberAttrs)))
             {
+                if (pMemberSignature == NULL)
+                {
+                    if (FAILED(pMDInternalImport->GetSigOfMethodDef(tok, &cMemberSignature, &pMemberSignature)))
+                    {
+                        BuildMethodTableThrowException(hr, BFA_BAD_SIGNATURE, mdMethodDefNil);
+                    }
+                }
+
                 SigPointer sp(pMemberSignature, cMemberSignature);
                 uint32_t callConv;
                 IfFailThrow(sp.GetCallingConvInfo(&callConv));
@@ -3196,7 +3217,7 @@ MethodTableBuilder::EnumerateClassMethods()
 
             delegateMethodsSeen |= newDelegateMethodSeen;
         }
-        else if (numGenericMethodArgs != 0)
+        else if (hasGenericMethodArgs)
         {
             //We use an instantiated method desc to represent a generic method
             type = METHOD_TYPE_INSTANTIATED;
@@ -3240,7 +3261,7 @@ MethodTableBuilder::EnumerateClassMethods()
         }
 
         // Generic methods should always be METHOD_TYPE_INSTANTIATED
-        if ((numGenericMethodArgs != 0) && (type != METHOD_TYPE_INSTANTIATED))
+        if (hasGenericMethodArgs && (type != METHOD_TYPE_INSTANTIATED))
         {
             BuildMethodTableThrowException(BFA_GENERIC_METHODS_INST);
         }
@@ -4593,7 +4614,7 @@ bool MethodTableBuilder::IsEnclosingNestedTypePair(
     while (tkEncl != tkNest)
     {   // Do this using the metadata APIs because MethodTableBuilder does
         // not construct type representations for enclosing type chains.
-        if (FAILED(pMDImport->GetNestedClassProps(tkNest, &tkNest)))
+        if (FAILED(pModule->m_pEnclosingTypeMap->GetEnclosingTypeNoThrow(tkNest, &tkNest, pMDImport)))
         {   // tokNest is not a nested type.
             return false;
         }
@@ -12040,12 +12061,7 @@ MethodTableBuilder::GatherGenericsInfo(
     IMDInternalImport * pInternalImport = pModule->GetMDImport();
 
     // Enumerate the formal type parameters
-    HENUMInternal   hEnumGenericPars;
-    HRESULT hr = pInternalImport->EnumInit(mdtGenericParam, cl, &hEnumGenericPars);
-    if (FAILED(hr))
-        pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
-
-    DWORD numGenericArgs = pInternalImport->EnumGetCount(&hEnumGenericPars);
+    DWORD numGenericArgs = pModule->m_pTypeGenericInfoMap->GetGenericArgumentCount(cl, pInternalImport);
 
     // Work out what kind of EEClass we're creating w.r.t. generics.  If there
     // are no generics involved this will be a VMFLAG_NONGENERIC.
@@ -12103,6 +12119,11 @@ MethodTableBuilder::GatherGenericsInfo(
 
         TypeHandle * pDestInst = (TypeHandle *)inst.GetRawArgs();
         {
+            HENUMInternal   hEnumGenericPars;
+            HRESULT hr = pInternalImport->EnumInit(mdtGenericParam, cl, &hEnumGenericPars);
+            if (FAILED(hr))
+                pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
+
             // Protect multi-threaded access to Module.m_GenericParamToDescMap. Other threads may be loading the same type
             // to break type recursion dead-locks
             CrstHolder ch(&pModule->GetClassLoader()->m_AvailableTypesLock);

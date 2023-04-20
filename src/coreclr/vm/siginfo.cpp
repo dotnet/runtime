@@ -3065,7 +3065,7 @@ BOOL IsTypeDefExternallyVisible(mdToken tk, Module *pModule, DWORD dwAttrClass)
         {
             mdTypeDef tdEnclosing = mdTypeDefNil;
 
-            if (FAILED(pInternalImport->GetNestedClassProps(tdCurrent, &tdEnclosing)))
+            if (FAILED(pModule->m_pEnclosingTypeMap->GetEnclosingTypeNoThrow(tdCurrent, &tdEnclosing, pInternalImport)))
                 return FALSE;
 
             tdCurrent = tdEnclosing;
@@ -3186,9 +3186,7 @@ BOOL IsTypeDefEquivalent(mdToken tk, Module *pModule)
          (CompareTypeTokens(tkExtends, tdValueType, pModule, pSystemModule) && (tk != tdEnum || pModule != pSystemModule)) ||
          (CompareTypeTokens(tkExtends, tdMCDelegate, pModule, pSystemModule)))))
     {
-        HENUMInternal   hEnumGenericPars;
-        IfFailThrow(pInternalImport->EnumInit(mdtGenericParam, tk, &hEnumGenericPars));
-        DWORD numGenericArgs = pInternalImport->EnumGetCount(&hEnumGenericPars);
+        DWORD numGenericArgs = pModule->m_pTypeGenericInfoMap->GetGenericArgumentCount(tk, pInternalImport);
 
         // 3. Type is not generic
         if (numGenericArgs > 0)
@@ -3208,7 +3206,7 @@ BOOL IsTypeDefEquivalent(mdToken tk, Module *pModule)
         {
             mdTypeDef tdEnclosing = mdTypeDefNil;
 
-            IfFailThrow(pInternalImport->GetNestedClassProps(tk, &tdEnclosing));
+            tdEnclosing = pModule->m_pEnclosingTypeMap->GetEnclosingType(tk, pInternalImport);
 
             if (!IsTypeDefEquivalent(tdEnclosing, pModule))
                 return FALSE;
@@ -3317,8 +3315,8 @@ BOOL CompareTypeDefsForEquivalence(mdToken tk1, mdToken tk2, Module *pModule1, M
             mdToken tkEnclosing1;
             mdToken tkEnclosing2;
 
-            IfFailThrow(pInternalImport1->GetNestedClassProps(tk1, &tkEnclosing1));
-            IfFailThrow(pInternalImport2->GetNestedClassProps(tk2, &tkEnclosing2));
+            tkEnclosing1 = pModule1->m_pEnclosingTypeMap->GetEnclosingType(tk1, pInternalImport1);
+            tkEnclosing2 = pModule2->m_pEnclosingTypeMap->GetEnclosingType(tk2, pInternalImport2);
 
             if (!CompareTypeDefsForEquivalence(tkEnclosing1, tkEnclosing2, pModule1, pModule2, pVisited))
             {
@@ -3505,7 +3503,7 @@ BOOL CompareTypeTokens(mdToken tk1, mdToken tk2, ModuleBase *pModule1, ModuleBas
     }
     else
     {
-        if (FAILED(hr = pInternalImport1->GetNestedClassProps(tk1, &enclosingTypeTk1)))
+        if (FAILED(hr = pModule1->m_pEnclosingTypeMap->GetEnclosingTypeNoThrow(tk1, &enclosingTypeTk1, pInternalImport1)))
         {
             if (hr != CLDB_E_RECORD_NOTFOUND)
             {
@@ -3526,7 +3524,8 @@ BOOL CompareTypeTokens(mdToken tk1, mdToken tk2, ModuleBase *pModule1, ModuleBas
     }
     else
     {
-        if (FAILED(hr = pInternalImport2->GetNestedClassProps(tk2, &enclosingTypeTk2)))
+        _ASSERTE(pModule1->IsFullModule());
+        if (FAILED(hr = pModule2->m_pEnclosingTypeMap->GetEnclosingTypeNoThrow(tk2, &enclosingTypeTk2, pInternalImport2)))
         {
             if (hr != CLDB_E_RECORD_NOTFOUND)
             {
@@ -4851,8 +4850,15 @@ BOOL MetaSig::CompareMethodConstraints(const Substitution *pSubst1,
     }
     CONTRACTL_END
 
+
     IMDInternalImport *pInternalImport1 = pModule1->GetMDImport();
     IMDInternalImport *pInternalImport2 = pModule2->GetMDImport();
+
+    if (!pModule1->m_pTypeGenericInfoMap->IsGeneric(tok1, pInternalImport1))
+    {
+        // The method's generic-ness must match.
+        return !pModule1->m_pTypeGenericInfoMap->IsGeneric(tok1, pInternalImport1);
+    }
 
     HENUMInternalHolder hEnumTyPars1(pInternalImport1);
     HENUMInternalHolder hEnumTyPars2(pInternalImport2);

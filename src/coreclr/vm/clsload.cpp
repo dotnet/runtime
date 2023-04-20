@@ -2144,12 +2144,7 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
     if (typeHnd.IsNull() && pTargetInstantiation != NULL)
     {
         // If the type is not loaded yet, we have to do heavy weight arity verification based on metadata
-        HENUMInternal hEnumGenericPars;
-        HRESULT hr = pInternalImport->EnumInit(mdtGenericParam, typeDef, &hEnumGenericPars);
-        if (FAILED(hr))
-            pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, typeDef, IDS_CLASSLOAD_BADFORMAT);
-        DWORD nGenericClassParams = pInternalImport->EnumGetCount(&hEnumGenericPars);
-        pInternalImport->EnumClose(&hEnumGenericPars);
+        uint32_t nGenericClassParams = pModule->m_pTypeGenericInfoMap->GetGenericArgumentCount(typeDef, pInternalImport);
 
         if (pTargetInstantiation->GetNumArgs() != nGenericClassParams)
             pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, typeDef, IDS_CLASSLOAD_TYPEWRONGNUMGENERICARGS);
@@ -2658,7 +2653,7 @@ ClassLoader::GetEnclosingClassThrowing(
     _ASSERTE(tdEnclosing);
     *tdEnclosing = mdTypeDefNil;
 
-    HRESULT hr = pInternalImport->GetNestedClassProps(cl, tdEnclosing);
+    HRESULT hr = pModule->m_pEnclosingTypeMap->GetEnclosingTypeNoThrow(cl, tdEnclosing, pInternalImport);
 
     if (FAILED(hr))
     {

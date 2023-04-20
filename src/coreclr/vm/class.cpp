@@ -783,35 +783,52 @@ EEClass::CheckVarianceInSig(
                 if (!ClassLoader::ResolveTokenToTypeDefThrowing(pModule, typeref, &pDefModule, &typeDef))
                     return TRUE;
 
-                HENUMInternal   hEnumGenericPars;
-                if (FAILED(pDefModule->GetMDImport()->EnumInit(mdtGenericParam, typeDef, &hEnumGenericPars)))
-                {
-                    pDefModule->GetAssembly()->ThrowTypeLoadException(pDefModule->GetMDImport(), typeDef, IDS_CLASSLOAD_BADFORMAT);
-                }
+                bool foundHasVarianceResult;
 
-                for (unsigned i = 0; i < ntypars; i++)
+                if (!pDefModule->m_pTypeGenericInfoMap->HasVariance(typeDef, &foundHasVarianceResult) && foundHasVarianceResult)
                 {
-                    mdGenericParam tkTyPar;
-                    pDefModule->GetMDImport()->EnumNext(&hEnumGenericPars, &tkTyPar);
-                    DWORD flags;
-                    if (FAILED(pDefModule->GetMDImport()->GetGenericParamProps(tkTyPar, NULL, &flags, NULL, NULL, NULL)))
+                    // Fast path, now that we know there isn't variance
+                    uint32_t genericArgCount = pDefModule->m_pTypeGenericInfoMap->GetGenericArgumentCount(typeDef, pDefModule->GetMDImport());
+                    for (uint32_t iGenericArgCount = 0; iGenericArgCount < genericArgCount; iGenericArgCount++)
+                    {
+                        if (!CheckVarianceInSig(numGenericArgs, pVarianceInfo, pModule, psig, gpNonVariant))
+                            return FALSE;
+
+                        IfFailThrow(psig.SkipExactlyOne());
+                    }
+                }
+                else
+                {
+                    HENUMInternal   hEnumGenericPars;
+                    if (FAILED(pDefModule->GetMDImport()->EnumInit(mdtGenericParam, typeDef, &hEnumGenericPars)))
                     {
                         pDefModule->GetAssembly()->ThrowTypeLoadException(pDefModule->GetMDImport(), typeDef, IDS_CLASSLOAD_BADFORMAT);
                     }
-                    CorGenericParamAttr genPosition = (CorGenericParamAttr) (flags & gpVarianceMask);
-                    // If the surrounding context is contravariant then we need to flip the variance of this parameter
-                    if (position == gpContravariant)
-                    {
-                        genPosition = genPosition == gpCovariant ? gpContravariant
-                                    : genPosition == gpContravariant ? gpCovariant
-                                    : gpNonVariant;
-                    }
-                    if (!CheckVarianceInSig(numGenericArgs, pVarianceInfo, pModule, psig, genPosition))
-                        return FALSE;
 
-                    IfFailThrow(psig.SkipExactlyOne());
+                    for (unsigned i = 0; i < ntypars; i++)
+                    {
+                        mdGenericParam tkTyPar;
+                        pDefModule->GetMDImport()->EnumNext(&hEnumGenericPars, &tkTyPar);
+                        DWORD flags;
+                        if (FAILED(pDefModule->GetMDImport()->GetGenericParamProps(tkTyPar, NULL, &flags, NULL, NULL, NULL)))
+                        {
+                            pDefModule->GetAssembly()->ThrowTypeLoadException(pDefModule->GetMDImport(), typeDef, IDS_CLASSLOAD_BADFORMAT);
+                        }
+                        CorGenericParamAttr genPosition = (CorGenericParamAttr) (flags & gpVarianceMask);
+                        // If the surrounding context is contravariant then we need to flip the variance of this parameter
+                        if (position == gpContravariant)
+                        {
+                            genPosition = genPosition == gpCovariant ? gpContravariant
+                                        : genPosition == gpContravariant ? gpCovariant
+                                        : gpNonVariant;
+                        }
+                        if (!CheckVarianceInSig(numGenericArgs, pVarianceInfo, pModule, psig, genPosition))
+                            return FALSE;
+
+                        IfFailThrow(psig.SkipExactlyOne());
+                    }
+                    pDefModule->GetMDImport()->EnumClose(&hEnumGenericPars);
                 }
-                pDefModule->GetMDImport()->EnumClose(&hEnumGenericPars);
             }
 
             return TRUE;

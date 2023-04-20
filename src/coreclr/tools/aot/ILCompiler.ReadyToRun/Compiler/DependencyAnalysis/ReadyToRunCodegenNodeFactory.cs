@@ -732,6 +732,24 @@ namespace ILCompiler.DependencyAnalysis
                     AttributePresenceFilterNode attributePresenceTable = new AttributePresenceFilterNode(inputModule);
                     tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AttributePresence, attributePresenceTable, attributePresenceTable);
                 }
+
+                if (EnclosingTypeMapNode.IsSupported(inputModule.MetadataReader))
+                {
+                    var node = new EnclosingTypeMapNode(inputModule.MetadataReader);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.EnclosingTypeMap, node, node);
+                }
+
+                if (TypeGenericInfoMapNode.IsSupported(inputModule.MetadataReader))
+                {
+                    var node = new TypeGenericInfoMapNode(inputModule.MetadataReader);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.TypeGenericInfoMap, node, node);
+                }
+
+                if (MethodIsGenericMapNode.IsSupported(inputModule.MetadataReader))
+                {
+                    var node = new MethodIsGenericMapNode(inputModule.MetadataReader);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodIsGenericMap, node, node);
+                }
             }
 
             InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null, 

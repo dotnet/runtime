@@ -89,6 +89,23 @@ namespace Internal.ReadyToRunConstants
         InlinerRidShift = 1,
     };
 
+    [Flags]
+    public enum ReadyToRunTypeGenericInfo : byte
+    {
+        GenericCountMask = 0x3,
+        HasConstraints = 0x4,
+        HasVariance = 0x8,
+    }
+
+    public enum ReadyToRunGenericInfoGenericCount : uint
+    {
+        Zero = 0,
+        One = 1,
+        Two = 2,
+        MoreThanTwo = 3
+    }
+
+
     public enum DictionaryEntryKind
     {
         EmptySlot = 0,

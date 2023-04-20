@@ -48,6 +48,42 @@ public:
 typedef DPTR(class ReadyToRunInfo) PTR_ReadyToRunInfo;
 typedef DPTR(class ReadyToRunCoreInfo) PTR_ReadyToRunCoreInfo;
 
+
+class ReadyToRun_EnclosingTypeMap
+{
+private:
+    uint16_t TypeCount = 0;
+public:
+    static ReadyToRun_EnclosingTypeMap EmptyInstance;
+
+    mdTypeDef GetEnclosingType(mdTypeDef input, IMDInternalImport* pImport);
+    HRESULT GetEnclosingTypeNoThrow(mdTypeDef input, mdTypeDef *pEnclosingType, IMDInternalImport* pImport);
+};
+
+class ReadyToRun_TypeGenericInfoMap
+{
+private:
+    uint32_t TypeCount = 0;
+    ReadyToRunTypeGenericInfo GetTypeGenericInfo(mdTypeDef input, bool *foundResult);
+public:
+    static ReadyToRun_TypeGenericInfoMap EmptyInstance;
+
+    HRESULT IsGenericNoThrow(mdTypeDef input, bool *pIsGeneric, IMDInternalImport* pImport);
+    HRESULT GetGenericArgumentCountNoThrow(mdTypeDef input, uint32_t *pCount, IMDInternalImport* pImport);
+    bool IsGeneric(mdTypeDef input, IMDInternalImport* pImport);
+    uint32_t GetGenericArgumentCount(mdTypeDef input, IMDInternalImport* pImport);
+    bool HasVariance(mdTypeDef input, bool *foundResult);
+    bool HasConstraints(mdTypeDef input, bool *foundResult);
+};
+
+class ReadyToRun_MethodIsGenericMap
+{
+    uint32_t MethodCount = 0;
+public:
+    static ReadyToRun_MethodIsGenericMap EmptyInstance;
+    bool IsGeneric(mdMethodDef input, bool *foundResult);
+};
+
 class ReadyToRunInfo
 {
     friend class ReadyToRunJitManager;
@@ -283,8 +319,8 @@ public:
     BOOL IsImageVersionAtLeast(int majorVersion, int minorVersion);
 private:
     BOOL GetTypeNameFromToken(IMDInternalImport * pImport, mdToken mdType, LPCUTF8 * ppszName, LPCUTF8 * ppszNameSpace);
-    BOOL GetEnclosingToken(IMDInternalImport * pImport, mdToken mdType, mdToken * pEnclosingToken);
-    BOOL CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport * pImport1, mdToken mdToken2, IMDInternalImport * pImport2);
+    BOOL GetEnclosingToken(IMDInternalImport * pImport, ModuleBase *pModule1, mdToken mdType, mdToken * pEnclosingToken);
+    BOOL CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport * pImport1, ModuleBase *pModule1, mdToken mdToken2, IMDInternalImport * pImport2, ModuleBase *pModule2);
 
     PTR_MethodDesc GetMethodDescForEntryPointInNativeImage(PCODE entryPoint);
     void SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, PTR_MethodDesc methodDesc);
