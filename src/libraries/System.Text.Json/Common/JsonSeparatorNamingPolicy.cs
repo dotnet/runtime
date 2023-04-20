@@ -16,9 +16,9 @@ namespace System.Text.Json
 
         public sealed override string ConvertName(string name)
         {
-            if (string.IsNullOrEmpty(name) || !char.IsUpper(name[0]))
+            if (name is null)
             {
-                return name;
+                throw new ArgumentNullException(nameof(name));
             }
 
             // Rented buffer 20% longer that the input.
