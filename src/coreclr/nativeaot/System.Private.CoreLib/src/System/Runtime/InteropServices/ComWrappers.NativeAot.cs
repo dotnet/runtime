@@ -127,7 +127,7 @@ namespace System.Runtime.InteropServices
 
         internal unsafe struct ManagedObjectWrapper
         {
-            public IntPtr HolderHandle; // This is GC Handle
+            public volatile IntPtr HolderHandle; // This is GC Handle
             public ulong RefCount;
 
             public int UserDefinedCount;
