@@ -94,6 +94,11 @@ namespace Tests.System
             Assert.True(providerTimestamp2 > timestamp2);
             Assert.Equal(GetElapsedTime(providerTimestamp1, providerTimestamp2), TimeProvider.System.GetElapsedTime(providerTimestamp1, providerTimestamp2));
 
+            long timestamp = TimeProvider.System.GetTimestamp();
+            TimeSpan period1 = TimeProvider.System.GetElapsedTime(timestamp);
+            TimeSpan period2 = TimeProvider.System.GetElapsedTime(timestamp);
+            Assert.True(period1 <= period2);
+
             Assert.Equal(Stopwatch.Frequency, TimeProvider.System.TimestampFrequency);
         }
 

@@ -8,7 +8,16 @@ Hybrid mode does not use ICU data for some functions connected with globalizatio
 
 ### WASM
 
-For WebAssembly in Browser we are using Web API instead of some ICU data.
+For WebAssembly in Browser we are using Web API instead of some ICU data. Ideally, we would use `System.Runtime.InteropServices.JavaScript` to call JS code from inside of C# but we cannot reference any assemblies from inside of `System.Private.CoreLib`. That is why we are using iCalls instead.
+
+**SortKey**
+
+Affected public APIs:
+- CompareInfo.GetSortKey
+- CompareInfo.GetSortKeyLength
+- CompareInfo.GetHashCode
+
+Web API does not have an equivalent, so they throw `PlatformNotSupportedException`.
 
 **Case change**
 

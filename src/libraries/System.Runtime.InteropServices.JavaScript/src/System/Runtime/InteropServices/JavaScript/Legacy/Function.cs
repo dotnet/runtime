@@ -18,6 +18,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public Function(params object[] args)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(Function), args))
         {
+#if FEATURE_WASM_THREADS
+            LegacyHostImplementation.ThrowIfLegacyWorkerThread();
+#endif
             LegacyHostImplementation.RegisterCSOwnedObject(this);
         }
 

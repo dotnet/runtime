@@ -34,7 +34,7 @@ namespace Internal.Runtime
 
                 // Would be surprising to get these here though.
                 Debug.Assert(elementType != EETypeElementType.SystemArray);
-                Debug.Assert(elementType <= EETypeElementType.Pointer);
+                Debug.Assert(elementType <= EETypeElementType.FunctionPointer);
 
                 return elementType;
 
@@ -43,8 +43,13 @@ namespace Internal.Runtime
 
         public static uint ComputeFlags(TypeDesc type)
         {
-            uint flags = type.IsParameterizedType ?
-                (uint)EETypeKind.ParameterizedEEType : (uint)EETypeKind.CanonicalEEType;
+            uint flags;
+            if (type.IsParameterizedType)
+                flags = (uint)EETypeKind.ParameterizedEEType;
+            else if (type.IsFunctionPointer)
+                flags = (uint)EETypeKind.FunctionPointerEEType;
+            else
+                flags = (uint)EETypeKind.CanonicalEEType;
 
             // 5 bits near the top of flags are used to convey enum underlying type, primitive type, or mark the type as being System.Array
             EETypeElementType elementType = ComputeEETypeElementType(type);
