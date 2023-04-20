@@ -90,18 +90,6 @@ steps:
       $instrumentationFileContent[$lineNumber-1] += ".AddExporter(new PerfLabExporter()).WithArtifactsPath(`"/storage/emulated/0/Android/data/com.microsoft.maui.benchmarks/files`")"
       $instrumentationFileContent | Set-Content .\maui\src\Core\tests\Benchmarks.Droid\MainInstrumentation.cs
 
-      $nugetConfigFileContent = Get-Content .\maui\NuGet.config
-      $clearLine = $nugetConfigFileContent | Select-String -Pattern '<clear />'
-      $lineNumber = $clearLine.LineNumber
-      $nugetConfigFileContent[$lineNumber-1] += "<add key=`"dotnet8`" value=`"https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet8/nuget/v3/index.json`" />"
-      $nugetConfigFileContent | Set-Content .\maui\NuGet.config
-      
-      $essentialBuildFileContent = Get-Content .\maui\src\Essentials\src\Essentials.csproj
-      $clearLine = $essentialBuildFileContent | Select-String -Pattern '<IsTrimmable>true</IsTrimmable>'
-      $lineNumber = $clearLine.LineNumber
-      $essentialBuildFileContent[$lineNumber-1] = "<IsTrimmable Condition=`"!`$(TargetFramework.StartsWith('netstandard'))`">true</IsTrimmable>"
-      $essentialBuildFileContent | Set-Content .\maui\src\Essentials\src\Essentials.csproj
-
       $benchmarksDroidConfigFileContent = Get-Content .\maui\src\Core\tests\Benchmarks.Droid\Benchmarks.Droid.csproj
      
       $projectReferenceLine = $benchmarksDroidConfigFileContent | Select-String -Pattern '<ProjectReference Include="..\\..\\src\\Core.csproj" />'
@@ -142,7 +130,7 @@ steps:
 
 # Remove the embed assemblies from source
   - script: |
-      ../dotnet build ./src/Core/tests/Benchmarks.Droid/Benchmarks.Droid.csproj --configuration Release -bl:BenchmarksDroid.binlog /p:TF_Build=False /p:DefineConstants=PERFLAB_INLAB /p:_MauiDotNetVersionMajor=8
+      ../dotnet build ./src/Core/tests/Benchmarks.Droid/Benchmarks.Droid.csproj --configuration Release -bl:BenchmarksDroid.binlog /p:TF_Build=False /p:DefineConstants=PERFLAB_INLAB
       mv ./src/Core/tests/Benchmarks.Droid/bin/Release/net8.0-android/android-arm64/com.microsoft.maui.benchmarks-Signed.apk ./MonoBenchmarksDroid.apk
     displayName:  Build BDN Android App
     workingDirectory: $(Build.SourcesDirectory)/maui
