@@ -1725,7 +1725,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 
     if (varTypeUsesIntReg(dstType))
     {
-        if (genIsValidIntReg(srcReg))
+        if (genIsValidIntOrFakeReg(srcReg))
         {
             // int to int
             return ins_Copy(dstType);
@@ -1737,7 +1737,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
             // mask to int
             return INS_kmovq_gpr;
         }
-#endif
+#endif // TARGET_XARCH
 
         // float to int
         assert(genIsValidFloatReg(srcReg));
@@ -1773,7 +1773,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         }
 
         // mask to int
-        assert(genIsValidIntReg(srcReg));
+        assert(genIsValidIntOrFakeReg(srcReg));
         return INS_kmovq_gpr;
     }
 #endif // TARGET_XARCH
@@ -1787,7 +1787,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
     }
 
     // int to float
-    assert(genIsValidIntReg(srcReg));
+    assert(genIsValidIntOrFakeReg(srcReg));
 
 #if defined(TARGET_XARCH)
     return INS_movd;
@@ -1958,7 +1958,7 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
 
     if (varTypeUsesIntReg(dstType))
     {
-        if (genIsValidIntReg(srcReg))
+        if (genIsValidIntOrFakeReg(srcReg))
         {
             // int to int
             return ins_Store(dstType, aligned);
@@ -2004,14 +2004,14 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
         }
 
         // mask to int, keep as mask so it works on 32-bit
-        assert(genIsValidIntReg(srcReg));
+        assert(genIsValidIntOrFakeReg(srcReg));
         return ins_Store(dstType, aligned);
     }
 #endif // TARGET_XARCH
 
     assert(varTypeUsesFloatReg(dstType));
 
-    if (genIsValidIntReg(srcReg))
+    if (genIsValidIntOrFakeReg(srcReg))
     {
         // int to float, treat as int to int
 
@@ -2288,7 +2288,7 @@ void CodeGen::instGen_Return(unsigned stkArgSize)
  */
 void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags)
 {
-    assert(genIsValidIntReg(reg));
+    assert(genIsValidIntOrFakeReg(reg));
 
 #if defined(TARGET_XARCH)
     GetEmitter()->emitIns_R_R(INS_xor, size, reg, reg);
