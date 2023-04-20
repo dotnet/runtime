@@ -3,21 +3,31 @@
 
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Unity.CoreCLRHelpers;
 
 namespace UnityEmbedHost.Generator;
 
 static class NativeGeneration
 {
     // These names must match the attribute names defined in the embed host project
-    const string NoNativeWrapperAttributeName = "NoNativeWrapperAttribute";
+    public const string NativeFunctionAttributeName = "NativeFunctionAttribute";
     public const string NativeWrapperTypeAttributeName = "NativeWrapperTypeAttribute";
     public const string NativeCallbackTypeAttributeName = "NativeCallbackTypeAttribute";
-    public const string NativeWrapperNameAttributeName = "NativeWrapperNameAttribute";
+
+    private const string CppFileName = "mono_coreclr.cpp";
 
     static readonly DiagnosticDescriptor NativeDestinationNotFound = new (
         id: "EMBEDHOSTGEN001",
         title: $"Native file was missing",
         messageFormat: "Could not locate '{0}'",
+        category: nameof(NativeGeneration),
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    static readonly DiagnosticDescriptor CannotUseSignatureOnlyOnUndefinedFunction = new (
+        id: "EMBEDHOSTGEN001",
+        title: $"Cannot use {nameof(NativeFunctionOptions)}.{nameof(NativeFunctionOptions.SignatureOnly)} on a function that is not defined in {CppFileName}",
+        messageFormat: "Could not locate function '{0}'",
         category: nameof(NativeGeneration),
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -29,7 +39,7 @@ static class NativeGeneration
 
     static void ReplaceNativeWrapperImplementations(GeneratorExecutionContext context, IMethodSymbol[] callbackMethods)
     {
-        var path = Path.Combine(GetCallingPath(context), "../../src/coreclr/vm/mono/mono_coreclr.cpp");
+        var path = Path.Combine(GetCallingPath(context), $"../../src/coreclr/vm/mono/{CppFileName}");
 
         if (!File.Exists(path))
         {
@@ -37,7 +47,7 @@ static class NativeGeneration
             return;
         }
 
-        var nativeMethodsToWrite = callbackMethods.Where(m => !m.HasAttribute(NoNativeWrapperAttributeName))
+        var nativeMethodsToWrite = callbackMethods.Where(m => m.NativeFunctionOptions() != NativeFunctionOptions.DoNotGenerate)
             .Select(m => (m.NativeWrapperName(), m))
             .ToList();
 
@@ -83,7 +93,9 @@ static class NativeGeneration
             {
                 bool foundEndOfMethod = true;
                 var temporaryBackup = new StringBuilder();
+                var currentBody = new StringBuilder();
                 var hasGcxPreEmp = false;
+                var inBody = false;
 
                 while (lines[index] != "}")
                 {
@@ -99,6 +111,11 @@ static class NativeGeneration
                     if (IsGCPreEmp(lines[index]))
                         hasGcxPreEmp = true;
 
+                    if (inBody && lines[index] != "}")
+                        currentBody.AppendLine(lines[index]);
+                    else if (lines[index] == "{")
+                        inBody = true;
+
                     if (IsMethodDeclarationLine(lines[index]))
                     {
                         // We hit the next method without finding the end of the current one.  Also bad.
@@ -109,7 +126,11 @@ static class NativeGeneration
 
                 if (foundEndOfMethod)
                 {
-                    sb.Append(GenerateNativeWrapperMethod(match.Item2, hasGcxPreEmp));
+                    if (match.Item2.NativeFunctionOptions() == NativeFunctionOptions.SignatureOnly)
+                        AppendNativeWrapperMethodWithCurrentBody(sb, match.Item2, currentBody);
+                    else
+                        AppendNativeWrapperMethod(sb, match.Item2, hasGcxPreEmp);
+
                     // Remove so that we know which have not been written
                     nativeMethodsToWrite.Remove(match);
                 }
@@ -139,9 +160,15 @@ static class NativeGeneration
 
         foreach (var unwritten in nativeMethodsToWrite)
         {
-            sb.Append(GenerateNativeWrapperMethod(unwritten.m,
+            if (unwritten.m.NativeFunctionOptions() == NativeFunctionOptions.SignatureOnly)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(CannotUseSignatureOnlyOnUndefinedFunction, Location.None, unwritten.Item1));
+                continue;
+            }
+
+            AppendNativeWrapperMethod(sb, unwritten.m,
                 // Better safe than sorry?  Control may need to be exposed
-                includeGcxPreEmp: true));
+                includeGcxPreEmp: true);
             sb.AppendLine();
         }
 
@@ -150,7 +177,6 @@ static class NativeGeneration
 
         File.WriteAllText(path, sb.ToString());
     }
-
 
     private static string GenerateNativeHostStruct(IMethodSymbol[] callbackMethods)
     {
@@ -164,13 +190,6 @@ static class NativeGeneration
         }
 
         sb.AppendLine("};");
-        return sb.ToString();
-    }
-
-    private static string GenerateNativeWrapperMethod(IMethodSymbol method, bool includeGcxPreEmp)
-    {
-        var sb = new StringBuilder();
-        AppendNativeWrapperMethod(sb, method, includeGcxPreEmp);
         return sb.ToString();
     }
 
@@ -193,6 +212,15 @@ static class NativeGeneration
         if (includeGcxPreEmp)
             sb.AppendLine("    GCX_PREEMP(); // temporary until we sort out our GC thread model");
         sb.AppendLine($"    {FormatManagedCallbackCall(method)}");
+        sb.AppendLine("}");
+    }
+
+    private static void AppendNativeWrapperMethodWithCurrentBody(StringBuilder sb, IMethodSymbol method, StringBuilder currentBody)
+    {
+        AppendAutoGeneratedComment(sb);
+        sb.AppendLine(FormatNativeWrapperMethodSignature(method));
+        sb.AppendLine("{");
+        sb.Append(currentBody);
         sb.AppendLine("}");
     }
 
