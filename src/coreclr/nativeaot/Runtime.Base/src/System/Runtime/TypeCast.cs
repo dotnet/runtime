@@ -52,6 +52,7 @@ namespace System.Runtime
             MethodTable* pObjType = obj.GetMethodTable();
 
             Debug.Assert(!pTargetType->IsParameterizedType, "IsInstanceOfClass called with parameterized MethodTable");
+            Debug.Assert(!pTargetType->IsFunctionPointerType, "IsInstanceOfClass called with function pointer MethodTable");
             Debug.Assert(!pTargetType->IsInterface, "IsInstanceOfClass called with interface MethodTable");
 
             // Quick check if both types are good for simple casting: canonical, no related type via IAT, no generic variance
@@ -251,6 +252,7 @@ namespace System.Runtime
         internal static unsafe bool ImplementsInterface(MethodTable* pObjType, MethodTable* pTargetType, EETypePairList* pVisited)
         {
             Debug.Assert(!pTargetType->IsParameterizedType, "did not expect parameterized type");
+            Debug.Assert(!pTargetType->IsFunctionPointerType, "did not expect function pointer type");
             Debug.Assert(pTargetType->IsInterface, "IsInstanceOfInterface called with non-interface MethodTable");
 
             int numInterfaces = pObjType->NumInterfaces;
@@ -536,8 +538,9 @@ namespace System.Runtime
                 if (pSourceType->IsParameterizedType
                     && (pTargetType->ParameterizedTypeShape == pSourceType->ParameterizedTypeShape))
                 {
+                    MethodTable* pSourceRelatedParameterType = pSourceType->RelatedParameterType;
                     // Source type is also a parameterized type. Are the parameter types compatible?
-                    if (pSourceType->RelatedParameterType->IsPointerType)
+                    if (pSourceRelatedParameterType->IsPointerType)
                     {
                         // If the parameter types are pointers, then only exact matches are correct.
                         // As we've already called AreTypesEquivalent at the start of this function,
@@ -545,11 +548,18 @@ namespace System.Runtime
                         // int** is not compatible with uint**, nor is int*[] oompatible with uint*[].
                         return false;
                     }
-                    else if (pSourceType->RelatedParameterType->IsByRefType)
+                    else if (pSourceRelatedParameterType->IsByRefType)
                     {
                         // Only allow exact matches for ByRef types - same as pointers above. This should
                         // be unreachable and it's only a defense in depth. ByRefs can't be parameters
                         // of any parameterized type.
+                        return false;
+                    }
+                    else if (pSourceRelatedParameterType->IsFunctionPointerType)
+                    {
+                        // If the parameter types are function pointers, then only exact matches are correct.
+                        // As we've already called AreTypesEquivalent at the start of this function,
+                        // return false as the exact match case has already been handled.
                         return false;
                     }
                     else
@@ -565,12 +575,23 @@ namespace System.Runtime
                 // Can't cast a non-parameter type to a parameter type or a parameter type of different shape to a parameter type
                 return false;
             }
+
+            if (pTargetType->IsFunctionPointerType)
+            {
+                // Function pointers only cast if source and target are equivalent types.
+                return false;
+            }
+
             if (pSourceType->IsArray)
             {
                 // Target type is not an array. But we can still cast arrays to Object or System.Array.
                 return WellKnownEETypes.IsSystemObject(pTargetType) || WellKnownEETypes.IsSystemArray(pTargetType);
             }
             else if (pSourceType->IsParameterizedType)
+            {
+                return false;
+            }
+            else if (pSourceType->IsFunctionPointerType)
             {
                 return false;
             }
@@ -829,9 +850,11 @@ namespace System.Runtime
         {
             Debug.Assert(!pDerivedType->IsArray, "did not expect array type");
             Debug.Assert(!pDerivedType->IsParameterizedType, "did not expect parameterType");
+            Debug.Assert(!pDerivedType->IsFunctionPointerType, "did not expect function pointer");
             Debug.Assert(!pBaseType->IsArray, "did not expect array type");
             Debug.Assert(!pBaseType->IsInterface, "did not expect interface type");
             Debug.Assert(!pBaseType->IsParameterizedType, "did not expect parameterType");
+            Debug.Assert(!pBaseType->IsFunctionPointerType, "did not expect function pointer");
             Debug.Assert(pBaseType->IsCanonical || pBaseType->IsGenericTypeDefinition, "unexpected MethodTable");
             Debug.Assert(pDerivedType->IsCanonical || pDerivedType->IsGenericTypeDefinition, "unexpected MethodTable");
 
@@ -879,7 +902,7 @@ namespace System.Runtime
                 return IsInstanceOfArray(pTargetType, obj);
             else if (pTargetType->IsInterface)
                 return IsInstanceOfInterface(pTargetType, obj);
-            else if (pTargetType->IsParameterizedType)
+            else if (pTargetType->IsParameterizedType || pTargetType->IsFunctionPointerType)
                 return null; // We handled arrays above so this is for pointers and byrefs only.
             else
                 return IsInstanceOfClass(pTargetType, obj);
@@ -921,13 +944,13 @@ namespace System.Runtime
                 return CheckCastArray(pTargetType, obj);
             else if (pTargetType->IsInterface)
                 return CheckCastInterface(pTargetType, obj);
-            else if (pTargetType->IsParameterizedType)
-                return CheckCastNonArrayParameterizedType(pTargetType, obj);
+            else if (pTargetType->IsParameterizedType || pTargetType->IsFunctionPointerType)
+                return CheckCastNonboxableType(pTargetType, obj);
             else
                 return CheckCastClass(pTargetType, obj);
         }
 
-        private static unsafe object CheckCastNonArrayParameterizedType(MethodTable* pTargetType, object obj)
+        private static unsafe object CheckCastNonboxableType(MethodTable* pTargetType, object obj)
         {
             // a null value can be cast to anything
             if (obj == null)

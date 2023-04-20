@@ -2124,11 +2124,11 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 
     ClassLayout* blkLayout = typGetBlkLayout(blkSize);
     GenTree*     dstAddr   = gtNewOperNode(GT_ADD, TYP_BYREF, arrayLocalNode, gtNewIconNode(dataOffset, TYP_I_IMPL));
-    GenTree*     dst       = gtNewStructVal(blkLayout, dstAddr);
+    GenTree*     dst       = gtNewLoadValueNode(blkLayout, dstAddr);
     dst->gtFlags |= GTF_GLOB_REF;
 
     GenTree* srcAddr = gtNewIconHandleNode((size_t)initData, GTF_ICON_CONST_PTR);
-    GenTree* src     = gtNewStructVal(blkLayout, srcAddr);
+    GenTree* src     = gtNewLoadValueNode(blkLayout, srcAddr);
 
 #ifdef DEBUG
     src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_InitializeArrayIntrinsics;
@@ -5175,20 +5175,9 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
             GenTree* obj = thisPtr;
 
             assert(obj->TypeGet() == TYP_BYREF || obj->TypeGet() == TYP_I_IMPL);
-            obj = gtNewBlkIndir(typGetObjLayout(pConstrainedResolvedToken->hClass), obj);
-
-            CorInfoType jitTyp = info.compCompHnd->asCorInfoType(pConstrainedResolvedToken->hClass);
-            if (impIsPrimitive(jitTyp))
-            {
-                if (obj->OperIsBlk())
-                {
-                    obj->ChangeOperUnchecked(GT_IND);
-                    obj->AsOp()->gtOp2 = nullptr; // must be zero for tree walkers
-                }
-
-                obj->gtType = JITtype2varType(jitTyp);
-                assert(varTypeIsArithmetic(obj->gtType));
-            }
+            ClassLayout* layout;
+            var_types    objType = TypeHandleToVarType(pConstrainedResolvedToken->hClass, &layout);
+            obj                  = (objType == TYP_STRUCT) ? gtNewBlkIndir(layout, obj) : gtNewIndir(objType, obj);
 
             // This pushes on the dereferenced byref
             // This is then used immediately to box.
@@ -8776,8 +8765,10 @@ GenTree* Compiler::impArrayAccessIntrinsic(
         return nullptr;
     }
 
-    CORINFO_CLASS_HANDLE arrElemClsHnd = nullptr;
-    var_types            elemType      = JITtype2varType(info.compCompHnd->getChildType(clsHnd, &arrElemClsHnd));
+    CORINFO_CLASS_HANDLE elemClsHnd  = NO_CLASS_HANDLE;
+    CorInfoType          elemJitType = info.compCompHnd->getChildType(clsHnd, &elemClsHnd);
+    ClassLayout*         elemLayout  = nullptr;
+    var_types            elemType    = TypeHandleToVarType(elemJitType, elemClsHnd, &elemLayout);
 
     // For the ref case, we will only be able to inline if the types match
     // (verifier checks for this, we don't care for the nonverified case and the
@@ -8822,18 +8813,9 @@ GenTree* Compiler::impArrayAccessIntrinsic(
         }
     }
 
-    unsigned arrayElemSize;
-    if (elemType == TYP_STRUCT)
-    {
-        assert(arrElemClsHnd);
-        arrayElemSize = info.compCompHnd->getClassSize(arrElemClsHnd);
-    }
-    else
-    {
-        arrayElemSize = genTypeSize(elemType);
-    }
+    unsigned arrayElemSize = (elemType == TYP_STRUCT) ? elemLayout->GetSize() : genTypeSize(elemType);
 
-    if ((unsigned char)arrayElemSize != arrayElemSize)
+    if (!FitsIn<unsigned char>(arrayElemSize))
     {
         // arrayElemSize would be truncated as an unsigned char.
         // This means the array element is too large. Don't do the optimization.
@@ -8848,7 +8830,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     {
         // Assignment of a struct is more work, and there are more gets than sets.
         // TODO-CQ: support SET (`a[i,j,k] = s`) for struct element arrays.
-        if (elemType == TYP_STRUCT)
+        if (varTypeIsStruct(elemType))
         {
             JITDUMP("impArrayAccessIntrinsic: rejecting SET array intrinsic because elemType is TYP_STRUCT"
                     " (implementation limitation)\n",
@@ -8892,12 +8874,13 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     if (intrinsicName != NI_Array_Address)
     {
-        if (varTypeIsStruct(elemType))
+        if (elemType == TYP_STRUCT)
         {
-            arrElem = gtNewBlkIndir(typGetObjLayout(sig->retTypeClass), arrElem);
+            arrElem = gtNewBlkIndir(elemLayout, arrElem);
         }
         else
         {
+            // TODO-Bug: GTF_GLOB_REF is missing.
             arrElem = gtNewOperNode(GT_IND, elemType, arrElem);
         }
     }

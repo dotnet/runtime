@@ -125,11 +125,7 @@ jobs:
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvos_arm64') }}:
-      # if necessary, you can split traffic between queues this way for PR's and rolling builds
-      - ${{ if ne(parameters.jobParameters.isExtraPlatforms, true) }}:
-        - OSX.13.Amd64.AppleTV.Open
-      - ${{ if eq(parameters.jobParameters.isExtraPlatforms, true) }}:
-        - OSX.13.Amd64.AppleTV.Open
+      - OSX.13.Amd64.AppleTV.Open
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:

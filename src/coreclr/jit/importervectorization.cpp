@@ -109,7 +109,14 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     assert(len >= 8 && len <= MaxPossibleUnrollSize);
 
     const int byteLen  = len * sizeof(WCHAR);
-    const int simdSize = (int)roundDownSIMDSize(byteLen);
+    int       simdSize = (int)roundDownSIMDSize(byteLen);
+#ifdef TARGET_XARCH
+    if ((simdSize == YMM_REGSIZE_BYTES) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+    {
+        // We need AVX2 for NI_Vector256_op_Equality, fallback to Vector128 if only AVX is available
+        simdSize = XMM_REGSIZE_BYTES;
+    }
+#endif
     if (byteLen > (simdSize * 2))
     {
         // Data is too big to be processed via two SIMD loads

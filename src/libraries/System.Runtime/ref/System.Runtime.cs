@@ -1897,6 +1897,7 @@ namespace System
         public virtual System.TimeZoneInfo LocalTimeZone { get; }
         public virtual long TimestampFrequency { get; }
         public virtual long GetTimestamp() { throw null; }
+        public TimeSpan GetElapsedTime(long startingTimestamp) { throw null; }
         public TimeSpan GetElapsedTime(long startingTimestamp, long endingTimestamp) { throw null; }
         public virtual System.Threading.ITimer CreateTimer(System.Threading.TimerCallback callback, object? state, System.TimeSpan dueTime, System.TimeSpan period) { throw null; }
     }
@@ -9026,6 +9027,8 @@ namespace System.Globalization
         Any = 511,
         AllowHexSpecifier = 512,
         HexNumber = 515,
+        AllowBinarySpecifier = 1024,
+        BinaryNumber = 1027,
     }
     public partial class PersianCalendar : System.Globalization.Calendar
     {

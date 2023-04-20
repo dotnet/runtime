@@ -1786,12 +1786,22 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_AVX512F_ConvertToVector256Int32:
+        {
+            if (varTypeIsFloating(baseType))
+            {
+                instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1);
+                break;
+            }
+            FALLTHROUGH;
+        }
+
         case NI_AVX512F_ConvertToVector128Int16:
         case NI_AVX512F_ConvertToVector128Int32:
         case NI_AVX512F_ConvertToVector128UInt16:
         case NI_AVX512F_ConvertToVector128UInt32:
         case NI_AVX512F_ConvertToVector256Int16:
-        case NI_AVX512F_ConvertToVector256Int32:
         case NI_AVX512F_ConvertToVector256UInt16:
         case NI_AVX512F_ConvertToVector256UInt32:
         case NI_AVX512BW_ConvertToVector128Byte:
@@ -1799,12 +1809,12 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AVX512BW_ConvertToVector256Byte:
         case NI_AVX512BW_ConvertToVector256SByte:
         {
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+
             // These instructions are RM_R and so we need to ensure the targetReg
             // is passed in as the RM register and op1 is passed as the R register
 
-            op1Reg          = op1->GetRegNum();
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-
+            op1Reg = op1->GetRegNum();
             emit->emitIns_R_R(ins, attr, op1Reg, targetReg);
             break;
         }

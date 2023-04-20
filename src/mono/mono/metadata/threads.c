@@ -91,6 +91,11 @@ mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle);
 #include <errno.h>
 #endif
 
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+#include <mono/utils/mono-threads-wasm.h>
+#include <emscripten/eventloop.h>
+#endif
+
 #include "icall-decl.h"
 
 /*#define THREAD_DEBUG(a) do { a; } while (0)*/
@@ -1109,6 +1114,7 @@ fire_attach_profiler_events (MonoNativeThreadId tid)
 		(gpointer)(gsize) tid,
 		"Handle Stack"));
 }
+
 
 static guint32 WINAPI
 start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
@@ -4963,3 +4969,50 @@ ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_p
 	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
 	mono_lifo_semaphore_release (sem, count);
 }
+
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+void
+ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
+{
+	emscripten_runtime_keepalive_push();
+}
+
+void
+ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
+{
+	emscripten_runtime_keepalive_pop();
+}
+
+extern int mono_wasm_eventloop_has_unsettled_interop_promises(void);
+
+MonoBoolean
+ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(void)
+{
+	return !!mono_wasm_eventloop_has_unsettled_interop_promises();
+}
+
+#endif /* HOST_BROWSER && !DISABLE_THREADS */
+
+/* for the AOT cross compiler with --print-icall-table these don't need to be callable, they just
+ * need to be defined */
+#if defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP)
+void
+ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
+{
+	g_assert_not_reached();
+}
+
+void
+ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
+{
+	g_assert_not_reached();
+}
+
+MonoBoolean
+ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(void)
+{
+	g_assert_not_reached();
+}
+
+#endif /* defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP) */
+
