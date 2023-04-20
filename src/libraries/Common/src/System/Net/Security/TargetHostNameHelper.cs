@@ -78,6 +78,5 @@ namespace System.Net.Security
 
             return false;
         }
-
     }
 }

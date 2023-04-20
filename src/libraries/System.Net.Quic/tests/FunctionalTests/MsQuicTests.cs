@@ -1204,5 +1204,53 @@ namespace System.Net.Quic.Tests
                 await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await acceptTask).WaitAsync(TimeSpan.FromSeconds(10));
             }
         }
+
+        [Theory]
+        [MemberData(nameof(HostNameData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        public async Task ClientSendsSniServerReceives_Ok(string hostName)
+        {
+            using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
+            var listenerOptions = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var serverOptions = CreateQuicServerOptions();
+                    serverOptions.ServerAuthenticationOptions.ServerCertificateContext = null;
+                    serverOptions.ServerAuthenticationOptions.ServerCertificate = null;
+                    serverOptions.ServerAuthenticationOptions.ServerCertificateSelectionCallback = (sender, actualHostName) =>
+                    {
+                        Assert.Equal(hostName, actualHostName);
+                        return serverCert;
+                    };
+                    return ValueTask.FromResult(serverOptions);
+                }
+            };
+
+            // Use whatever endpoint, it'll get overwritten in CreateConnectedQuicConnection.
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listenerOptions.ListenEndPoint);
+            clientOptions.ClientAuthenticationOptions.TargetHost = hostName;
+            clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = delegate { return true; };
+
+
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listenerOptions);
+            await using (clientConnection)
+            await using (serverConnection)
+            {
+                Assert.Equal(clientConnection.TargetHostName, hostName);
+                Assert.Equal(serverConnection.TargetHostName, hostName);
+            }
+        }
+
+        public static IEnumerable<object[]> HostNameData()
+        {
+            yield return new object[] { "a" };
+            yield return new object[] { "test" };
+            // max allowed hostname length is 63
+            yield return new object[] { new string('a', 63) };
+            yield return new object[] { "\u017C\u00F3\u0142\u0107 g\u0119\u015Bl\u0105 ja\u017A\u0144. \u7EA2\u70E7. \u7167\u308A\u713C\u304D" };
+        }
     }
 }

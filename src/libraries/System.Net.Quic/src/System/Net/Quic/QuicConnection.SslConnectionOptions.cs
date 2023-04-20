@@ -28,7 +28,6 @@ public partial class QuicConnection
         /// <summary>
         /// Host name send in SNI, set only for outbound/client connections. Configured via <see cref="SslClientAuthenticationOptions.TargetHost"/>.
         /// </summary>
-        internal string TargetHost => _targetHost;
         private readonly string _targetHost;
         /// <summary>
         /// Always <c>true</c> for outbound/client connections. Configured for inbound/server ones via <see cref="SslServerAuthenticationOptions.ClientCertificateRequired"/>.
@@ -47,6 +46,8 @@ public partial class QuicConnection
         /// Configured via <see cref="SslServerAuthenticationOptions.CertificateChainPolicy"/> or <see cref="SslClientAuthenticationOptions.CertificateChainPolicy"/>.
         /// </summary>
         private readonly X509ChainPolicy? _certificateChainPolicy;
+
+        internal string TargetHost => _targetHost;
 
         public SslConnectionOptions(QuicConnection connection, bool isClient,
             string targetHost, bool certificateRequired, X509RevocationMode
