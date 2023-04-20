@@ -58,7 +58,7 @@ namespace Sample
         {
             var t = Task.Run(async () =>
             {
-                await JSHost.ImportAsync(fetchhelper, "./fetchhelper.js");
+                using var import = await JSHost.ImportAsync(fetchhelper, "./fetchhelper.js");
                 var r = await GlobalThisFetch(url);
                 var ok = (bool)r.GetPropertyAsBoolean("ok");
 
