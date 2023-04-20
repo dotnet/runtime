@@ -283,6 +283,13 @@ LEAF_END RhpAssignRef, _TEXT
 //
     LEAF_ENTRY RhpCheckedLockCmpXchg
 
+#ifdef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+        mov    x10, x2
+    ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
+        casal  x10, x1, [x0]                  // exchange
+        cmp    x2, x10
+        bne    CmpXchgNoUpdate
+#else
 CmpXchgRetry:
         // Check location value is what we expect.
     ALTERNATE_ENTRY  RhpCheckedLockCmpXchgAVLocation
@@ -293,6 +300,7 @@ CmpXchgRetry:
         // Current value matches comparand, attempt to update with the new value.
         stlxr   w12, x1, [x0]
         cbnz    w12, CmpXchgRetry
+#endif
 
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
         // The following barrier code takes the destination in x0 and the value in x1 so the arguments are
@@ -303,7 +311,9 @@ CmpXchgRetry:
 CmpXchgNoUpdate:
         // x10 still contains the original value.
         mov     x0, x10
+#ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
         InterlockedOperationBarrier
+#endif
         ret     lr
 
     LEAF_END RhpCheckedLockCmpXchg, _TEXT
@@ -327,6 +337,10 @@ CmpXchgNoUpdate:
 //
     LEAF_ENTRY RhpCheckedXchg, _TEXT
 
+#ifdef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+    ALTERNATE_ENTRY  RhpCheckedXchgAVLocation
+        swpal  x1, x10, [x0]                   // exchange
+#else
 ExchangeRetry:
         // Read the existing memory location.
     ALTERNATE_ENTRY  RhpCheckedXchgAVLocation
@@ -335,6 +349,7 @@ ExchangeRetry:
         // Attempt to update with the new value.
         stlxr   w12, x1, [x0]
         cbnz    w12, ExchangeRetry
+#endif
 
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
         // The following barrier code takes the destination in x0 and the value in x1 so the arguments are
@@ -344,7 +359,9 @@ ExchangeRetry:
 
         // x10 still contains the original value.
         mov     x0, x10
+#ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
         InterlockedOperationBarrier
+#endif
         ret
 
     LEAF_END RhpCheckedXchg, _TEXT
