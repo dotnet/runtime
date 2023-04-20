@@ -5,7 +5,7 @@ import { Module } from "./imports";
 import { mono_wasm_new_external_root } from "./roots";
 import {MonoString, MonoStringRef } from "./types";
 import { Int32Ptr } from "./types/emscripten";
-import { conv_string_root, js_string_to_mono_string_root, string_decoder } from "./strings";
+import { conv_string_root, js_string_to_mono_string_root } from "./strings";
 import { setU16 } from "./memory";
 
 export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
@@ -97,7 +97,7 @@ export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoS
         if (source.length < prefix.length)
             return 0; //false
         const sourceOfPrefixLength = source.slice(0, prefix.length);
-        
+
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
         const result = compare_strings(sourceOfPrefixLength, prefix, locale, casePicker);
