@@ -100,12 +100,17 @@ namespace Internal.TypeSystem
         internal static RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable ByRefTypesCache { get; } =
             new RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable();
 
-        public Instantiation ResolveRuntimeTypeHandles(RuntimeTypeHandle[] runtimeTypeHandles)
+        private TypeDesc[] ResolveRuntimeTypeHandlesInternal(RuntimeTypeHandle[] runtimeTypeHandles)
         {
             TypeDesc[] TypeDescs = new TypeDesc[runtimeTypeHandles.Length];
             for (int i = 0; i < runtimeTypeHandles.Length; i++)
                 TypeDescs[i] = ResolveRuntimeTypeHandle(runtimeTypeHandles[i]);
-            return new Instantiation(TypeDescs);
+            return TypeDescs;
+        }
+
+        public Instantiation ResolveRuntimeTypeHandles(RuntimeTypeHandle[] runtimeTypeHandles)
+        {
+            return new Instantiation(ResolveRuntimeTypeHandlesInternal(runtimeTypeHandles));
         }
 
         // This dictionary is in every scenario - create it eagerly
@@ -175,6 +180,20 @@ namespace Internal.TypeSystem
                 RuntimeTypeHandle targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(rtth);
                 TypeDesc targetType = ResolveRuntimeTypeHandle(targetTypeHandle);
                 returnedType = GetPointerType(targetType);
+            }
+            else if (RuntimeAugments.IsFunctionPointerType(rtth))
+            {
+                TypeLoaderEnvironment.Instance.GetFunctionPointerTypeComponents(rtth, out RuntimeTypeHandle returnTypeHandle,
+                                                                                      out RuntimeTypeHandle[] parameterHandles,
+                                                                                      out bool isUnmanaged);
+
+                var sig = new MethodSignature(
+                    isUnmanaged ? MethodSignatureFlags.UnmanagedCallingConvention : 0,
+                    genericParameterCount: 0,
+                    ResolveRuntimeTypeHandle(returnTypeHandle),
+                    ResolveRuntimeTypeHandlesInternal(parameterHandles));
+
+                returnedType = GetFunctionPointerType(sig);
             }
             else if (RuntimeAugments.IsByRefType(rtth))
             {

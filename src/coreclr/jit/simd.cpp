@@ -468,6 +468,7 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
         tree = gtNewOperNode(GT_IND, type, tree);
     }
 
+    // TODO-ADDR: delete this.
     if (tree->OperIsIndir() && tree->AsIndir()->Addr()->IsLclVarAddr())
     {
         GenTreeLclFld* lclAddr = tree->AsIndir()->Addr()->AsLclFld();

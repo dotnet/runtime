@@ -169,6 +169,8 @@ GC_CONFIGURATION_KEYS
 
 public:
 
+  static void RefreshHeapHardLimitSettings();
+
   static void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc);
 
 // Flags that may inhabit the number returned for the HeapVerifyLevel config option.

@@ -105,9 +105,9 @@ $(_XunitEpilog)
       <XunitWrapper>$(Category).XUnitWrapper</XunitWrapper>
       <XunitWrapperSrcDir>$(XunitWrapperGeneratedCSDirBase)$(Category)</XunitWrapperSrcDir>
       <MobilePlatform Condition=" '$(TargetOS)' == 'android' ">android</MobilePlatform>
-      <MobilePlatform Condition=" '$(TargetOS)' == 'ios' Or '$(TargetOS)' == 'iossimulator' ">apple</MobilePlatform>
+      <MobilePlatform Condition=" '$(TargetOS)' == 'ios' Or '$(TargetOS)' == 'iossimulator' Or '$(TargetOS)' == 'tvos' Or '$(TargetOS)' == 'tvossimulator' ">apple</MobilePlatform>
       <IsMobile>false</IsMobile>
-      <IsMobile Condition=" '$(TargetOS)' == 'android' Or '$(TargetOS)' == 'ios' Or '$(TargetOS)' == 'iossimulator' ">true</IsMobile>
+      <IsMobile Condition=" '$(TargetOS)' == 'android' Or '$(TargetOS)' == 'ios' Or '$(TargetOS)' == 'iossimulator' Or '$(TargetOS)' == 'tvos' Or '$(TargetOS)' == 'tvossimulator' ">true</IsMobile>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -219,14 +219,14 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 string operatingSystem = Environment.GetEnvironmentVariable("OS")%3B
                 runningInWindows = (operatingSystem != null && operatingSystem.StartsWith("Windows"))%3B
 
-                retCode = handler.InstallMobileApp(%22$(MobilePlatform)%22, category, testBinaryBase, reportBase)%3B
+                retCode = handler.InstallMobileApp(%22$(MobilePlatform)%22, category, testBinaryBase, reportBase, %22$(TargetOS)%22.ToLowerInvariant())%3B
                 Assert.True(retCode == 0, "Failed to install mobile app.")%3B
             }
 
             public void Dispose()
             {
                 int retCode = -100%3B
-                retCode = handler.UninstallMobileApp(%22$(MobilePlatform)%22, category, testBinaryBase, reportBase)%3B
+                retCode = handler.UninstallMobileApp(%22$(MobilePlatform)%22, category, testBinaryBase, reportBase, %22$(TargetOS)%22.ToLowerInvariant())%3B
                 Assert.True(retCode == 0, "Failed to uninstall mobile app.")%3B
             }
         }

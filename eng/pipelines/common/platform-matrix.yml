@@ -8,10 +8,11 @@ parameters:
   # 'gcstress' - platforms that support running under GCStress0x3 and GCStress0xC scenarios
   platformGroup: ''
   # helixQueueGroup is a named collection of Helix Queues. If specified, it determines which Helix queues are
-  # used, instead of the usual criteria. Allowed values:
+  # used, instead of the usual criteria. Values that must be supported by the supplied helixQueuesTemplate:
   # 'pr' - the queues used for a pull request for the platform. Typically a small set.
   # 'ci' - the queues used for a CI (post-merge) test run.
-  # 'all' - the queues used for non-PR, non-CI test runs, e.g., Manual or Scheduled runs. Typically this is all available queues.
+  # Other values might be supported by the template specified in helixQueuesTemplate, but they do not have specified
+  # meanings here.
   helixQueueGroup: 'pr'
   # helixQueuesTemplate is a yaml template which will be expanded in order to set up the helix queues
   # for the given platform and helixQueueGroup.

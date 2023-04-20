@@ -754,7 +754,7 @@ unwinder_init (Unwinder *unwinder)
 	memset (unwinder, 0, sizeof (Unwinder));
 }
 
-#if defined(__GNUC__) && defined(TARGET_ARM64)
+#if defined(__GNUC__) && defined(TARGET_ARM64) && !defined(__clang__)
 /* gcc 4.9.2 seems to miscompile this on arm64 */
 static __attribute__((optimize("O0"))) gboolean
 #else
