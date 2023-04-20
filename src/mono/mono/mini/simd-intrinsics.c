@@ -874,6 +874,38 @@ type_to_insert_op (MonoTypeEnum type)
 	}
 }
 
+static int
+type_to_width_log2 (MonoTypeEnum type)
+{
+	switch (type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return 0;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return 1;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return 2;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return 3;
+	case MONO_TYPE_R4:
+		return 2;
+	case MONO_TYPE_R8:
+		return 3;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return 3;
+#else
+		return 2;
+#endif
+	default:
+		g_assert_not_reached ();
+	}
+}
+
 typedef struct {
 	const char *name;
 	MonoCPUFeatures feature;
@@ -1324,7 +1356,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_ConvertToUInt32:
 		case SN_ConvertToUInt64:
 		case SN_Create:
-		case SN_GetElement:
 		case SN_GetLower:
 		case SN_GetUpper:
 		case SN_Shuffle:
@@ -1702,10 +1733,49 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			elems = 4;
 		}
 
+		if (args [1]->opcode == OP_ICONST) {
+			// If the index is provably a constant, we can generate vastly better code.
+			int index = args[1]->inst_c0;
+
+			if (index < 0 || index >= elems) {
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+				MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
+			} 
+
+			// Bounds check is elided if we know the index is safe.
+			int extract_op = type_to_extract_op (arg0_type);
+			MonoInst* ret = emit_simd_ins (cfg, args [0]->klass, extract_op, args [0]->dreg, -1);
+			ret->inst_c0 = index;
+			ret->inst_c1 = fsig->ret->type;
+			return ret;
+		}
+
+		// Bounds check needed in non-const case.
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
-		int extract_op = type_to_xextract_op (arg0_type);
-		return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
+
+		if (COMPILE_LLVM(cfg) || type_to_width_log2 (arg0_type) == 3) {
+			// Use optimized paths for 64-bit extractions or whatever LLVM yields if enabled.
+			int extract_op = type_to_xextract_op (arg0_type);
+			return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
+		} else {
+			// Spill the vector reg.
+			// Load back from spilled + index << elem_size_log2
+			// TODO: on x86, use a LEA
+			MonoInst* spilled;
+			NEW_VARLOADA_VREG (cfg, spilled, args [0]->dreg, fsig->params [0]);
+			MONO_ADD_INS (cfg->cbb, spilled);
+			int offset_reg = alloc_lreg (cfg);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, args [1]->dreg, type_to_width_log2 (arg0_type));
+			int addr_reg = alloc_preg (cfg);
+			MONO_EMIT_NEW_BIALU(cfg, OP_PADD, addr_reg, spilled->dreg, offset_reg);
+			MonoInst* ret;
+			int dreg = arg0_type == MONO_TYPE_R4 ? alloc_freg (cfg) : alloc_ireg (cfg);
+			NEW_LOAD_MEMBASE (cfg, ret, mono_type_to_load_membase (cfg, fsig->ret), dreg, addr_reg, 0);
+			MONO_ADD_INS (cfg->cbb, ret);
+			return ret;
+		}
+		break;
 	}
 	case SN_GetLower:
 	case SN_GetUpper: {

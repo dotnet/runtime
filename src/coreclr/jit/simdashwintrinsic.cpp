@@ -2207,15 +2207,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     if (copyBlkDst != nullptr)
     {
         assert(copyBlkSrc != nullptr);
-
-        // At this point, we have a tree that we are going to store into a destination.
-        // TODO-1stClassStructs: This should be a simple store or assignment, and should not require
-        // GTF_ALL_EFFECT for the dest. This is currently emulating the previous behavior of
-        // block ops.
-
-        GenTree* dest = gtNewStructVal(typGetBlkLayout(simdSize), copyBlkDst);
-
-        dest->gtType = simdType;
+        GenTree* dest = gtNewLoadValueNode(simdType, copyBlkDst);
         dest->gtFlags |= GTF_GLOB_REF;
 
         GenTree* retNode = gtNewBlkOpNode(dest, copyBlkSrc);

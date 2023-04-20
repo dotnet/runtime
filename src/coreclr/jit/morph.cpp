@@ -4729,7 +4729,7 @@ GenTree* Compiler::fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode)
     GenTree* argNode;
     if (lclNode->TypeIs(TYP_STRUCT))
     {
-        argNode = gtNewStructVal(lclNode->GetLayout(this), argAddr);
+        argNode = gtNewLoadValueNode(lclNode->GetLayout(this), argAddr);
     }
     else
     {
@@ -4864,7 +4864,7 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     {
         if (argNodeType == TYP_STRUCT)
         {
-            newArgNode = gtNewStructVal(argNodeLayout, addrNode);
+            newArgNode = gtNewLoadValueNode(argNodeLayout, addrNode);
         }
         else
         {
@@ -9863,7 +9863,7 @@ DONE_MORPHING_CHILDREN:
             // Only do this optimization when we are in the global optimizer. Doing this after value numbering
             // could result in an invalid value number for the newly generated GT_IND node.
             // We skip INDs with GTF_DONT_CSE which is set if the IND is a location.
-            if (op1->OperIs(GT_COMMA) && fgGlobalMorph && ((tree->gtFlags & GTF_DONT_CSE) == 0))
+            if (!varTypeIsSIMD(tree) && op1->OperIs(GT_COMMA) && fgGlobalMorph && ((tree->gtFlags & GTF_DONT_CSE) == 0))
             {
                 // Perform the transform IND(COMMA(x, ..., z)) -> COMMA(x, ..., IND(z)).
                 GenTree*     commaNode = op1;

@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
-import {
+import type {
     MonoArray, MonoAssembly, MonoClass,
     MonoMethod, MonoObject, MonoString,
     MonoType, MonoObjectRef, MonoStringRef, JSMarshalerArguments
 } from "./types";
-import { Module } from "./imports";
-import { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
+import type { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
+import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
+import { disableLegacyJsInterop, Module } from "./imports";
 
 type SigLine = [lazy: boolean, name: string, returnType: string | null, argTypes?: string[], opts?: any];
 
-const legacy_interop_cwraps: SigLine[] = !WasmEnableLegacyJsInterop ? [] : [
+const legacy_interop_cwraps: SigLine[] = WasmEnableLegacyJsInterop ? [
     [true, "mono_wasm_array_get_ref", "void", ["number", "number", "number"]],
     [true, "mono_wasm_obj_array_new_ref", "void", ["number", "number"]],
     [true, "mono_wasm_obj_array_set_ref", "void", ["number", "number", "number"]],
@@ -26,7 +26,7 @@ const legacy_interop_cwraps: SigLine[] = !WasmEnableLegacyJsInterop ? [] : [
     [true, "mono_wasm_obj_array_new", "number", ["number"]],
     [true, "mono_wasm_obj_array_set", "void", ["number", "number", "number"]],
     [true, "mono_wasm_array_length_ref", "number", ["number"]],
-];
+] : [];
 
 // when the method is assigned/cached at usage, instead of being invoked directly from cwraps, it can't be marked lazy, because it would be re-bound on each call
 const fn_signatures: SigLine[] = [
@@ -261,7 +261,9 @@ export const enum I52Error {
 }
 
 export function init_c_exports(): void {
-    for (const sig of fn_signatures) {
+    const lfns = WasmEnableLegacyJsInterop && !disableLegacyJsInterop ? legacy_interop_cwraps : [];
+    const fns = [...fn_signatures, ...lfns];
+    for (const sig of fns) {
         const wf: any = wrapped_c_functions;
         const [lazy, name, returnType, argTypes, opts] = sig;
         if (lazy) {

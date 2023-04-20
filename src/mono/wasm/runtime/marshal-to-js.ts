@@ -11,10 +11,10 @@ import {
     get_arg_b8, get_arg_date, get_arg_length, set_js_handle, get_arg, set_arg_type,
     get_signature_arg2_type, get_signature_arg1_type, cs_to_js_marshalers,
     get_signature_res_type, get_arg_u16, array_element_size, get_string_root,
-    ArraySegment, Span, MemoryViewType, get_signature_arg3_type, MarshalerType, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize
+    ArraySegment, Span, MemoryViewType, get_signature_arg3_type, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize
 } from "./marshal";
 import { conv_string_root } from "./strings";
-import { mono_assert, JSHandleNull, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs } from "./types";
+import { mono_assert, JSHandleNull, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType } from "./types";
 import { TypedArray } from "./types/emscripten";
 import { get_marshaler_to_cs_by_type } from "./marshal-to-cs";
 
@@ -69,10 +69,11 @@ export function bind_arg_marshal_to_js(sig: JSMarshalerType, marshaler_type: Mar
         marshaler_type = marshaler_type_res;
     }
     const converter = get_marshaler_to_js_by_type(marshaler_type)!;
+    const element_type = get_signature_arg1_type(sig);
 
     const arg_offset = index * JavaScriptMarshalerArgSize;
     return (args: JSMarshalerArguments) => {
-        return converter(<any>args + arg_offset, sig, res_marshaler, arg1_marshaler, arg2_marshaler, arg3_marshaler);
+        return converter(<any>args + arg_offset, element_type, res_marshaler, arg1_marshaler, arg2_marshaler, arg3_marshaler);
     };
 }
 
@@ -177,7 +178,7 @@ function _marshal_datetime_to_js(arg: JSMarshalerArgument): Date | null {
     return get_arg_date(arg);
 }
 
-function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs): Function | null {
+function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: MarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs): Function | null {
     const type = get_arg_type(arg);
     if (type === MarshalerType.None) {
         return null;
@@ -197,7 +198,7 @@ function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType, 
     return result;
 }
 
-export function marshal_task_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType, res_converter?: MarshalerToJs): Promise<any> | null {
+export function marshal_task_to_js(arg: JSMarshalerArgument, _?: MarshalerType, res_converter?: MarshalerToJs): Promise<any> | null {
     const type = get_arg_type(arg);
     if (type === MarshalerType.None) {
         return null;
@@ -385,9 +386,8 @@ function _marshal_cs_object_to_js(arg: JSMarshalerArgument): any {
     return converter(arg);
 }
 
-function _marshal_array_to_js(arg: JSMarshalerArgument, sig?: JSMarshalerType): Array<any> | TypedArray | null {
-    mono_assert(!!sig, "Expected valid sig parameter");
-    const element_type = get_signature_arg1_type(sig);
+function _marshal_array_to_js(arg: JSMarshalerArgument, element_type?: MarshalerType): Array<any> | TypedArray | null {
+    mono_assert(!!element_type, "Expected valid element_type parameter");
     return _marshal_array_to_js_impl(arg, element_type);
 }
 
@@ -443,10 +443,9 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
     return result;
 }
 
-function _marshal_span_to_js(arg: JSMarshalerArgument, sig?: JSMarshalerType): Span {
-    mono_assert(!!sig, "Expected valid sig parameter");
+function _marshal_span_to_js(arg: JSMarshalerArgument, element_type?: MarshalerType): Span {
+    mono_assert(!!element_type, "Expected valid element_type parameter");
 
-    const element_type = get_signature_arg1_type(sig);
     const buffer_ptr = get_arg_intptr(arg);
     const length = get_arg_length(arg);
     let result: Span | null = null;
@@ -465,10 +464,9 @@ function _marshal_span_to_js(arg: JSMarshalerArgument, sig?: JSMarshalerType): S
     return result;
 }
 
-function _marshal_array_segment_to_js(arg: JSMarshalerArgument, sig?: JSMarshalerType): ArraySegment {
-    mono_assert(!!sig, "Expected valid sig parameter");
+function _marshal_array_segment_to_js(arg: JSMarshalerArgument, element_type?: MarshalerType): ArraySegment {
+    mono_assert(!!element_type, "Expected valid element_type parameter");
 
-    const element_type = get_signature_arg1_type(sig);
     const buffer_ptr = get_arg_intptr(arg);
     const length = get_arg_length(arg);
     let result: ArraySegment | null = null;

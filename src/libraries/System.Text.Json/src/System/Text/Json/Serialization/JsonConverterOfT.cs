@@ -248,7 +248,7 @@ namespace System.Text.Json.Serialization
             {
                 // Special case object converters since they don't
                 // require the expensive ReadStack.Push()/Pop() operations.
-                Debug.Assert(this is ObjectConverter);
+                Debug.Assert(this is ObjectConverter or ObjectConverterSlim);
                 success = OnTryRead(ref reader, typeToConvert, options, ref state, out value);
                 Debug.Assert(success);
                 return true;
