@@ -101,12 +101,6 @@ namespace ILCompiler.DependencyAnalysis
                 _virtualMethodAnalysisFlags = AnalyzeVirtualMethods(type);
 
             factory.TypeSystemContext.EnsureLoadableType(type);
-
-            // We don't have a representation for function pointers right now
-            if (WithoutParameterizeTypes(type).IsFunctionPointer)
-                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-
-            static TypeDesc WithoutParameterizeTypes(TypeDesc t) => t is ParameterizedType pt ? WithoutParameterizeTypes(pt.ParameterType) : t;
         }
 
         private static VirtualMethodAnalysisFlags AnalyzeVirtualMethods(TypeDesc type)
@@ -639,6 +633,9 @@ namespace ILCompiler.DependencyAnalysis
                     ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
             }
 
+            if (_type.IsFunctionPointer)
+                FunctionPointerMapNode.GetHashtableDependencies(ref dependencies, factory, (FunctionPointerType)_type);
+
             return dependencies;
         }
 
@@ -834,6 +831,11 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
                     return ParameterizedTypeShapeConstants.ByRef;
+                }
+                else if (_type.IsFunctionPointer)
+                {
+                    // These never get boxed and don't have a base size.
+                    return 0;
                 }
                 else
                     throw new NotImplementedException();

@@ -98,7 +98,10 @@ namespace Internal.Runtime
         /// </summary>
         CanonicalEEType = 0x00000000,
 
-        // unused = 0x00010000,
+        /// <summary>
+        /// Represents a function pointer
+        /// </summary>
+        FunctionPointerEEType = 0x00010000,
 
         /// <summary>
         /// Represents a parameterized type. For example a single dimensional array or pointer type
@@ -231,6 +234,7 @@ namespace Internal.Runtime
         SzArray = 0x18,
         ByRef = 0x19,
         Pointer = 0x1A,
+        FunctionPointer = 0x1B,
     }
 
     internal enum EETypeOptionalFieldTag : byte

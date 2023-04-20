@@ -106,7 +106,7 @@ namespace System
                 return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
 
-            if (dstEEType.IsPointer)
+            if (dstEEType.IsPointer || dstEEType.IsFunctionPointer)
             {
                 Exception exception = ConvertPointerIfPossible(srcObject, dstEEType, semantics, out object dstPtr);
                 if (exception != null)
