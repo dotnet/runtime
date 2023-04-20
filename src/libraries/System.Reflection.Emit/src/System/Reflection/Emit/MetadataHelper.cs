@@ -9,7 +9,7 @@ namespace System.Reflection.Emit
     // This static helper class adds common entities to a MetadataBuilder.
     internal static class MetadataHelper
     {
-        internal static AssemblyReferenceHandle AddAssemblyReference(Assembly assembly, MetadataBuilder metadata)
+        internal static AssemblyReferenceHandle AddAssemblyReference(MetadataBuilder metadata, Assembly assembly)
         {
             AssemblyName assemblyName = assembly.GetName();
 

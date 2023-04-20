@@ -112,7 +112,7 @@ namespace System.Reflection.Emit
         public override string? Namespace => _namespace;
         public override Assembly Assembly => _module.Assembly;
         public override Module Module => _module;
-        public override Type UnderlyingSystemType => throw new NotSupportedException();
+        public override Type UnderlyingSystemType => this;
         public override Guid GUID => throw new NotSupportedException();
         public override Type? BaseType => _typeParent;
 

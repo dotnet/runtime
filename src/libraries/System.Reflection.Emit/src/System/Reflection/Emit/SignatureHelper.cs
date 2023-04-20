@@ -55,59 +55,67 @@ namespace System.Reflection.Emit
         {
             CoreTypeId? typeId = module.GetTypeIdFromCoreTypes(type);
 
-            // We need to translate from Reflection.Type to SignatureTypeEncoder.
-            switch (typeId)
+            if (typeId.HasValue)
             {
-                case CoreTypeId.Boolean:
-                    signature.Boolean();
-                    break;
-                case CoreTypeId.Byte:
-                    signature.Byte();
-                    break;
-                case CoreTypeId.SByte:
-                    signature.SByte();
-                    break;
-                case CoreTypeId.Char:
-                    signature.Char();
-                    break;
-                case CoreTypeId.Int16:
-                    signature.Int16();
-                    break;
-                case CoreTypeId.UInt16:
-                    signature.UInt16();
-                    break;
-                case CoreTypeId.Int32:
-                    signature.Int32();
-                    break;
-                case CoreTypeId.UInt32:
-                    signature.UInt32();
-                    break;
-                case CoreTypeId.Int64:
-                    signature.Int64();
-                    break;
-                case CoreTypeId.UInt64:
-                    signature.UInt64();
-                    break;
-                case CoreTypeId.Single:
-                    signature.Single();
-                    break;
-                case CoreTypeId.Double:
-                    signature.Double();
-                    break;
-                case CoreTypeId.IntPtr:
-                    signature.IntPtr();
-                    break;
-                case CoreTypeId.UIntPtr:
-                    signature.UIntPtr();
-                    break;
-                case CoreTypeId.Object:
-                    signature.Object();
-                    break;
-                case CoreTypeId.String:
-                    signature.String();
-                    break;
-                default:
-                    throw new NotSupportedException(SR.Format(SR.NotSupported_Signature, type.FullName));
+                // We need to translate from Reflection.Type to SignatureTypeEncoder.
+                switch (typeId.Value)
+                {
+                    case CoreTypeId.Boolean:
+                        signature.Boolean();
+                        break;
+                    case CoreTypeId.Byte:
+                        signature.Byte();
+                        break;
+                    case CoreTypeId.SByte:
+                        signature.SByte();
+                        break;
+                    case CoreTypeId.Char:
+                        signature.Char();
+                        break;
+                    case CoreTypeId.Int16:
+                        signature.Int16();
+                        break;
+                    case CoreTypeId.UInt16:
+                        signature.UInt16();
+                        break;
+                    case CoreTypeId.Int32:
+                        signature.Int32();
+                        break;
+                    case CoreTypeId.UInt32:
+                        signature.UInt32();
+                        break;
+                    case CoreTypeId.Int64:
+                        signature.Int64();
+                        break;
+                    case CoreTypeId.UInt64:
+                        signature.UInt64();
+                        break;
+                    case CoreTypeId.Single:
+                        signature.Single();
+                        break;
+                    case CoreTypeId.Double:
+                        signature.Double();
+                        break;
+                    case CoreTypeId.IntPtr:
+                        signature.IntPtr();
+                        break;
+                    case CoreTypeId.UIntPtr:
+                        signature.UIntPtr();
+                        break;
+                    case CoreTypeId.Object:
+                        signature.Object();
+                        break;
+                    case CoreTypeId.String:
+                        signature.String();
+                        break;
+                    default:
+                        throw new NotSupportedException(SR.Format(SR.NotSupported_Signature, type.FullName));
+                }
+            }
+            else
+            {
+                EntityHandle typeHandle = module.GetTypeHandle(type);
+                signature.Type(typeHandle, type.IsValueType);
             }
         }
     }

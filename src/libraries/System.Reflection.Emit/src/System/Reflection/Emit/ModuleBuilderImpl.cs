@@ -13,20 +13,23 @@ namespace System.Reflection.Emit
     {
         private readonly Assembly _coreAssembly;
         private readonly string _name;
-        private Type?[]? _coreTypes;
-        private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyRefStore = new();
-        private readonly Dictionary<Type, TypeReferenceHandle> _typeRefStore = new();
-        private readonly List<TypeBuilderImpl> _typeDefStore = new();
+        private readonly MetadataBuilder _metadataBuilder;
+        private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyReferences = new();
+        private readonly Dictionary<Type, TypeReferenceHandle> _typeReferences = new();
+        private readonly Dictionary<TypeBuilderImpl, TypeDefinitionHandle> _typeDefinitions = new();
+        private int _nextTypeDefRowId = 1;
         private int _nextMethodDefRowId = 1;
         private int _nextFieldDefRowId = 1;
         private bool _coreTypesFullPopulated;
+        private Type?[]? _coreTypes;
         private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
                                                         typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string), typeof(nint), typeof(nuint) };
 
-        internal ModuleBuilderImpl(string name, Assembly coreAssembly)
+        internal ModuleBuilderImpl(string name, Assembly coreAssembly, MetadataBuilder builder)
         {
             _coreAssembly = coreAssembly;
             _name = name;
+            _metadataBuilder = builder;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types are preserved via s_coreTypes")]
@@ -90,72 +93,93 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        internal void AppendMetadata(MetadataBuilder metadata)
+        internal void AppendMetadata()
         {
             // Add module metadata
-            metadata.AddModule(
+            _metadataBuilder.AddModule(
                 generation: 0,
-                moduleName: metadata.GetOrAddString(_name),
-                mvid: metadata.GetOrAddGuid(Guid.NewGuid()),
+                moduleName: _metadataBuilder.GetOrAddString(_name),
+                mvid: _metadataBuilder.GetOrAddGuid(Guid.NewGuid()),
                 encId: default,
                 encBaseId: default);
 
             // Create type definition for the special <Module> type that holds global functions
-            metadata.AddTypeDefinition(
+            _metadataBuilder.AddTypeDefinition(
                 attributes: default,
                 @namespace: default,
-                name: metadata.GetOrAddString("<Module>"),
+                name: _metadataBuilder.GetOrAddString("<Module>"),
                 baseType: default,
                 fieldList: MetadataTokens.FieldDefinitionHandle(1),
                 methodList: MetadataTokens.MethodDefinitionHandle(1)); ;
 
             // Add each type definition to metadata table.
-            foreach (TypeBuilderImpl typeBuilder in _typeDefStore)
+            foreach ((TypeBuilderImpl typeBuilder, TypeDefinitionHandle typeHandle) in _typeDefinitions)
             {
-                TypeReferenceHandle parent = default;
+                EntityHandle parent = default;
                 if (typeBuilder.BaseType is not null)
                 {
-                    // TODO: need to handle the case when the base is from same assembly
-                    parent = GetTypeReference(metadata, typeBuilder.BaseType);
+                    parent = GetTypeHandle(typeBuilder.BaseType);
                 }
 
-                TypeDefinitionHandle typeDefinitionHandle = MetadataHelper.AddTypeDefinition(metadata, typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
+
+                TypeDefinitionHandle typeDefinitionHandle = MetadataHelper.AddTypeDefinition(_metadataBuilder, typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
+                ThrowIfInvalidHandle(typeHandle, typeDefinitionHandle);
 
                 // Add each method definition to metadata table.
                 foreach (MethodBuilderImpl method in typeBuilder._methodDefStore)
                 {
-                    MetadataHelper.AddMethodDefinition(metadata, method, method.GetMethodSignatureBlob());
+                    MetadataHelper.AddMethodDefinition(_metadataBuilder, method, method.GetMethodSignatureBlob());
                     _nextMethodDefRowId++;
                 }
 
                 foreach (FieldBuilderImpl field in typeBuilder._fieldDefStore)
                 {
-                    MetadataHelper.AddFieldDefinition(metadata, field, MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this));
+                    MetadataHelper.AddFieldDefinition(_metadataBuilder, field, MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this));
                     _nextFieldDefRowId++;
                 }
             }
         }
 
-        private TypeReferenceHandle GetTypeReference(MetadataBuilder metadata, Type type)
+        private static void ThrowIfInvalidHandle(TypeDefinitionHandle typeHandle, TypeDefinitionHandle typeDefinitionHandle)
         {
-            if (!_typeRefStore.TryGetValue(type, out var parentHandle))
+            if (!typeHandle.Equals(typeDefinitionHandle))
             {
-                parentHandle = MetadataHelper.AddTypeReference(metadata, type,
-                    GetAssemblyReference(type.Assembly, metadata));
+                throw new InvalidOperationException(SR.InvalidOperation_InvalidHanlde);
+            }
+        }
+
+        private TypeReferenceHandle GetTypeReference(Type type)
+        {
+            if (!_typeReferences.TryGetValue(type, out var parentHandle))
+            {
+                parentHandle = MetadataHelper.AddTypeReference(_metadataBuilder, type, GetAssemblyReference(type.Assembly));
+                _typeReferences.Add(type, parentHandle);
             }
 
             return parentHandle;
         }
 
-        private AssemblyReferenceHandle GetAssemblyReference(Assembly assembly, MetadataBuilder metadata)
+        private AssemblyReferenceHandle GetAssemblyReference(Assembly assembly)
         {
-            if (_assemblyRefStore.TryGetValue(assembly, out var handle))
+            if (!_assemblyReferences.TryGetValue(assembly, out var handle))
+            {
+                handle = MetadataHelper.AddAssemblyReference(_metadataBuilder, assembly);
+                _assemblyReferences.Add(assembly, handle);
+            }
+
+            return handle;
+        }
+
+        internal EntityHandle GetTypeHandle(Type type)
+        {
+            if (type is TypeBuilderImpl tb && _typeDefinitions.TryGetValue(tb, out var handle))
             {
                 return handle;
             }
 
-            return MetadataHelper.AddAssemblyReference(assembly, metadata);
+            return GetTypeReference(type);
         }
+
         [RequiresAssemblyFiles("Returns <Unknown> for modules with no file path")]
         public override string Name => "<In Memory Module>";
         public override string ScopeName => _name;
@@ -174,7 +198,8 @@ namespace System.Reflection.Emit
         protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr, [DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
             TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this);
-            _typeDefStore.Add(_type);
+            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
+            _typeDefinitions.Add(_type, typeHandle);
             return _type;
         }
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
