@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "../imports";
-import { mono_wasm_new_external_root } from "../roots";
-import {MonoString, MonoStringRef } from "../types";
-import { Int32Ptr } from "../types/emscripten";
-import { StringDecoder, conv_string_root, js_string_to_mono_string_root } from "../strings";
-import { setU16 } from "../memory";
+import { Module } from "./imports";
+import { mono_wasm_new_external_root } from "./roots";
+import {MonoString, MonoStringRef } from "./types";
+import { Int32Ptr } from "./types/emscripten";
+import { StringDecoder, conv_string_root, js_string_to_mono_string_root } from "./strings";
+import { setU16 } from "./memory";
 
 export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
     try{
