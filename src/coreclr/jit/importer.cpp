@@ -4094,20 +4094,35 @@ GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueTy
     return tree;
 }
 
+//------------------------------------------------------------------------
+// impImportStaticFieldAccess: Generate an access of a static field
+//
+// Arguments:
+//   pResolvedToken - resolved token for the static field to access
+//   access - type of access to the field, distinguishes address-taken vs load/store
+//   pFieldInfo - EE instructions for accessing the field
+//   lclTyp - type of the field
+//   pIsHoistable - optional out parameter - whether any type initialization side effects
+//                  of the returned tree can be hoisted to occur earlier
+//
+// Return Value:
+//   Tree representing the access to the static field
+//
+// Notes:
+//   Ordinary static fields never overlap. RVA statics, however, can overlap (if they're
+//   mapped to the same ".data" declaration). That said, such mappings only appear to be
+//   possible with ILASM, and in ILASM-produced (ILONLY) images, RVA statics are always
+//   read-only (using "stsfld" on them is UB). In mixed-mode assemblies, RVA statics can
+//   be mutable, but the only current producer of such images, the C++/CLI compiler, does
+//   not appear to support mapping different fields to the same address. So we will say
+//   that "mutable overlapping RVA statics" are UB as well.
+
 GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                               CORINFO_ACCESS_FLAGS    access,
                                               CORINFO_FIELD_INFO*     pFieldInfo,
                                               var_types               lclTyp,
                                               /* OUT */ bool*         pIsHoistable)
 {
-    // Ordinary static fields never overlap. RVA statics, however, can overlap (if they're
-    // mapped to the same ".data" declaration). That said, such mappings only appear to be
-    // possible with ILASM, and in ILASM-produced (ILONLY) images, RVA statics are always
-    // read-only (using "stsfld" on them is UB). In mixed-mode assemblies, RVA statics can
-    // be mutable, but the only current producer of such images, the C++/CLI compiler, does
-    // not appear to support mapping different fields to the same address. So we will say
-    // that "mutable overlapping RVA statics" are UB as well.
-
     // For statics that are not "boxed", the initial address tree will contain the field sequence.
     // For those that are, we will attach it later, when adding the indirection for the box, since
     // that tree will represent the true address.
