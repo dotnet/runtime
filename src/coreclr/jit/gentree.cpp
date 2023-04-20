@@ -19279,7 +19279,12 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
 
     if (simdBaseType == TYP_LONG)
     {
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+        if (simdSize ==64)
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+            intrinsic = NI_AVX512F_Abs;
+        }
+        else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
         {
             intrinsic = NI_AVX512F_VL_Abs;
         }
@@ -19289,6 +19294,19 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
         intrinsic = NI_AVX2_Abs;
     }
+    else if (simdSize ==64)
+    {
+        if (simdBaseType == TYP_INT)
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+            intrinsic = NI_AVX512F_Abs;
+        }
+        else if (varTypeIsSmall(simdBaseType))
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+            intrinsic = NI_AVX512BW_Abs;
+        }
+    }
     else if (compOpportunisticallyDependsOn(InstructionSet_SSSE3))
     {
         intrinsic = NI_SSSE3_Abs;
@@ -19296,18 +19314,6 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
 
     if (intrinsic != NI_Illegal)
     {
-        return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
-    }
-    else if ((simdSize == 64) && ((simdBaseType == TYP_INT) || (simdBaseType == TYP_LONG)))
-    {
-        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-        NamedIntrinsic intrinsic = NI_AVX512F_Abs;
-        return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
-    }
-    else if ((simdSize == 64) && (varTypeIsSmall(simdBaseType)))
-    {
-        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
-        NamedIntrinsic intrinsic = NI_AVX512BW_Abs;
         return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
     }
     else
