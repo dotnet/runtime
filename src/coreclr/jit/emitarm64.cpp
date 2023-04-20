@@ -6570,6 +6570,7 @@ void emitter::emitIns_SS_R_R_R_I(instruction ins,
     {
         id = emitNewInstrLclVarPair(attr, imm);
         id->idAddr()->iiaLclVar.initLclVarAddr(varx1, offs);
+        id->idSetIsLclVar();
 
         if (id->idSmallCns())
         {
@@ -6586,10 +6587,12 @@ void emitter::emitIns_SS_R_R_R_I(instruction ins,
         if (validVar1)
         {
             id->idAddr()->iiaLclVar.initLclVarAddr(varx1, offs);
+            id->idSetIsLclVar();
         }
         if (validVar2)
         {
             id->idAddr()->iiaLclVar.initLclVarAddr(varx2, offs);
+            id->idSetIsLclVar();
         }
     }
 
