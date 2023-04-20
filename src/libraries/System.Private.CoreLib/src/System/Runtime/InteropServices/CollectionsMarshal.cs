@@ -62,11 +62,6 @@ namespace System.Runtime.InteropServices
                 ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(nameof(count));
             }
 
-            if (count == list._size)
-            {
-                return;
-            }
-
             list._version++;
 
             if (count > list.Capacity)
