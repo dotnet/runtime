@@ -2015,7 +2015,7 @@ static clockid_t clock_id = CLOCK_MONOTONIC;
 
 enum {
 	JIT_DUMP_MAGIC = 0x4A695444,
-	JIT_DUMP_VERSION = 2,
+	JIT_DUMP_VERSION = 1,
 #if HOST_X86
 	ELF_MACHINE = EM_386,
 #elif HOST_AMD64
@@ -2031,7 +2031,8 @@ enum {
 #elif HOST_RISCV
 	ELF_MACHINE = EM_RISCV,
 #endif
-	JIT_CODE_LOAD = 0
+	JIT_CODE_LOAD = 0,
+	JIT_DEBUG_INFO = 2
 };
 typedef struct
 {
@@ -2062,7 +2063,22 @@ typedef struct
 	// Null terminated function name
 	// Native code
 } JitCodeLoadRecord;
+typedef struct
+{
+        guint64 code_addr;
+        guint32 line;
+        guint32 discrim;
+        char name[];
+}DebugEntry;
+typedef struct
+{
+        RecordHeader header;
+        guint64 code_addr;
+        guint64 nr_entry;
+        DebugEntry debug_entry[];
+}JitCodeDebug;
 
+static void add_basic_JitCodeDebug_info(JitCodeDebug *record);
 static void add_file_header_info (FileHeader *header);
 static void add_basic_JitCodeLoadRecord_info (JitCodeLoadRecord *record);
 
@@ -2128,6 +2144,72 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
 
 		record.code_index = ++code_index;
 
+		DebugEntry ent;
+		JitCodeDebug rec;
+                MonoDebugMethodInfo *minfo;
+                MonoDebugMethodJitInfo *dmji;
+                MonoDebugSourceLocation *loc;
+                int i;
+
+		memset(&rec, 0, sizeof(rec));
+
+		minfo = mono_debug_lookup_method(jinfo->d.method);
+                dmji = mono_debug_find_method( jinfo->d.method, NULL);
+
+                add_basic_JitCodeDebug_info(&rec);
+                rec.code_addr = (guint64)dmji->code_start;
+                rec.header.total_size = sizeof(rec) + sizeof(ent) + 1;
+                rec.nr_entry=1;
+                for(i=0;i < dmji->num_line_numbers;++i)
+                {
+                        loc = mono_debug_lookup_source_location_by_il(jinfo->d.method,dmji->line_numbers[i].il_offset,NULL);
+
+                        if(!(loc))
+                        {
+                                continue;
+                        }
+                        if(!(loc->source_file))
+                        {
+                                mono_debug_free_source_location(loc);
+                                continue;
+                        }
+
+                        rec.header.total_size += sizeof(ent) + strlen(loc->source_file) + 1;
+                        rec.nr_entry++;
+                }
+
+                fwrite(&rec,sizeof(rec), 1 ,perf_dump_file);
+
+
+                for( i = 0; i < dmji->num_line_numbers;++i)
+		 {
+                        loc = mono_debug_lookup_source_location_by_il(jinfo->d.method,dmji->line_numbers[i].il_offset,NULL);
+
+                        if(!loc)
+                                continue;
+                        if(!(loc->source_file))
+                        {
+                                mono_debug_free_source_location(loc);
+                                continue;
+                        }
+
+                        ent.code_addr = (guint64)dmji->code_start + dmji->line_numbers[i].native_offset;
+                        ent.discrim = 0;
+                        ent.line = (guint32)loc->row;
+
+
+
+                        fwrite(&ent, sizeof(ent),1,perf_dump_file);
+                        fwrite(loc->source_file,strlen(loc->source_file)+1,1,perf_dump_file);
+                }
+
+                // TODO: write unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
+                ent.code_addr = (guint64)jinfo->code_start + jinfo->code_size;
+                ent.discrim = 0;
+                ent.line = 0;
+                fwrite(&ent,sizeof(ent),1,perf_dump_file);
+                fwrite("",1,1,perf_dump_file);
+
 		// TODO: write debugInfo and unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
 
 		record.header.timestamp = mono_clock_get_time_ns (clock_id);
@@ -2139,7 +2221,13 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
 		mono_os_mutex_unlock (&perf_dump_mutex);
 	}
 }
+static void
+add_basic_JitCodeDebug_info(JitCodeDebug *record)
+{
+        record->header.id = JIT_DEBUG_INFO;
+        record->header.timestamp = mono_clock_get_time_ns (clock_id);
 
+}
 static void
 add_basic_JitCodeLoadRecord_info (JitCodeLoadRecord *record)
 {
