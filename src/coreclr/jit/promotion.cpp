@@ -1217,8 +1217,9 @@ public:
             if (lhs->OperIsUnary() && rhs->OperIs(GT_COMMA))
             {
                 GenTree* addr = lhs->gtGetOp1();
-                // TODO-BUG: GTF_GLOB_REF is not up to date here.
-                if (((addr->gtFlags & GTF_ALL_EFFECT) != 0) || (((rhs->gtFlags & GTF_ASG) != 0) && !addr->IsInvariant()))
+                // Note that GTF_GLOB_REF is not up to date here, hence we need
+                // a tree walk to find address exposed locals.
+                if (((addr->gtFlags & GTF_ALL_EFFECT) != 0) || (((rhs->gtFlags & GTF_ASG) != 0) && !addr->IsInvariant()) || m_compiler->gtHasAddressExposedLocals(addr))
                 {
                     unsigned lhsAddrLclNum = m_compiler->lvaGrabTemp(true DEBUGARG("Block morph LHS addr"));
 
