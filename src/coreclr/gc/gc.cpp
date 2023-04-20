@@ -1422,7 +1422,7 @@ retry:
     if (Interlocked::CompareExchange (&msl->lock, lock_taken, lock_free) != lock_free)
     {
         unsigned int i = 0;
-        while (VolatileLoad (&msl->lock) >= lock_taken)
+        while (VolatileLoad (&msl->lock) != lock_free)
         {
             if (should_move_heap (msl))
             {
@@ -1627,7 +1627,7 @@ retry:
     if (Interlocked::CompareExchange(&spin_lock->lock, lock_taken, lock_free) != lock_free)
     {
         unsigned int i = 0;
-        while (spin_lock->lock >= lock_taken)
+        while (spin_lock->lock != lock_free)
         {
             assert (spin_lock->lock != lock_decommissioned);
             if ((++i & 7) && !gc_heap::gc_started)
