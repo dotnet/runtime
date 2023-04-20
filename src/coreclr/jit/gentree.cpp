@@ -23545,7 +23545,7 @@ GenTree* Compiler::gtNewSimdUnOpNode(
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                 assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
             }
-            if (simdSize == 64)
+            else if (simdSize == 64)
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
             }
