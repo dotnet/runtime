@@ -175,9 +175,9 @@ namespace System
             EETypePtr sourceElementEEType = sourceArray.ElementEEType;
             EETypePtr destinationElementEEType = destinationArray.ElementEEType;
 
-            if (!destinationElementEEType.IsValueType && !destinationElementEEType.IsPointer)
+            if (!destinationElementEEType.IsValueType && !destinationElementEEType.IsPointer && !destinationElementEEType.IsFunctionPointer)
             {
-                if (!sourceElementEEType.IsValueType && !sourceElementEEType.IsPointer)
+                if (!sourceElementEEType.IsValueType && !sourceElementEEType.IsPointer && !sourceElementEEType.IsFunctionPointer)
                 {
                     CopyImplGcRefArray(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
                 }
@@ -203,7 +203,7 @@ namespace System
                         CopyImplValueTypeArrayNoInnerGcRefs(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                     }
                 }
-                else if (sourceElementEEType.IsPointer && destinationElementEEType.IsPointer)
+                else if ((sourceElementEEType.IsPointer || sourceElementEEType.IsFunctionPointer) && (destinationElementEEType.IsPointer || destinationElementEEType.IsFunctionPointer))
                 {
                     // CLR compat note: CLR only allows Array.Copy between pointee types that would be assignable
                     // to using array covariance rules (so int*[] can be copied to uint*[], but not to float*[]).
@@ -238,7 +238,7 @@ namespace System
 
         private static bool IsSourceElementABaseClassOrInterfaceOfDestinationValueType(EETypePtr sourceElementEEType, EETypePtr destinationElementEEType)
         {
-            if (sourceElementEEType.IsValueType || sourceElementEEType.IsPointer)
+            if (sourceElementEEType.IsValueType || sourceElementEEType.IsPointer || sourceElementEEType.IsFunctionPointer)
                 return false;
 
             // It may look like we're passing the arguments to AreTypesAssignable in the wrong order but we're not. The source array is an interface or Object array, the destination
@@ -259,8 +259,8 @@ namespace System
             EETypePtr sourceElementEEType = sourceArray.ElementEEType;
             EETypePtr destinationElementEEType = destinationArray.ElementEEType;
 
-            Debug.Assert(!sourceElementEEType.IsValueType && !sourceElementEEType.IsPointer);
-            Debug.Assert(!destinationElementEEType.IsValueType && !destinationElementEEType.IsPointer);
+            Debug.Assert(!sourceElementEEType.IsValueType && !sourceElementEEType.IsPointer && !sourceElementEEType.IsFunctionPointer);
+            Debug.Assert(!destinationElementEEType.IsValueType && !destinationElementEEType.IsPointer && !destinationElementEEType.IsFunctionPointer);
 
             bool attemptCopy = RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType);
             bool mustCastCheckEachElement = !attemptCopy;
@@ -315,8 +315,8 @@ namespace System
         //
         private static unsafe void CopyImplValueTypeArrayToReferenceArray(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
-            Debug.Assert(sourceArray.ElementEEType.IsValueType || sourceArray.ElementEEType.IsPointer);
-            Debug.Assert(!destinationArray.ElementEEType.IsValueType && !destinationArray.ElementEEType.IsPointer);
+            Debug.Assert(sourceArray.ElementEEType.IsValueType);
+            Debug.Assert(!destinationArray.ElementEEType.IsValueType && !destinationArray.ElementEEType.IsPointer && !destinationArray.ElementEEType.IsFunctionPointer);
 
             // Caller has already validated this.
             Debug.Assert(RuntimeImports.AreTypesAssignable(sourceArray.ElementEEType, destinationArray.ElementEEType));
@@ -345,8 +345,8 @@ namespace System
         //
         private static unsafe void CopyImplReferenceArrayToValueTypeArray(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
-            Debug.Assert(!sourceArray.ElementEEType.IsValueType && !sourceArray.ElementEEType.IsPointer);
-            Debug.Assert(destinationArray.ElementEEType.IsValueType || destinationArray.ElementEEType.IsPointer);
+            Debug.Assert(!sourceArray.ElementEEType.IsValueType && !sourceArray.ElementEEType.IsPointer && !sourceArray.ElementEEType.IsFunctionPointer);
+            Debug.Assert(destinationArray.ElementEEType.IsValueType);
 
             if (reliable)
                 throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
@@ -455,9 +455,9 @@ namespace System
         private static unsafe void CopyImplValueTypeArrayNoInnerGcRefs(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
             Debug.Assert((sourceArray.ElementEEType.IsValueType && !sourceArray.ElementEEType.ContainsGCPointers) ||
-                sourceArray.ElementEEType.IsPointer);
+                sourceArray.ElementEEType.IsPointer || sourceArray.ElementEEType.IsFunctionPointer);
             Debug.Assert((destinationArray.ElementEEType.IsValueType && !destinationArray.ElementEEType.ContainsGCPointers) ||
-                destinationArray.ElementEEType.IsPointer);
+                destinationArray.ElementEEType.IsPointer || destinationArray.ElementEEType.IsFunctionPointer);
 
             // Copy scenario: ValueType-array to value-type array with no embedded gc-refs.
             nuint elementSize = sourceArray.ElementSize;
@@ -952,7 +952,7 @@ namespace System
         {
             Debug.Assert((nuint)flattenedIndex < NativeLength);
 
-            if (ElementEEType.IsPointer)
+            if (ElementEEType.IsPointer || ElementEEType.IsFunctionPointer)
                 throw new NotSupportedException(SR.NotSupported_Type);
 
             ref byte element = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(this), (nuint)flattenedIndex * ElementSize);
@@ -964,7 +964,7 @@ namespace System
             }
             else
             {
-                Debug.Assert(!pElementEEType.IsPointer);
+                Debug.Assert(!pElementEEType.IsPointer && !pElementEEType.IsFunctionPointer);
                 return Unsafe.As<byte, object>(ref element);
             }
         }
@@ -972,9 +972,6 @@ namespace System
         private unsafe void InternalSetValue(object? value, nint flattenedIndex)
         {
             Debug.Assert((nuint)flattenedIndex < NativeLength);
-
-            if (ElementEEType.IsPointer)
-                throw new NotSupportedException(SR.NotSupported_Type);
 
             ref byte element = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(this), (nuint)flattenedIndex * ElementSize);
 
@@ -990,7 +987,7 @@ namespace System
 
                 RuntimeImports.RhUnbox(value, ref element, pElementEEType);
             }
-            else if (pElementEEType.IsPointer)
+            else if (pElementEEType.IsPointer || pElementEEType.IsFunctionPointer)
             {
                 throw new NotSupportedException(SR.NotSupported_Type);
             }

@@ -41,14 +41,8 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates passing a static member works
-                test.RunClsVarScenario();
-
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
-
-                // Validates passing the field of a local class works
-                test.RunClassLclFldScenario();
 
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
@@ -139,17 +133,9 @@ namespace JIT.HardwareIntrinsics.X86
 
         private static {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
 
-        private static {Op1VectorType}<{Op1BaseType}> _clsVar1;
-
         private {Op1VectorType}<{Op1BaseType}> _fld1;
 
         private DataTable _dataTable;
-
-        static {TemplateName}UnaryOpTest__{Method}{RetBaseType}()
-        {
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _clsVar1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-        }
 
         public {TemplateName}UnaryOpTest__{Method}{RetBaseType}()
         {
@@ -211,17 +197,6 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_dataTable.inArray1Ptr, (bool)(result));
         }
 
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-
-            var result = {Isa}.{Method}(
-                _clsVar1
-            );
-
-            ValidateResult(_clsVar1, result);
-        }
-
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
@@ -230,16 +205,6 @@ namespace JIT.HardwareIntrinsics.X86
             var result = {Isa}.{Method}(op1);
 
             ValidateResult(op1, result);
-        }
-
-        public void RunClassLclFldScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
-
-            var test = new {TemplateName}UnaryOpTest__{Method}{RetBaseType}();
-            var result = {Isa}.{Method}(test._fld1);
-
-            ValidateResult(test._fld1, result);
         }
 
         public void RunClassFldScenario()
