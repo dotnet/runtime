@@ -20,6 +20,8 @@ namespace ComWrappersTests
             TestComInteropRegistrationRequired();
             GlobalComWrappers = new SimpleComWrapper();
             ComWrappers.RegisterForMarshalling(GlobalComWrappers);
+            TestComInteropReleaseProcess();
+            TestRCWRoundTripRequireUnwrap();
             TestRCWCached();
             TestRCWRoundTrip();
 
@@ -70,6 +72,34 @@ namespace ComWrappersTests
             IComInterface comPointer = null;
             var result = IsNULL(comPointer);
             ThrowIfNotEquals(true, IsNULL(comPointer), "COM interface marshalling null check failed");
+        }
+
+        public static void TestComInteropRegistrationRequired()
+        {
+            Console.WriteLine("Testing COM Interop registration process");
+            ComObject target = new ComObject();
+            try
+            {
+                CaptureComPointer(target);
+                throw new Exception("Cannot work without ComWrappers.RegisterForMarshalling called");
+            }
+            catch (NotSupportedException)
+            {
+            }
+        }
+
+        public static void TestComInteropReleaseProcess()
+        {
+            Console.WriteLine("Testing RCW release process");
+            WeakReference comPointerHolder = CreateComReference();
+
+            GC.Collect();
+            ThrowIfNotEquals(true, comPointerHolder.IsAlive, ".NET object should be alive");
+
+            ReleaseComPointer();
+
+            GC.Collect();
+            ThrowIfNotEquals(false, comPointerHolder.IsAlive, ".NET object should be disposed by then");
         }
 
         public static void TestRCWRoundTripRequireUnwrap()
@@ -135,6 +165,19 @@ namespace ComWrappersTests
 
             comPointer = BuildComPointerNoPreserveSig();
             comPointer.DoWork(22);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static WeakReference CreateComReference()
+        {
+            ComObject target = new ComObject();
+            WeakReference comPointerHolder = new WeakReference(target);
+
+            int result = CaptureComPointer(target);
+            ThrowIfNotEquals(0, result, "Seems to be COM marshalling behave strange.");
+            ThrowIfNotEquals(11, target.TestResult, "Call to method should work");
+
+            return comPointerHolder;
         }
     }
 
