@@ -7598,9 +7598,7 @@ HRESULT ProfToEEInterfaceImpl::EnumerateNonGCObjects(ICorProfilerObjectEnum** pp
     CONTRACTL_END;
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(kP2EEAllowableAfterAttach,
-        (LF_CORPROF,
-            LL_INFO1000,
-            "**PROF: EnumerateNonGCObjects.\n"));
+        (LF_CORPROF, LL_INFO1000, "**PROF: EnumerateNonGCObjects.\n"));
 
     if (NULL == ppEnum)
     {
@@ -7612,21 +7610,12 @@ HRESULT ProfToEEInterfaceImpl::EnumerateNonGCObjects(ICorProfilerObjectEnum** pp
     *ppEnum = NULL;
 
     NewHolder<ProfilerObjectEnum> pEnum(new (nothrow) ProfilerObjectEnum());
-    if (pEnum == NULL)
+    if (pEnum == NULL || !pEnum->Init())
     {
         return E_OUTOFMEMORY;
     }
 
-    if (!pEnum->Init())
-    {
-        return E_OUTOFMEMORY;
-    }
-
-    EX_TRY
-    {
-        *ppEnum = (ICorProfilerObjectEnum*)pEnum.Extract();
-    }
-    EX_CATCH_HRESULT(hr);
+    *ppEnum = (ICorProfilerObjectEnum*)pEnum.Extract();
 
     return hr;
 }

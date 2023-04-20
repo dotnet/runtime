@@ -110,16 +110,18 @@ BOOL ProfilerObjectEnum::Init()
 
     unsigned segmentsCount = 0;
     FrozenObjectSegment** segments = foh->GetSegments(&segmentsCount);
-
-    for (unsigned segmentIdx = 0; segmentIdx < segmentsCount; segmentIdx++)
+    if (segments != nullptr)
     {
-        const FrozenObjectSegment* segment = segments[segmentIdx];
-
-        Object* currentObj = segment->GetFirstObject();
-        while (currentObj != nullptr)
+        for (unsigned segmentIdx = 0; segmentIdx < segmentsCount; segmentIdx++)
         {
-            *m_elements.Append() = reinterpret_cast<size_t>(currentObj);
-            currentObj = segment->GetNextObject(currentObj);
+            const FrozenObjectSegment* segment = segments[segmentIdx];
+
+            Object* currentObj = segment->GetFirstObject();
+            while (currentObj != nullptr)
+            {
+                *m_elements.Append() = reinterpret_cast<size_t>(currentObj);
+                currentObj = segment->GetNextObject(currentObj);
+            }
         }
     }
     return TRUE;
