@@ -542,7 +542,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.True(!Unsafe.AreSame(ref intRef, ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list))));
 
             List<string> listReference = new() { "a", "b", "c", "d", "e" };
-            ref int stringRef = ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(listReference));
+            ref string stringRef = ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(listReference));
             CollectionsMarshal.SetCount(listReference, 3);
             // verify that reference types aren't cleared
             SequenceEquals<string>(CollectionsMarshal.AsSpan(listReference), new string[] { "a", "b", "c" });
