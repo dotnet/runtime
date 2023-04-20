@@ -61,6 +61,10 @@ static const Entry s_globalizationNative[] =
 #ifdef __APPLE__
     DllImportEntry(GlobalizationNative_GetLocaleNameNative)
     DllImportEntry(GlobalizationNative_GetLocaleInfoStringNative)
+    DllImportEntry(GlobalizationNative_GetLocaleInfoIntNative)
+    DllImportEntry(GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative)
+    DllImportEntry(GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative)
+    DllImportEntry(GlobalizationNative_GetLocaleTimeFormatNative)
 #endif
 };
 

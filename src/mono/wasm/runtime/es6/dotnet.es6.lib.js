@@ -14,7 +14,8 @@ const isPThread = "false";
 #endif
 
 // because we can't pass custom define symbols to acorn optimizer, we use environment variables to pass other build options
-const WasmEnableLegacyJsInterop = process.env.WasmEnableLegacyJsInterop !== "false";
+const DISABLE_LEGACY_JS_INTEROP = process.env.DISABLE_LEGACY_JS_INTEROP === "1";
+const disableLegacyJsInterop = DISABLE_LEGACY_JS_INTEROP ? "true" : "false";
 
 const DotnetSupportLib = {
     $DOTNET: {},
@@ -37,7 +38,7 @@ if (ENVIRONMENT_IS_NODE) {
     __dotnet_replacements.requirePromise = __requirePromise;
 }
 let __dotnet_exportedAPI = __initializeImportsAndExports(
-    { isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
+    { isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, disableLegacyJsInterop:${disableLegacyJsInterop}, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module, marshaled_imports: IMPORTS },
     __dotnet_replacements, __callbackAPI);
 updateMemoryViews = __dotnet_replacements.updateMemoryViews;
@@ -114,7 +115,7 @@ if (monoWasmThreads) {
         "mono_wasm_diagnostic_server_stream_signal_work_available",
     ]
 }
-if (WasmEnableLegacyJsInterop) {
+if (!DISABLE_LEGACY_JS_INTEROP) {
     linked_functions = [...linked_functions,
         "mono_wasm_invoke_js_with_args_ref",
         "mono_wasm_get_object_property_ref",
