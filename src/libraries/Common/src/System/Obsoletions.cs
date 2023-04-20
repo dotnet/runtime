@@ -165,5 +165,8 @@ namespace System
 
         internal const string LegacyFormatterImplMessage = "This API supports obsolete formatter-based serialization. It should not be called or extended by application code.";
         internal const string LegacyFormatterImplDiagId = "SYSLIB0051";
+
+        internal const string RegexExtensibilityImplMessage = "This API supports obsolete mechanisms for Regex extensibility. It is not supported.";
+        internal const string RegexExtensibilityDiagId = "SYSLIB0052";
     }
 }
