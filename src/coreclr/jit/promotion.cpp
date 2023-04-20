@@ -1533,11 +1533,9 @@ public:
             }
         }
 
-        bool     result = false;
-        unsigned end    = offs + size;
+        unsigned end = offs + size;
         while ((index < replacements.size()) && (replacements[index].Offset < end))
         {
-            result           = true;
             Replacement& rep = replacements[index];
             if (rep.NeedsWriteBack)
             {
