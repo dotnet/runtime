@@ -97,7 +97,7 @@ export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoS
         if (source.length < prefix.length)
             return 0; //false
         const sourceOfPrefixLength = source.slice(0, prefix.length);
-
+        
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
         const result = compare_strings(sourceOfPrefixLength, prefix, locale, casePicker);
@@ -146,9 +146,8 @@ export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStr
 
 function get_clean_string(strPtr: number, strLen: number)
 {
-    const str = string_decoder.decode(<any>strPtr, <any>(strPtr + 2*strLen));
+    const str = get_utf16_string(strPtr, strLen);
     const nStr = str.normalize();
-    // could we skip zero-width chars here?
     return nStr.replace(/[\u200B-\u200D\uFEFF\0]/g, "");
 }
 
