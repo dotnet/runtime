@@ -100,7 +100,7 @@ namespace Internal.TypeSystem
         internal static RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable ByRefTypesCache { get; } =
             new RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable();
 
-        public TypeDesc[] ResolveRuntimeTypeHandlesInternal(RuntimeTypeHandle[] runtimeTypeHandles)
+        private TypeDesc[] ResolveRuntimeTypeHandlesInternal(RuntimeTypeHandle[] runtimeTypeHandles)
         {
             TypeDesc[] TypeDescs = new TypeDesc[runtimeTypeHandles.Length];
             for (int i = 0; i < runtimeTypeHandles.Length; i++)

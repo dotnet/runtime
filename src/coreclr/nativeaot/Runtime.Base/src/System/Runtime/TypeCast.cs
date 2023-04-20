@@ -945,12 +945,12 @@ namespace System.Runtime
             else if (pTargetType->IsInterface)
                 return CheckCastInterface(pTargetType, obj);
             else if (pTargetType->IsParameterizedType || pTargetType->IsFunctionPointerType)
-                return CheckCastUnboxableType(pTargetType, obj);
+                return CheckCastNonboxableType(pTargetType, obj);
             else
                 return CheckCastClass(pTargetType, obj);
         }
 
-        private static unsafe object CheckCastUnboxableType(MethodTable* pTargetType, object obj)
+        private static unsafe object CheckCastNonboxableType(MethodTable* pTargetType, object obj)
         {
             // a null value can be cast to anything
             if (obj == null)
