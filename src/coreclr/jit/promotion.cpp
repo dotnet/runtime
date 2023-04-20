@@ -1187,7 +1187,7 @@ public:
     void IncrementRefCount(unsigned lclNum)
     {
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-        if (varDsc->lvRefCnt(RCS_EARLY) < USHORT_MAX)
+        if (varDsc->lvRefCnt(RCS_EARLY) < USHRT_MAX)
         {
             varDsc->incLvRefCnt(1, RCS_EARLY);
         }
