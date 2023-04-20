@@ -639,6 +639,7 @@ namespace System.Text.Json.Serialization.Metadata
             get
             {
                 Debug.Assert(IsConfigured);
+                Debug.Assert(Type != typeof(object));
 
                 if (!_isAncestorPolymorphicTypeResolved)
                 {
