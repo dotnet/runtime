@@ -3777,7 +3777,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         jtrue->AsCC()->gtCondition = condCode;
     }
 
-    JITDUMP("Result:\n");
+    JITDUMP("Lowering JTRUE Result:\n");
     DISPTREERANGE(BlockRange(), jtrue);
     JITDUMP("\n");
 
@@ -3878,6 +3878,10 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
 //
 bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* cond)
 {
+    JITDUMP("Lowering condition:\n");
+    DISPTREERANGE(BlockRange(), condition);
+    JITDUMP("\n");
+
     if (condition->OperIsCompare())
     {
         if (!IsInvariantInRange(condition, parent))
@@ -3916,17 +3920,6 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
             BlockRange().Remove(relop);
             BlockRange().Remove(relopOp2);
         }
-#ifdef TARGET_ARM64
-        else if (optimizing && relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT) &&
-                 (IsContainableUnaryOrBinaryOp(relop, relop->gtGetOp1()) ||
-                  IsContainableUnaryOrBinaryOp(relop, relop->gtGetOp2())))
-        {
-            ContainCheckCompare(relop);
-            relop->SetOper(GT_CMP);
-            relop->gtType = TYP_VOID;
-            relop->gtFlags |= GTF_SET_FLAGS;
-        }
-#endif // TARGET_ARM64
         else
         {
             relop->gtType = TYP_VOID;
