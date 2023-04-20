@@ -12,8 +12,8 @@ RUN apt-get update && \
 RUN fixOpensslConf=$(mktemp) && \
     printf "#!/usr/bin/env sh\n\
         sed -i '\n\
-            # Append 'legacy = legacy_sect' after 'default = default_sect' under [provdier_sect]
-            /^default = default_sect/a legacy_sect\n\
+            # Append 'legacy = legacy_sect' after 'default = default_sect' under [provider_sect]
+            /^default = default_sect/a legacy = legacy_sect\n\
             # Search for [default_sect]
             /\[default_sect\]/ {\n\
                 # Go to next line
