@@ -4537,7 +4537,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_ld, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
-        case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
@@ -6394,23 +6393,15 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
 }
 
 //------------------------------------------------------------------------
-// genCodeForStoreBlk: Produce code for a GT_STORE_OBJ/GT_STORE_DYN_BLK/GT_STORE_BLK node.
+// genCodeForStoreBlk: Produce code for a GT_STORE_DYN_BLK/GT_STORE_BLK node.
 //
 // Arguments:
 //    tree - the node
 //
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
-    assert(blkOp->OperIs(GT_STORE_OBJ, GT_STORE_DYN_BLK, GT_STORE_BLK));
+    assert(blkOp->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
 
-    if (blkOp->OperIs(GT_STORE_OBJ))
-    {
-        assert(!blkOp->gtBlkOpGcUnsafe);
-        assert(blkOp->OperIsCopyBlkOp());
-        assert(blkOp->AsBlk()->GetLayout()->HasGCPtr());
-        genCodeForCpObj(blkOp->AsBlk());
-        return;
-    }
     if (blkOp->gtBlkOpGcUnsafe)
     {
         GetEmitter()->emitDisableGC();
@@ -6419,6 +6410,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 
     switch (blkOp->gtBlkOpKind)
     {
+        case GenTreeBlk::BlkOpKindCpObjUnroll:
+            assert(!blkOp->gtBlkOpGcUnsafe);
+            genCodeForCpObj(blkOp->AsBlk());
+            break;
+
         case GenTreeBlk::BlkOpKindHelper:
             if (isCopyBlk)
             {

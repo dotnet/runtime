@@ -548,6 +548,13 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
         case NI_AVX2_ShiftLeftLogical:
         case NI_AVX2_ShiftRightArithmetic:
         case NI_AVX2_ShiftRightLogical:
+        case NI_AVX512F_ShiftLeftLogical:
+        case NI_AVX512F_ShiftRightArithmetic:
+        case NI_AVX512F_ShiftRightLogical:
+        case NI_AVX512F_VL_ShiftRightArithmetic:
+        case NI_AVX512BW_ShiftLeftLogical:
+        case NI_AVX512BW_ShiftRightArithmetic:
+        case NI_AVX512BW_ShiftRightLogical:
         {
             impSpillSideEffect(true,
                                verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
@@ -997,12 +1004,25 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_ConvertToInt32:
         case NI_Vector256_ConvertToInt32:
+        case NI_Vector512_ConvertToInt32:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
 
-            intrinsic = (simdSize == 32) ? NI_AVX_ConvertToVector256Int32WithTruncation
-                                         : NI_SSE2_ConvertToVector128Int32WithTruncation;
+            switch (simdSize)
+            {
+                case 16:
+                    intrinsic = NI_SSE2_ConvertToVector128Int32WithTruncation;
+                    break;
+                case 32:
+                    intrinsic = NI_AVX_ConvertToVector256Int32WithTruncation;
+                    break;
+                case 64:
+                    intrinsic = NI_AVX512F_ConvertToVector512Int32WithTruncation;
+                    break;
+                default:
+                    unreached();
+            }
 
             op1     = impSIMDPopStack(retType);
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
@@ -1011,12 +1031,26 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_ConvertToSingle:
         case NI_Vector256_ConvertToSingle:
+        case NI_Vector512_ConvertToSingle:
         {
             assert(sig->numArgs == 1);
 
             if (simdBaseType == TYP_INT)
             {
-                intrinsic = (simdSize == 32) ? NI_AVX_ConvertToVector256Single : NI_SSE2_ConvertToVector128Single;
+                switch (simdSize)
+                {
+                    case 16:
+                        intrinsic = NI_SSE2_ConvertToVector128Single;
+                        break;
+                    case 32:
+                        intrinsic = NI_AVX_ConvertToVector256Single;
+                        break;
+                    case 64:
+                        intrinsic = NI_AVX512F_ConvertToVector512Single;
+                        break;
+                    default:
+                        unreached();
+                }
 
                 op1     = impSIMDPopStack(retType);
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
@@ -1272,8 +1306,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Divide:
         case NI_Vector256_Divide:
+        case NI_Vector512_Divide:
         case NI_Vector128_op_Division:
         case NI_Vector256_op_Division:
+        case NI_Vector512_op_Division:
         {
             assert(sig->numArgs == 2);
 
@@ -1602,6 +1638,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_GetElement:
         case NI_Vector256_GetElement:
+        case NI_Vector512_GetElement:
         {
             assert(sig->numArgs == 2);
 
@@ -1838,6 +1875,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_SSE2_LoadVector128:
         case NI_AVX_LoadVector256:
         case NI_AVX512F_LoadVector512:
+        case NI_AVX512BW_LoadVector512:
         case NI_Vector128_Load:
         case NI_Vector256_Load:
         case NI_Vector512_Load:
@@ -1941,8 +1979,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Multiply:
         case NI_Vector256_Multiply:
+        case NI_Vector512_Multiply:
         case NI_Vector128_op_Multiply:
         case NI_Vector256_op_Multiply:
+        case NI_Vector512_op_Multiply:
         {
             assert(sig->numArgs == 2);
 
@@ -1952,6 +1992,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
+            assert(simdSize != 64 || IsBaselineVector512IsaSupportedDebugOnly());
+
             if ((simdBaseType == TYP_BYTE) || (simdBaseType == TYP_UBYTE))
             {
                 // TODO-XARCH-CQ: We should support byte/sbyte multiplication
@@ -1960,8 +2002,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsLong(simdBaseType))
             {
-                // TODO-XARCH-CQ: We should support long/ulong multiplication
+                if (simdSize != 64 && !compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
+                {
+                    // TODO-XARCH-CQ: We should support long/ulong multiplication
+                    break;
+                }
+// else if simdSize == 64 then above assert would check if baseline isa supported
+
+#if defined(TARGET_X86)
+                // TODO-XARCH-CQ: We need to support 64-bit CreateBroadcast
                 break;
+#endif // TARGET_X86
             }
 
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
@@ -2116,10 +2167,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
+            if (varTypeIsByte(simdBaseType))
             {
-                // byte, sbyte, long, and ulong would require more work to support
+                // byte and sbyte would require more work to support
                 break;
+            }
+
+            if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
+            {
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                {
+                    // long, ulong, and double would require more work to support
+                    break;
+                }
             }
 
             if ((simdSize != 32) || compExactlyDependsOn(InstructionSet_AVX2))
@@ -2255,6 +2315,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_SSE2_Store:
         case NI_AVX_Store:
         case NI_AVX512F_Store:
+        case NI_AVX512BW_Store:
         {
             assert(retType == TYP_VOID);
             assert(sig->numArgs == 2);
@@ -2409,6 +2470,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_ToScalar:
         case NI_Vector256_ToScalar:
+        case NI_Vector512_ToScalar:
         {
             assert(sig->numArgs == 1);
 
@@ -2526,6 +2588,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_WithElement:
         case NI_Vector256_WithElement:
+        case NI_Vector512_WithElement:
         {
             assert(sig->numArgs == 3);
             GenTree* indexOp = impStackTop(1).val;

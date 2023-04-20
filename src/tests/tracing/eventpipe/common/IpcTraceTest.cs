@@ -204,7 +204,7 @@ namespace Tracing.Tests.Common
             Func<int> optionalTraceValidationCallback = null;
             DiagnosticsClient client = new DiagnosticsClient(processId);
 #if DIAGNOSTICS_RUNTIME
-            if (OperatingSystem.IsAndroid())
+            if (OperatingSystem.IsAndroid() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
                 client = new DiagnosticsClient(new IpcEndpointConfig("127.0.0.1:9000", IpcEndpointConfig.TransportType.TcpSocket, IpcEndpointConfig.PortType.Listen));
 #endif
             var readerTask = new Task(() =>
@@ -344,7 +344,7 @@ namespace Tracing.Tests.Common
         // the process that created them, so we don't need to check on that platform.
         static public bool EnsureCleanEnvironment()
         {
-            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsBrowser())
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsBrowser() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS())
             {
                 Func<(IEnumerable<IGrouping<int,FileInfo>>, List<int>)> getPidsAndSockets = () =>
                 {

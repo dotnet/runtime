@@ -391,12 +391,6 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt,
     {
         assert(BasicBlock::sameEHRegion(prevBb, sizeCheckBb));
     }
-
-    if (opts.OptimizationEnabled())
-    {
-        fgReorderBlocks(/* useProfileData */ false);
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
-    }
     return true;
 }
 
@@ -465,6 +459,13 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
     {
         return false;
     }
+
+#ifdef TARGET_ARM
+    // On Arm, Thread execution blocks are accessed using co-processor registers and instructions such
+    // as MRC and MCR are used to access them. We do not support them and so should never optimize the
+    // field access using TLS.
+    assert(!"Unsupported scenario of optimizing TLS access on Arm32");
+#endif
 
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo);
@@ -674,9 +675,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
     assert(BasicBlock::sameEHRegion(prevBb, threadStaticBlockNullCondBB));
     assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
 
-    fgReorderBlocks(/* useProfileData */ false);
-    fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
-
     return true;
 }
 
@@ -704,6 +702,13 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
             result = PhaseStatus::MODIFIED_EVERYTHING;
         }
     }
+
+    if ((result == PhaseStatus::MODIFIED_EVERYTHING) && opts.OptimizationEnabled())
+    {
+        fgReorderBlocks(/* useProfileData */ false);
+        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
+    }
+
     return result;
 }
 

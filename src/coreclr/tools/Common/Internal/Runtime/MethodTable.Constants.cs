@@ -99,9 +99,9 @@ namespace Internal.Runtime
         CanonicalEEType = 0x00000000,
 
         /// <summary>
-        /// Represents a type cloned from another MethodTable
+        /// Represents a function pointer
         /// </summary>
-        ClonedEEType = 0x00010000,
+        FunctionPointerEEType = 0x00010000,
 
         /// <summary>
         /// Represents a parameterized type. For example a single dimensional array or pointer type
@@ -234,6 +234,7 @@ namespace Internal.Runtime
         SzArray = 0x18,
         ByRef = 0x19,
         Pointer = 0x1A,
+        FunctionPointer = 0x1B,
     }
 
     internal enum EETypeOptionalFieldTag : byte

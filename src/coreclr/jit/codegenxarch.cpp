@@ -2082,7 +2082,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, genPendingCallLabel, treeNode->GetRegNum());
             break;
 
-        case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
@@ -2581,7 +2580,12 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
     regNumber src  = genConsumeReg(srcIndir->Addr());
     unsigned  size = tree->Size();
 
-    const unsigned simdSize = compiler->roundDownSIMDSize(size);
+    unsigned simdSize = compiler->roundDownSIMDSize(size);
+    if (size <= ZMM_RECOMMENDED_THRESHOLD)
+    {
+        // Only use ZMM for large data due to possible CPU throttle issues
+        simdSize = min(YMM_REGSIZE_BYTES, simdSize);
+    }
     if ((size >= simdSize) && (simdSize > 0))
     {
         // Number of SIMD regs needed to save the whole src to regs.
@@ -2978,23 +2982,20 @@ ALLOC_DONE:
 
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
 {
-    assert(storeBlkNode->OperIs(GT_STORE_OBJ, GT_STORE_DYN_BLK, GT_STORE_BLK));
-
-    if (storeBlkNode->OperIs(GT_STORE_OBJ))
-    {
-#ifndef JIT32_GCENCODER
-        assert(!storeBlkNode->gtBlkOpGcUnsafe);
-#endif
-        assert(storeBlkNode->OperIsCopyBlkOp());
-        assert(storeBlkNode->AsBlk()->GetLayout()->HasGCPtr());
-        genCodeForCpObj(storeBlkNode->AsBlk());
-        return;
-    }
+    assert(storeBlkNode->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
 
     bool isCopyBlk = storeBlkNode->OperIsCopyBlkOp();
 
     switch (storeBlkNode->gtBlkOpKind)
     {
+        case GenTreeBlk::BlkOpKindCpObjRepInstr:
+        case GenTreeBlk::BlkOpKindCpObjUnroll:
+#ifndef JIT32_GCENCODER
+            assert(!storeBlkNode->gtBlkOpGcUnsafe);
+#endif
+            genCodeForCpObj(storeBlkNode->AsBlk());
+            break;
+
 #ifdef TARGET_AMD64
         case GenTreeBlk::BlkOpKindHelper:
             assert(!storeBlkNode->gtBlkOpGcUnsafe);
@@ -4082,7 +4083,7 @@ void CodeGen::genClearStackVec3ArgUpperBits()
 //                   GC pointers.
 //
 // Arguments:
-//    cpObjNode - the GT_STORE_OBJ
+//    cpObjNode - the GT_STORE_BLK node
 //
 // Notes:
 //    This will generate a sequence of movsp instructions for the cases of non-gc members.
@@ -5629,6 +5630,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_SSE41_X64_Extract:
                         case NI_AVX_ExtractVector128:
                         case NI_AVX2_ExtractVector128:
+                        case NI_AVX512F_ExtractVector128:
                         case NI_AVX512F_ExtractVector256:
                         {
                             // These intrinsics are "ins reg/mem, xmm, imm8"
