@@ -197,7 +197,7 @@ namespace System.Reflection.Emit.Tests
 
     public interface IOneMethod
     {
-        string Func();
+        object Func();
     }
 
     public struct EmptyStruct

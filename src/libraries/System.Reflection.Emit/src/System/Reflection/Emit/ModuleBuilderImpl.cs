@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -16,14 +17,14 @@ namespace System.Reflection.Emit
         private readonly MetadataBuilder _metadataBuilder;
         private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyReferences = new();
         private readonly Dictionary<Type, TypeReferenceHandle> _typeReferences = new();
-        private readonly Dictionary<TypeBuilderImpl, TypeDefinitionHandle> _typeDefinitions = new();
+        private readonly List<TypeDefinitionWrapper> _typeDefinitions = new();
         private int _nextTypeDefRowId = 1;
         private int _nextMethodDefRowId = 1;
         private int _nextFieldDefRowId = 1;
         private bool _coreTypesFullPopulated;
         private Type?[]? _coreTypes;
         private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
-                                                        typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string), typeof(nint), typeof(nuint) };
+                                                        typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string), typeof(nint), typeof(nuint), typeof(TypedReference) };
 
         internal ModuleBuilderImpl(string name, Assembly coreAssembly, MetadataBuilder builder)
         {
@@ -113,38 +114,29 @@ namespace System.Reflection.Emit
                 methodList: MetadataTokens.MethodDefinitionHandle(1)); ;
 
             // Add each type definition to metadata table.
-            foreach ((TypeBuilderImpl typeBuilder, TypeDefinitionHandle typeHandle) in _typeDefinitions)
+            foreach (TypeDefinitionWrapper typeDefinition in _typeDefinitions)
             {
                 EntityHandle parent = default;
-                if (typeBuilder.BaseType is not null)
+                if (typeDefinition.typeBuilder.BaseType is not null)
                 {
-                    parent = GetTypeHandle(typeBuilder.BaseType);
+                    parent = GetTypeHandle(typeDefinition.typeBuilder.BaseType);
                 }
 
-
-                TypeDefinitionHandle typeDefinitionHandle = MetadataHelper.AddTypeDefinition(_metadataBuilder, typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
-                ThrowIfInvalidHandle(typeHandle, typeDefinitionHandle);
+                TypeDefinitionHandle typeDefinitionHandle = MetadataHelper.AddTypeDefinition(_metadataBuilder, typeDefinition.typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
+                Debug.Assert(typeDefinition.handle.Equals(typeDefinitionHandle));
 
                 // Add each method definition to metadata table.
-                foreach (MethodBuilderImpl method in typeBuilder._methodDefStore)
+                foreach (MethodBuilderImpl method in typeDefinition.typeBuilder._methodDefStore)
                 {
                     MetadataHelper.AddMethodDefinition(_metadataBuilder, method, method.GetMethodSignatureBlob());
                     _nextMethodDefRowId++;
                 }
 
-                foreach (FieldBuilderImpl field in typeBuilder._fieldDefStore)
+                foreach (FieldBuilderImpl field in typeDefinition.typeBuilder._fieldDefStore)
                 {
                     MetadataHelper.AddFieldDefinition(_metadataBuilder, field, MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this));
                     _nextFieldDefRowId++;
                 }
-            }
-        }
-
-        private static void ThrowIfInvalidHandle(TypeDefinitionHandle typeHandle, TypeDefinitionHandle typeDefinitionHandle)
-        {
-            if (!typeHandle.Equals(typeDefinitionHandle))
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_InvalidHanlde);
             }
         }
 
@@ -172,9 +164,15 @@ namespace System.Reflection.Emit
 
         internal EntityHandle GetTypeHandle(Type type)
         {
-            if (type is TypeBuilderImpl tb && _typeDefinitions.TryGetValue(tb, out var handle))
+            if (type is TypeBuilderImpl tb && Equals(tb.Module))
             {
-                return handle;
+                foreach(TypeDefinitionWrapper typeDef in _typeDefinitions)
+                {
+                    if (!typeDef.typeBuilder.Equals(tb))
+                    {
+                        return typeDef.handle;
+                    }
+                }
             }
 
             return GetTypeReference(type);
@@ -199,7 +197,7 @@ namespace System.Reflection.Emit
         {
             TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this);
             TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
-            _typeDefinitions.Add(_type, typeHandle);
+            _typeDefinitions.Add(new TypeDefinitionWrapper(_type, typeHandle));
             return _type;
         }
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();

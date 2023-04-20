@@ -144,7 +144,4 @@
   <data name="Argument_InvalidName" xml:space="preserve">
     <value>Invalid name.</value>
   </data>
-  <data name="InvalidOperation_InvalidHanlde" xml:space="preserve">
-    <value>Emitted handle is not valid.</value>
-  </data>
 </root>
