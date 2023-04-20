@@ -8,10 +8,11 @@ parameters:
   # 'gcstress' - platforms that support running under GCStress0x3 and GCStress0xC scenarios
   platformGroup: ''
   # helixQueueGroup is a named collection of Helix Queues. If specified, it determines which Helix queues are
-  # used, instead of the usual criteria. Allowed values:
+  # used, instead of the usual criteria. Values that must be supported by the supplied helixQueuesTemplate:
   # 'pr' - the queues used for a pull request for the platform. Typically a small set.
   # 'ci' - the queues used for a CI (post-merge) test run.
-  # 'all' - the queues used for non-PR, non-CI test runs, e.g., Manual or Scheduled runs. Typically this is all available queues.
+  # Other values might be supported by the template specified in helixQueuesTemplate, but they do not have specified
+  # meanings here.
   helixQueueGroup: 'pr'
   # helixQueuesTemplate is a yaml template which will be expanded in order to set up the helix queues
   # for the given platform and helixQueueGroup.
@@ -108,6 +109,7 @@ jobs:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux musl arm
@@ -222,6 +224,7 @@ jobs:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux x86
@@ -314,6 +317,47 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         isSourceBuild: true
         isNonPortableSourceBuild: false
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# GCC Linux x64 Build
+
+- ${{ if containsValue(parameters.platforms, 'gcc_linux_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: linux
+      archType: x64
+      targetRid: linux-x64
+      platform: linux_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: debian-11-gcc12-amd64
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        compilerName: gcc
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Mono LLVMAot test build
+
+- ${{ if containsValue(parameters.platforms, 'linux_x64_llvmaot') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: linux
+      archType: x64
+      targetRid: linux-x64
+      platform: linux_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: linux_x64_llvmaot
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux s390x

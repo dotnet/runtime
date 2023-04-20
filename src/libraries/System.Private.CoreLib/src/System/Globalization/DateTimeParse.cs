@@ -3353,7 +3353,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 // Search genitive form.
                 if ((dtfi.FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0)
                 {
-                    int tempResult = str.MatchLongestWords(dtfi.AbbreviatedMonthGenitiveNames, ref maxMatchStrLen);
+                    int tempResult = str.MatchLongestWords(dtfi.InternalGetGenitiveMonthNames(abbreviated: true), ref maxMatchStrLen);
 
                     // We found a longer match in the genitive month name.  Use this as the result.
                     // tempResult + 1 should be the month value.
@@ -3453,7 +3453,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 // Search genitive form.
                 if ((dtfi.FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0)
                 {
-                    int tempResult = str.MatchLongestWords(dtfi.MonthGenitiveNames, ref maxMatchStrLen);
+                    int tempResult = str.MatchLongestWords(dtfi.InternalGetGenitiveMonthNames(abbreviated: false), ref maxMatchStrLen);
                     // We found a longer match in the genitive month name.  Use this as the result.
                     // The result from MatchLongestWords is 0 ~ length of word array.
                     // So we increment the result by one to become the month value.
@@ -3904,13 +3904,13 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         // This method also set the dtfi according/parseInfo to some special pre-defined
         // formats.
         //
-        private static string ExpandPredefinedFormat(ReadOnlySpan<char> format, scoped ref DateTimeFormatInfo dtfi, scoped ref ParsingInfo parseInfo, scoped ref DateTimeResult result)
+        private static string ExpandPredefinedFormat(char format, scoped ref DateTimeFormatInfo dtfi, scoped ref ParsingInfo parseInfo, scoped ref DateTimeResult result)
         {
             //
             // Check the format to see if we need to override the dtfi to be InvariantInfo,
             // and see if we need to set up the userUniversalTime flag.
             //
-            switch (format[0])
+            switch (format)
             {
                 case 's':       // Sortable format (in local time)
                 case 'o':
@@ -3956,7 +3956,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             //
             // Expand the pre-defined format character to the real format from DateTimeFormatInfo.
             //
-            return DateTimeFormat.GetRealFormat(format, dtfi);
+            return DateTimeFormat.ExpandStandardFormatToCustomPattern(format, dtfi);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -4601,7 +4601,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     return false;
                 }
 
-                formatParam = ExpandPredefinedFormat(formatParam, ref dtfi, ref parseInfo, ref result);
+                formatParam = ExpandPredefinedFormat(formatParamChar, ref dtfi, ref parseInfo, ref result);
             }
 
             result.calendar = parseInfo.calendar;
@@ -5571,7 +5571,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 // Check word by word
                 int targetPosition = 0;                 // Where we are in the target string
                 int thisPosition = Index;         // Where we are in this string
-                int wsIndex = target.AsSpan(targetPosition).IndexOfAny(' ', '\u00A0');
+                int wsIndex = target.AsSpan(targetPosition).IndexOfAny("\u0020\u00A0\u202F");
                 if (wsIndex < 0)
                 {
                     return false;
@@ -5615,7 +5615,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         matchLength++;
                     }
 
-                    wsIndex = target.AsSpan(targetPosition).IndexOfAny(' ', '\u00A0');
+                    wsIndex = target.AsSpan(targetPosition).IndexOfAny("\u0020\u00A0\u202F");
                     if (wsIndex < 0)
                     {
                         break;
@@ -5678,7 +5678,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             {
                 return false;
             }
-            if (Value[Index] == ch)
+            if ((Value[Index] == ch) ||
+                (ch == ' ' && IsSpaceReplacingChar(Value[Index])))
             {
                 m_current = ch;
                 return true;
@@ -5686,6 +5687,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             Index--;
             return false;
         }
+
+        private static bool IsSpaceReplacingChar(char c) => c == '\u00a0' || c == '\u202f';
 
         //
         //  Actions: From the current position, try matching the longest word in the specified string array.

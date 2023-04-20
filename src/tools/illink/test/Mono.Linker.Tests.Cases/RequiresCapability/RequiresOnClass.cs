@@ -39,6 +39,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			KeepFieldOnAttribute ();
 			AttributeParametersAndProperties.Test ();
 			MembersOnClassWithRequires<int>.Test ();
+			ConstFieldsOnClassWithRequires.Test ();
 		}
 
 		[RequiresUnreferencedCode ("Message for --ClassWithRequires--")]
@@ -1227,6 +1228,51 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				var g = new GenericClassWithWarningWithRequires<int> ();
 				var h = new ClassWithWarningWithRequires ();
 				var j = new GenericAnnotatedWithWarningWithRequires<int> ();
+			}
+		}
+
+		class ConstFieldsOnClassWithRequires
+		{
+			[RequiresUnreferencedCode ("--ConstClassWithRequires--")]
+			[RequiresDynamicCode ("--ConstClassWithRequires--")]
+			class ConstClassWithRequires
+			{
+				public const string Message = "Message";
+				public const int Number = 42;
+
+				public static void Method () { }
+			}
+
+			[ExpectedWarning ("IL2026", "--ConstClassWithRequires--", nameof (ConstClassWithRequires.Method))]
+			[ExpectedWarning ("IL3050", "--ConstClassWithRequires--", nameof (ConstClassWithRequires.Method), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void TestClassWithRequires ()
+			{
+				var a = ConstClassWithRequires.Message;
+				var b = ConstClassWithRequires.Number;
+
+				ConstClassWithRequires.Method ();
+			}
+
+			[RequiresUnreferencedCode (ConstClassWithRequiresUsingField.Message)]
+			[RequiresDynamicCode (ConstClassWithRequiresUsingField.Message)]
+			class ConstClassWithRequiresUsingField
+			{
+				public const string Message = "--ConstClassWithRequiresUsingField--";
+
+				public static void Method () { }
+			}
+
+			[ExpectedWarning ("IL2026", "--ConstClassWithRequiresUsingField--", nameof (ConstClassWithRequiresUsingField.Method))]
+			[ExpectedWarning ("IL3050", "--ConstClassWithRequiresUsingField--", nameof (ConstClassWithRequiresUsingField.Method), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void TestClassUsingFieldInAttribute ()
+			{
+				ConstClassWithRequiresUsingField.Method ();
+			}
+
+			public static void Test ()
+			{
+				TestClassWithRequires ();
+				TestClassUsingFieldInAttribute ();
 			}
 		}
 	}

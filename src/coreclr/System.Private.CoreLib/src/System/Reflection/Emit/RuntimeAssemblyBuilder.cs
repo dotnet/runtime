@@ -183,8 +183,13 @@ namespace System.Reflection.Emit
         /// modules within an Assembly with the same name. This dynamic module is
         /// a transient module.
         /// </summary>
-        protected override ModuleBuilder DefineDynamicModuleCore(string _)
+        protected override ModuleBuilder DefineDynamicModuleCore(string name)
         {
+            if (name[0] == '\0')
+            {
+                throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
+            }
+
             lock (SyncRoot)
             {
                 // Create the dynamic module- only one ModuleBuilder per AssemblyBuilder can be created.

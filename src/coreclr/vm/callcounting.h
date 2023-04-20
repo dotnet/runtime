@@ -90,15 +90,17 @@ class CallCountingStub
 {
 public:
 #if defined(TARGET_AMD64)
-    static const int CodeSize = 24;
+    static const SIZE_T CodeSize = 24;
 #elif defined(TARGET_X86)
-    static const int CodeSize = 24;
+    static const SIZE_T CodeSize = 24;
 #elif defined(TARGET_ARM64)
-    static const int CodeSize = 40;
+    static const SIZE_T CodeSize = 40;
 #elif defined(TARGET_ARM)
-    static const int CodeSize = 32;
+    static const SIZE_T CodeSize = 32;
 #elif defined(TARGET_LOONGARCH64)
-    static const int CodeSize = 40;
+    static const SIZE_T CodeSize = 40;
+#elif defined(TARGET_RISCV64)
+    static const SIZE_T CodeSize = 40;
 #endif
 
 private:
@@ -114,7 +116,7 @@ public:
 protected:
     PTR_CallCountingStubData GetData() const
     {
-        return dac_cast<PTR_CallCountingStubData>(dac_cast<TADDR>(this) + GetOsPageSize());
+        return dac_cast<PTR_CallCountingStubData>(dac_cast<TADDR>(this) + GetStubCodePageSize());
     }
 
 #ifndef DACCESS_COMPILE
@@ -146,7 +148,7 @@ public:
     static void StaticInitialize();
 #endif // !DACCESS_COMPILE
 
-    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX);
+    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
 
     PTR_CallCount GetRemainingCallCountCell() const;
     PCODE GetTargetForMethod() const;

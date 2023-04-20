@@ -18,6 +18,10 @@
       '$(TargetOS)' == 'tvossimulator'">true</_TargetsAppleOS>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Include="..\..\TestAssets\SharedTypes\ComInterfaces\*.cs" Link="ComInterfaceGenerator\ComInterfaces\%(FileName).cs" />
+  </ItemGroup>
+
   <!-- Until we use the live app host, use a prebuilt from the 7.0 SDK.
        Issue: https://github.com/dotnet/runtime/issues/58109. -->
   <ItemGroup Condition="'$(UseLocalAppHostPack)' != 'true'">
@@ -36,6 +40,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SharedTypes\SharedTypes.csproj" />
+    <ProjectReference Include="..\..\Ancillary.Interop\Ancillary.Interop.csproj" />
   </ItemGroup>
 
   <Target Name="GetUnixBuildArgumentsForDNNE" Condition="'$(OS)' == 'Unix'">

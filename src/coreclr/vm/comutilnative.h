@@ -127,6 +127,18 @@ typedef GCMemoryInfoData * GCMEMORYINFODATAREF;
 
 using EnumerateConfigurationValuesCallback = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
 
+struct GCHeapHardLimitInfo
+{
+    UINT64 heapHardLimit;
+    UINT64 heapHardLimitPercent;
+    UINT64 heapHardLimitSOH;
+    UINT64 heapHardLimitLOH;
+    UINT64 heapHardLimitPOH;
+    UINT64 heapHardLimitSOHPercent;
+    UINT64 heapHardLimitLOHPercent;
+    UINT64 heapHardLimitPOHPercent;
+};
+
 class GCInterface {
 private:
     static INT32    m_gc_counts[3];
@@ -175,6 +187,7 @@ public:
     static void AddMemoryPressure(UINT64 bytesAllocated);
 
     static void EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
+    static int  RefreshMemoryLimit();
 
 private:
     // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
@@ -201,6 +214,8 @@ extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated);
 extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated);
 
 extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
+
+extern "C" int  QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
 
 class COMInterlocked
 {

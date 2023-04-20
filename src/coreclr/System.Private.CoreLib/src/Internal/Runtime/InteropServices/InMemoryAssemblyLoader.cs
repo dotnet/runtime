@@ -58,8 +58,7 @@ namespace Internal.Runtime.InteropServices
             if (!IsSupported)
                 throw new NotSupportedException(SR.NotSupported_CppCli);
 
-            if (loadContext != IntPtr.Zero)
-                throw new ArgumentOutOfRangeException(nameof(loadContext));
+            ArgumentOutOfRangeException.ThrowIfNotEqual(loadContext, IntPtr.Zero);
 
             LoadInMemoryAssemblyInContextImpl(moduleHandle, assemblyPath, AssemblyLoadContext.Default);
         }

@@ -63,9 +63,6 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            if (name[0] == '\0')
-                throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
-
             return DefineEventCore(name, attributes, eventtype);
         }
 
@@ -76,7 +73,12 @@ namespace System.Reflection.Emit
 
         public FieldBuilder DefineField(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers,
             FieldAttributes attributes)
-                => DefineFieldCore(fieldName, type, requiredCustomModifiers, optionalCustomModifiers, attributes);
+        {
+            ArgumentException.ThrowIfNullOrEmpty(fieldName);
+            ArgumentNullException.ThrowIfNull(type);
+
+            return DefineFieldCore(fieldName, type, requiredCustomModifiers, optionalCustomModifiers, attributes);
+        }
 
         protected abstract FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers,
             FieldAttributes attributes);
@@ -159,7 +161,11 @@ namespace System.Reflection.Emit
 
         public TypeBuilder DefineNestedType(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
-                => DefineNestedTypeCore(name, attr, parent, interfaces, PackingSize.Unspecified, UnspecifiedTypeSize);
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
+            return DefineNestedTypeCore(name, attr, parent, interfaces, PackingSize.Unspecified, UnspecifiedTypeSize);
+        }
 
         protected abstract TypeBuilder DefineNestedTypeCore(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packSize, int typeSize);
@@ -174,7 +180,11 @@ namespace System.Reflection.Emit
 
         public TypeBuilder DefineNestedType(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize, int typeSize)
-                => DefineNestedTypeCore(name, attr, parent, null, packSize, typeSize);
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
+            return DefineNestedTypeCore(name, attr, parent, null, packSize, typeSize);
+        }
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes,

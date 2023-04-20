@@ -1426,18 +1426,18 @@ namespace System
         public static unsafe bool SequenceEqual<T>(this Span<T> span, ReadOnlySpan<T> other) where T : IEquatable<T>?
         {
             int length = span.Length;
+            int otherLength = other.Length;
 
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
-                nuint size = (nuint)sizeof(T);
-                return length == other.Length &&
+                return length == otherLength &&
                 SpanHelpers.SequenceEqual(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
-                    ((uint)length) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+                    ((uint)otherLength) * (nuint)sizeof(T));  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
             }
 
-            return length == other.Length && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(other), length);
+            return length == otherLength && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(other), length);
         }
 
         /// <summary>
@@ -2162,17 +2162,18 @@ namespace System
         public static unsafe bool SequenceEqual<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other) where T : IEquatable<T>?
         {
             int length = span.Length;
+            int otherLength = other.Length;
+
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
-                nuint size = (nuint)sizeof(T);
-                return length == other.Length &&
+                return length == otherLength &&
                     SpanHelpers.SequenceEqual(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
-                        ((uint)length) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this API in such a case so we choose not to take the overhead of checking.
+                        ((uint)otherLength) * (nuint)sizeof(T));  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this API in such a case so we choose not to take the overhead of checking.
             }
 
-            return length == other.Length && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(other), length);
+            return length == otherLength && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(other), length);
         }
 
         /// <summary>
@@ -2207,11 +2208,10 @@ namespace System
                     // If no comparer was supplied and the type is bitwise equatable, take the fast path doing a bitwise comparison.
                     if (RuntimeHelpers.IsBitwiseEquatable<T>())
                     {
-                        nuint size = (nuint)sizeof(T);
                         return SpanHelpers.SequenceEqual(
                             ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                             ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
-                            ((uint)span.Length) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this API in such a case so we choose not to take the overhead of checking.
+                            ((uint)span.Length) * (nuint)sizeof(T));  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this API in such a case so we choose not to take the overhead of checking.
                     }
 
                     // Otherwise, compare each element using EqualityComparer<T>.Default.Equals in a way that will enable it to devirtualize.
@@ -2277,12 +2277,11 @@ namespace System
             int valueLength = value.Length;
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
-                nuint size = (nuint)sizeof(T);
                 return valueLength <= span.Length &&
                 SpanHelpers.SequenceEqual(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(value)),
-                    ((uint)valueLength) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+                    ((uint)valueLength) * (nuint)sizeof(T));  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
             }
 
             return valueLength <= span.Length && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), valueLength);
@@ -2298,12 +2297,11 @@ namespace System
             int valueLength = value.Length;
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
-                nuint size = (nuint)sizeof(T);
                 return valueLength <= span.Length &&
                 SpanHelpers.SequenceEqual(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(value)),
-                    ((uint)valueLength) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+                    ((uint)valueLength) * (nuint)sizeof(T));  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
             }
 
             return valueLength <= span.Length && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), valueLength);
@@ -2319,12 +2317,11 @@ namespace System
             int valueLength = value.Length;
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
-                nuint size = (nuint)sizeof(T);
                 return valueLength <= spanLength &&
                 SpanHelpers.SequenceEqual(
                     ref Unsafe.As<T, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), (nint)(uint)(spanLength - valueLength) /* force zero-extension */)),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(value)),
-                    ((uint)valueLength) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+                    ((uint)valueLength) * (nuint)sizeof(T));  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
             }
 
             return valueLength <= spanLength &&
@@ -2344,12 +2341,11 @@ namespace System
             int valueLength = value.Length;
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
-                nuint size = (nuint)sizeof(T);
                 return valueLength <= spanLength &&
                 SpanHelpers.SequenceEqual(
                     ref Unsafe.As<T, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), (nint)(uint)(spanLength - valueLength) /* force zero-extension */)),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(value)),
-                    ((uint)valueLength) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+                    ((uint)valueLength) * (nuint)sizeof(T));  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
             }
 
             return valueLength <= spanLength &&

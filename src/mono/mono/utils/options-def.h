@@ -114,7 +114,7 @@ DEFINE_BOOL(jiterpreter_backward_branches_enabled, "jiterpreter-backward-branche
 //  logic into the compiled wrapper and calling the target AOTed function with native call convention
 DEFINE_BOOL(jiterpreter_direct_jit_call, "jiterpreter-direct-jit-calls", TRUE, "Bypass gsharedvt wrappers when compiling JIT call wrappers")
 // any trace that doesn't have at least this many meaningful (non-nop) opcodes in it will be rejected
-DEFINE_INT(jiterpreter_minimum_trace_length, "jiterpreter-minimum-trace-length", 10, "Reject traces shorter than this number of meaningful opcodes")
+DEFINE_INT(jiterpreter_minimum_trace_value, "jiterpreter-minimum-trace-value", 18, "Reject traces that perform less than this amount of (approximate) work")
 // ensure that we don't create trace entry points too close together
 DEFINE_INT(jiterpreter_minimum_distance_between_traces, "jiterpreter-minimum-distance-between-traces", 4, "Don't insert entry points closer together than this")
 // once a trace entry point is inserted, we only actually JIT code for it once it's been hit this many times
@@ -129,6 +129,9 @@ DEFINE_INT(jiterpreter_trace_monitoring_long_distance, "jiterpreter-trace-monito
 DEFINE_INT(jiterpreter_trace_monitoring_max_average_penalty, "jiterpreter-trace-monitoring-max-average-penalty", 75, "If the average penalty value for a trace is above this value it will be rejected")
 // 0 = no monitoring, 1 = log when rejecting a trace, 2 = log when accepting or rejecting a trace, 3 = log every recorded bailout
 DEFINE_INT(jiterpreter_trace_monitoring_log, "jiterpreter-trace-monitoring-log", 0, "Logging detail level for trace monitoring")
+// if a trace fails to back branch outside of itself, and there is a prepare point at the branch target, boost
+//  the hit count of that prepare point so it will JIT much sooner
+DEFINE_INT(jiterpreter_back_branch_boost, "jiterpreter-back-branch-boost", 4900, "Boost the hit count of prepare points targeted by a failed backward branch")
 // After a do_jit_call call site is hit this many times, we will queue it to be jitted
 DEFINE_INT(jiterpreter_jit_call_trampoline_hit_count, "jiterpreter-jit-call-hit-count", 1000, "Queue specialized do_jit_call trampoline for JIT after this many hits")
 // After a do_jit_call call site is hit this many times without being jitted, we will flush the JIT queue

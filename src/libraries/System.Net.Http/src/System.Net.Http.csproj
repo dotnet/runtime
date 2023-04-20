@@ -17,8 +17,6 @@
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'tvos'">$(DefineConstants);TARGET_TVOS</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(DefineConstants);TARGET_WASI</DefineConstants>
-    <!-- ILLinker settings -->
-    <ILLinkDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkDirectory>
   </PropertyGroup>
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
@@ -154,6 +152,8 @@
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs"
              Link="Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <!-- SocketsHttpHandler implementation -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'browser'">

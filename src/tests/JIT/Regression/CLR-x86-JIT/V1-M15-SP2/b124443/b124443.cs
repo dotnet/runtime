@@ -3,10 +3,11 @@
 //
 
 using System;
+using Xunit;
 delegate void TestDelegate();
 public class ArrayBounds
 {
-	public static void f1a()
+	internal static void f1a()
 	{
 		int [] a = new int[4];
 		for (int i=0; i < a.Length; --i)
@@ -14,7 +15,7 @@ public class ArrayBounds
 			a[i]=1; 
 		}
 	}
-	public static void f2a()
+	internal static void f2a()
 	{
 		int [] a = new int[4];
 		for (int i=0; i < a.Length; --i)
@@ -22,7 +23,7 @@ public class ArrayBounds
 			int b = a[i];
 		}
 	}
-	public static void f3a()
+	internal static void f3a()
 	{
 		int [] a = new int[4];
 		for (int i=0; i < a.Length; --i)
@@ -30,7 +31,7 @@ public class ArrayBounds
 			Console.WriteLine(a[i]);
 		}
 	}
-	public static void f4a()
+	internal static void f4a()
 	{
 		int [] a = new int[4];
 		for (int i=0; i < a.Length; a[i]=i,--i)
@@ -40,7 +41,7 @@ public class ArrayBounds
 	}
 	
 	// ++i
-	public static void f1b()
+	internal static void f1b()
 	{
 		int [] a = new int[4];
 		for (int i=0; i <= a.Length; ++i)
@@ -48,7 +49,7 @@ public class ArrayBounds
 			a[i]=1; 
 		}
 	}
-	public static void f2b()
+	internal static void f2b()
 	{
 		int [] a = new int[4];
 		for (int i=0; i <= a.Length; ++i)
@@ -56,7 +57,7 @@ public class ArrayBounds
 			int b = a[i];
 		}
 	}
-	public static void f3b()
+	internal static void f3b()
 	{
 		int [] a = new int[4];
 		for (int i=0; i <= a.Length; ++i)
@@ -64,7 +65,7 @@ public class ArrayBounds
 			Console.WriteLine(a[i]);
 		}
 	}
-	public static void f4b()
+	internal static void f4b()
 	{
 		int [] a = new int[4];
 		for (int i=0; i <= a.Length; a[i]=i,++i)
@@ -74,7 +75,7 @@ public class ArrayBounds
 	}
 
 	// ++i, 0x7fff
-	public static void f1c()
+	internal static void f1c()
 	{
 		bool [] a = new bool[0x7fff];
 		for (short i=0x7ff0; i < a.Length+1; ++i)
@@ -82,7 +83,7 @@ public class ArrayBounds
 			a[i]=true; 
 		}
 	}
-	public static void f2c()
+	internal static void f2c()
 	{
 		bool [] a = new bool[0x7fff];
 		for (short i=0x7ff0; i < a.Length+1; ++i)
@@ -90,7 +91,7 @@ public class ArrayBounds
 			bool b = a[i];
 		}
 	}
-	public static void f3c()
+	internal static void f3c()
 	{
 		bool [] a = new bool[0x7fff];
 		for (short i=0x7ffe; i < a.Length+1; ++i)
@@ -98,7 +99,7 @@ public class ArrayBounds
 			Console.WriteLine(a[i]);
 		}
 	}
-	public static void f4c()
+	internal static void f4c()
 	{
 		bool [] a = new bool[0x7fff];
 		for (short i=0x7ff0; i < a.Length+1; ++i)
@@ -130,7 +131,8 @@ public class ArrayBounds
 		return 100;
 	}
 
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		if (RunTests(new TestDelegate(f1a))!=100) return 1;
 		if (RunTests(new TestDelegate(f2a))!=100) return 1;

@@ -4,16 +4,16 @@
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
   </PropertyGroup>
 
-  <!-- Reference the source project shims which themselves then reference their corresponding ref project, if it exists. -->
+  <!-- Reference the source project shims which themselves then reference their corresponding ref project, if such exist. -->
   <ItemGroup>
-    <ProjectReference Include="shims\src\*.csproj" />
+    <ProjectReference Include="shims\*\src\*.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RefOnly)' == 'true'">
-    <ReferenceShimProject Include="shims\ref\*.csproj" />
+    <ReferenceShimProject Include="shims\*\ref\*.csproj" />
     <ProjectReference Include="@(ReferenceShimProject)" />
     <!-- Omit projects which depend on source projects to be built. -->
-    <ProjectReference Remove="@(ReferenceShimProject->'shims\src\%(Filename)%(Extension)')" />
+    <ProjectReference Remove="@(ReferenceShimProject->'shims\%(Filename)\src\%(Filename)%(Extension)')" />
   </ItemGroup>
 
 </Project>

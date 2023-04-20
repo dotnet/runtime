@@ -6,8 +6,8 @@
 
 namespace System.ComponentModel.DataAnnotations
 {
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple = false)]
-    [System.CLSCompliant(false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
+    [System.CLSCompliantAttribute(false)]
     public partial class AllowedValuesAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
         public AllowedValuesAttribute(params object?[] values) { }
@@ -32,8 +32,8 @@ namespace System.ComponentModel.DataAnnotations
         public string ThisKey { get { throw null; } }
         public System.Collections.Generic.IEnumerable<string> ThisKeyMembers { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = false)]
-    public class Base64StringAttribute : ValidationAttribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
+    public partial class Base64StringAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
         public Base64StringAttribute() { }
         public override bool IsValid(object? value) { throw null; }
@@ -101,8 +101,8 @@ namespace System.ComponentModel.DataAnnotations
         public virtual string GetDataTypeName() { throw null; }
         public override bool IsValid(object? value) { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple = false)]
-    [System.CLSCompliant(false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
+    [System.CLSCompliantAttribute(false)]
     public partial class DeniedValuesAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
         public DeniedValuesAttribute(params object?[] values) { }
@@ -205,13 +205,13 @@ namespace System.ComponentModel.DataAnnotations
     {
         public KeyAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
     public partial class LengthAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Uses reflection to get the 'Count' property on types that don't implement ICollection. This 'Count' property may be trimmed. Ensure it is preserved.")]
         public LengthAttribute(int minimumLength, int maximumLength) { }
-        public int MinimumLength { get { throw null; } }
         public int MaximumLength { get { throw null; } }
+        public int MinimumLength { get { throw null; } }
         public override string FormatErrorMessage(string name) { throw null; }
         public override bool IsValid(object? value) { throw null; }
     }
@@ -270,8 +270,8 @@ namespace System.ComponentModel.DataAnnotations
     public partial class RegularExpressionAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
         public RegularExpressionAttribute([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern) { }
-        public int MatchTimeoutInMilliseconds { get { throw null; } set { } }
         public System.TimeSpan MatchTimeout { get { throw null; } }
+        public int MatchTimeoutInMilliseconds { get { throw null; } set { } }
         public string Pattern { get { throw null; } }
         public override string FormatErrorMessage(string name) { throw null; }
         public override bool IsValid(object? value) { throw null; }
@@ -342,11 +342,11 @@ namespace System.ComponentModel.DataAnnotations
     }
     public sealed partial class ValidationContext : System.IServiceProvider
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
         public ValidationContext(object instance) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
         public ValidationContext(object instance, System.Collections.Generic.IDictionary<object, object?>? items) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
         public ValidationContext(object instance, System.IServiceProvider? serviceProvider, System.Collections.Generic.IDictionary<object, object?>? items) { }
         public string DisplayName { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<object, object?> Items { get { throw null; } }
@@ -360,6 +360,8 @@ namespace System.ComponentModel.DataAnnotations
     {
         public ValidationException() { }
         public ValidationException(System.ComponentModel.DataAnnotations.ValidationResult validationResult, System.ComponentModel.DataAnnotations.ValidationAttribute? validatingAttribute, object? value) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected ValidationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ValidationException(string? message) { }
         public ValidationException(string? errorMessage, System.ComponentModel.DataAnnotations.ValidationAttribute? validatingAttribute, object? value) { }
@@ -380,16 +382,16 @@ namespace System.ComponentModel.DataAnnotations
     }
     public static partial class Validator
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
         public static bool TryValidateObject(object instance, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.ICollection<System.ComponentModel.DataAnnotations.ValidationResult>? validationResults) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
         public static bool TryValidateObject(object instance, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.ICollection<System.ComponentModel.DataAnnotations.ValidationResult>? validationResults, bool validateAllProperties) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of validationContext.ObjectType cannot be statically discovered.")]
         public static bool TryValidateProperty(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.ICollection<System.ComponentModel.DataAnnotations.ValidationResult>? validationResults) { throw null; }
         public static bool TryValidateValue(object value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.ICollection<System.ComponentModel.DataAnnotations.ValidationResult>? validationResults, System.Collections.Generic.IEnumerable<System.ComponentModel.DataAnnotations.ValidationAttribute> validationAttributes) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
         public static void ValidateObject(object instance, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
         public static void ValidateObject(object instance, System.ComponentModel.DataAnnotations.ValidationContext validationContext, bool validateAllProperties) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of validationContext.ObjectType cannot be statically discovered.")]
         public static void ValidateProperty(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { }

@@ -430,6 +430,91 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static Vector128<nuint>  Negate(Vector128<nuint>  value) => Negate(value);
 
+        // Extended integer arithmetic
+
+        /// <summary>
+        ///   i16x8.extmul_low_i8x16_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  MultiplyWideningLower(Vector128<sbyte>  left, Vector128<sbyte>  right) => MultiplyWideningLower(left, right);
+        /// <summary>
+        ///   i16x8.extmul_low_i8x16_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> MultiplyWideningLower(Vector128<byte>   left, Vector128<byte>   right) => MultiplyWideningLower(left, right);
+        /// <summary>
+        ///   i32x4.extmul_low_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    MultiplyWideningLower(Vector128<short>  left, Vector128<short>  right) => MultiplyWideningLower(left, right);
+        /// <summary>
+        ///   i32x4.extmul_low_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   MultiplyWideningLower(Vector128<ushort> left, Vector128<ushort> right) => MultiplyWideningLower(left, right);
+        /// <summary>
+        ///   i64x2.extmul_low_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   MultiplyWideningLower(Vector128<int>    left, Vector128<int>    right) => MultiplyWideningLower(left, right);
+        /// <summary>
+        ///   i64x2.extmul_low_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  MultiplyWideningLower(Vector128<uint>   left, Vector128<uint>   right) => MultiplyWideningLower(left, right);
+
+        /// <summary>
+        ///   i16x8.extmul_high_i8x16_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  MultiplyWideningUpper(Vector128<sbyte>  left, Vector128<sbyte>  right) => MultiplyWideningUpper(left, right);
+        /// <summary>
+        ///   i16x8.extmul_high_i8x16_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> MultiplyWideningUpper(Vector128<byte>   left, Vector128<byte>   right) => MultiplyWideningUpper(left, right);
+        /// <summary>
+        ///   i32x4.extmul_high_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    MultiplyWideningUpper(Vector128<short>  left, Vector128<short>  right) => MultiplyWideningUpper(left, right);
+        /// <summary>
+        ///   i32x4.extmul_high_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   MultiplyWideningUpper(Vector128<ushort> left, Vector128<ushort> right) => MultiplyWideningUpper(left, right);
+        /// <summary>
+        ///   i64x2.extmul_high_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   MultiplyWideningUpper(Vector128<int>    left, Vector128<int>    right) => MultiplyWideningUpper(left, right);
+        /// <summary>
+        ///   i64x2.extmul_high_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  MultiplyWideningUpper(Vector128<uint>   left, Vector128<uint>   right) => MultiplyWideningUpper(left, right);
+
+        /// <summary>
+        ///   i16x8.extadd_pairwise_i8x16_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  AddPairwiseWidening(Vector128<sbyte>  value) => AddPairwiseWidening(value);
+        /// <summary>
+        ///   i16x8.extadd_pairwise_i8x16_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> AddPairwiseWidening(Vector128<byte>   value) => AddPairwiseWidening(value);
+        /// <summary>
+        ///   i32x4.extadd_pairwise_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    AddPairwiseWidening(Vector128<short>  value) => AddPairwiseWidening(value);
+        /// <summary>
+        ///   i32x4.extadd_pairwise_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   AddPairwiseWidening(Vector128<ushort> value) => AddPairwiseWidening(value);
+
         // Bit shifts
 
         /// <summary>

@@ -31,8 +31,8 @@ namespace System.Net.Security
 
         private SslStreamCertificateContext(X509Certificate2 target, X509Certificate2[] intermediates, SslCertificateTrust? trust)
         {
+            _intermediateCertificates = intermediates;
             Certificate = target;
-            IntermediateCertificates = intermediates;
             Trust = trust;
             SslContexts = new ConcurrentDictionary<SslProtocols, SafeSslContextHandle>();
 

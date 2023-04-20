@@ -27,6 +27,7 @@ namespace System
             HResult = HResults.COR_E_INSUFFICIENTEXECUTIONSTACK;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private InsufficientExecutionStackException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
