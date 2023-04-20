@@ -391,13 +391,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             RewriteAssignment(use);
             break;
 
-        case GT_BLK:
-            if (varTypeIsSIMD(node))
-            {
-                node->SetOper(GT_IND);
-            }
-            break;
-
         case GT_CALL:
             // In linear order we no longer need to retain the stores in early
             // args as these have now been sequenced.

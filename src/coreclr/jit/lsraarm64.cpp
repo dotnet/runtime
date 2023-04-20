@@ -417,6 +417,15 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
     assert(refPosition->isFirstRefPositionOfConsecutiveRegisters());
     regMaskTP freeCandidates = allCandidates & m_AvailableRegs;
 
+#ifdef DEBUG
+    if (getStressLimitRegs() != LSRA_LIMIT_NONE)
+    {
+        // For stress, make only alternate registers available so we can stress the selection of free/busy registers.
+        freeCandidates &= (RBM_V0 | RBM_V2 | RBM_V4 | RBM_V6 | RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14 | RBM_V16 |
+                           RBM_V18 | RBM_V20 | RBM_V22 | RBM_V24 | RBM_V26 | RBM_V28 | RBM_V30);
+    }
+#endif
+
     *busyCandidates = RBM_NONE;
     regMaskTP    overallResult;
     unsigned int registersNeeded = refPosition->regCount;
@@ -1801,6 +1810,48 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
 
     return srcCount;
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// isLiveAtConsecutiveRegistersLoc: Check if the refPosition is live at the location
+//    where consecutive registers are needed. This is used during JitStressRegs to
+//    not constrain the register requirements for such refpositions, because a lot
+//    of registers will be busy. For RefTypeUse, it will just see if the nodeLocation
+//    matches with the tracking `consecutiveRegistersLocation`. For Def, it will check
+//    the underlying `GenTree*` to see if the tree that produced it had consecutive
+//    registers requirement.
+//
+//
+// Arguments:
+//    consecutiveRegistersLocation - The most recent location where consecutive
+//     registers were needed.
+//
+// Returns: If the refposition is live at same location which has the requirement of
+//    consecutive registers.
+//
+bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegistersLocation)
+{
+    if (needsConsecutive)
+    {
+        return true;
+    }
+
+    if (refType == RefTypeDef)
+    {
+        if (treeNode->OperIsHWIntrinsic())
+        {
+            const HWIntrinsic intrin(treeNode->AsHWIntrinsic());
+            return HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id);
+        }
+    }
+    else if ((refType == RefTypeUse) || (refType == RefTypeUpperVectorRestore))
+    {
+        return consecutiveRegistersLocation == nodeLocation;
+    }
+    return false;
+}
+#endif
+
 #endif
 
 #endif // TARGET_ARM64

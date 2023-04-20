@@ -473,7 +473,7 @@ namespace Internal.Runtime.Augments
         public static bool TryGetBaseType(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle baseTypeHandle)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
-            if (eeType.IsGenericTypeDefinition || eeType.IsPointer || eeType.IsByRef)
+            if (eeType.IsGenericTypeDefinition || eeType.IsPointer || eeType.IsByRef || eeType.IsFunctionPointer)
             {
                 baseTypeHandle = default(RuntimeTypeHandle);
                 return false;
@@ -490,7 +490,7 @@ namespace Internal.Runtime.Augments
         public static IEnumerable<RuntimeTypeHandle> TryGetImplementedInterfaces(RuntimeTypeHandle typeHandle)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
-            if (eeType.IsGenericTypeDefinition || eeType.IsPointer || eeType.IsByRef)
+            if (eeType.IsGenericTypeDefinition || eeType.IsPointer || eeType.IsByRef || eeType.IsFunctionPointer)
                 return null;
 
             LowLevelList<RuntimeTypeHandle> implementedInterfaces = new LowLevelList<RuntimeTypeHandle>();
@@ -637,6 +637,11 @@ namespace Internal.Runtime.Augments
             return typeHandle.ToEETypePtr().IsPointer;
         }
 
+        public static bool IsFunctionPointerType(RuntimeTypeHandle typeHandle)
+        {
+            return typeHandle.ToEETypePtr().IsFunctionPointer;
+        }
+
         public static bool IsByRefType(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.ToEETypePtr().IsByRef;
@@ -658,6 +663,8 @@ namespace Internal.Runtime.Augments
             if (srcEEType.IsGenericTypeDefinition || dstEEType.IsGenericTypeDefinition)
                 return false;
             if (srcEEType.IsPointer || dstEEType.IsPointer)
+                return false;
+            if (srcEEType.IsFunctionPointer || dstEEType.IsFunctionPointer)
                 return false;
             if (srcEEType.IsByRef || dstEEType.IsByRef)
                 return false;

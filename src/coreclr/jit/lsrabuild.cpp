@@ -1811,8 +1811,15 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                     assert(newRefPosition->refType == RefTypeUpperVectorRestore);
                     minRegCount++;
                 }
-#endif
-#endif
+#endif // TARGET_ARM64
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+
+#ifdef TARGET_ARM64
+                if (newRefPosition->needsConsecutive)
+                {
+                    consecutiveRegistersLocation = newRefPosition->nodeLocation;
+                }
+#endif // TARGET_ARM64
                 if (newRefPosition->getInterval()->isSpecialPutArg)
                 {
                     minRegCount++;
@@ -1864,16 +1871,45 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                 Interval* interval       = newRefPosition->getInterval();
                 regMaskTP oldAssignment  = newRefPosition->registerAssignment;
                 regMaskTP calleeSaveMask = calleeSaveRegs(interval->registerType);
-                newRefPosition->registerAssignment =
-                    getConstrainedRegMask(oldAssignment, calleeSaveMask, minRegCountForRef);
+#ifdef TARGET_ARM64
+                if (newRefPosition->isLiveAtConsecutiveRegistersLoc(consecutiveRegistersLocation))
+                {
+                    // If we are assigning to refPositions that has consecutive registers requirements, skip the
+                    // limit stress for them, because there are high chances that many registers are busy for
+                    // consecutive requirements and
+                    // we do not have enough remaining for other refpositions (like operands). Likewise, skip for the
+                    // definition node that comes after that, for which, all the registers are in "delayRegFree" state.
+                }
+                else
+#endif // TARGET_ARM64
+                {
+                    newRefPosition->registerAssignment =
+                        getConstrainedRegMask(oldAssignment, calleeSaveMask, minRegCountForRef);
+                }
 
                 if ((newRefPosition->registerAssignment != oldAssignment) && (newRefPosition->refType == RefTypeUse) &&
                     !interval->isLocalVar)
                 {
-                    checkConflictingDefUse(newRefPosition);
+#ifdef TARGET_ARM64
+                    RefPosition* defRefPos = interval->firstRefPosition;
+                    assert(defRefPos->treeNode != nullptr);
+                    if (defRefPos->isLiveAtConsecutiveRegistersLoc(consecutiveRegistersLocation))
+                    {
+                        // If a method has consecutive registers and we are assigning to use refPosition whose
+                        // definition was from a location that has consecutive registers, skip the limit stress for
+                        // them, because there are high chances that many registers are busy for consecutive
+                        // requirements and marked as "delayRegFree" state. We do not have enough remaining for other
+                        // refpositions.
+                    }
+                    else
+#endif // TARGET_ARM64
+                    {
+                        checkConflictingDefUse(newRefPosition);
+                    }
                 }
             }
         }
+        consecutiveRegistersLocation = MinLocation;
     }
 #endif // DEBUG
     JITDUMP("\n");
