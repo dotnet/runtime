@@ -213,33 +213,34 @@ namespace Tests.System
             //
             // Test out some int-based timeout logic
             //
-#if NETFRAMEWORK
-            CancellationTokenSource cts = new CancellationTokenSource(Timeout.InfiniteTimeSpan); // should be an infinite timeout
+#if TESTEXTENSIONS
+            CancellationTokenSource cts = provider.CreateCancellationTokenSource(Timeout.InfiniteTimeSpan); // should be an infinite timeout
 #else
             CancellationTokenSource cts = new CancellationTokenSource(Timeout.InfiniteTimeSpan, provider); // should be an infinite timeout
 #endif // NETFRAMEWORK
-            CancellationToken token = cts.Token;
             ManualResetEventSlim mres = new ManualResetEventSlim(false);
-            CancellationTokenRegistration ctr = token.Register(() => mres.Set());
 
-            Assert.False(token.IsCancellationRequested,
+            Assert.False(cts.Token.IsCancellationRequested,
                "CancellationTokenSourceWithTimer:  Cancellation signaled on infinite timeout (int)!");
 
-#if NETFRAMEWORK
-            CancelAfter(provider, cts, TimeSpan.FromMilliseconds(1000000));
+#if TESTEXTENSIONS
+            cts.Dispose();
+            cts = provider.CreateCancellationTokenSource(TimeSpan.FromMilliseconds(1000000));
 #else
             cts.CancelAfter(1000000);
 #endif // NETFRAMEWORK
 
-            Assert.False(token.IsCancellationRequested,
+            Assert.False(cts.Token.IsCancellationRequested,
                "CancellationTokenSourceWithTimer:  Cancellation signaled on super-long timeout (int) !");
 
-#if NETFRAMEWORK
-            CancelAfter(provider, cts, TimeSpan.FromMilliseconds(1));
+#if TESTEXTENSIONS
+            cts.Dispose();
+            cts = provider.CreateCancellationTokenSource(TimeSpan.FromMilliseconds(1));
 #else
             cts.CancelAfter(1);
 #endif // NETFRAMEWORK
 
+            CancellationTokenRegistration ctr = cts.Token.Register(() => mres.Set());
             Debug.WriteLine("CancellationTokenSourceWithTimer: > About to wait on cancellation that should occur soon (int)... if we hang, something bad happened");
 
             mres.Wait();
@@ -250,33 +251,34 @@ namespace Tests.System
             // Test out some TimeSpan-based timeout logic
             //
             TimeSpan prettyLong = new TimeSpan(1, 0, 0);
-#if NETFRAMEWORK
-            cts = new CancellationTokenSource(prettyLong);
+#if TESTEXTENSIONS
+            cts = provider.CreateCancellationTokenSource(prettyLong);
 #else
             cts = new CancellationTokenSource(prettyLong, provider);
 #endif // NETFRAMEWORK
 
-            token = cts.Token;
             mres = new ManualResetEventSlim(false);
-            ctr = token.Register(() => mres.Set());
 
-            Assert.False(token.IsCancellationRequested,
+            Assert.False(cts.Token.IsCancellationRequested,
                "CancellationTokenSourceWithTimer:  Cancellation signaled on super-long timeout (TimeSpan,1)!");
 
-#if NETFRAMEWORK
-            CancelAfter(provider, cts, prettyLong);
+#if TESTEXTENSIONS
+            cts.Dispose();
+            cts = provider.CreateCancellationTokenSource(prettyLong);
 #else
             cts.CancelAfter(prettyLong);
 #endif // NETFRAMEWORK
 
-            Assert.False(token.IsCancellationRequested,
+            Assert.False(cts.Token.IsCancellationRequested,
                "CancellationTokenSourceWithTimer:  Cancellation signaled on super-long timeout (TimeSpan,2) !");
 
-#if NETFRAMEWORK
-            CancelAfter(provider, cts, TimeSpan.FromMilliseconds(1000));
+#if TESTEXTENSIONS
+            cts.Dispose();
+            cts = provider.CreateCancellationTokenSource(TimeSpan.FromMilliseconds(1000));
 #else
             cts.CancelAfter(new TimeSpan(1000));
 #endif // NETFRAMEWORK
+            ctr = cts.Token.Register(() => mres.Set());
 
             Debug.WriteLine("CancellationTokenSourceWithTimer: > About to wait on cancellation that should occur soon (TimeSpan)... if we hang, something bad happened");
 
