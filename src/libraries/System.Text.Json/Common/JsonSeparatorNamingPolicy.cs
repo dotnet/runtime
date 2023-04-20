@@ -16,10 +16,7 @@ namespace System.Text.Json
 
         public sealed override string ConvertName(string name)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ThrowHelper.ThrowArgumentNullException(nameof(name));
 
             // Rented buffer 20% longer that the input.
             int rentedBufferLength = (12 * name.Length) / 10;
