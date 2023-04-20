@@ -1950,6 +1950,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOpWithKReg(GenTreeHWIntrinsic* node)
 
         default:
         {
+            assert(false);
             break;
         }
     }
