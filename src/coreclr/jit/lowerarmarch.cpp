@@ -2543,8 +2543,8 @@ void Lowering::TryLowerCselToCinv(GenTreeOp* select, GenTree* cond)
     GenTree* negatedVal    = ((trueVal->gtOper == GT_NOT) ? trueVal : falseVal)->AsOp()->gtOp1;
     GenTree* nonNegatedVal = (trueVal->gtOper == GT_NOT) ? falseVal : trueVal;
 
-    if (GenTree::Compare(negatedVal, nonNegatedVal) && IsInvariantInRange(negatedVal, select) &&
-        IsInvariantInRange(nonNegatedVal, select))
+    if (GenTree::Compare(negatedVal, nonNegatedVal) && negatedVal->OperIsLocal() &&
+        IsInvariantInRange(negatedVal, select) && IsInvariantInRange(nonNegatedVal, select))
     {
         LowerToCincOrCinv(select, cond, (trueVal->gtOper != GT_NOT), false);
     }

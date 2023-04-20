@@ -13,48 +13,48 @@ public class ConditionalInvertTest
     static byte cinv_byte(byte op1, byte op2)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #42
-        //ARM64-FULL-LINE-NEXT: cinv {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
         return (byte) (op1 > 42 ? op2: ~op2);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static short cinv_short(short op1, short op2)
     {
-        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #44
-        //ARM64-FULL-LINE-NEXT: cinv {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
-        return (short) (op1 <= 44 ? ~op2 : op2);
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #43
+        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        return (short) (op1 <= 43 ? ~op2 : op2);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static short cinv_short_min_max(short op1)
     {
-        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #45
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #44
         //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
-        return (short) (op1 > 45 ? ~short.MaxValue : short.MaxValue);
+        return (short) (op1 > 44 ? ~short.MaxValue : short.MaxValue);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int cinv_int(int op1, int op2)
     {
-        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #46
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #45
         //ARM64-FULL-LINE-NEXT: cinv {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
-        return op1 > 46 ? op2 : ~op2;
+        return op1 > 45 ? op2 : ~op2;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int cinv_int_min_max(int op1)
     {
-        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #47
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #46
         //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ge|lt}}
-        return op1 >= 47 ? int.MaxValue : ~int.MaxValue;
+        return op1 >= 46 ? int.MaxValue : ~int.MaxValue;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static long cinv_long(long op1, long op2)
     {
-        //ARM64-FULL-LINE: cmp {{x[0-9]+}}, #48
+        //ARM64-FULL-LINE: cmp {{x[0-9]+}}, #47
         //ARM64-FULL-LINE-NEXT: cinv {{x[0-9]+}}, {{x[0-9]+}}, {{ge|lt}}
-        return op1 < 48 ? ~op2 : op2;
+        return op1 < 47 ? ~op2 : op2;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -62,7 +62,7 @@ public class ConditionalInvertTest
     {
         //ARM64-FULL-LINE: fcmp {{s[0-9]+}}, {{s[0-9]+}}
         //ARM64-FULL-LINE-NEXT: cinv {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
-        return op1 > 50.0f ? op2 : ~op2;
+        return op1 > 48.0f ? op2 : ~op2;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -70,7 +70,7 @@ public class ConditionalInvertTest
     {
         //ARM64-FULL-LINE: fcmp {{d[0-9]+}}, {{d[0-9]+}}
         //ARM64-FULL-LINE-NEXT: cinv {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
-        return op1 > 51.0 ? ~op2 : op2;
+        return op1 > 49.0 ? ~op2 : op2;
     }
 
     public static int Main()
