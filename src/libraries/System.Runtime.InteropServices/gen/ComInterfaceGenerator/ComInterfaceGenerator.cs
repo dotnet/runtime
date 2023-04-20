@@ -76,7 +76,7 @@ namespace Microsoft.Interop
             {
                 Diagnostic? Diagnostic = GetDiagnosticIfInvalidTypeForGeneration(data.Syntax, data.Symbol);
                 INamedTypeSymbol? BaseInterfaceSymbol = TryGetBaseComInterface(data.Symbol, out var baseComInterface) ? baseComInterface : null;
-                ComInterfaceContext Context = ComInterfaceContext.From(data.Symbol, data.Syntax);
+                ComInterfaceInfo Context = ComInterfaceInfo.From(data.Symbol, data.Syntax);
                 return new { data.Syntax, data.Symbol, Context, Diagnostic, BaseInterfaceSymbol };
             });
 
@@ -84,11 +84,11 @@ namespace Microsoft.Interop
             var interfacesToGenerate = interfacesAndDiagnostics.Where(static data => data.Diagnostic is null);
             {
                 var invalidTypeDiagnostics = interfacesAndDiagnostics.Where(static data => data.Diagnostic is not null);
-                context.RegisterDiagnostics(invalidTypeDiagnostics.Select((data, ct) => data.Diagnostic));
+                context.RegisterDiagnostics(invalidTypeDiagnostics.Select(static (data, ct) => data.Diagnostic));
             }
 
             // Get the information we need about methods themselves
-            var interfaceMethods = interfacesToGenerate.Select((data, ct) =>
+            var interfaceMethods = interfacesToGenerate.Select(static (data, ct) =>
             {
                 INamedTypeSymbol iface = data.Symbol;
                 List<MethodInfo> comMethods = new();
@@ -103,10 +103,10 @@ namespace Microsoft.Interop
             });
 
             // Create a map of Com interface to its base for use later.
-            var ifaceToBaseMap = interfacesToGenerate.Collect().Select((data, ct) =>
+            var ifaceToBaseMap = interfacesToGenerate.Collect().Select(static (data, ct) =>
             {
-                Dictionary<ComInterfaceContext, ComInterfaceContext?> ifaceToBaseMap = new();
-                Dictionary<INamedTypeSymbol, ComInterfaceContext> contexts = new(SymbolEqualityComparer.Default);
+                Dictionary<ComInterfaceInfo, ComInterfaceInfo?> ifaceToBaseMap = new();
+                Dictionary<INamedTypeSymbol, ComInterfaceInfo> contexts = new(SymbolEqualityComparer.Default);
                 foreach (var iface in data)
                 {
                     contexts.Add(iface.Symbol, iface.Context);
@@ -120,12 +120,12 @@ namespace Microsoft.Interop
 
             // Generate a map from Com interface to the methods it declares
             var interfaceToDeclaredMethodsMap = interfacesToGenerate
-                .Select((iface, ct) => iface.Context)
+                .Select(static (iface, ct) => iface.Context)
                 .Zip(interfaceMethods)
                 .Collect()
-                .Select((data, ct) =>
+                .Select(static (data, ct) =>
                 {
-                    return data.ToValueEqualityImmutableDictionary<(ComInterfaceContext, SequenceEqualImmutableArray<MethodInfo>), ComInterfaceContext, SequenceEqualImmutableArray<MethodInfo>>(
+                    return data.ToValueEqualityImmutableDictionary<(ComInterfaceInfo, SequenceEqualImmutableArray<MethodInfo>), ComInterfaceInfo, SequenceEqualImmutableArray<MethodInfo>>(
                         static pair => pair.Item1,
                         static pair => pair.Item2);
                 });
@@ -134,16 +134,16 @@ namespace Microsoft.Interop
             var interfaceAndMethodsContexts = interfaceToDeclaredMethodsMap
                 .Combine(ifaceToBaseMap)
                 .Combine(context.CreateStubEnvironmentProvider())
-                .SelectMany((data, ct) =>
+                .SelectMany(static (data, ct) =>
                 {
                     var ((ifaceToMethodsMap, ifaceToBaseMap), env) = data;
-                    return ComInterfaceAndMethods.GetAllMethods(ifaceToBaseMap, ifaceToMethodsMap, env, ct);
+                    return ComInterfaceAndMethodsContext.GetAllMethods(ifaceToBaseMap, ifaceToMethodsMap, env, ct);
                 });
 
 
             // Separate the methods which declare methods from those that don't declare methods
             var interfacesWithMethodsAndItsMethods = interfaceAndMethodsContexts
-                .Where(data => data.DeclaredMethods.Any());
+                .Where(static data => data.DeclaredMethods.Any());
 
             var interfacesWithMethods = interfacesWithMethodsAndItsMethods
                 .Select(static (data, ct) => data.Interface);
@@ -154,11 +154,11 @@ namespace Microsoft.Interop
                 // and method-level data, but that's okay because marker interfaces are much simpler.
                 // We'll handle them seperately because they are so simple.
                 var markerInterfaces = interfaceAndMethodsContexts
-                    .Where(data => !data.DeclaredMethods.Any())
+                    .Where(static data => !data.DeclaredMethods.Any())
                     .Select(static (data, ct) => data.Interface);
 
                 var markerInterfaceIUnknownDerived = markerInterfaces
-                    .Select(static (context, ct) => GenerateIUnknownDerivedAttributeApplication(context))
+                    .Select(GenerateIUnknownDerivedAttributeApplication)
                     .WithComparer(SyntaxEquivalentComparer.Instance)
                     .SelectNormalized();
 
@@ -171,10 +171,10 @@ namespace Microsoft.Interop
                 });
             }
 
-            var allMethods = interfaceAndMethodsContexts.SelectMany(static (data, ct) => data.DeclaredMethods);
 
             // Split the methods we want to generate and the ones with warnings into different groups, and warn on the invalid methods
             {
+                var allMethods = interfaceAndMethodsContexts.SelectMany(static (data, ct) => data.DeclaredMethods);
                 var invalidMethods = allMethods.Where(static data => data.Diagnostic is not null);
 
                 context.RegisterSourceOutput(invalidMethods, static (context, invalidMethod) =>
@@ -182,82 +182,42 @@ namespace Microsoft.Interop
                     context.ReportDiagnostic(invalidMethod.Diagnostic);
                 });
             }
-            var methodsToGenerate = allMethods.Where(static data =>
-            {
-                return data.Diagnostic is null;
-            });
-            IncrementalValuesProvider<IncrementalMethodStubGenerationContext> generateStubInformation = methodsToGenerate.Select((data, ct) => data.GenerationContext);
 
             // Generate the code for the managed-to-unmanaged stubs and the diagnostics from code-generation.
-            var generateManagedToNativeStub = generateStubInformation
-                .Select(
-                    static (data, ct) =>
-                    {
-                        if (data.VtableIndexData.Direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional))
-                        {
-                            return (GeneratedMethodContextBase)new SkippedStubContext(data.OriginalDefiningType);
-                        }
-                        var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(data);
-                        return new GeneratedStubCodeContext(data.TypeKeyOwner, data.ContainingSyntaxContext, new(methodStub), new(diagnostics));
-                    }
-                )
-                .WithTrackingName(StepNames.GenerateManagedToNativeStub);
-
-            context.RegisterDiagnostics(generateManagedToNativeStub.SelectMany((stubInfo, ct) => stubInfo.Diagnostics.Array));
-
-            var managedToNativeInterfaceImplementations = interfacesWithMethodsAndItsMethods.Select((data, ct) =>
-                {
-                    return GenerateImplementationInterface(data);
-                }).WithTrackingName(StepNames.GenerateManagedToNativeInterfaceImplementation)
+            context.RegisterDiagnostics(interfacesWithMethodsAndItsMethods
+                .SelectMany((data, ct) => data.DeclaredMethods.SelectMany(m => m.ManagedToUnmanagedStub.Diagnostics)));
+            var managedToNativeInterfaceImplementations = interfacesWithMethodsAndItsMethods
+                .Select(GenerateImplementationInterface)
+                .WithTrackingName(StepNames.GenerateManagedToNativeInterfaceImplementation)
                 .WithComparer(SyntaxEquivalentComparer.Instance)
                 .SelectNormalized();
 
-            // Filter the list of all stubs to only the stubs that requested unmanaged-to-managed stub generation.
-            IncrementalValuesProvider<IncrementalMethodStubGenerationContext> nativeToManagedStubContexts =
-                generateStubInformation
-                .Where(static data => data.VtableIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional);
-
             // Generate the code for the unmanaged-to-managed stubs and the diagnostics from code-generation.
-            var generateNativeToManagedStub = generateStubInformation
-                .Select(
-                    static (data, ct) =>
-                    {
-                        if (data.VtableIndexData.Direction is not (MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional))
-                        {
-                            return (GeneratedMethodContextBase)new SkippedStubContext(data.OriginalDefiningType);
-                        }
-                        var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(data);
-                        return new GeneratedStubCodeContext(data.OriginalDefiningType, data.ContainingSyntaxContext, new(methodStub), new(diagnostics));
-                    }
-                )
-                .WithTrackingName(StepNames.GenerateNativeToManagedStub);
-
-            context.RegisterDiagnostics(generateNativeToManagedStub.SelectMany((stubInfo, ct) => stubInfo.Diagnostics.Array));
-
-            var nativeToManagedVtableMethods = generateNativeToManagedStub
-                .Collect()
-                .SelectMany(static (stubs, ct) => GroupContextsForInterfaceGeneration(stubs))
-                .Select(static (interfaceGroup, ct) => GenerateImplementationVTableMethods(interfaceGroup.Array))
+            context.RegisterDiagnostics(interfacesWithMethodsAndItsMethods
+                .SelectMany((data, ct) => data.DeclaredMethods.SelectMany(m => m.NativeToManagedStub.Diagnostics)));
+            var nativeToManagedVtableMethods = interfacesWithMethodsAndItsMethods
+                .Select(GenerateImplementationVTableMethods)
                 .WithTrackingName(StepNames.GenerateNativeToManagedVTableMethods)
                 .WithComparer(SyntaxEquivalentComparer.Instance)
                 .SelectNormalized();
 
             // Generate the native interface metadata for each [GeneratedComInterface]-attributed interface.
             var nativeInterfaceInformation = interfacesWithMethods
-                .Select(static (context, ct) => GenerateInterfaceInformation(context))
+                .Select(GenerateInterfaceInformation)
                 .WithTrackingName(StepNames.GenerateInterfaceInformation)
                 .WithComparer(SyntaxEquivalentComparer.Instance)
                 .SelectNormalized();
 
             // Generate a method named CreateManagedVirtualFunctionTable on the native interface implementation
             // that allocates and fills in the memory for the vtable.
-            var nativeToManagedVtables = interfacesWithMethodsAndItsMethods.Select((data, ct) => GenerateImplementationVTable(data))
+            var nativeToManagedVtables = interfacesWithMethodsAndItsMethods
+                .Select(GenerateImplementationVTable)
                 .WithTrackingName(StepNames.GenerateNativeToManagedVTable)
                 .WithComparer(SyntaxEquivalentComparer.Instance)
                 .SelectNormalized();
 
             var iUnknownDerivedAttributeApplication = interfacesWithMethods
-                .Select(static (context, ct) => GenerateIUnknownDerivedAttributeApplication(context))
+                .Select(GenerateIUnknownDerivedAttributeApplication)
                 .WithTrackingName(StepNames.GenerateIUnknownDerivedAttribute)
                 .WithComparer(SyntaxEquivalentComparer.Instance)
                 .SelectNormalized();
@@ -297,7 +257,7 @@ namespace Microsoft.Interop
             });
         }
 
-        private static string GenerateMarkerInterfaceSource(ComInterfaceContext iface) => $$"""
+        private static string GenerateMarkerInterfaceSource(ComInterfaceInfo iface) => $$"""
             file unsafe class InterfaceInformation : global::System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceType
             {
                 public static global::System.Guid Iid => new(new global::System.ReadOnlySpan<byte>(new byte[] { {{string.Join(",", iface.InterfaceId.ToByteArray())}} }));
@@ -331,13 +291,14 @@ namespace Microsoft.Interop
                         IdentifierName("InterfaceInformation"),
                         IdentifierName("InterfaceImplementation")));
 
-        private static MemberDeclarationSyntax GenerateIUnknownDerivedAttributeApplication(ComInterfaceContext context)
+        private static MemberDeclarationSyntax GenerateIUnknownDerivedAttributeApplication(ComInterfaceInfo context, CancellationToken _)
             => context.TypeDefinitionContext.WrapMemberInContainingSyntaxWithUnsafeModifier(
                 TypeDeclaration(context.ContainingSyntax.TypeKind, context.ContainingSyntax.Identifier)
                     .WithModifiers(context.ContainingSyntax.Modifiers)
                     .WithTypeParameterList(context.ContainingSyntax.TypeParameters)
                     .AddAttributeLists(AttributeList(SingletonSeparatedList(s_iUnknownDerivedAttributeTemplate))));
 
+        // Todo: extract info needed from the IMethodSymbol into MethodInfo and only pass a MethodInfo here
         private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
@@ -560,7 +521,7 @@ namespace Microsoft.Interop
 
         private static readonly InterfaceDeclarationSyntax ImplementationInterfaceTemplate = InterfaceDeclaration("InterfaceImplementation")
                 .WithModifiers(TokenList(Token(SyntaxKind.FileKeyword), Token(SyntaxKind.UnsafeKeyword), Token(SyntaxKind.PartialKeyword)));
-        private static InterfaceDeclarationSyntax GenerateImplementationInterface(ComInterfaceAndMethods interfaceGroup)
+        private static InterfaceDeclarationSyntax GenerateImplementationInterface(ComInterfaceAndMethodsContext interfaceGroup, CancellationToken ct)
         {
             var definingType = interfaceGroup.Interface.InterfaceType;
             return ImplementationInterfaceTemplate
@@ -568,10 +529,10 @@ namespace Microsoft.Interop
                 .WithMembers(List<MemberDeclarationSyntax>(interfaceGroup.DeclaredMethods.Select(m => m.ManagedToUnmanagedStub).OfType<GeneratedStubCodeContext>().Select(ctx => ctx.Stub.Node)))
                 .AddAttributeLists(AttributeList(SingletonSeparatedList(Attribute(ParseName(TypeNames.System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute)))));
         }
-        private static InterfaceDeclarationSyntax GenerateImplementationVTableMethods(ImmutableArray<GeneratedMethodContextBase> interfaceGroup)
+        private static InterfaceDeclarationSyntax GenerateImplementationVTableMethods(ComInterfaceAndMethodsContext comInterfaceAndMethods, CancellationToken _)
         {
             return ImplementationInterfaceTemplate
-                .WithMembers(List<MemberDeclarationSyntax>(interfaceGroup.OfType<GeneratedStubCodeContext>().Select(context => context.Stub.Node)));
+                .WithMembers(List<MemberDeclarationSyntax>(comInterfaceAndMethods.DeclaredMethods.Select(m => m.NativeToManagedStub).OfType<GeneratedStubCodeContext>().Select(context => context.Stub.Node)));
         }
 
         private static readonly TypeSyntax VoidStarStarSyntax = PointerType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))));
@@ -580,7 +541,7 @@ namespace Microsoft.Interop
 
         private static readonly MethodDeclarationSyntax CreateManagedVirtualFunctionTableMethodTemplate = MethodDeclaration(VoidStarStarSyntax, CreateManagedVirtualFunctionTableMethodName)
             .AddModifiers(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword));
-        private static InterfaceDeclarationSyntax GenerateImplementationVTable(ComInterfaceAndMethods interfaceMethods)
+        private static InterfaceDeclarationSyntax GenerateImplementationVTable(ComInterfaceAndMethodsContext interfaceMethods, CancellationToken _)
         {
             const string vtableLocalName = "vtable";
             var interfaceType = interfaceMethods.Interface.InterfaceType;
@@ -759,7 +720,7 @@ namespace Microsoft.Interop
             .AddModifiers(Token(SyntaxKind.FileKeyword), Token(SyntaxKind.UnsafeKeyword))
             .AddBaseListTypes(SimpleBaseType(ParseTypeName(TypeNames.IIUnknownInterfaceType)));
 
-        private static ClassDeclarationSyntax GenerateInterfaceInformation(ComInterfaceContext context)
+        private static ClassDeclarationSyntax GenerateInterfaceInformation(ComInterfaceInfo context, CancellationToken _)
         {
             const string vtableFieldName = "_vtable";
             return InterfaceInformationTypeTemplate
@@ -821,14 +782,21 @@ namespace Microsoft.Interop
             }
         }
 
-        private sealed record ComInterfaceContext(
+        // Data model below. Types that end in "Info" are meant to be basic information about the user code, usually available immediately from the symbol and syntax.
+        // Types that end in "Context" require synthesized information about the rest of the code (other methods in the type, base interfaces, etc.) to be created, and have more information.
+        // Ideally "Info" doesn't have an ISymbol reference in a field, but the "Context" especially should not.
+
+        /// <summary>
+        /// Information about a Com interface, but not it's methods
+        /// </summary>
+        private sealed record ComInterfaceInfo(
             ManagedTypeInfo InterfaceType,
             InterfaceDeclarationSyntax InterfaceDeclaration,
             ContainingSyntaxContext TypeDefinitionContext,
             ContainingSyntax ContainingSyntax,
             Guid InterfaceId)
         {
-            public static ComInterfaceContext From(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax)
+            public static ComInterfaceInfo From(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax)
             {
                 Guid? guid = null;
                 var guidAttr = symbol.GetAttributes().Where(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_InteropServices_GuidAttribute).SingleOrDefault();
@@ -838,7 +806,7 @@ namespace Microsoft.Interop
                     if (guidstr is not null)
                         guid = new Guid(guidstr);
                 }
-                return new ComInterfaceContext(
+                return new ComInterfaceInfo(
                     ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol),
                     syntax,
                     new ContainingSyntaxContext(syntax),
@@ -852,7 +820,7 @@ namespace Microsoft.Interop
                 return HashCode.Combine(InterfaceType, TypeDefinitionContext, InterfaceId);
             }
 
-            public bool Equals(ComInterfaceContext other)
+            public bool Equals(ComInterfaceInfo other)
             {
                 // ContainingSyntax and ContainingSyntaxContext are not used in the hash code
                 return InterfaceType == other.InterfaceType
@@ -862,7 +830,7 @@ namespace Microsoft.Interop
         }
 
         /// <summary>
-        /// Represents a method that has been determined to be a COM interface method.
+        /// Represents a method that has been determined to be a COM interface method. Only contains info immediately available from an IMethodSymbol and MethodDeclarationSyntax.
         /// </summary>
         private sealed record MethodInfo(
             [property: Obsolete] IMethodSymbol Symbol,
@@ -871,7 +839,7 @@ namespace Microsoft.Interop
             SequenceEqualImmutableArray<(ManagedTypeInfo Type, string Name, RefKind RefKind)> Parameters,
             Diagnostic? Diagnostic)
         {
-            public static bool IsComInterface(ComInterfaceContext ifaceContext, ISymbol member, [NotNullWhen(true)] out MethodInfo? comMethodInfo)
+            public static bool IsComInterface(ComInterfaceInfo ifaceContext, ISymbol member, [NotNullWhen(true)] out MethodInfo? comMethodInfo)
             {
                 comMethodInfo = null;
                 Location interfaceLocation = ifaceContext.InterfaceDeclaration.GetLocation();
@@ -931,7 +899,7 @@ namespace Microsoft.Interop
         /// <summary>
         /// Represents a method, its declaring interface, and its index in the interface's vtable.
         /// </summary>
-        private sealed record ComInterfaceMethodContext(ComInterfaceContext DeclaringInterface, MethodInfo MethodInfo, int Index, IncrementalMethodStubGenerationContext GenerationContext)
+        private sealed record ComMethodContext(ComInterfaceInfo DeclaringInterface, MethodInfo MethodInfo, int Index, IncrementalMethodStubGenerationContext GenerationContext)
         {
             public GeneratedMethodContextBase ManagedToUnmanagedStub
             {
@@ -947,6 +915,19 @@ namespace Microsoft.Interop
             }
 
             public Diagnostic? Diagnostic => MethodInfo.Diagnostic;
+
+            public GeneratedMethodContextBase NativeToManagedStub
+            {
+                get
+                {
+                    if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional))
+                    {
+                        return (GeneratedMethodContextBase)new SkippedStubContext(GenerationContext.OriginalDefiningType);
+                    }
+                    var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(GenerationContext);
+                    return new GeneratedStubCodeContext(GenerationContext.OriginalDefiningType, GenerationContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));
+                }
+            }
 
             public MethodDeclarationSyntax GenerateShadow()
             {
@@ -971,30 +952,30 @@ namespace Microsoft.Interop
         /// <summary>
         /// Represents an interface and all of the methods that need to be generated for it (methods declared on the interface and methods inherited from base interfaces).
         /// </summary>
-        private sealed record ComInterfaceAndMethods(ComInterfaceContext Interface, SequenceEqualImmutableArray<ComInterfaceMethodContext> Methods, ComInterfaceContext? BaseInterface)
+        private sealed record ComInterfaceAndMethodsContext(ComInterfaceInfo Interface, SequenceEqualImmutableArray<ComMethodContext> Methods, ComInterfaceInfo? BaseInterface)
         {
             /// <summary>
             /// COM methods that are declared on the attributed interface declaration.
             /// </summary>
-            public IEnumerable<ComInterfaceMethodContext> DeclaredMethods => Methods.Where(m => m.DeclaringInterface == Interface);
+            public IEnumerable<ComMethodContext> DeclaredMethods => Methods.Where(m => m.DeclaringInterface == Interface);
 
             /// <summary>
             /// COM methods that are declared on an interface the interface inherits from.
             /// </summary>
-            public IEnumerable<ComInterfaceMethodContext> ShadowingMethods => Methods.Where(m => m.DeclaringInterface != Interface);
+            public IEnumerable<ComMethodContext> ShadowingMethods => Methods.Where(m => m.DeclaringInterface != Interface);
 
-            public static IEnumerable<ComInterfaceAndMethods> GetAllMethods(ValueEqualityImmutableDictionary<ComInterfaceContext, ComInterfaceContext?> ifaceToBaseMap, ValueEqualityImmutableDictionary<ComInterfaceContext, SequenceEqualImmutableArray<MethodInfo>> ifaceToMethodsMap, StubEnvironment environment, CancellationToken ct)
+            public static IEnumerable<ComInterfaceAndMethodsContext> GetAllMethods(ValueEqualityImmutableDictionary<ComInterfaceInfo, ComInterfaceInfo?> ifaceToBaseMap, ValueEqualityImmutableDictionary<ComInterfaceInfo, SequenceEqualImmutableArray<MethodInfo>> ifaceToDeclaredMethodsMap, StubEnvironment environment, CancellationToken ct)
             {
-                Dictionary<ComInterfaceContext, IEnumerable<ComInterfaceMethodContext>> allMethodsCache = new();
+                Dictionary<ComInterfaceInfo, ImmutableArray<ComMethodContext>> allMethodsCache = new();
 
-                foreach (var kvp in ifaceToMethodsMap)
+                foreach (var kvp in ifaceToDeclaredMethodsMap)
                 {
-                    IEnumerable<ComInterfaceMethodContext> asdf = AddMethods(kvp.Key, kvp.Value);
+                    AddMethods(kvp.Key, kvp.Value);
                 }
 
-                return allMethodsCache.Select(kvp => new ComInterfaceAndMethods(kvp.Key, kvp.Value.ToSequenceEqualImmutableArray(), ifaceToBaseMap[kvp.Key]));
+                return allMethodsCache.Select(kvp => new ComInterfaceAndMethodsContext(kvp.Key, kvp.Value.ToSequenceEqualImmutableArray(), ifaceToBaseMap[kvp.Key]));
 
-                IEnumerable<ComInterfaceMethodContext> AddMethods(ComInterfaceContext iface, IEnumerable<MethodInfo> declaredMethods)
+                ImmutableArray<ComMethodContext> AddMethods(ComInterfaceInfo iface, IEnumerable<MethodInfo> declaredMethods)
                 {
                     if (allMethodsCache.TryGetValue(iface, out var cachedValue))
                     {
@@ -1002,27 +983,27 @@ namespace Microsoft.Interop
                     }
 
                     int startingIndex = 3;
-                    List<ComInterfaceMethodContext> methods = new();
+                    List<ComMethodContext> methods = new();
+                    // If we have a base interface, we should add the inherited methods to our list in vtable order
                     if (ifaceToBaseMap.TryGetValue(iface, out var baseComIface) && baseComIface is not null)
                     {
                         if (!allMethodsCache.TryGetValue(baseComIface, out var baseMethods))
                         {
-                            baseMethods = AddMethods(baseComIface, ifaceToMethodsMap[baseComIface]);
+                            baseMethods = AddMethods(baseComIface, ifaceToDeclaredMethodsMap[baseComIface]);
                         }
-
-                        foreach (var method in baseMethods)
-                        {
-                            startingIndex++;
-                            methods.Add(method);
-                        }
+                        methods.AddRange(baseMethods);
+                        startingIndex += baseMethods.Length;
                     }
+                    // Then we append the declared methods in vtable order
                     foreach (var method in declaredMethods)
                     {
                         var ctx = CalculateStubInformation(method.Syntax, method.Symbol, startingIndex, environment, ct);
-                        methods.Add(new ComInterfaceMethodContext(iface, method, startingIndex++, ctx));
+                        methods.Add(new ComMethodContext(iface, method, startingIndex++, ctx));
                     }
-                    allMethodsCache[iface] = methods;
-                    return methods;
+                    // Cache so we don't recalculate if many intherfaces inherit from the same o
+                    var immutableMethods = methods.ToImmutableArray();
+                    allMethodsCache[iface] = immutableMethods;
+                    return immutableMethods;
                 }
             }
         }
