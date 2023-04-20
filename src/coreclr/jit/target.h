@@ -386,6 +386,16 @@ inline bool genIsValidFloatReg(regNumber reg)
     return reg >= REG_FP_FIRST && reg <= REG_FP_LAST;
 }
 
+#if defined(TARGET_XARCH)
+/*****************************************************************************
+ * Return true if the register is a valid mask register
+ */
+inline bool genIsValidMaskReg(regNumber reg)
+{
+    return reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST;
+}
+#endif // TARGET_XARCH
+
 #ifdef TARGET_ARM
 
 /*****************************************************************************
