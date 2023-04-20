@@ -331,6 +331,7 @@ namespace System.Reflection
             if (m_noDefaultValue || MdToken.IsNullToken(m_tkParamDef))
             {
                 defaultValue = DBNull.Value;
+                m_noDefaultValue = true;
                 return false;
             }
 
@@ -356,15 +357,9 @@ namespace System.Reflection
                     m_noDefaultValue = true;
                     return false;
                 }
-                else
-                {
-                    return true;
-                }
             }
-            else
-            {
-                return true;
-            }
+
+            return true;
 
             #endregion
         }

@@ -83,16 +83,7 @@ namespace System.Reflection.Tests
         public void HasDefaultValue_ReturnParam()
         {
             ParameterInfo parameterInfo = GetMethod(typeof(ParameterInfoMetadata), "Method1").ReturnParameter;
-
-            if (PlatformDetection.IsNativeAot)
-            {
-                // it's hard coded as true
-                Assert.True(parameterInfo.HasDefaultValue);
-            }
-            else
-            {
-                Assert.False(parameterInfo.HasDefaultValue);
-            }
+            Assert.False(parameterInfo.HasDefaultValue);
         }
 
         [Theory]
