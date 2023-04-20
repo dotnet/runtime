@@ -19338,7 +19338,7 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
 
     if (simdBaseType == TYP_LONG)
     {
-        if (simdSize ==64)
+        if (simdSize == 64)
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
             intrinsic = NI_AVX512F_Abs;
@@ -19353,7 +19353,7 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
         intrinsic = NI_AVX2_Abs;
     }
-    else if (simdSize ==64)
+    else if (simdSize == 64)
     {
         if (simdBaseType == TYP_INT)
         {
