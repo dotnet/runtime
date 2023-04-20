@@ -31,7 +31,7 @@ private:
     bool m_ErrorEncountered;
 
     // Construct a new map for the specified pid.
-    PerfMap(int pid);
+    PerfMap(int pid, const char* path);
 
 protected:
     // Indicates whether optimization tiers should be shown for methods in perf maps

@@ -19,6 +19,14 @@
 
 #define FMT_CODE_ADDR "%p"
 
+#ifndef __ANDROID__
+#define TEMP_DIRECTORY_PATH "/tmp/"
+#else
+// On Android, "/tmp/" doesn't exist; temporary files should go to
+// /data/local/tmp/
+#define TEMP_DIRECTORY_PATH "/data/local/tmp/"
+#endif
+
 Volatile<bool> PerfMap::s_enabled = false;
 PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
@@ -40,11 +48,28 @@ void PerfMap::Initialize()
     // Only enable the map if requested.
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) == ALL || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) == PERFMAP)
     {
+        char perfmapPath[4096];
+        
+        // CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapJitDumpPath) returns a LPWSTR
+        // Use GetEnvironmentVariableA because it is simpler.
+        // Keep comment here to make it searchable.
+        DWORD len = GetEnvironmentVariableA("COMPlus_PerfMapJitDumpPath", perfmapPath, sizeof(perfmapPath) - 1);
+
+        if (len == 0)
+        {
+            len = GetEnvironmentVariableA("DOTNET_PerfMapJitDumpPath", perfmapPath, sizeof(perfmapPath) - 1);
+
+            if (len == 0)
+            {
+                strcpy_s(perfmapPath, sizeof(perfmapPath), TEMP_DIRECTORY_PATH);
+            }
+        }
+
         // Get the current process id.
         int currentPid = GetCurrentProcessId();
 
         // Create the map.
-        s_Current = new PerfMap(currentPid);
+        s_Current = new PerfMap(currentPid, perfmapPath);
 
         int signalNum = (int) CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapIgnoreSignal);
 
@@ -73,8 +98,12 @@ void PerfMap::Initialize()
         }
         else
         {
-            GetTempPathA(sizeof(jitdumpPathBuffer) - 1, jitdumpPathBuffer);
-            jitdumpPath = jitdumpPathBuffer;
+            len = GetEnvironmentVariableA("DOTNET_PerfMapJitDumpPath", jitdumpPath, sizeof(jitdumpPath) - 1);
+
+            if (len == 0)
+            {
+                strcpy_s(jitdumpPath, sizeof(jitdumpPath), TEMP_DIRECTORY_PATH);
+            }
         }
 
         PAL_PerfJitDump_Start(jitdumpPath);
@@ -102,7 +131,7 @@ void PerfMap::Destroy()
 }
 
 // Construct a new map for the process.
-PerfMap::PerfMap(int pid)
+PerfMap::PerfMap(int pid, const char* path)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -110,19 +139,13 @@ PerfMap::PerfMap(int pid)
     m_ErrorEncountered = false;
 
     // Build the path to the map file on disk.
-    WCHAR tempPath[MAX_LONGPATH+1];
-    if(!GetTempPathW(MAX_LONGPATH, tempPath))
-    {
-        return;
-    }
-
-    SString path;
-    path.Printf("%Sperf-%d.map", &tempPath, pid);
+    SString pathFile;
+    pathFile.Printf("%sperf-%d.map", path, pid);
 
     // Open the map file for writing.
-    OpenFile(path);
+    OpenFile(pathFile);
 
-    m_PerfInfo = new PerfInfo(pid);
+    m_PerfInfo = new PerfInfo(pid, path);
 }
 
 // Construct a new map without a specified file name.
