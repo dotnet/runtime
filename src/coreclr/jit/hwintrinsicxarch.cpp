@@ -1306,8 +1306,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Divide:
         case NI_Vector256_Divide:
+        case NI_Vector512_Divide:
         case NI_Vector128_op_Division:
         case NI_Vector256_op_Division:
+        case NI_Vector512_op_Division:
         {
             assert(sig->numArgs == 2);
 
@@ -1977,8 +1979,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Multiply:
         case NI_Vector256_Multiply:
+        case NI_Vector512_Multiply:
         case NI_Vector128_op_Multiply:
         case NI_Vector256_op_Multiply:
+        case NI_Vector512_op_Multiply:
         {
             assert(sig->numArgs == 2);
 
@@ -1988,6 +1992,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
+            assert(simdSize != 64 || IsBaselineVector512IsaSupportedDebugOnly());
+
             if ((simdBaseType == TYP_BYTE) || (simdBaseType == TYP_UBYTE))
             {
                 // TODO-XARCH-CQ: We should support byte/sbyte multiplication
@@ -1996,13 +2002,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsLong(simdBaseType))
             {
-                assert((simdSize == 16) || (simdSize == 32));
-
-                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
+                if (simdSize != 64 && !compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
                 {
                     // TODO-XARCH-CQ: We should support long/ulong multiplication
                     break;
                 }
+// else if simdSize == 64 then above assert would check if baseline isa supported
 
 #if defined(TARGET_X86)
                 // TODO-XARCH-CQ: We need to support 64-bit CreateBroadcast
