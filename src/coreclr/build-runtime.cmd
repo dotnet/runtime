@@ -219,6 +219,11 @@ set "__ArtifactsIntermediatesDir=%__RepoRootDir%\artifacts\obj\coreclr\"
 if "%__Ninja%"=="0" (set "__IntermediatesDir=%__IntermediatesDir%\ide")
 set "__PackagesBinDir=%__BinDir%\.nuget"
 
+REM We don't want to have the host-arch in the output path for our cross-os component builds,
+REM as they dont support different host architectures for a given target architecture\
+REM (there's only one valid host per target architecture)
+if /i NOT "%__TargetOS%"=="windows" set __ExplicitHostArch=0
+
 if "%__ExplicitHostArch%" == "1" (
     set __BinDir=%__BinDir%\%__HostArch%
     set __IntermediatesDir=%__IntermediatesDir%\%__HostArch%
