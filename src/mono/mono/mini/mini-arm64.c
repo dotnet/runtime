@@ -927,58 +927,6 @@ mono_arm_emit_ldrx (guint8 *code, int rt, int rn, int imm)
 	return emit_ldrx (code, rt, rn, imm);
 }
 
-static guint8* 
-emit_switch (guint8* code, int ncases, int ncaselen, int sreg)
-{
-	// Assumptions:
-	// - case selector values are nicely packed from 0 to some small integer
-	// - all cases are the same length (this pads them with NOPs if needed)
-	// - (case length + 1) is a power of two 
-
-	// The structure is as follows:
-	// adrl x16, first_case
-	// add  x16, x16, <sreg> lsl <pwr+2>
-	// br   x16
-	// first_case:
-	//    some first case code here (initialized to nops)
-	// b    end_switch
-	// first_case + 4 * (ncaselen+1):
-	//    some second case code here (initialized to nops)
-  // b    end_switch
-	// ...
-  // end_switch:
-
-	// TODO: let the last case fall through to end_switch
-	// TODO: allow for non-power-of-2 case lengths
-
-	// We add one to ncaselen to support the b instruction which must trail every case.
-	int pwr = mono_is_power_of_two (ncaselen + 1); 
-	g_assert (pwr >= 0);
-
-	guint8* first_case = code + ARM64_SWITCH_PREAMBLE_LENGTH; 
-	guint8* end_switch = first_case + (ncaselen + 1) * ncases * 4;
-	arm_adrx (code, ARMREG_IP0, first_case); // adr points to the next instruction, hence -4
-	// We shift by additional 2 bits to account for instructions taking 4 Bytes each.
-	arm_addx_shift (code, ARMREG_IP0, ARMREG_IP0, sreg, ARMSHIFT_LSL, pwr + 2); 
-	arm_brx (code, ARMREG_IP0);
-	
-	for (int i = 0; i < ncases; i++)
-	{
-		for (int j = 0; j < ncaselen; j++)
-			arm_nop (code);
-
-		arm_b (code, end_switch);
-	}
-	
-	return end_switch;
-}
-
-static guint8* 
-get_switch_case (guint8* code, int ncaselen, int ncase)
-{
-	return code + 4 * ((ncaselen + 1) * ncase) + ARM64_SWITCH_PREAMBLE_LENGTH;
-}
-
 static guint8*
 emit_xextract_i8 (guint8* code, int dreg, int sreg1, int sreg2)
 {

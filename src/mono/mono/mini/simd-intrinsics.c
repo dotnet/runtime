@@ -1772,7 +1772,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			MONO_EMIT_NEW_BIALU(cfg, OP_PADD, addr_reg, spilled->dreg, offset_reg);
 			MonoInst* ret;
 			int dreg = arg0_type == MONO_TYPE_R4 ? alloc_freg (cfg) : alloc_ireg (cfg);
-			NEW_LOAD_MEMBASE (cfg, ret, OP_LOAD_MEMBASE, dreg, addr_reg, 0);
+			NEW_LOAD_MEMBASE (cfg, ret, mono_type_to_load_membase (cfg, fsig->ret), dreg, addr_reg, 0);
 			MONO_ADD_INS (cfg->cbb, ret);
 			return ret;
 		}
