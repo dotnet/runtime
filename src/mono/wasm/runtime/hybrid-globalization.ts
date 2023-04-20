@@ -5,7 +5,7 @@ import { Module } from "./imports";
 import { mono_wasm_new_external_root } from "./roots";
 import {MonoString, MonoStringRef } from "./types";
 import { Int32Ptr } from "./types/emscripten";
-import { StringDecoder, conv_string_root, js_string_to_mono_string_root } from "./strings";
+import { conv_string_root, js_string_to_mono_string_root, string_decoder } from "./strings";
 import { setU16 } from "./memory";
 
 export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
@@ -88,13 +88,12 @@ export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoS
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
         const cultureName = conv_string_root(cultureRoot);
-        const sd = new StringDecoder();
-        const prefix = get_clean_string(sd, str2, str2Length);
+        const prefix = get_clean_string(str2, str2Length);
         // no need to look for an empty string
         if (prefix.length == 0)
             return 1; // true
 
-        const source = get_clean_string(sd, str1, str1Length);
+        const source = get_clean_string(str1, str1Length);
         if (source.length < prefix.length)
             return 0; //false
         const sourceOfPrefixLength = source.slice(0, prefix.length);
@@ -119,12 +118,11 @@ export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStr
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
         const cultureName = conv_string_root(cultureRoot);
-        const sd = new StringDecoder();
-        const suffix = get_clean_string(sd, str2, str2Length);
+        const suffix = get_clean_string(str2, str2Length);
         if (suffix.length == 0)
             return 1; // true
 
-        const source = get_clean_string(sd, str1, str1Length);
+        const source = get_clean_string(str1, str1Length);
         const diff = source.length - suffix.length;
         if (diff < 0)
             return 0; //false
@@ -146,9 +144,9 @@ export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStr
     }
 }
 
-function get_clean_string(sd: StringDecoder, strPtr: number, strLen: number)
+function get_clean_string(strPtr: number, strLen: number)
 {
-    const str = sd.decode(<any>strPtr, <any>(strPtr + 2*strLen));
+    const str = string_decoder.decode(<any>strPtr, <any>(strPtr + 2*strLen));
     const nStr = str.normalize();
     // could we skip zero-width chars here?
     return nStr.replace(/[\u200B-\u200D\uFEFF\0]/g, "");
