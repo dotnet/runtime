@@ -18,6 +18,7 @@ public class AssetsComputingHelper
         bool invariantGlobalization,
         bool copySymbols,
         string customIcuCandidateFilename,
+        bool enableThreads,
         out string reason)
     {
         var extension = candidate.GetMetadata("Extension");
@@ -45,7 +46,7 @@ public class AssetsComputingHelper
             ".json" when fromMonoPackage && (fileName == "emcc-props" || fileName == "package") => $"{fileName}{extension} is not used by Blazor",
             ".ts" when fromMonoPackage && fileName == "dotnet.d" => "dotnet type definition is not used by Blazor",
             ".ts" when fromMonoPackage && fileName == "dotnet-legacy.d" => "dotnet type definition is not used by Blazor",
-            ".js" when assetType == "native" && fileName != "dotnet" => $"{fileName}{extension} is not used by Blazor",
+            ".js" when assetType == "native" && !(fileName == "dotnet" || enableThreads && fileName == "dotnet.worker") => $"{fileName}{extension} is not used by Blazor",
             ".pdb" when !copySymbols => "copying symbols is disabled",
             ".symbols" when fromMonoPackage => "extension .symbols is not required.",
             _ => null

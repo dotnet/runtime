@@ -45,6 +45,8 @@ public class ComputeWasmBuildAssets : Task
 
     public bool FingerprintDotNetJs { get; set; }
 
+    public bool EnableThreads { get; set; }
+
     [Output]
     public ITaskItem[] AssetCandidates { get; set; }
 
@@ -79,7 +81,7 @@ public class ComputeWasmBuildAssets : Task
             for (int i = 0; i < Candidates.Length; i++)
             {
                 var candidate = Candidates[i];
-                if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, CopySymbols, customIcuCandidateFilename, out var reason))
+                if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, CopySymbols, customIcuCandidateFilename, EnableThreads, out var reason))
                 {
                     Log.LogMessage(MessageImportance.Low, "Skipping asset '{0}' because '{1}'", candidate.ItemSpec, reason);
                     filesToRemove.Add(candidate);
@@ -134,6 +136,17 @@ public class ComputeWasmBuildAssets : Task
                     newDotNetJs.SetMetadata("AssetTraitValue", "native");
 
                     assetCandidates.Add(newDotNetJs);
+                    continue;
+                }
+                else if (candidate.GetMetadata("FileName") == "dotnet.worker" && candidate.GetMetadata("Extension") == ".js")
+                {
+                    var dotnetWorker = new TaskItem(candidate.ItemSpec, candidate.CloneCustomMetadata());
+                    dotnetWorker.SetMetadata("OriginalItemSpec", candidate.ItemSpec);
+
+                    dotnetWorker.SetMetadata("AssetTraitName", "WasmResource");
+                    dotnetWorker.SetMetadata("AssetTraitValue", "native");
+
+                    assetCandidates.Add(dotnetWorker);
                     continue;
                 }
                 else
