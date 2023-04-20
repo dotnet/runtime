@@ -14,6 +14,7 @@ using Xunit.Abstractions;
 using System.Diagnostics.Tracing;
 using System.Net.Sockets;
 using System.Reflection;
+using Microsoft.Quic;
 
 namespace System.Net.Quic.Tests
 {
@@ -43,14 +44,23 @@ namespace System.Net.Quic.Tests
 
         static unsafe QuicTestBase()
         {
-            Type msQuicApi = typeof(QuicConnection).Assembly.GetType("System.Net.Quic.MsQuicApi");
-            (bool maxQueueWorkDelaySet, string msQuicLibraryVersion) = ((bool, string))msQuicApi.GetMethod("SetUpForTests", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, Array.Empty<object?>());
+            // If any of the reflection bellow breaks due to changes in "System.Net.Quic.MsQuicApi", also check and fix HttpStress project as it uses the same hack.
+            Type msQuicApiType = typeof(QuicConnection).Assembly.GetType("System.Net.Quic.MsQuicApi");
 
+            string msQuicLibraryVersion = (string)msQuicApiType.GetProperty("MsQuicLibraryVersion", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
             Console.WriteLine($"MsQuic {(IsSupported ? "supported" : "not supported")} and using '{msQuicLibraryVersion}'.");
 
-            if (IsSupported && !maxQueueWorkDelaySet)
+            if (IsSupported)
             {
-                Console.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
+                object msQuicApiInstance = msQuicApiType.GetProperty("Api", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
+                QUIC_API_TABLE* apiTable = (QUIC_API_TABLE*)(Pointer.Unbox(msQuicApiType.GetProperty("ApiTable").GetGetMethod().Invoke(msQuicApiInstance, Array.Empty<object?>())));
+                QUIC_SETTINGS settings = default(QUIC_SETTINGS);
+                settings.IsSet.MaxWorkerQueueDelayUs = 1;
+                settings.MaxWorkerQueueDelayUs = 2_500_000u; // 2.5s, 10x the default
+                if (MsQuic.StatusFailed(apiTable->SetParam(null, MsQuic.QUIC_PARAM_GLOBAL_SETTINGS, (uint)sizeof(QUIC_SETTINGS), (byte*)&settings)))
+                {
+                    Console.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
+                }
             }
         }
 

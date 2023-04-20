@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using System.Net;
 using HttpStress;
 using System.Net.Quic;
+using Microsoft.Quic;
 
 [assembly:SupportedOSPlatform("windows")]
 [assembly:SupportedOSPlatform("linux")]
@@ -161,9 +162,8 @@ namespace HttpStress
 
             string GetAssemblyInfo(Assembly assembly) => $"{assembly.Location}, modified {new FileInfo(assembly.Location).LastWriteTime}";
 
-
-            Type msQuicApi = typeof(QuicConnection).Assembly.GetType("System.Net.Quic.MsQuicApi")!;
-            (bool maxQueueWorkDelaySet, string msQuicLibraryVersion) = ((bool, string))msQuicApi.GetMethod("SetUpForTests", BindingFlags.NonPublic | BindingFlags.Static)!.Invoke(null, Array.Empty<object?>())!;
+            Type msQuicApiType = typeof(QuicConnection).Assembly.GetType("System.Net.Quic.MsQuicApi");
+            string msQuicLibraryVersion = (string)msQuicApiType.GetProperty("MsQuicLibraryVersion", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
 
             Console.WriteLine("       .NET Core: " + GetAssemblyInfo(typeof(object).Assembly));
             Console.WriteLine("    ASP.NET Core: " + GetAssemblyInfo(typeof(WebHost).Assembly));
@@ -185,9 +185,21 @@ namespace HttpStress
             Console.WriteLine("Max Content Size: " + config.MaxContentLength);
             Console.WriteLine("Query Parameters: " + config.MaxParameters);
             Console.WriteLine();
-            if (config.HttpVersion == HttpVersion.Version30 && IsQuicSupported && !maxQueueWorkDelaySet)
+
+            if (config.HttpVersion == HttpVersion.Version30 && IsQuicSupported)
             {
-                Console.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
+                unsafe
+                {
+                    object msQuicApiInstance = msQuicApiType.GetProperty("Api", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
+                    QUIC_API_TABLE* apiTable = (QUIC_API_TABLE*)(Pointer.Unbox(msQuicApiType.GetProperty("ApiTable").GetGetMethod().Invoke(msQuicApiInstance, Array.Empty<object?>())));
+                    QUIC_SETTINGS settings = default(QUIC_SETTINGS);
+                    settings.IsSet.MaxWorkerQueueDelayUs = 1;
+                    settings.MaxWorkerQueueDelayUs = 2_500_000u; // 2.5s, 10x the default
+                    if (MsQuic.StatusFailed(apiTable->SetParam(null, MsQuic.QUIC_PARAM_GLOBAL_SETTINGS, (uint)sizeof(QUIC_SETTINGS), (byte*)&settings)))
+                    {
+                        Console.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
+                    }
+                }
             }
 
             StressServer? server = null;

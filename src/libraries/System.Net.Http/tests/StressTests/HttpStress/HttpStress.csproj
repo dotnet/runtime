@@ -17,6 +17,11 @@
     <PackageReference Include="System.Net.Http.WinHttpHandler" Version="4.5.4" />
   </ItemGroup>
 
+  <!-- Shared production code -->
+  <ItemGroup>
+    <Compile Include="..\..\..\..\System.Net.Quic\src\System\Net\Quic\Interop\*.cs" Link="ProductionCode\System\Net\Quic\Interop\*.cs" />
+  </ItemGroup>
+
   <PropertyGroup>
     <!-- These may lead to duplicate generated classes with local (non-docker) Linux builds. -->
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
