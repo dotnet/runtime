@@ -2152,7 +2152,8 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
                 int i;
 
 		memset(&rec, 0, sizeof(rec));
-
+		
+		//populating info relating debug methods
 		minfo = mono_debug_lookup_method(jinfo->d.method);
                 dmji = mono_debug_find_method( jinfo->d.method, NULL);
 
@@ -2183,6 +2184,7 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
 
                 for( i = 0; i < dmji->num_line_numbers;++i)
 		 {
+			//get the line number using il offset
                         loc = mono_debug_lookup_source_location_by_il(jinfo->d.method,dmji->line_numbers[i].il_offset,NULL);
 
                         if(!loc)
@@ -2203,14 +2205,14 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
                         fwrite(loc->source_file,strlen(loc->source_file)+1,1,perf_dump_file);
                 }
 
-                // TODO: write unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
+               
                 ent.code_addr = (guint64)jinfo->code_start + jinfo->code_size;
                 ent.discrim = 0;
                 ent.line = 0;
                 fwrite(&ent,sizeof(ent),1,perf_dump_file);
                 fwrite("",1,1,perf_dump_file);
 
-		// TODO: write debugInfo and unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
+		// TODO: write unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
 
 		record.header.timestamp = mono_clock_get_time_ns (clock_id);
 
