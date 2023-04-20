@@ -2277,7 +2277,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
     if (cmp->OperIsCompare() && CheckImmedAndMakeContained(cmp, op1))
     {
         std::swap(cmp->gtOp1, cmp->gtOp2);
-        cmp->ChangeOper(cmp->SwapRelop(cmp->gtOper));
+        cmp->SetOper(cmp->SwapRelop(cmp->gtOper));
         return;
     }
 
@@ -2294,7 +2294,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         {
             MakeSrcContained(cmp, op1);
             std::swap(cmp->gtOp1, cmp->gtOp2);
-            cmp->ChangeOper(cmp->SwapRelop(cmp->gtOper));
+            cmp->SetOper(cmp->SwapRelop(cmp->gtOper));
             return;
         }
     }
