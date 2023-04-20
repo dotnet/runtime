@@ -541,6 +541,9 @@ namespace System.Runtime.InteropServices.Tests
             CollectionsMarshal.SetCount(listReference, 3);
             // verify that reference types aren't cleared
             SequenceEquals<string>(CollectionsMarshal.AsSpan(listReference), new string[] { "a", "b", "c" });
+            CollectionsMarshal.SetCount(listReference, 5);
+            // verify that removed reference types are cleared
+            SequenceEquals<string>(CollectionsMarshal.AsSpan(listReference), new string[] { "a", "b", "c", null, null });
 
             static void SequenceEquals<T>(ReadOnlySpan<T> actual, ReadOnlySpan<T> expected)
             {
