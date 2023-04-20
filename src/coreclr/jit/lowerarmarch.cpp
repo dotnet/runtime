@@ -269,7 +269,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
             return false;
         }
 
-        if (parentNode->OperIs(GT_CMP, GT_OR, GT_XOR))
+        if (parentNode->OperIs(GT_CMP, GT_OR, GT_XOR) || parentNode->OperIsCompare())
         {
             if (IsInvariantInRange(childNode, parentNode))
             {
@@ -522,11 +522,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             src = src->AsUnOp()->gtGetOp1();
         }
 
-        if (blkNode->OperIs(GT_STORE_OBJ))
-        {
-            blkNode->SetOper(GT_STORE_BLK);
-        }
-
         if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)) &&
             src->OperIs(GT_CNS_INT))
         {
@@ -575,43 +570,25 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
         src->SetContained();
 
-        if (src->OperIs(GT_IND))
+        if (src->OperIs(GT_LCL_VAR))
         {
-            GenTree* srcAddr = src->AsIndir()->Addr();
-            // TODO-Cleanup: Make sure that GT_IND lowering didn't mark the source address as contained.
-            // Sometimes the GT_IND type is a non-struct type and then GT_IND lowering may contain the
-            // address, not knowing that GT_IND is part of a block op that has containment restrictions.
-            srcAddr->ClearContained();
-        }
-        else
-        {
-            if (src->OperIs(GT_LCL_VAR))
-            {
-                // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
-                const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
-                comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
-            }
+            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
 
+        bool     doCpObj              = !blkNode->OperIs(GT_STORE_DYN_BLK) && blkNode->GetLayout()->HasGCPtr();
         unsigned copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
-        if (blkNode->OperIs(GT_STORE_OBJ))
+        if (doCpObj && isDstAddrLocal && (size <= copyBlockUnrollLimit))
         {
-            if (!blkNode->AsBlk()->GetLayout()->HasGCPtr())
-            {
-                blkNode->SetOper(GT_STORE_BLK);
-            }
-            else if (isDstAddrLocal && (size <= copyBlockUnrollLimit))
-            {
-                blkNode->SetOper(GT_STORE_BLK);
-                blkNode->gtBlkOpGcUnsafe = true;
-            }
+            doCpObj                  = false;
+            blkNode->gtBlkOpGcUnsafe = true;
         }
 
-        if (blkNode->OperIs(GT_STORE_OBJ))
+        if (doCpObj)
         {
             assert((dstAddr->TypeGet() == TYP_BYREF) || (dstAddr->TypeGet() == TYP_I_IMPL));
-
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
         }
         else if (blkNode->OperIs(GT_STORE_BLK) && (size <= copyBlockUnrollLimit))
         {
@@ -2268,7 +2245,37 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    CheckImmedAndMakeContained(cmp, cmp->gtOp2);
+    GenTree* op1 = cmp->gtGetOp1();
+    GenTree* op2 = cmp->gtGetOp2();
+
+    if (CheckImmedAndMakeContained(cmp, op2))
+        return;
+
+    if (cmp->OperIsCompare() && CheckImmedAndMakeContained(cmp, op1))
+    {
+        std::swap(cmp->gtOp1, cmp->gtOp2);
+        cmp->SetOper(cmp->SwapRelop(cmp->gtOper));
+        return;
+    }
+
+#ifdef TARGET_ARM64
+    if (comp->opts.OptimizationEnabled() && cmp->OperIsCompare())
+    {
+        if (IsContainableBinaryOp(cmp, op2))
+        {
+            MakeSrcContained(cmp, op2);
+            return;
+        }
+
+        if (IsContainableBinaryOp(cmp, op1))
+        {
+            MakeSrcContained(cmp, op1);
+            std::swap(cmp->gtOp1, cmp->gtOp2);
+            cmp->SetOper(cmp->SwapRelop(cmp->gtOper));
+            return;
+        }
+    }
+#endif
 }
 
 #ifdef TARGET_ARM64
@@ -2492,6 +2499,67 @@ void Lowering::ContainCheckNeg(GenTreeOp* neg)
         if (IsInvariantInRange(childNode, neg))
         {
             MakeSrcContained(neg, childNode);
+        }
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// Try converting SELECT/SELECTCC to CINC/CINCCC. Conversion is possible only if
+// both the trueVal and falseVal are integral constants and abs(trueVal - falseVal) = 1.
+//
+// Arguments:
+//     select - The select node that is now SELECT or SELECTCC
+//     cond   - The condition node that SELECT or SELECTCC uses
+//
+void Lowering::TryLowerCselToCinc(GenTreeOp* select, GenTree* cond)
+{
+    assert(select->OperIs(GT_SELECT, GT_SELECTCC));
+
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+    size_t   op1Val   = (size_t)trueVal->AsIntCon()->IconValue();
+    size_t   op2Val   = (size_t)falseVal->AsIntCon()->IconValue();
+
+    if (op1Val + 1 == op2Val || op2Val + 1 == op1Val)
+    {
+        const bool shouldReverseCondition = op1Val + 1 == op2Val;
+
+        // Create a cinc node, insert it and update the use.
+        if (select->OperIs(GT_SELECT))
+        {
+            if (shouldReverseCondition)
+            {
+                // Reverse the condition so that op2 will be selected
+                if (!cond->OperIsCompare())
+                {
+                    // Non-compare nodes add additional GT_NOT node after reversing.
+                    // This would remove gains from this optimisation so don't proceed.
+                    return;
+                }
+                select->gtOp2    = select->gtOp1;
+                GenTree* revCond = comp->gtReverseCond(cond);
+                assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
+            }
+            select->gtOp1 = cond->AsOp();
+            select->SetOper(GT_CINC);
+            DISPTREERANGE(BlockRange(), select);
+        }
+        else
+        {
+            GenTreeOpCC* selectcc   = select->AsOpCC();
+            GenCondition selectCond = selectcc->gtCondition;
+            if (shouldReverseCondition)
+            {
+                // Reverse the condition so that op2 will be selected
+                selectcc->gtCondition = GenCondition::Reverse(selectCond);
+            }
+            else
+            {
+                std::swap(selectcc->gtOp1, selectcc->gtOp2);
+            }
+            BlockRange().Remove(selectcc->gtOp2);
+            selectcc->SetOper(GT_CINCCC);
+            DISPTREERANGE(BlockRange(), selectcc);
         }
     }
 }

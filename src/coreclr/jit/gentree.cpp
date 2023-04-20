@@ -3264,7 +3264,6 @@ AGAIN:
                     break;
 
                 case GT_STORE_BLK:
-                case GT_STORE_OBJ:
                     hash ^= PtrToUlong(tree->AsBlk()->GetLayout());
                     break;
 
@@ -6257,6 +6256,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
 // Standard unary operators
 #ifdef TARGET_ARM64
         case GT_CNEG_LT:
+        case GT_CINCCC:
 #endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
@@ -6672,7 +6672,6 @@ bool GenTree::OperIsImplicitIndir() const
         case GT_CMPXCHG:
         case GT_BLK:
         case GT_STORE_BLK:
-        case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
         case GT_BOX:
         case GT_ARR_INDEX:
@@ -6972,7 +6971,6 @@ GenTree::VtablePtr GenTree::GetVtableForOper(genTreeOps oper)
 
         // Handle the special cases.
         // The following opers are in GTSTRUCT_N but no other place (namely, no subtypes).
-        case GT_STORE_OBJ:
         case GT_STORE_BLK:
         case GT_BLK:
         {
@@ -7060,6 +7058,7 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeCol
 
 GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
 {
+    assert(genActualType(type) == type);
     return new (this, GT_CNS_INT) GenTreeIntCon(type, value);
 }
 
@@ -7347,6 +7346,13 @@ GenTreeVecCon* Compiler::gtNewVconNode(var_types type)
     return vecCon;
 }
 
+GenTreeVecCon* Compiler::gtNewVconNode(var_types type, void* data)
+{
+    GenTreeVecCon* vecCon = new (this, GT_CNS_VEC) GenTreeVecCon(type);
+    memcpy(&vecCon->gtSimdVal, data, genTypeSize(type));
+    return vecCon;
+}
+
 GenTree* Compiler::gtNewAllBitsSetConNode(var_types type)
 {
 #ifdef FEATURE_SIMD
@@ -7388,7 +7394,8 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
     }
 #endif // FEATURE_SIMD
 
-    switch (genActualType(type))
+    type = genActualType(type);
+    switch (type)
     {
         case TYP_INT:
         case TYP_REF:
@@ -7761,6 +7768,11 @@ GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHn
         fieldNode->gtFlags |= GTF_GLOB_REF;
     }
 
+    if ((obj != nullptr) && fgAddrCouldBeNull(obj))
+    {
+        fieldNode->gtFlags |= GTF_EXCEPT;
+    }
+
     return fieldNode;
 }
 
@@ -7793,8 +7805,112 @@ GenTreeField* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HANDLE 
         varDsc->lvFieldAccessed = 1;
     }
 
-    // TODO-ADDR: add GTF_EXCEPT handling here and delete it from callers.
+    if ((obj != nullptr) && fgAddrCouldBeNull(obj))
+    {
+        fieldNode->gtFlags |= GTF_EXCEPT;
+    }
+
     return fieldNode;
+}
+
+//------------------------------------------------------------------------
+// gtNewLoadValueNode: Return a node that represents a loaded value.
+//
+// Arguments:
+//    type       - Type to load
+//    layout     - Struct layout to load
+//    addr       - The address
+//    indirFlags - Indirection flags
+//
+// Return Value:
+//    A "BLK/IND" node, or "LCL_VAR" if "addr" points to a compatible local.
+//
+GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
+{
+    assert(((indirFlags & ~GTF_IND_FLAGS) == 0) && ((type != TYP_STRUCT) || (layout != nullptr)));
+
+    if (((indirFlags & GTF_IND_VOLATILE) == 0) && addr->IsLclVarAddr())
+    {
+        unsigned   lclNum = addr->AsLclFld()->GetLclNum();
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
+        if (!lvaIsImplicitByRefLocal(lclNum) && (varDsc->TypeGet() == type) &&
+            ((type != TYP_STRUCT) || ClassLayout::AreCompatible(layout, varDsc->GetLayout())))
+        {
+            return gtNewLclvNode(lclNum, type);
+        }
+    }
+
+    GenTree* node;
+    if (type == TYP_STRUCT)
+    {
+        node = gtNewBlkIndir(layout, addr, indirFlags);
+    }
+    else
+    {
+        node = gtNewIndir(type, addr, indirFlags);
+        node->gtFlags |= GTF_GLOB_REF;
+    }
+
+    return node;
+}
+
+//------------------------------------------------------------------------
+// gtNewBlkIndir: Create a struct indirection node.
+//
+// Arguments:
+//    layout     - The struct layout
+//    addr       - Address of the indirection
+//    indirFlags - Indirection flags
+//
+// Return Value:
+//    The created GT_BLK node.
+//
+GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
+{
+    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
+
+    GenTreeBlk* blkNode = new (this, GT_BLK) GenTreeBlk(GT_BLK, layout->GetType(), addr, layout);
+    blkNode->gtFlags |= indirFlags;
+    blkNode->SetIndirExceptionFlags(this);
+
+    if ((indirFlags & GTF_IND_INVARIANT) == 0)
+    {
+        blkNode->gtFlags |= GTF_GLOB_REF;
+    }
+
+    if ((indirFlags & GTF_IND_VOLATILE) != 0)
+    {
+        blkNode->gtFlags |= GTF_ORDER_SIDEEFF;
+    }
+
+    return blkNode;
+}
+
+//------------------------------------------------------------------------------
+// gtNewIndir : Create an indirection node.
+//
+// Arguments:
+//    typ        - Type of the node
+//    addr       - Address of the indirection
+//    indirFlags - Indirection flags
+//
+// Return Value:
+//    The created GT_IND node.
+//
+GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags)
+{
+    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
+
+    GenTree* indir = gtNewOperNode(GT_IND, typ, addr);
+    indir->gtFlags |= indirFlags;
+    indir->SetIndirExceptionFlags(this);
+
+    if ((indirFlags & GTF_IND_VOLATILE) != 0)
+    {
+        indir->gtFlags |= GTF_ORDER_SIDEEFF;
+    }
+
+    return indir->AsIndir();
 }
 
 /*****************************************************************************
@@ -7819,9 +7935,8 @@ GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
     dst->gtFlags |= GTF_DONT_CSE;
 
 #if defined(FEATURE_SIMD) && !defined(TARGET_X86)
-    // TODO-CQ: x86 Windows supports multi-reg returns but not SIMD multi-reg returns
-
-    if (varTypeIsSIMD(dst->gtType))
+    // TODO-Cleanup: enable on Windows x86.
+    if (varTypeIsSIMD(dst))
     {
         // We want to track SIMD assignments as being intrinsics since they
         // are functionally SIMD `mov` instructions and are more efficient
@@ -7841,36 +7956,6 @@ GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
     asg->gtFlags |= GTF_ASG;
 
     return asg;
-}
-
-//------------------------------------------------------------------------
-// gtNewStructVal: Return a node that represents a struct or block value
-//
-// Arguments:
-//    layout     - The struct's layout
-//    addr       - The struct's address
-//    indirFlags - Indirection flags
-//
-// Return Value:
-//    An "OBJ/BLK" node, or "LCL_VAR" node if "addr" points to a local
-//    with a layout compatible with "layout".
-//
-GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
-{
-    assert((indirFlags & ~GTF_IND_FLAGS) == 0);
-
-    if (((indirFlags & GTF_IND_VOLATILE) == 0) && addr->IsLclVarAddr())
-    {
-        unsigned   lclNum = addr->AsLclFld()->GetLclNum();
-        LclVarDsc* varDsc = lvaGetDesc(lclNum);
-        if (!lvaIsImplicitByRefLocal(lclNum) && varTypeIsStruct(varDsc) &&
-            ClassLayout::AreCompatible(layout, varDsc->GetLayout()))
-        {
-            return gtNewLclvNode(lclNum, varDsc->TypeGet());
-        }
-    }
-
-    return gtNewBlkIndir(layout, addr, indirFlags);
 }
 
 //------------------------------------------------------------------------
@@ -8099,7 +8184,7 @@ void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
 //
 GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile)
 {
-    assert(varTypeIsStruct(dst) && (dst->OperIsBlk() || dst->OperIsLocal() || dst->OperIs(GT_FIELD)));
+    assert(varTypeIsStruct(dst) && (dst->OperIsIndir() || dst->OperIsLocal() || dst->OperIs(GT_FIELD)));
 
     bool isCopyBlock = srcOrFillVal->TypeGet() == dst->TypeGet();
     if (!isCopyBlock) // InitBlk
@@ -8159,21 +8244,7 @@ GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVo
     {
         // TODO-Cleanup: similar logic already exists in "gtNewAssignNode",
         // however, it is not enabled for x86. Fix that and delete this code.
-        GenTreeLclVarCommon* dstLclNode = nullptr;
-
-        if (dst->OperIs(GT_LCL_VAR))
-        {
-            dstLclNode = dst->AsLclVar();
-        }
-        else if (dst->OperIsBlk() && dst->AsIndir()->Addr()->IsLclVarAddr())
-        {
-            dstLclNode = dst->AsIndir()->Addr()->AsLclFld();
-        }
-
-        if ((dstLclNode != nullptr) && varTypeIsStruct(lvaGetDesc(dstLclNode)))
-        {
-            setLclRelatedToSIMDIntrinsic(dstLclNode);
-        }
+        SetOpLclRelatedToSIMDIntrinsic(dst);
     }
 #endif // FEATURE_SIMD
 
@@ -9507,6 +9578,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
 // Standard unary operators
 #ifdef TARGET_ARM64
         case GT_CNEG_LT:
+        case GT_CINCCC:
 #endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
@@ -10485,7 +10557,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             case GT_LEA:
             case GT_BLK:
             case GT_STORE_BLK:
-            case GT_STORE_OBJ:
             case GT_STORE_DYN_BLK:
 
             case GT_IND:
@@ -10797,7 +10868,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             {
                 ClassLayout* layout = nullptr;
 
-                if (tree->OperIs(GT_BLK, GT_STORE_BLK, GT_STORE_OBJ))
+                if (tree->OperIs(GT_BLK, GT_STORE_BLK))
                 {
                     layout = tree->AsBlk()->GetLayout();
                 }
@@ -11911,7 +11982,14 @@ void Compiler::gtDispTree(GenTree*     tree,
             {
                 switch (tree->AsBlk()->gtBlkOpKind)
                 {
+                    case GenTreeBlk::BlkOpKindCpObjUnroll:
+                        printf(" (CpObjUnroll)");
+                        break;
 #ifdef TARGET_XARCH
+                    case GenTreeBlk::BlkOpKindCpObjRepInstr:
+                        printf(" (CpObjRepInstr)");
+                        break;
+
                     case GenTreeBlk::BlkOpKindRepInstr:
                         printf(" (RepInstr)");
                         break;
@@ -12098,6 +12176,10 @@ void Compiler::gtDispTree(GenTree*     tree,
             printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
         }
 #ifdef TARGET_ARM64
+        else if (tree->OperIs(GT_CINCCC))
+        {
+            printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
+        }
         else if (tree->OperIs(GT_CCMP))
         {
             printf(" cond=%s flags=%s", tree->AsCCMP()->gtCondition.Name(),
@@ -15758,9 +15840,7 @@ GenTree* Compiler::gtNewTempAssign(
         }
         else if ((dstTyp == TYP_STRUCT) && (valTyp == TYP_INT))
         {
-            // It could come from `ASG(struct, 0)` that was propagated to `RETURN struct(0)`,
-            // and now it is merging to a struct again.
-            assert(tmp == genReturnLocal);
+            assert(val->IsInitVal());
             ok = true;
         }
 
@@ -15793,7 +15873,7 @@ GenTree* Compiler::gtNewTempAssign(
     GenTree* asg;
     GenTree* dest = gtNewLclvNode(tmp, dstTyp);
 
-    if (val->IsConstInitVal())
+    if (val->IsInitVal())
     {
         asg = gtNewAssignNode(dest, val);
     }
@@ -15826,7 +15906,6 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
                                     CORINFO_ACCESS_FLAGS    access,
                                     CORINFO_FIELD_INFO*     pFieldInfo,
                                     var_types               lclTyp,
-                                    CORINFO_CLASS_HANDLE    structType,
                                     GenTree*                assg)
 {
     assert(pFieldInfo->fieldAccessor == CORINFO_FIELD_INSTANCE_HELPER ||
@@ -15837,7 +15916,8 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
     GenTree* args[4];
     size_t   nArgs = 0;
     /* If we can't access it directly, we need to call a helper function */
-    var_types helperType = TYP_BYREF;
+    var_types            helperType = TYP_BYREF;
+    CORINFO_CLASS_HANDLE structType = pFieldInfo->structType;
 
     if (pFieldInfo->fieldAccessor == CORINFO_FIELD_INSTANCE_HELPER)
     {
@@ -15847,7 +15927,6 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
             // helper needs pointer to struct, not struct itself
             if (pFieldInfo->helper == CORINFO_HELP_SETFIELDSTRUCT)
             {
-                assert(structType != nullptr);
                 assg = impGetStructAddr(assg, structType, CHECK_SPILL_ALL, true);
             }
             else if (lclTyp == TYP_DOUBLE && assg->TypeGet() == TYP_FLOAT)
@@ -15940,9 +16019,11 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
         // OK, now do the indirection
         if (access & CORINFO_ACCESS_GET)
         {
-            if (varTypeIsStruct(lclTyp))
+            ClassLayout* layout;
+            lclTyp = TypeHandleToVarType(pFieldInfo->fieldType, structType, &layout);
+            if (lclTyp == TYP_STRUCT)
             {
-                result = gtNewBlkIndir(typGetObjLayout(structType), result);
+                result = gtNewBlkIndir(layout, result);
             }
             else
             {
@@ -16293,6 +16374,17 @@ bool Compiler::gtSplitTree(
             if (user->OperIs(GT_COMMA) && (&user->AsOp()->gtOp1 == useInf.Use))
             {
                 return false;
+            }
+
+            if (user->OperIs(GT_CALL))
+            {
+                for (CallArg& callArg : user->AsCall()->gtArgs.Args())
+                {
+                    if ((&callArg.EarlyNodeRef() == useInf.Use) && (callArg.GetLateNode() != nullptr))
+                    {
+                        return false;
+                    }
+                }
             }
 
             return true;
@@ -18790,22 +18882,13 @@ FieldSeq::FieldSeq(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fiel
 // as used by a SIMD intrinsic, and if so, set that local var appropriately.
 //
 // Arguments:
-//     op - The tree, to be an operand of a new GT_SIMD node, to check.
+//     op - The tree, to be an operand of a new SIMD-related node, to check.
 //
 void Compiler::SetOpLclRelatedToSIMDIntrinsic(GenTree* op)
 {
-    if (op == nullptr)
-    {
-        return;
-    }
-
-    if (op->OperIs(GT_LCL_VAR))
+    if ((op != nullptr) && op->OperIs(GT_LCL_VAR))
     {
         setLclRelatedToSIMDIntrinsic(op);
-    }
-    else if (op->OperIsBlk() && op->AsIndir()->Addr()->IsLclVarAddr())
-    {
-        setLclRelatedToSIMDIntrinsic(op->AsIndir()->Addr());
     }
 }
 
@@ -18942,6 +19025,12 @@ bool GenTree::isCommutativeHWIntrinsic() const
             {
                 return false;
             }
+
+            case NI_AVX512F_Max:
+            case NI_AVX512F_Min:
+            {
+                return !varTypeIsFloating(node->GetSimdBaseType());
+            }
 #endif // TARGET_XARCH
 
             default:
@@ -18984,6 +19073,7 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX2_ConvertToInt32:
         case NI_AVX2_ConvertToUInt32:
         case NI_AVX2_ExtractVector128:
+        case NI_AVX512F_ExtractVector128:
         case NI_AVX512F_ExtractVector256:
         case NI_AVX512F_ConvertToVector128Int16:
         case NI_AVX512F_ConvertToVector128Int32:
@@ -19244,11 +19334,27 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
         return gtNewSimdBinOpNode(GT_AND_NOT, type, op1, bitMask, simdBaseJitType, simdSize);
     }
 
-    assert((simdSize != 32) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+    NamedIntrinsic intrinsic = NI_Illegal;
 
-    if ((simdBaseType != TYP_LONG) && ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_SSSE3)))
+    if (simdBaseType == TYP_LONG)
     {
-        NamedIntrinsic intrinsic = (simdSize == 32) ? NI_AVX2_Abs : NI_SSSE3_Abs;
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+        {
+            intrinsic = NI_AVX512F_VL_Abs;
+        }
+    }
+    else if (simdSize == 32)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+        intrinsic = NI_AVX2_Abs;
+    }
+    else if (compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+    {
+        intrinsic = NI_SSSE3_Abs;
+    }
+
+    if (intrinsic != NI_Illegal)
+    {
         return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
     }
     else
@@ -19365,6 +19471,23 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
                 intrinsic = NI_AVX512F_And;
+
+                if (varTypeIsIntegral(simdBaseType))
+                {
+                    intrinsic = NI_AVX512F_And;
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+                {
+                    intrinsic = NI_AVX512DQ_And;
+                }
+                else
+                {
+                    // Since this is a bitwise operation, we can still support it by lying
+                    // about the type and doing the operation using a supported instruction
+
+                    intrinsic       = NI_AVX512F_And;
+                    simdBaseJitType = (simdBaseType == TYP_DOUBLE) ? CORINFO_TYPE_LONG : CORINFO_TYPE_INT;
+                }
             }
             else if (simdSize == 32)
             {
@@ -19384,7 +19507,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     // about the type and doing the operation using a supported instruction
 
                     intrinsic       = NI_AVX_And;
-                    simdBaseJitType = CORINFO_TYPE_FLOAT;
+                    simdBaseJitType = varTypeIsLong(simdBaseType) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
                 }
             }
             else if (simdBaseType == TYP_FLOAT)
@@ -19404,6 +19527,23 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
                 intrinsic = NI_AVX512F_AndNot;
+
+                if (varTypeIsIntegral(simdBaseType))
+                {
+                    intrinsic = NI_AVX512F_AndNot;
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+                {
+                    intrinsic = NI_AVX512DQ_AndNot;
+                }
+                else
+                {
+                    // Since this is a bitwise operation, we can still support it by lying
+                    // about the type and doing the operation using a supported instruction
+
+                    intrinsic       = NI_AVX512F_AndNot;
+                    simdBaseJitType = (simdBaseType == TYP_DOUBLE) ? CORINFO_TYPE_LONG : CORINFO_TYPE_INT;
+                }
             }
             else if (simdSize == 32)
             {
@@ -19423,7 +19563,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     // about the type and doing the operation using a supported instruction
 
                     intrinsic       = NI_AVX_AndNot;
-                    simdBaseJitType = CORINFO_TYPE_FLOAT;
+                    simdBaseJitType = varTypeIsLong(simdBaseType) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
                 }
             }
             else if (simdBaseType == TYP_FLOAT)
@@ -19485,7 +19625,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             }
 
             assert(!varTypeIsByte(simdBaseType));
-            assert((op != GT_RSH) || (!varTypeIsUnsigned(simdBaseType) && !varTypeIsLong(simdBaseType)));
 
             // "over shifting" is platform specific behavior. We will match the C# behavior
             // this requires we mask with (sizeof(T) * 8) - 1 which ensures the shift cannot
@@ -19516,7 +19655,16 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 }
                 else if (op == GT_RSH)
                 {
-                    intrinsic = NI_AVX2_ShiftRightArithmetic;
+                    if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
+                    {
+                        assert(varTypeIsSigned(simdBaseType));
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                        intrinsic = NI_AVX512F_VL_ShiftRightArithmetic;
+                    }
+                    else
+                    {
+                        intrinsic = NI_AVX2_ShiftRightArithmetic;
+                    }
                 }
                 else
                 {
@@ -19530,7 +19678,16 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             }
             else if (op == GT_RSH)
             {
-                intrinsic = NI_SSE2_ShiftRightArithmetic;
+                if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
+                {
+                    assert(varTypeIsSigned(simdBaseType));
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                    intrinsic = NI_AVX512F_VL_ShiftRightArithmetic;
+                }
+                else
+                {
+                    intrinsic = NI_SSE2_ShiftRightArithmetic;
+                }
             }
             else
             {
@@ -19629,6 +19786,16 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     break;
                 }
 
+                case TYP_LONG:
+                case TYP_ULONG:
+                {
+                    assert((simdSize == 16) || (simdSize == 32));
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ_VL));
+
+                    intrinsic = NI_AVX512DQ_VL_MultiplyLow;
+                    break;
+                }
+
                 case TYP_FLOAT:
                 {
                     if (simdSize == 32)
@@ -19671,6 +19838,23 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
                 intrinsic = NI_AVX512F_Or;
+
+                if (varTypeIsIntegral(simdBaseType))
+                {
+                    intrinsic = NI_AVX512F_Or;
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+                {
+                    intrinsic = NI_AVX512DQ_Or;
+                }
+                else
+                {
+                    // Since this is a bitwise operation, we can still support it by lying
+                    // about the type and doing the operation using a supported instruction
+
+                    intrinsic       = NI_AVX512F_Or;
+                    simdBaseJitType = (simdBaseType == TYP_DOUBLE) ? CORINFO_TYPE_LONG : CORINFO_TYPE_INT;
+                }
             }
             else if (simdSize == 32)
             {
@@ -19690,7 +19874,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     // about the type and doing the operation using a supported instruction
 
                     intrinsic       = NI_AVX_Or;
-                    simdBaseJitType = CORINFO_TYPE_FLOAT;
+                    simdBaseJitType = varTypeIsLong(simdBaseType) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
                 }
             }
             else if (simdBaseType == TYP_FLOAT)
@@ -19750,6 +19934,23 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
                 intrinsic = NI_AVX512F_Xor;
+
+                if (varTypeIsIntegral(simdBaseType))
+                {
+                    intrinsic = NI_AVX512F_Xor;
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+                {
+                    intrinsic = NI_AVX512DQ_Xor;
+                }
+                else
+                {
+                    // Since this is a bitwise operation, we can still support it by lying
+                    // about the type and doing the operation using a supported instruction
+
+                    intrinsic       = NI_AVX512F_Xor;
+                    simdBaseJitType = (simdBaseType == TYP_DOUBLE) ? CORINFO_TYPE_LONG : CORINFO_TYPE_INT;
+                }
             }
             else if (simdSize == 32)
             {
@@ -19769,7 +19970,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     // about the type and doing the operation using a supported instruction
 
                     intrinsic       = NI_AVX_Xor;
-                    simdBaseJitType = CORINFO_TYPE_FLOAT;
+                    simdBaseJitType = varTypeIsLong(simdBaseType) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
                 }
             }
             else if (simdBaseType == TYP_FLOAT)
@@ -21546,7 +21747,11 @@ GenTree* Compiler::gtNewSimdGetElementNode(
             unreached();
     }
 
-    if (simdSize == 32)
+    if (simdSize == 64)
+    {
+        intrinsicId = NI_Vector512_GetElement;
+    }
+    else if (simdSize == 32)
     {
         intrinsicId = NI_Vector256_GetElement;
     }
@@ -21856,6 +22061,10 @@ GenTree* Compiler::gtNewSimdMaxNode(
             {
                 intrinsic = NI_AVX2_Max;
             }
+            else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+            {
+                intrinsic = NI_AVX512F_VL_Max;
+            }
         }
     }
     else
@@ -21945,7 +22154,6 @@ GenTree* Compiler::gtNewSimdMaxNode(
                 if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
                 {
                     intrinsic = NI_SSE41_Max;
-                    break;
                 }
                 break;
             }
@@ -21953,6 +22161,10 @@ GenTree* Compiler::gtNewSimdMaxNode(
             case TYP_LONG:
             case TYP_ULONG:
             {
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                {
+                    intrinsic = NI_AVX512F_VL_Max;
+                }
                 break;
             }
 
@@ -22043,6 +22255,10 @@ GenTree* Compiler::gtNewSimdMinNode(
             {
                 intrinsic = NI_AVX2_Min;
             }
+            else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+            {
+                intrinsic = NI_AVX512F_VL_Min;
+            }
         }
     }
     else
@@ -22128,7 +22344,6 @@ GenTree* Compiler::gtNewSimdMinNode(
                 if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
                 {
                     intrinsic = NI_SSE41_Min;
-                    break;
                 }
                 break;
             }
@@ -22136,6 +22351,10 @@ GenTree* Compiler::gtNewSimdMinNode(
             case TYP_LONG:
             case TYP_ULONG:
             {
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                {
+                    intrinsic = NI_AVX512F_VL_Min;
+                }
                 break;
             }
 
@@ -22467,7 +22686,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 //
                 // var tmp1 = Avx.ConvertToVector128Single(op1).ToVector256Unsafe();
                 // var tmp2 = Avx.ConvertToVector128Single(op2);
-                // return Avx.InsertVector128(tmp1, tmp2, 1);
+                // return tmp1.WithUpper(tmp2);
 
                 CorInfoType opBaseJitType = CORINFO_TYPE_DOUBLE;
 
@@ -23883,7 +24102,11 @@ GenTree* Compiler::gtNewSimdWithElementNode(
             unreached();
     }
 
-    if (simdSize == 32)
+    if (simdSize == 64)
+    {
+        hwIntrinsicID = NI_Vector512_WithElement;
+    }
+    else if (simdSize == 32)
     {
         hwIntrinsicID = NI_Vector256_WithElement;
     }

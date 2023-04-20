@@ -17,6 +17,8 @@ parameters:
   helixQueues: ''                 # required -- Helix queues
   dependOnEvaluatePaths: false
   diffType: 'asmdiffs'            # required -- 'asmdiffs', 'tpdiff', or 'all'
+  baseJitOptions: ''              # e.g. JitStressModeNames=STRESS_PHYSICAL_PROMOTION;JitFullyInt=1
+  diffJitOptions: ''
 
 jobs:
 - template: xplat-pipeline-job.yml
@@ -104,6 +106,8 @@ jobs:
         osGroup: ${{ parameters.osGroup }}
         archType: ${{ parameters.archType }}
         SuperPmiDiffType: ${{ parameters.diffType }}
+        SuperPmiBaseJitOptions: ${{ parameters.baseJitOptions }}
+        SuperPmiDiffJitOptions: ${{ parameters.diffJitOptions }}
 
       # Always upload the available logs for diagnostics
     - task: CopyFiles@2

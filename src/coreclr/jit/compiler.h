@@ -1355,7 +1355,7 @@ public:
 
     static IntegralRange ForNode(GenTree* node, Compiler* compiler);
     static IntegralRange ForCastInput(GenTreeCast* cast);
-    static IntegralRange ForCastOutput(GenTreeCast* cast);
+    static IntegralRange ForCastOutput(GenTreeCast* cast, Compiler* compiler);
     static IntegralRange Union(IntegralRange range1, IntegralRange range2);
 
 #ifdef DEBUG
@@ -2501,6 +2501,8 @@ public:
 
     GenTreeVecCon* gtNewVconNode(var_types type);
 
+    GenTreeVecCon* gtNewVconNode(var_types type, void* data);
+
     GenTree* gtNewAllBitsSetConNode(var_types type);
 
     GenTree* gtNewZeroConNode(var_types type);
@@ -2516,8 +2518,6 @@ public:
     GenTree* gtNewBitCastNode(var_types type, GenTree* arg);
 
 public:
-    GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
-
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
                                CORINFO_METHOD_HANDLE handle,
                                var_types             type,
@@ -2789,7 +2789,7 @@ public:
                                               CORINFO_CLASS_HANDLE clsHnd,
                                               CORINFO_SIG_INFO*    sig,
                                               CorInfoType          simdBaseJitType);
-    
+
 #ifdef TARGET_ARM64
     GenTreeFieldList* gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount);
 #endif
@@ -2833,6 +2833,19 @@ public:
 
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
+    GenTree* gtNewLoadValueNode(
+        var_types type, ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
+
+    GenTree* gtNewLoadValueNode(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        return gtNewLoadValueNode(layout->GetType(), layout, addr, indirFlags);
+    }
+
+    GenTree* gtNewLoadValueNode(var_types type, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        return gtNewLoadValueNode(type, nullptr, addr, indirFlags);
+    }
+
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 
     var_types gtTypeForNullCheck(GenTree* tree);
@@ -2851,7 +2864,6 @@ public:
                               CORINFO_ACCESS_FLAGS    access,
                               CORINFO_FIELD_INFO*     pFieldInfo,
                               var_types               lclTyp,
-                              CORINFO_CLASS_HANDLE    structType,
                               GenTree*                assg);
 
     GenTree* gtNewNothingNode();
@@ -8691,7 +8703,7 @@ private:
     // X86.AVX:      16-byte Vector<T> and Vector256<T>
     // X86.AVX2:     32-byte Vector<T> and Vector256<T>
     // X86.AVX512F:  32-byte Vector<T> and Vector512<T>
-    unsigned int maxSIMDStructBytes()
+    unsigned int maxSIMDStructBytes() const
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (compOpportunisticallyDependsOn(InstructionSet_AVX))
@@ -9077,7 +9089,7 @@ private:
     // Ensure that code will not execute if an instruction set is usable. Call only
     // if the instruction set has previously reported as unusable, but the status
     // has not yet been recorded to the AOT compiler.
-    void compVerifyInstructionSetUnusable(CORINFO_InstructionSet isa)
+    void compVerifyInstructionSetUnusable(CORINFO_InstructionSet isa) const
     {
         // use compExactlyDependsOn to capture are record the use of the ISA.
         bool isaUsable = compExactlyDependsOn(isa);
@@ -10111,6 +10123,9 @@ public:
     ClassLayout* typGetObjLayout(CORINFO_CLASS_HANDLE classHandle);
     // Get the number of a layout for the specified class handle.
     unsigned typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle);
+
+    var_types TypeHandleToVarType(CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
+    var_types TypeHandleToVarType(CorInfoType jitType, CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
 
 //-------------------------- Global Compiler Data ------------------------------------
 

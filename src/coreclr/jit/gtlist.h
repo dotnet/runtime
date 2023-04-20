@@ -80,9 +80,8 @@ GTNODE(BOUNDS_CHECK     , GenTreeBoundsChk   ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) 
 
 GTNODE(IND              , GenTreeIndir       ,0,GTK_UNOP)                       // Load indirection
 GTNODE(STOREIND         , GenTreeStoreInd    ,0,GTK_BINOP|GTK_NOVALUE)          // Store indirection
-GTNODE(STORE_OBJ        , GenTreeBlk         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // Store for struct objects with GC pointers
-GTNODE(BLK              , GenTreeBlk         ,0,GTK_UNOP|GTK_EXOP)              // Block/struct object
-GTNODE(STORE_BLK        , GenTreeBlk         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // Block/struct object store
+GTNODE(BLK              , GenTreeBlk         ,0,GTK_UNOP|GTK_EXOP)              // Struct load
+GTNODE(STORE_BLK        , GenTreeBlk         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // Struct store
 GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,GTK_SPECIAL|GTK_NOVALUE)        // Dynamically sized block store, with native uint size
 GTNODE(NULLCHECK        , GenTreeIndir       ,0,GTK_UNOP|GTK_NOVALUE)           // Null checks the source
 
@@ -245,8 +244,12 @@ GTNODE(SELECTCC         , GenTreeOpCC        ,0,GTK_BINOP|DBK_NOTHIR)
 // operands and sets the condition flags according to the result. Otherwise
 // sets the condition flags to the specified immediate value.
 GTNODE(CCMP             , GenTreeCCMP        ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+// Maps to arm64 cinc instruction. It returns the operand incremented by one when the condition is true.
+// Otherwise returns the unchanged operand. Optimises for patterns such as, result = condition ? op1 + 1 : op1
+GTNODE(CINC             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
+// Variant of CINC that reuses flags computed by a previous node with the specified condition.
+GTNODE(CINCCC           , GenTreeOpCC        ,0,GTK_UNOP|DBK_NOTHIR)
 #endif
-
 
 //-----------------------------------------------------------------------------
 //  Other nodes that look like unary/binary operators:

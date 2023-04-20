@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>X86_Avx512BW_handwritten_r</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="HandwrittenProgram.cs" />
+    <Compile Include="..\..\X86\Shared\SimpleUnOpTest_DataTable.cs" />
+
+    <Compile Include="ConvertToVector512Int16.Byte.cs" />
+    <Compile Include="ConvertToVector512Int16.SByte.cs" />
+    <Compile Include="ConvertToVector512UInt16.Byte.cs" />
+    <Compile Include="ConvertToVector512UInt16.SByte.cs" />
+    <Compile Include="Store.cs" />
+  </ItemGroup>
+</Project>

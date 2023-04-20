@@ -11,13 +11,15 @@
     <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(MSBuildThisFileDirectory)Generated</CompilerGeneratedFilesOutputPath>
+    <ReferencesNativeExports>true</ReferencesNativeExports>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Remove="Generated\**\*.cs" />
+    <Compile Include="..\TestAssets\SharedTypes\ComInterfaces\*.cs" Link="ComInterfaces\%(FileName).cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\..\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />

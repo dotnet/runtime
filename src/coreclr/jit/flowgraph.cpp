@@ -800,7 +800,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     }
     else if (helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
     {
-        result = gtNewHelperCallNode(helper, type, gtNewIconNode(typeIndex, TYP_UINT));
+        result = gtNewHelperCallNode(helper, type, gtNewIconNode(typeIndex));
         result->SetExpTLSFieldAccess();
     }
     else
