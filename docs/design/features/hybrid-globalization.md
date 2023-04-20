@@ -181,3 +181,17 @@ hiraganaBig.localeCompare(katakanaSmall, "en-US", { sensitivity: "base" }) // 0;
 `IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace`
 
 `IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace | IgnoreCase`
+
+
+**String starts with / ends with**
+
+Affected public APIs:
+- CompareInfo.IsPrefix
+- CompareInfo.IsSuffix
+- String.StartsWith
+- String.EndsWith
+
+Web API does not expose locale-sensitive endsWith/startsWith function. As a workaround, both strings get normalized and weightless characters are removed. Resulting strings are cut to the same length and comparison is performed. This approach results in the same compare option limitations as described under **String comparison**. Because we are normalizing strings to be able to cut them, we cannot calculate the match length on the original strings. Methods that calculate this information throw PlatformNotSupported exception:
+
+- [CompareInfo.IsPrefix](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.compareinfo.isprefix?view=net-8.0#system-globalization-compareinfo-isprefix(system-readonlyspan((system-char))-system-readonlyspan((system-char))-system-globalization-compareoptions-system-int32@))
+- [CompareInfo.IsSuffix](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.compareinfo.issuffix?view=net-8.0#system-globalization-compareinfo-issuffix(system-readonlyspan((system-char))-system-readonlyspan((system-char))-system-globalization-compareoptions-system-int32@))
