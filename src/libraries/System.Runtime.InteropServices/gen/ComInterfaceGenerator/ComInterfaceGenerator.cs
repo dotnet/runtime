@@ -42,19 +42,6 @@ namespace Microsoft.Interop
             public const string GenerateIUnknownDerivedAttribute = nameof(GenerateIUnknownDerivedAttribute);
         }
 
-        internal struct BaseInterfacesInfo
-        {
-            internal BaseInterfacesInfo(ManagedTypeInfo? baseInterface, bool isMarkerInterface)
-            {
-                BaseInterface = baseInterface;
-                IsMarkerInterface = isMarkerInterface;
-            }
-
-            public ManagedTypeInfo? BaseInterface { get; }
-
-            public bool IsMarkerInterface { get; }
-        }
-
         private static bool TryGetBaseComInterface(INamedTypeSymbol comIface, [NotNullWhen(true)] out INamedTypeSymbol? baseComIface)
         {
             baseComIface = null;
@@ -224,13 +211,6 @@ namespace Microsoft.Interop
                 }).WithTrackingName(StepNames.GenerateManagedToNativeInterfaceImplementation)
                 .WithComparer(SyntaxEquivalentComparer.Instance)
                 .SelectNormalized();
-            //var managedToNativeInterfaceImplementations = generateManagedToNativeStub
-            //    .Collect()
-            //    .SelectMany(static (stubs, ct) => GroupContextsForInterfaceGeneration(stubs))
-            //    .Select(static (interfaceGroup, ct) => GenerateImplementationInterface(interfaceGroup.Array))
-            //    .WithTrackingName(StepNames.GenerateManagedToNativeInterfaceImplementation)
-            //    .WithComparer(SyntaxEquivalentComparer.Instance)
-            //    .SelectNormalized();
 
             // Filter the list of all stubs to only the stubs that requested unmanaged-to-managed stub generation.
             IncrementalValuesProvider<IncrementalMethodStubGenerationContext> nativeToManagedStubContexts =
