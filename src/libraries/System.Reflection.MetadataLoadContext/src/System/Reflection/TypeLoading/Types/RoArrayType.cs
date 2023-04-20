@@ -66,7 +66,9 @@ namespace System.Reflection.TypeLoading
             CoreType.IReadOnlyListT,
         };
 
+#pragma warning disable SYSLIB0050 // TypeAttributes.Serialized flag is obsolete
         protected sealed override TypeAttributes ComputeAttributeFlags() => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
+#pragma warning restore SYSLIB0050
 
         internal sealed override IEnumerable<ConstructorInfo> GetConstructorsCore(NameFilter? filter)
         {

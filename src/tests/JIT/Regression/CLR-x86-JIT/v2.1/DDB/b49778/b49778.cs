@@ -167,24 +167,6 @@ public class ReproTwo
     [Fact]
     public static int TestEntryPoint() => Run(0);
 
-    static int Main(String[] args)
-    {
-        try
-        {
-            int val = 0;
-            if (args.Length > 0)
-            {
-                val = Int32.Parse(args[0]);
-            }
-            return Run(val);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.Message);
-            return 666;
-        }
-    }
-
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Run(int val)
     {

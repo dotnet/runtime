@@ -2082,7 +2082,7 @@ mono_enable_jit_dump (void)
 
 		g_snprintf (name, sizeof (name), "/tmp/jit-%d.dump", perf_dump_pid);
 		unlink (name);
-		perf_dump_file = fopen (name, "w");
+		perf_dump_file = fopen (name, "w+");
 
 		add_file_header_info (&header);
 		if (perf_dump_file) {

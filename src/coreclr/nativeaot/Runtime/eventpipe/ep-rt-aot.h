@@ -354,9 +354,7 @@ static
 void
 ep_rt_init_providers_and_events (void)
 {
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: auto-generated fn, no op for now
-    // InitProvidersAndEvents ();
+    InitProvidersAndEvents ();
 }
 
 static

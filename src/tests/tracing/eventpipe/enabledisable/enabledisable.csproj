@@ -3,10 +3,10 @@
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants Condition="'$(GitHubRepositoryName)' == 'runtime'">$(DefineConstants);DIAGNOSTICS_RUNTIME</DefineConstants>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <!-- GCStress timeout: https://github.com/dotnet/runtime/issues/51133 -->
-    <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'osx'">true</GCStressIncompatible>
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

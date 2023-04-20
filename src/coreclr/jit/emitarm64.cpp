@@ -444,7 +444,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_DR_2D: // DR_2D   X..........nnnnn cccc..nnnnnmmmmm      Rd Rn    cond
             assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isGeneralRegister(id->idReg1()));
-            assert(isGeneralRegister(id->idReg2()));
+            assert(isGeneralRegisterOrZR(id->idReg2()));
             assert(isValidImmCond(emitGetInsSC(id)));
             break;
 
@@ -4185,7 +4185,7 @@ void emitter::emitIns_Mov(
 
         case INS_sxtw:
         {
-            assert(size == EA_8BYTE);
+            assert((size == EA_8BYTE) || (size == EA_4BYTE));
             FALLTHROUGH;
         }
 
@@ -7315,7 +7315,7 @@ void emitter::emitIns_R_R_COND(instruction ins, emitAttr attr, regNumber reg1, r
         case INS_cinv:
         case INS_cneg:
             assert(isGeneralRegister(reg1));
-            assert(isGeneralRegister(reg2));
+            assert(isGeneralRegisterOrZR(reg2));
             cfi.cond = cond;
             fmt      = IF_DR_2D;
             break;
@@ -13804,7 +13804,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
     if (addr->isContained())
     {
-        assert(addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR, GT_LEA));
+        assert(addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_ADDR, GT_LEA) || (addr->IsIconHandle(GTF_ICON_TLS_HDL)));
 
         int   offset = 0;
         DWORD lsl    = 0;
@@ -13913,7 +13913,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 regNumber addrReg = indir->GetSingleTempReg();
                 emitIns_R_C(ins, attr, dataReg, addrReg, addr->AsClsVar()->gtClsVarHnd, 0);
             }
-            else if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+            else if (addr->OperIs(GT_LCL_ADDR))
             {
                 GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
                 unsigned             lclNum  = varNode->GetLclNum();
@@ -13926,6 +13926,11 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 {
                     emitIns_R_S(ins, attr, dataReg, lclNum, offset);
                 }
+            }
+            else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
+            {
+                // On Arm64, TEB is in r18, so load from the r18 as base.
+                emitIns_R_R_I(ins, attr, dataReg, REG_R18, addr->AsIntCon()->IconValue());
             }
             else if (emitIns_valid_imm_for_ldst_offset(offset, emitTypeSize(indir->TypeGet())))
             {
@@ -13948,7 +13953,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
     else // addr is not contained, so we evaluate it into a register
     {
 #ifdef DEBUG
-        if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+        if (addr->OperIs(GT_LCL_ADDR))
         {
             // If the local var is a gcref or byref, the local var better be untracked, because we have
             // no logic here to track local variable lifetime changes, like we do in the contained case
@@ -16219,6 +16224,16 @@ bool emitter::ReplaceLdrStrWithPairInstr(
 
         // Remove the last instruction written.
         emitRemoveLastInstruction();
+
+        // Combine two 32 bit stores of value zero into one 64 bit store
+        if (ins == INS_str && reg1 == REG_ZR && oldReg1 == REG_ZR && size == EA_4BYTE)
+        {
+
+            // The first register is at the lower offset for the ascending order
+            ssize_t offset = (optimizationOrder == eRO_ascending ? oldImm : imm) * size;
+            emitIns_R_R_I(INS_str, EA_8BYTE, REG_ZR, reg2, offset, INS_OPTS_NONE);
+            return true;
+        }
 
         // Emit the new instruction. Make sure to scale the immediate value by the operand size.
         if (optimizationOrder == eRO_ascending)

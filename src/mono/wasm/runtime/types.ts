@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { WebAssemblyStartOptions } from "./blazor/WebAssemblyStartOptions";
 import { DotnetHostBuilder } from "./run-outer";
 import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr, EmscriptenModuleInternal } from "./types/emscripten";
 
@@ -127,6 +128,11 @@ export type MonoConfig = {
      * hash of assets
      */
     assetsHash?: string,
+
+    /**
+     * application environment
+     */
+    applicationEnvironment?: string
 };
 
 export type MonoConfigInternal = MonoConfig & {
@@ -139,6 +145,7 @@ export type MonoConfigInternal = MonoConfig & {
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
     exitAfterSnapshot?: number,
+    startupOptions?: Partial<WebAssemblyStartOptions>
 };
 
 export type RunArguments = {
@@ -175,13 +182,13 @@ export interface AssetEntry extends ResourceRequest {
     /**
      * If true, an attempt will be made to load the asset from each location in MonoConfig.remoteSources.
      */
-    loadRemote?: boolean, // 
+    loadRemote?: boolean, //
     /**
      * If true, the runtime startup would not fail if the asset download was not successful.
      */
     isOptional?: boolean
     /**
-     * If provided, runtime doesn't have to fetch the data. 
+     * If provided, runtime doesn't have to fetch the data.
      * Runtime would set the buffer to null after instantiation to free the memory.
      */
     buffer?: ArrayBuffer
@@ -245,6 +252,7 @@ export type RuntimeHelpers = {
 export type GlobalizationMode =
     "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
     "invariant" | //  operate in invariant globalization mode.
+    "hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
     "auto" // (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
 
 
@@ -267,6 +275,8 @@ export type DotnetModuleConfig = {
     configSrc?: string,
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
+    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
+    getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
 
     imports?: any;
     exports?: string[];
@@ -361,6 +371,7 @@ export type EarlyImports = {
     isShell: boolean,
     isWeb: boolean,
     isPThread: boolean,
+    disableLegacyJsInterop: boolean,
     quit_: Function,
     ExitStatus: ExitStatusError,
     requirePromise: Promise<Function>
@@ -434,10 +445,43 @@ export interface JavaScriptExports {
     get_managed_stack_trace(exception_gc_handle: GCHandle): string | null
 }
 
-export type MarshalerToJs = (arg: JSMarshalerArgument, sig?: JSMarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) => any;
-export type MarshalerToCs = (arg: JSMarshalerArgument, value: any, sig?: JSMarshalerType, res_converter?: MarshalerToCs, arg1_converter?: MarshalerToJs, arg2_converter?: MarshalerToJs, arg3_converter?: MarshalerToJs) => void;
+export type MarshalerToJs = (arg: JSMarshalerArgument, element_type?: MarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) => any;
+export type MarshalerToCs = (arg: JSMarshalerArgument, value: any, element_type?: MarshalerType, res_converter?: MarshalerToCs, arg1_converter?: MarshalerToJs, arg2_converter?: MarshalerToJs, arg3_converter?: MarshalerToJs) => void;
 export type BoundMarshalerToJs = (args: JSMarshalerArguments) => any;
 export type BoundMarshalerToCs = (args: JSMarshalerArguments, value: any) => void;
+// please keep in sync with src\libraries\System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\MarshalerType.cs
+export enum MarshalerType {
+    None = 0,
+    Void = 1,
+    Discard,
+    Boolean,
+    Byte,
+    Char,
+    Int16,
+    Int32,
+    Int52,
+    BigInt64,
+    Double,
+    Single,
+    IntPtr,
+    JSObject,
+    Object,
+    String,
+    Exception,
+    DateTime,
+    DateTimeOffset,
+
+    Nullable,
+    Task,
+    Array,
+    ArraySegment,
+    Span,
+    Action,
+    Function,
+
+    // only on runtime
+    JSException,
+}
 
 export interface JSMarshalerArguments extends NativePointer {
     __brand: "JSMarshalerArguments"

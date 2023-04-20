@@ -1501,6 +1501,7 @@ typedef struct {
 	guint            gshared : 1;
 	guint            gsharedvt : 1;
 	guint            gsharedvt_min : 1;
+	guint            r4fp : 1;
 	guint            llvm_only : 1;
 	guint            interp : 1;
 	guint            use_current_cpu : 1;
@@ -1512,6 +1513,7 @@ typedef struct {
 	guint            deopt : 1;
 	guint            prefer_instances : 1;
 	guint8           uses_simd_intrinsics;
+	int              r4_stack_type;
 	gpointer         debug_info;
 	guint32          lmf_offset;
 	guint16          *intvars;

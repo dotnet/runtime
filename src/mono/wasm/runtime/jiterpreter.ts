@@ -63,6 +63,13 @@ export const
     // Unproductive if we have backward branches enabled because it can stop us from jitting
     //  nested loops
     abortAtJittedLoopBodies = true,
+    // Enable generating conditional backward branches for ENDFINALLY opcodes if we saw some CALL_HANDLER
+    //  opcodes previously, up to this many potential return addresses. If a trace contains more potential
+    //  return addresses than this we will not emit code for the ENDFINALLY opcode
+    maxCallHandlerReturnAddresses = 3,
+    // Controls how many individual items (traces, bailouts, etc) are shown in the breakdown
+    //  at the end of a run when stats are enabled. The N highest ranking items will be shown.
+    summaryStatCount = 30,
     // Emit a wasm nop between each managed interpreter opcode
     emitPadding = false,
     // Generate compressed names for imports so that modules have more space for code
@@ -685,7 +692,7 @@ function generate_wasm (
         builder.generateTypeSection();
 
         let keep = true,
-            opcodesProcessed = 0;
+            traceValue = 0;
         builder.defineFunction(
             {
                 type: "trace",
@@ -701,6 +708,7 @@ function generate_wasm (
                     "math_rhs64": WasmValtype.i64,
                     "temp_f32": WasmValtype.f32,
                     "temp_f64": WasmValtype.f64,
+                    "backbranched": WasmValtype.i32,
                 }
             }, () => {
                 if (emitPadding) {
@@ -719,12 +727,12 @@ function generate_wasm (
                 // This will allow us to do things like dynamically vary the number of locals, in addition
                 //  to using global constants and figuring out how many constant slots we need in advance
                 //  since a long trace might need many slots and that bloats the header.
-                opcodesProcessed = generateWasmBody(
+                traceValue = generateWasmBody(
                     frame, traceName, ip, startOfBody, endOfBody,
                     builder, instrumentedTraceId, backwardBranchTable
                 );
 
-                keep = (opcodesProcessed >= mostRecentOptions!.minimumTraceLength);
+                keep = (traceValue >= mostRecentOptions!.minimumTraceValue);
 
                 return builder.cfg.generate();
             }
@@ -737,8 +745,8 @@ function generate_wasm (
             if (ti && (ti.abortReason === "end-of-body"))
                 ti.abortReason = "trace-too-small";
 
-            if (traceTooSmall && (opcodesProcessed > 1))
-                console.log(`${traceName} too small: ${opcodesProcessed} opcodes, ${builder.current.size} wasm bytes`);
+            if (traceTooSmall && (traceValue > 1))
+                console.log(`${traceName} too small: value=${traceValue}, ${builder.current.size} wasm bytes`);
             return 0;
         }
 
@@ -984,7 +992,7 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
                 console.log(`// traces bailed out ${bailoutCount} time(s) due to ${BailoutReasonNames[i]}`);
         }
 
-        for (let i = 0, c = 0; i < traces.length && c < 30; i++) {
+        for (let i = 0, c = 0; i < traces.length && c < summaryStatCount; i++) {
             const trace = traces[i];
             if (!trace.bailoutCount)
                 continue;
@@ -1016,7 +1024,7 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
             console.log("// hottest call targets:");
             const targetPointers = Object.keys(callTargetCounts);
             targetPointers.sort((l, r) => callTargetCounts[Number(r)] - callTargetCounts[Number(l)]);
-            for (let i = 0, c = Math.min(20, targetPointers.length); i < c; i++) {
+            for (let i = 0, c = Math.min(summaryStatCount, targetPointers.length); i < c; i++) {
                 const targetMethod = Number(targetPointers[i]) | 0;
                 const pMethodName = cwraps.mono_wasm_method_get_full_name(<any>targetMethod);
                 const targetMethodName = Module.UTF8ToString(pMethodName);
@@ -1028,7 +1036,7 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
 
         traces.sort((l, r) => r.hitCount - l.hitCount);
         console.log("// hottest failed traces:");
-        for (let i = 0, c = 0; i < traces.length && c < 20; i++) {
+        for (let i = 0, c = 0; i < traces.length && c < summaryStatCount; i++) {
             // this means the trace has a low hit count and we don't know its identity. no value in
             //  logging it.
             if (!traces[i].name)
@@ -1064,7 +1072,6 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
                     case "newobj_slow":
                     case "switch":
                     case "rethrow":
-                    case "endfinally":
                     case "end-of-body":
                     case "ret":
                         continue;
@@ -1072,7 +1079,6 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
                     // not worth implementing / too difficult
                     case "intrins_marvin_block":
                     case "intrins_ascii_chars_to_uppercase":
-                    case "newarr":
                         continue;
                 }
             }

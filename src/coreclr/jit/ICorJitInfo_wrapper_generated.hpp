@@ -511,6 +511,28 @@ size_t WrapICorJitInfo::getClassModuleIdForStatics(
     return temp;
 }
 
+bool WrapICorJitInfo::getIsClassInitedFlagAddress(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CONST_LOOKUP* addr,
+          int* offset)
+{
+    API_ENTER(getIsClassInitedFlagAddress);
+    bool temp = wrapHnd->getIsClassInitedFlagAddress(cls, addr, offset);
+    API_LEAVE(getIsClassInitedFlagAddress);
+    return temp;
+}
+
+bool WrapICorJitInfo::getStaticBaseAddress(
+          CORINFO_CLASS_HANDLE cls,
+          bool isGc,
+          CORINFO_CONST_LOOKUP* addr)
+{
+    API_ENTER(getStaticBaseAddress);
+    bool temp = wrapHnd->getStaticBaseAddress(cls, isGc, addr);
+    API_LEAVE(getStaticBaseAddress);
+    return temp;
+}
+
 unsigned WrapICorJitInfo::getClassSize(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -959,6 +981,23 @@ void WrapICorJitInfo::getFieldInfo(
     API_LEAVE(getFieldInfo);
 }
 
+uint32_t WrapICorJitInfo::getThreadLocalFieldInfo(
+          CORINFO_FIELD_HANDLE field)
+{
+    API_ENTER(getThreadLocalFieldInfo);
+    uint32_t temp = wrapHnd->getThreadLocalFieldInfo(field);
+    API_LEAVE(getThreadLocalFieldInfo);
+    return temp;
+}
+
+void WrapICorJitInfo::getThreadLocalStaticBlocksInfo(
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+{
+    API_ENTER(getThreadLocalStaticBlocksInfo);
+    wrapHnd->getThreadLocalStaticBlocksInfo(pInfo);
+    API_LEAVE(getThreadLocalStaticBlocksInfo);
+}
+
 bool WrapICorJitInfo::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {
@@ -1247,6 +1286,15 @@ uint32_t WrapICorJitInfo::getLoongArch64PassStructInRegisterFlags(
     API_ENTER(getLoongArch64PassStructInRegisterFlags);
     uint32_t temp = wrapHnd->getLoongArch64PassStructInRegisterFlags(structHnd);
     API_LEAVE(getLoongArch64PassStructInRegisterFlags);
+    return temp;
+}
+
+uint32_t WrapICorJitInfo::getRISCV64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    API_ENTER(getRISCV64PassStructInRegisterFlags);
+    uint32_t temp = wrapHnd->getRISCV64PassStructInRegisterFlags(structHnd);
+    API_LEAVE(getRISCV64PassStructInRegisterFlags);
     return temp;
 }
 

@@ -4,7 +4,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Emit
 {
@@ -22,7 +21,7 @@ namespace System.Reflection.Emit
             Type[]? parameterTypes, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
         {
             _module = module;
-            _returnType = returnType ?? _module.GetTypeFromCoreAssembly("System.Void"); ;
+            _returnType = returnType ?? _module.GetTypeFromCoreAssembly(CoreTypeId.Void);
             _name = name;
             _attributes = attributes;
             _callingConventions = callingConventions;

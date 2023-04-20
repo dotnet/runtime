@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
 import { legacy_c_functions as cwraps } from "../cwraps";
-import { Module } from "../imports";
+import { ENVIRONMENT_IS_PTHREAD, Module } from "../imports";
 import { parseFQN } from "../invoke-cs";
 import { setI32, setU32, setF32, setF64, setU52, setI52, setB32, setI32_unchecked, setU32_unchecked, _zero_region, _create_temp_frame, getB32, getI32, getU32, getF32, getF64 } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
@@ -382,6 +383,9 @@ export function _decide_if_result_is_marshaled(converter: Converter, argc: numbe
 
 
 export function mono_bind_method(method: MonoMethod, args_marshal: string/*ArgsMarshalString*/, has_this_arg: boolean, friendly_name?: string): Function {
+    if (MonoWasmThreads && ENVIRONMENT_IS_PTHREAD) {
+        throw new Error("Legacy interop is not supported with WebAssembly threads.");
+    }
     if (typeof (args_marshal) !== "string")
         throw new Error("args_marshal argument invalid, expected string");
 

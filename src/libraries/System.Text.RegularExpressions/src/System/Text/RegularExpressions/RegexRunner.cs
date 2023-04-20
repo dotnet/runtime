@@ -1,24 +1,25 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// This RegexRunner class is a base class for compiled regex code.
+// This RegexRunner class is a base class for source-generated regex extensibility
+// (and the old CompileToAssembly extensibility).  It's not intended to be used
+// by anything else.
 
 // Implementation notes:
 
-// It provides the driver code that call's the subclass's Go()
+// It provides the driver code that call's the subclass's Scan
 // method for either scanning or direct execution.
-//
 // It also maintains memory allocation for the backtracking stack,
 // the grouping stack and the longjump crawlstack, and provides
 // methods to push new subpattern match results into (or remove
 // backtracked results from) the Match instance.
 
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions
 {
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract class RegexRunner
     {
         protected internal int runtextbeg;         // Beginning of text to search. We now always use a sliced span of the input
@@ -118,15 +119,15 @@ namespace System.Text.RegularExpressions
             InternalScan(runregex!, beginning, beginning + text.Length);
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/62573: Obsolete this.
+        [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         protected Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
             Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
 
-        // TODO https://github.com/dotnet/runtime/issues/62573: Obsolete this.
         /// <summary>
         /// This method's body is only kept since it is a protected member that could be called by someone outside
         /// the assembly.
         /// </summary>
+        [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
         {
             InitializeTimeout(timeout);
@@ -393,13 +394,14 @@ namespace System.Text.RegularExpressions
                    ((uint)index < (uint)inputSpan.Length && RegexCharClass.IsECMAWordChar(inputSpan[index]));
         }
 
+        [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         protected static bool CharInSet(char ch, string set, string category)
         {
             string charClass = RegexCharClass.ConvertOldStringsToClass(set, category);
             return RegexCharClass.CharInClass(ch, charClass);
         }
 
-        protected static bool CharInClass(char ch, string charClass)
+        public static bool CharInClass(char ch, string charClass)
         {
             return RegexCharClass.CharInClass(ch, charClass);
         }

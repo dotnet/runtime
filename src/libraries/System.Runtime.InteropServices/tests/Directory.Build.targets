@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup Condition="'$(ReferencesNativeExports)' == 'true'">
+    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+    <IlcExportUnmanagedEntrypoints>true</IlcExportUnmanagedEntrypoints>
+  </PropertyGroup>
+  <!-- Expose unmanaged entry points from NativeExports -->
+  <ItemGroup Condition="'$(ReferencesNativeExports)' == 'true'">
+    <UnmanagedEntryPointsAssembly Include="Microsoft.Interop.Tests.NativeExports" />
+    <DirectPInvoke Include="Microsoft.Interop.Tests.NativeExportsNE" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+</Project>

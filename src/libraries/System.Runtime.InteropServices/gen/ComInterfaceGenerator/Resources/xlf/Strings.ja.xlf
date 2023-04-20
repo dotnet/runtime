@@ -147,6 +147,21 @@
         <target state="translated">メソッドは、'GeneratedComInterface' 属性とは異なる部分宣言で宣言されています。</target>
         <note />
       </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesDescription">
+        <source>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</source>
+        <target state="translated">'GeneratedComInterfaceAttribute' 属性インターフェイスは、最大 1 つのその他の 'GeneratedComInterfaceAttribute' 属性インターフェイスからのみ派生できます。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesMessage">
+        <source>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</source>
+        <target state="translated">インターフェイス '{0}' は、'GeneratedComInterfaceAttribute' 属性が設定された 2 つ以上のインターフェイスから派生しています。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesTitle">
+        <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
+        <target state="translated">指定されたインターフェイスは、2 つ以上の 'GeneratedComInterfaceAttribute' 属性インターフェイスから派生しています。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
         <target state="translated">ソース生成済みの P/Invoke でサポートされていない型である場合、生成された P/Invoke は、基礎となるなるランタイムに依存して、指定された型をマーシャリングします。</target>
