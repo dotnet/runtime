@@ -6762,6 +6762,16 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 {
     switch (gtOper)
     {
+        case GT_ADD:
+        case GT_SUB:
+        case GT_MUL:
+        case GT_CAST:
+#ifndef TARGET_64BIT
+        case GT_ADD_HI:
+        case GT_SUB_HI:
+#endif // !TARGET_64BIT
+            return gtOverflow() ? ExceptionSetFlags::OverflowException : ExceptionSetFlags::None;
+
         case GT_MOD:
         case GT_DIV:
         case GT_UMOD:
@@ -6805,6 +6815,7 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
             return ExceptionSetFlags::All;
 
         case GT_IND:
+        case GT_STOREIND:
         case GT_BLK:
         case GT_NULLCHECK:
         case GT_STORE_BLK:
@@ -6877,11 +6888,7 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 #endif // FEATURE_HW_INTRINSICS
 
         default:
-            if (gtOverflowEx())
-            {
-                return ExceptionSetFlags::OverflowException;
-            }
-
+            assert(!OperMayOverflow() && !OperIsIndirOrArrMetaData());
             return ExceptionSetFlags::None;
     }
 }
