@@ -15,7 +15,21 @@ namespace System.Runtime.InteropServices.JavaScript
         private const string TaskGetResultName = "get_Result";
         private static MethodInfo? s_taskGetResultMethodInfo;
         // we use this to maintain identity of JSHandle for a JSObject proxy
+#if FEATURE_WASM_THREADS
+        [ThreadStatic]
+        private static Dictionary<int, WeakReference<JSObject>>? s_csOwnedObjects_impl;
+
+        public static Dictionary<int, WeakReference<JSObject>> s_csOwnedObjects
+        {
+            get
+            {
+                s_csOwnedObjects_impl ??= new ();
+                return s_csOwnedObjects_impl;
+            }
+        }
+#else
         public static readonly Dictionary<int, WeakReference<JSObject>> s_csOwnedObjects = new Dictionary<int, WeakReference<JSObject>>();
+#endif
         // we use this to maintain identity of GCHandle for a managed object
         public static Dictionary<object, IntPtr> s_gcHandleFromJSOwnedObject = new Dictionary<object, IntPtr>(ReferenceEqualityComparer.Instance);
 
