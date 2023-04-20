@@ -483,7 +483,7 @@ namespace Internal.Runtime
             get
             {
                 // String is currently the only non-array type with a non-zero component size.
-                return ComponentSize == StringComponentSize.Value && !IsArray && !IsGenericTypeDefinition;
+                return ComponentSize == StringComponentSize.Value && IsCanonical;
             }
         }
 
@@ -720,6 +720,14 @@ namespace Internal.Runtime
             }
         }
 
+        internal bool IsFunctionPointerType
+        {
+            get
+            {
+                return Kind == EETypeKind.FunctionPointerEEType;
+            }
+        }
+
         // The parameterized type shape defines the particular form of parameterized type that
         // is being represented.
         // Currently, the meaning is a shape of 0 indicates that this is a Pointer,
@@ -945,6 +953,9 @@ namespace Internal.Runtime
                         return null;
                 }
 
+                // Function pointers naturally set the base type field to null.
+                Debug.Assert(!IsFunctionPointerType || (!IsRelatedTypeViaIAT && _relatedType._pBaseType == null));
+
                 Debug.Assert(IsCanonical);
 
                 if (IsRelatedTypeViaIAT)
@@ -957,6 +968,7 @@ namespace Internal.Runtime
             {
                 Debug.Assert(IsDynamicType);
                 Debug.Assert(!IsParameterizedType);
+                Debug.Assert(!IsFunctionPointerType);
                 Debug.Assert(IsCanonical);
                 _uFlags &= (uint)~EETypeFlags.RelatedTypeViaIATFlag;
                 _relatedType._pBaseType = value;

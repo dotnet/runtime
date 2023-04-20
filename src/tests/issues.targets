@@ -293,9 +293,6 @@
 
     <!-- Windows arm32 specific excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm') and '$(TargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTestWithMcj/*">
-            <Issue>https://github.com/dotnet/runtime/issues/84818</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/out_of_range_fp_to_int_conversions/*">
             <Issue>https://github.com/dotnet/runtime/issues/49184</Issue>
         </ExcludeList>
@@ -512,20 +509,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_do/**">
             <Issue>https://github.com/dotnet/runtime/issues/66745</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/binding/tracing/BinderTracingTest.ResolutionFlow/*">
-            <Issue>https://github.com/dotnet/runtime/issues/84818</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/profiler/elt/slowpatheltenter/**">
             <Issue>https://github.com/dotnet/runtime/issues/84750</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/profiler/elt/slowpatheltleave/**">
             <Issue>https://github.com/dotnet/runtime/issues/84750</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/readytorun/coreroot_determinism/coreroot_determinism/*">
-            <Issue>https://github.com/dotnet/runtime/issues/84818</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/readytorun/determinism/crossgen2determinism/*">
-            <Issue>https://github.com/dotnet/runtime/issues/84818</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
             <Issue>https://github.com/dotnet/runtime/issues/81241</Issue>
