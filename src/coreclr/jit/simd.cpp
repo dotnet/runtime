@@ -439,73 +439,21 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
     return simdBaseJitType;
 }
 
-// Pops and returns GenTree node from importer's type stack.
-// Normalizes TYP_STRUCT value in case of GT_CALL and GT_RET_EXPR.
+//------------------------------------------------------------------------
+// impSIMDPopStack: Pop a SIMD value from the importer's stack.
 //
-// Arguments:
-//    type         -  the type of value that the caller expects to be popped off the stack.
-//    expectAddr   -  if true indicates we are expecting type stack entry to be a TYP_BYREF.
-//    structHandle -  the class handle to use when normalizing if it is not the same as the stack entry class handle;
-//                    this can happen for certain scenarios, such as folding away a static cast, where we want the
-//                    value popped to have the type that would have been returned.
+// Spills calls with return buffers to temps.
 //
-// Notes:
-//    If the popped value is a struct, and the expected type is a simd type, it will be set
-//    to that type, otherwise it will assert if the type being popped is not the expected type.
-//
-GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLASS_HANDLE structHandle)
+GenTree* Compiler::impSIMDPopStack()
 {
     StackEntry se   = impPopStack();
-    typeInfo   ti   = se.seTypeInfo;
     GenTree*   tree = se.val;
-
-    // If expectAddr is true implies what we have on stack is address and we need
-    // SIMD type struct that it points to.
-    if (expectAddr)
-    {
-        assert(tree->TypeIs(TYP_BYREF, TYP_I_IMPL));
-
-        tree = gtNewOperNode(GT_IND, type, tree);
-    }
-
-    // TODO-ADDR: delete this.
-    if (tree->OperIsIndir() && tree->AsIndir()->Addr()->IsLclVarAddr())
-    {
-        GenTreeLclFld* lclAddr = tree->AsIndir()->Addr()->AsLclFld();
-        LclVarDsc*     varDsc  = lvaGetDesc(lclAddr);
-        if (varDsc->TypeGet() == type)
-        {
-            assert(type != TYP_STRUCT);
-            lclAddr->ChangeType(type);
-            lclAddr->SetOper(GT_LCL_VAR);
-
-            tree = lclAddr;
-        }
-    }
+    assert(varTypeIsSIMD(tree));
 
     // Handle calls that may return the struct via a return buffer.
-    if (varTypeIsStruct(tree) && tree->OperIs(GT_CALL, GT_RET_EXPR))
+    if (tree->OperIs(GT_CALL, GT_RET_EXPR))
     {
-        assert(ti.IsType(TI_STRUCT));
-
-        if (structHandle == NO_CLASS_HANDLE)
-        {
-            structHandle = ti.GetClassHandleForValueClass();
-        }
-
-        tree = impNormStructVal(tree, structHandle, CHECK_SPILL_ALL);
-    }
-
-    // Now set the type of the tree to the specialized SIMD struct type, if applicable.
-    if (genActualType(tree->gtType) != genActualType(type))
-    {
-        assert(tree->gtType == TYP_STRUCT);
-        tree->gtType = type;
-    }
-    else if (tree->gtType == TYP_BYREF)
-    {
-        assert(tree->IsLocal() || tree->OperIs(GT_RET_EXPR, GT_CALL) ||
-               (tree->IsLclVarAddr() && varTypeIsSIMD(lvaGetDesc(tree->AsLclFld()))));
+        tree = impNormStructVal(tree, se.seTypeInfo.GetClassHandle(), CHECK_SPILL_ALL);
     }
 
     return tree;
