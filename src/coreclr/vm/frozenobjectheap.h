@@ -28,7 +28,15 @@ class FrozenObjectHeapManager
 public:
     FrozenObjectHeapManager();
     Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize, bool publish = true);
-
+    FrozenObjectSegment** GetSegments(unsigned* count)
+    {
+        *count = m_FrozenSegments.GetCount();
+        return m_FrozenSegments.GetElements();
+    }
+    Crst *GetCrst()
+    {
+        return &m_Crst;
+    }
 private:
     Crst m_Crst;
     SArray<FrozenObjectSegment*> m_FrozenSegments;
@@ -40,7 +48,8 @@ class FrozenObjectSegment
 public:
     FrozenObjectSegment(size_t sizeHint);
     Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize);
-
+    Object* GetFirstObject() const;
+    Object* GetNextObject(Object* obj) const;
     size_t GetSize() const
     {
         return m_Size;

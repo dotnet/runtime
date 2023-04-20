@@ -7586,6 +7586,50 @@ HRESULT ProfToEEInterfaceImpl::GetObjectIDFromHandle(
     return S_OK;
 }
 
+HRESULT ProfToEEInterfaceImpl::EnumerateNonGCObjects(ICorProfilerObjectEnum** ppEnum)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+            LL_INFO1000,
+            "**PROF: EnumerateNonGCObjects.\n"));
+
+    if (NULL == ppEnum)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+
+    *ppEnum = NULL;
+
+    NewHolder<ProfilerObjectEnum> pEnum(new (nothrow) ProfilerObjectEnum());
+    if (pEnum == NULL)
+    {
+        return E_OUTOFMEMORY;
+    }
+
+    if (!pEnum->Init())
+    {
+        return E_OUTOFMEMORY;
+    }
+
+    EX_TRY
+    {
+        *ppEnum = (ICorProfilerObjectEnum*)pEnum.Extract();
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
 
 /*
  * GetStringLayout
