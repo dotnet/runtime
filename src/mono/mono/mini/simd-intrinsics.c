@@ -1356,7 +1356,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_ConvertToUInt32:
 		case SN_ConvertToUInt64:
 		case SN_Create:
-		//case SN_GetElement:
 		case SN_GetLower:
 		case SN_GetUpper:
 		case SN_Shuffle:

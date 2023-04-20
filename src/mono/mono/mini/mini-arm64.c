@@ -91,7 +91,6 @@ MONO_DISABLE_WARNING(4334)
 #define FP_TEMP_REG ARMREG_D16
 #define FP_TEMP_REG2 ARMREG_D17
 #define NEON_TMP_REG FP_TEMP_REG
-#define ARM64_SWITCH_PREAMBLE_LENGTH 12
 
 #define THUNK_SIZE (4 * 4)
 
@@ -3881,7 +3880,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XEXTRACT_R4: 
 			g_assert_not_reached ();
 			break;
-		
 
 		case OP_INSERT_I1:
 		case OP_INSERT_I2:
