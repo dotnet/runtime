@@ -1130,7 +1130,8 @@ public:
                 UpdateEarlyRefCount(addr);
                 if (srcOffs != 0)
                 {
-                    addr = m_compiler->gtNewOperNode(GT_ADD, addr->TypeGet(), addr,
+                    var_types addrType = varTypeIsGC(addr) ? TYP_BYREF : TYP_I_IMPL;
+                    addr = m_compiler->gtNewOperNode(GT_ADD, addrType, addr,
                                                      m_compiler->gtNewIconNode(srcOffs, TYP_I_IMPL));
                 }
 
