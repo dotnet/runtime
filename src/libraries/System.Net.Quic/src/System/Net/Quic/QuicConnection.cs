@@ -285,10 +285,16 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 MsQuicHelpers.SetMsQuicParameter(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS, quicAddress);
             }
 
+            // RFC 6066 forbids IP literals
+            // DNI mapping is handled by MsQuic
+            var hostname = TargetHostNameHelper.IsValidAddress(options.ClientAuthenticationOptions.TargetHost)
+                ? string.Empty
+                : options.ClientAuthenticationOptions.TargetHost ?? string.Empty;
+
             _sslConnectionOptions = new SslConnectionOptions(
                 this,
                 isClient: true,
-                options.ClientAuthenticationOptions.TargetHost ?? "",
+                hostname,
                 certificateRequired: true,
                 options.ClientAuthenticationOptions.CertificateRevocationCheckMode,
                 options.ClientAuthenticationOptions.RemoteCertificateValidationCallback,
