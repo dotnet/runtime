@@ -2320,7 +2320,7 @@ namespace Internal.JitInterface
                     int offset = valueOffset - strDataOffset;
                     fixed (char* pStr = frozenStr.Data)
                     {
-                        new Span<byte>((byte*)pStr /*+ offset*/ + 1 /*intentional bug*/, bufferSize).CopyTo(
+                        new Span<byte>((byte*)pStr + offset, bufferSize).CopyTo(
                             new Span<byte>(buffer, bufferSize));
                         return true;
                     }
