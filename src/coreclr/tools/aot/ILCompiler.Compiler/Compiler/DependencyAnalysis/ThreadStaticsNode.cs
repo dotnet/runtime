@@ -126,8 +126,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (type.ConvertToCanonForm(CanonicalFormKind.Specific) != type)
                 {
-                    yield return new CombinedDependencyListEntry(factory.NecessaryTypeSymbol(_type),
-                        factory.NativeLayout.TemplateTypeLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                    yield return new CombinedDependencyListEntry(factory.NecessaryTypeSymbol(type),
+                        factory.NativeLayout.TemplateTypeLayout(type.ConvertToCanonForm(CanonicalFormKind.Specific)),
                         "Keeping track of template-constructable type static bases");
                 }
             }

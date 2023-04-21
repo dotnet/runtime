@@ -852,6 +852,13 @@ namespace ILCompiler.DependencyAnalysis
             return _stringAllocators.GetOrAdd(stringConstructor);
         }
 
+        public uint ThreadStaticBaseOffset(MetadataType type)
+        {
+            return _inlinedThreadStatics.IsComputed() ?
+                (uint)_inlinedThreadStatics.GetOffsets()[type] :
+                0;
+        }
+
         private sealed class MethodEntrypointHashtable : LockFreeReaderHashtable<MethodDesc, IMethodNode>
         {
             private readonly NodeFactory _factory;
