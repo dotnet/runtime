@@ -567,7 +567,7 @@ void GenTree::DumpNodeSizes(FILE* fp)
 LocalsGenTreeList::iterator LocalsGenTreeList::begin() const
 {
     GenTree* first = m_stmt->GetTreeList();
-    assert((first == nullptr) || first->OperIsLocal() || first->OperIs(GT_LCL_ADDR));
+    assert((first == nullptr) || first->OperIsAnyLocal());
     return iterator(static_cast<GenTreeLclVarCommon*>(first));
 }
 
@@ -2953,7 +2953,7 @@ AGAIN:
 
     if (tree->OperIsLeaf())
     {
-        if ((tree->OperIsLocal() || tree->OperIs(GT_LCL_ADDR)) && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
+        if (tree->OperIsAnyLocal() && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
         {
             return true;
         }

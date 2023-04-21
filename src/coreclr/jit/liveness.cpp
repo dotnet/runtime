@@ -2732,7 +2732,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
                 {
                     for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
                     {
-                        assert(cur->OperIsLocal() || cur->OperIs(GT_LCL_ADDR));
+                        assert(cur->OperIsAnyLocal());
                         bool isDef = ((cur->gtFlags & GTF_VAR_DEF) != 0) && ((cur->gtFlags & GTF_VAR_USEASG) == 0);
                         bool conditional = cur != dst;
                         // Ignore conditional defs that would otherwise
@@ -2758,7 +2758,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
                 {
                     for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
                     {
-                        assert(cur->OperIsLocal() || cur->OperIs(GT_LCL_ADDR));
+                        assert(cur->OperIsAnyLocal());
                         if (!fgComputeLifeLocal(life, keepAliveVars, cur))
                         {
                             cur = cur->gtPrev;
