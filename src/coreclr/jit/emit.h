@@ -868,7 +868,7 @@ protected:
         // x86:   52/48 bits
         // amd64: 53/48 bits
         // arm:   54/50 bits
-        // arm64: 56/51 bits
+        // arm64: 57/52 bits
         // loongarch64: 53/48 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
 
@@ -886,7 +886,7 @@ protected:
         // x86:   12/16 bits
         // amd64: 11/16 bits
         // arm:   10/14 bits
-        // arm64: 8/13 bits
+        // arm64: 7/12 bits
         // loongarch64: 11/16 bits
 
         unsigned _idSmallCns : ID_BIT_SMALL_CNS;
@@ -1372,17 +1372,6 @@ protected:
             _idLargeCns = 1;
         }
 
-#ifdef TARGET_ARM64
-        bool idIsLclVarPair() const
-        {
-            return _idLclVarPair != 0;
-        }
-        void isSetLclVarPair()
-        {
-            _idLclVarPair = 1;
-        }
-#endif // TARGET_ARM64
-
         bool idIsLargeDsp() const
         {
             return _idLargeDsp != 0;
@@ -1444,6 +1433,16 @@ protected:
         {
             _idLclVar = 1;
         }
+#ifdef TARGET_ARM64
+        bool idIsLclVarPair() const
+        {
+            return _idLclVarPair != 0;
+        }
+        void idSetIsLclVarPair()
+        {
+            _idLclVarPair = 1;
+        }
+#endif // TARGET_ARM64
 #endif // TARGET_ARMARCH
 
 #if defined(TARGET_ARM)
@@ -1839,9 +1838,11 @@ protected:
         emitLclVarAddr iiaLclVar2;
     };
 
-    struct instrDescLclVarPairCns : instrDescCns // contains 2 gc vars to be tracked, with large cons
+    struct instrDescLclVarPairCns : instrDescLclVarPair // contains 2 gc vars to be tracked, with large cons
     {
-        emitLclVarAddr iiaLclVar2;
+        instrDescLclVarPairCns() = delete;
+
+        cnsval_ssize_t idcCnsVal;
     };
 #endif
 
@@ -2626,11 +2627,13 @@ private:
 #endif // EMITTER_STATS
         return (instrDescLbl*)emitAllocAnyInstr(sizeof(instrDescLbl), EA_4BYTE);
     }
-#else
+#endif // TARGET_ARM64
+
+#if defined(TARGET_ARM64)
     instrDescLclVarPair* emitAllocInstrLclVarPair(emitAttr attr)
     {
         instrDescLclVarPair* result = (instrDescLclVarPair*)emitAllocAnyInstr(sizeof(instrDescLclVarPair), attr);
-        result->isSetLclVarPair();
+        result->idSetIsLclVarPair();
         return result;
     }
 
@@ -2639,11 +2642,11 @@ private:
         instrDescLclVarPairCns* result =
             (instrDescLclVarPairCns*)emitAllocAnyInstr(sizeof(instrDescLclVarPairCns), attr);
         result->idSetIsLargeCns();
-        result->isSetLclVarPair();
+        result->idSetIsLclVarPair();
         result->idcCnsVal = cns;
         return result;
     }
-#endif // !TARGET_ARM64
+#endif // TARGET_ARM64
 
     instrDescCns* emitAllocInstrCns(emitAttr attr)
     {
@@ -2730,7 +2733,7 @@ private:
 #if !defined(TARGET_ARM64)
     instrDescLbl* emitNewInstrLbl();
 #else
-    instrDesc* emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns);
+    instrDescLclVarPair* emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns);
 #endif // !TARGET_ARM64
 
     static const BYTE emitFmtToOps[];
@@ -3295,7 +3298,7 @@ inline emitter::instrDescLbl* emitter::emitNewInstrLbl()
     return emitAllocInstrLbl();
 }
 #else
-inline emitter::instrDesc* emitter::emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns)
+inline emitter::instrDescLclVarPair* emitter::emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns)
 {
 #if EMITTER_STATS
     emitTotalIDescCnt++;

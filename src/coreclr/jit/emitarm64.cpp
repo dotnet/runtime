@@ -2413,18 +2413,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 /*static*/ unsigned emitter::NaturalScale_helper(emitAttr size)
 {
     assert(size == EA_1BYTE || size == EA_2BYTE || size == EA_4BYTE || size == EA_8BYTE || size == EA_16BYTE);
-
-    unsigned result = 0;
-    unsigned utemp  = (unsigned)size;
-
-    // Compute log base 2 of utemp (aka 'size')
-    while (utemp > 1)
-    {
-        result++;
-        utemp >>= 1;
-    }
-
-    return result;
+    return BitOperations::Log2((unsigned)size);
 }
 
 /************************************************************************
@@ -6568,18 +6557,12 @@ void emitter::emitIns_SS_R_R_R_I(instruction ins,
 
     if (validVar1 && validVar2)
     {
-        id = emitNewInstrLclVarPair(attr, imm);
-        id->idAddr()->iiaLclVar.initLclVarAddr(varx1, offs);
-        id->idSetIsLclVar();
+        instrDescLclVarPair* idPair = emitNewInstrLclVarPair(attr, imm);
+        idPair->idAddr()->iiaLclVar.initLclVarAddr(varx1, offs);
+        idPair->iiaLclVar2.initLclVarAddr(varx2, offs);
+        idPair->idSetIsLclVar();
 
-        if (id->idSmallCns())
-        {
-            ((instrDescLclVarPair*)id)->iiaLclVar2.initLclVarAddr(varx2, offs);
-        }
-        else
-        {
-            ((instrDescLclVarPairCns*)id)->iiaLclVar2.initLclVarAddr(varx2, offs);
-        }
+        id = idPair;
     }
     else
     {
@@ -11880,14 +11863,7 @@ SKIP_GC_UPDATE:
                 {
                     // If there are 2 GC vars in this instrDesc, get the 2nd variable
                     // that should be tracked.
-                    if (id->idSmallCns())
-                    {
-                        varNum2 = ((instrDescLclVarPair*)id)->iiaLclVar2.lvaVarNum();
-                    }
-                    else
-                    {
-                        varNum2 = ((instrDescLclVarPairCns*)id)->iiaLclVar2.lvaVarNum();
-                    }
+                    varNum2 = ((instrDescLclVarPair*)id)->iiaLclVar2.lvaVarNum();
                 }
                 assert(varNum2 != -1);
                 emitGCvarLiveUpd(adr + ofs2, varNum2, id->idGCrefReg2(), dst DEBUG_ARG(varNum2));
@@ -16411,7 +16387,7 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
 
             if (isLastGCLclVar && isCurrGCLclVar)
             {
-                // if (asending)
+                // if (ascending)
                 //    - idGCref() = last instruction's GCtype
                 //    - idGCrefReg2() = current instruction's GCType
                 //    - lvaVarNum = last instruction's lclVar
@@ -16438,7 +16414,7 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
             }
             else if (isLastGCLclVar)
             {
-                // if (asending)
+                // if (ascending)
                 //    - idGCref() = last instruction's GCtype
                 //    - idGCrefReg2() = GCT_NONE
                 //    - lvaVarNum = last instruction's lclVar
@@ -16463,7 +16439,7 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
             }
             else if (isCurrGCLclVar)
             {
-                // if (asending)
+                // if (ascending)
                 //    - idGCref() = GCT_NONE
                 //    - idGCrefReg2() = current instruction's GCType
                 //    - lvaVarNum = current instruction's lclVar
