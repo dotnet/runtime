@@ -6,6 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Templates\*.*" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="..\Common\Utils.cs" />
 
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
