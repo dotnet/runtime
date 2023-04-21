@@ -6513,7 +6513,7 @@ void emitter::emitIns_SS_R_R_R_I(instruction ins,
                                  int         varx2,
                                  int         offs)
 {
-    assert((ins == INS_stp) || (ins == INS_stnp));
+    assert((ins == INS_stp) || (ins == INS_ldp));
     emitAttr  size  = EA_SIZE(attr);
     insFormat fmt   = IF_NONE;
     unsigned  scale = 0;
@@ -16334,167 +16334,135 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
                                          ssize_t     imm,
                                          emitAttr    size,
                                          insFormat   fmt,
-                                         bool        localVar,
+                                         bool        isCurrLclVar,
                                          int         currLclVarNum,
                                          int         offs)
 {
     RegisterOrder optimizationOrder = IsOptimizableLdrStrWithPair(ins, reg1, reg2, imm, size, fmt);
 
-    if (optimizationOrder != eRO_none)
+    if (optimizationOrder == eRO_none)
     {
-        regNumber prevReg1 = emitLastIns->idReg1();
+        return false;
+    }
 
-        ssize_t     prevImm = emitGetInsSC(emitLastIns);
-        instruction optIns  = (ins == INS_ldr) ? INS_ldp : INS_stp;
+    regNumber prevReg1 = emitLastIns->idReg1();
 
-        emitAttr prevReg1Attr;
-        ssize_t  prevImmSize    = prevImm * size;
-        ssize_t  newImmSize     = imm * size;
-        bool     isLastGCLclVar = (emitLastIns->idIsLclVar() && (emitLastIns->idGCref() != GCT_NONE));
-        bool     isCurrGCLclVar = (localVar && EA_IS_GCREF_OR_BYREF(reg1Attr));
-        int      prevOffset     = -1;
-        int      prevLclVarNum  = -1;
+    ssize_t     prevImm = emitGetInsSC(emitLastIns);
+    instruction optIns  = (ins == INS_ldr) ? INS_ldp : INS_stp;
 
-        if (emitLastIns->idIsLclVar())
-        {
-            prevOffset    = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
-            prevLclVarNum = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
-        }
+    emitAttr prevReg1Attr;
+    ssize_t  prevImmSize   = prevImm * size;
+    ssize_t  newImmSize    = imm * size;
+    bool     isLastLclVar  = emitLastIns->idIsLclVar();
+    int      prevOffset    = -1;
+    int      prevLclVarNum = -1;
 
-        switch (emitLastIns->idGCref())
-        {
-            case GCT_GCREF:
-                prevReg1Attr = EA_GCREF;
-                break;
-            case GCT_BYREF:
-                prevReg1Attr = EA_BYREF;
-                break;
-            default:
-                prevReg1Attr = emitLastIns->idOpSize();
-                break;
-        }
+    if (emitLastIns->idIsLclVar())
+    {
+        prevOffset    = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
+        prevLclVarNum = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
+    }
 
-        // Remove the last instruction written.
-        emitRemoveLastInstruction();
+    switch (emitLastIns->idGCref())
+    {
+        case GCT_GCREF:
+            prevReg1Attr = EA_GCREF;
+            break;
+        case GCT_BYREF:
+            prevReg1Attr = EA_BYREF;
+            break;
+        default:
+            prevReg1Attr = emitLastIns->idOpSize();
+            break;
+    }
 
-        // Combine two 32 bit stores of value zero into one 64 bit store
-        if (ins == INS_str)
-        {
-            if (reg1 == REG_ZR && prevReg1 == REG_ZR && size == EA_4BYTE)
-            {
-                // The first register is at the lower offset for the ascending order
-                ssize_t offset = (optimizationOrder == eRO_ascending ? prevImm : imm) * size;
-                emitIns_R_R_I(INS_str, EA_8BYTE, REG_ZR, reg2, offset, INS_OPTS_NONE);
-                return true;
-            }
+    bool isGcLclVarPair =
+        (isLastLclVar && (emitLastIns->idGCref() != GCT_NONE)) && (isCurrLclVar && EA_IS_GCREF_OR_BYREF(reg1Attr));
 
-            if (isLastGCLclVar && isCurrGCLclVar)
-            {
-                // if (ascending)
-                //    - idGCref() = last instruction's GCtype
-                //    - idGCrefReg2() = current instruction's GCType
-                //    - lvaVarNum = last instruction's lclVar
-                //    - lvaVarNum2 = current instruction's lclVar
-                //    - lvaOffset = last instruction's offset
-                // else
-                //    - idGCref() = current instruction's GCType
-                //    - idGCrefReg2() = last instruction's GCtype
-                //    - lvaVarNum = current instruction's lclVar
-                //    - lvaVarNum2 = last instruction's lclVar
-                //    - lvaOffset = current instruction's offset
+    // Remove the last instruction written.
+    emitRemoveLastInstruction();
 
-                if (optimizationOrder == eRO_ascending)
-                {
-                    emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum,
-                                       currLclVarNum, prevOffset);
-                }
-                else
-                {
-                    emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, currLclVarNum,
-                                       prevLclVarNum, offs);
-                }
-                return true;
-            }
-            else if (emitLastIns->idIsLclVar())
-            {
-                // if (ascending)
-                //    - idGCref() = last instruction's GCtype
-                //    - idGCrefReg2() = GCT_NONE
-                //    - lvaVarNum = last instruction's lclVar
-                //    - lvaOffset = last instruction's offset
-                // else
-                //    - idGCref() = GCT_NONE
-                //    - idGCrefReg2() = last instruction's GCtype
-                //    - lvaVarNum = last instruction's lclVar
-                //    - lvaOffset = current instruction's offset
-
-                if (optimizationOrder == eRO_ascending)
-                {
-                    emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum,
-                                       -1, prevOffset);
-                }
-                else
-                {
-                    emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, prevLclVarNum,
-                                       -1, prevOffset);
-                }
-                return true;
-            }
-            else if (localVar)
-            {
-                // if (ascending)
-                //    - idGCref() = GCT_NONE
-                //    - idGCrefReg2() = current instruction's GCType
-                //    - lvaVarNum = current instruction's lclVar
-                //    - lvaOffset = last instruction's offset
-                // else
-                //    - idGCref() = current instruction's GCType
-                //    - idGCrefReg2() = GCT_NONE
-                //    - lvaVarNum = current instruction's lclVar
-                //    - lvaOffset = current instruction's offset
-
-                if (optimizationOrder == eRO_ascending)
-                {
-                    emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, currLclVarNum,
-                                       -1, offs);
-                }
-                else
-                {
-                    emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, currLclVarNum, -1, offs);
-                }
-                return true;
-            }
-            else
-            {
-                if (optimizationOrder == eRO_ascending)
-                {
-                    emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, -1, -1, -1);
-                }
-                else
-                {
-                    emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, -1, -1, -1);
-
-                }
-                return true;
-            }
-        }
-
-        // Emit the new instruction. Make sure to scale the immediate value by the operand size.
-        if (optimizationOrder == eRO_ascending)
-        {
-            // The last instruction is at the lower offset
-            emitIns_R_R_R_I(optIns, prevReg1Attr, prevReg1, reg1, reg2, prevImm * size, INS_OPTS_NONE, reg1Attr);
-        }
-        else
-        {
-            // The current instruction is at the lower offset
-            emitIns_R_R_R_I(optIns, reg1Attr, reg1, prevReg1, reg2, imm * size, INS_OPTS_NONE, prevReg1Attr);
-        }
-
+    // Combine two 32 bit stores of value zero into one 64 bit store
+    if ((ins == INS_str) && (reg1 == REG_ZR) && (prevReg1 == REG_ZR) && (size == EA_4BYTE))
+    {
+        // The first register is at the lower offset for the ascending order
+        ssize_t offset = (optimizationOrder == eRO_ascending ? prevImm : imm) * size;
+        emitIns_R_R_I(INS_str, EA_8BYTE, REG_ZR, reg2, offset, INS_OPTS_NONE);
         return true;
     }
 
-    return false;
+    if (optimizationOrder == eRO_ascending)
+    {
+        if (isGcLclVarPair)
+        {
+            //    - idGCref() = last instruction's GCtype
+            //    - idGCrefReg2() = current instruction's GCType
+            //    - lvaVarNum = last instruction's lclVar
+            //    - lvaVarNum2 = current instruction's lclVar
+            //    - lvaOffset = last instruction's offset
+            emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum,
+                                currLclVarNum, prevOffset);
+        }
+        else if (isLastLclVar)
+        {
+            //    - idGCref() = last instruction's GCtype
+            //    - idGCrefReg2() = GCT_NONE
+            //    - lvaVarNum = last instruction's lclVar
+            //    - lvaOffset = last instruction's offset
+            emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum, -1,
+                                prevOffset);
+        }
+        else if (isCurrLclVar)
+        {
+            //    - idGCref() = GCT_NONE
+            //    - idGCrefReg2() = current instruction's GCType
+            //    - lvaVarNum = current instruction's lclVar
+            //    - lvaOffset = last instruction's offset
+            emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, currLclVarNum, -1,
+                                offs);
+        }
+        else
+        {
+            emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, -1, -1, -1);
+        }
+    }
+    else
+    {
+        if (isGcLclVarPair)
+        {
+            //    - idGCref() = current instruction's GCType
+            //    - idGCrefReg2() = last instruction's GCtype
+            //    - lvaVarNum = current instruction's lclVar
+            //    - lvaVarNum2 = last instruction's lclVar
+            //    - lvaOffset = current instruction's offset
+            emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, currLclVarNum,
+                                prevLclVarNum, offs);
+        }
+        else if (isLastLclVar)
+        {
+            //    - idGCref() = GCT_NONE
+            //    - idGCrefReg2() = last instruction's GCtype
+            //    - lvaVarNum = last instruction's lclVar
+            //    - lvaOffset = current instruction's offset
+            emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, prevLclVarNum, -1,
+                                prevOffset);
+        }
+        else if (isCurrLclVar)
+        {
+            //    - idGCref() = current instruction's GCType
+            //    - idGCrefReg2() = GCT_NONE
+            //    - lvaVarNum = current instruction's lclVar
+            //    - lvaOffset = current instruction's offset
+            emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, currLclVarNum, -1,
+                                offs);
+        }
+        else
+        {
+            emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, -1, -1, -1);
+        }
+    }
+
+    return true;
 }
 
 //-----------------------------------------------------------------------------------

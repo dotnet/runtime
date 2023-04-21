@@ -894,7 +894,7 @@ void emitIns_SS_R_R_R_I(instruction ins,
                         ssize_t     imm,
                         int         varx1 = -1,
                         int         varx2 = -1,
-                        int offs  = -1);
+                        int         offs  = -1);
 
 void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
