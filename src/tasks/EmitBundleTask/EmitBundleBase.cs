@@ -21,12 +21,6 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
     [Required]
     public ITaskItem[] FilesToBundle { get; set; } = default!;
 
-    [Required]
-    public string BundleName { get; set; } = default!;
-
-    [Required]
-    public string BundleFile { get; set; } = default!;
-
     /// <summary>
     /// Filename for the unified source containing all byte data and len
     /// of the FilesToBundle resources.
@@ -69,12 +63,13 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             var outputFile = registeredFile.GetMetadata("DestinationFile");
             var registeredName = group.Key;
             var symbolName = ToSafeSymbolName(outputFile);
-            var fileType = GetFileType(registeredFile.ItemSpec);
-            return (registeredName, symbolName, fileType);
+            string? symfileSymbolName = null;
+            if (File.Exists(registeredFile.GetMetadata("Symfile")))
+                symfileSymbolName = ToSafeSymbolName(registeredFile.GetMetadata("Symfile"));
+            return (registeredName, symbolName, symfileSymbolName);
         }).ToList();
 
-        Log.LogMessage(MessageImportance.Low, "Bundling {0} files for {1}", files.Count, BundleName);
-
+        // Generate source file(s) containing each resource's byte data and size
         if (remainingDestinationFilesToBundle.Length > 0)
         {
             int allowedParallelism = Math.Max(Math.Min(remainingDestinationFilesToBundle.Length, Environment.ProcessorCount), 1);
@@ -118,11 +113,13 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             });
         }
 
-        return Emit(BundleFile, (inputStream) =>
-        {
-            using var outputUtf8Writer = new StreamWriter(inputStream, Utf8NoBom);
-            GenerateRegisteredBundledObjects($"mono_register_{BundleName}_bundle", files, outputUtf8Writer);
-        }) && !Log.HasLoggedErrors;
+        // Generate header containing MonoBundled*Resource typedefs
+        File.WriteAllText(Path.Combine(OutputDirectory, "mono-bundled-source.h"), Utils.GetEmbeddedResource("mono-bundled-source.h"));
+
+        // Generate source file containing preallocated MonoBundled*Resource structs
+        GeneratePreallocatedMonoBundleStructs(OutputDirectory, files);
+
+        return true;
     }
 
     public void Cancel()
@@ -162,30 +159,56 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
     public abstract bool Emit(string destinationFile, Action<Stream> inputProvider);
 
-    public static void GenerateRegisteredBundledObjects(string newFunctionName, ICollection<(string registeredName, string symbol, string type)> files, StreamWriter outputUtf8Writer)
+    private static Dictionary<string, int> symbolDataLen = new();
+
+    private static void GeneratePreallocatedMonoBundleStructs(string outputDir, ICollection<(string registeredName, string symbol, string? symfileSymbol)> files)
     {
-        outputUtf8Writer.WriteLine("typedef enum {\n    MONO_BUNDLED_DATA,\n    MONO_BUNDLED_ASSEMBLY,\n    MONO_BUNDLED_SATELLITE_ASSEMBLY,\n    MONO_BUNDLED_PDB,\n    MONO_BUNDLED_RESOURCE_COUNT,\n} MonoBundledResourceType;");
-        outputUtf8Writer.WriteLine($"void mono_add_bundled_resource(const char *name, const char *culture, const unsigned char *data, unsigned int size, MonoBundledResourceType type);");
-        outputUtf8Writer.WriteLine($"void mono_register_bundled_resources (void);");
-        outputUtf8Writer.WriteLine();
+        StringBuilder preallocatedSource = new();
 
         foreach (var tuple in files)
         {
-            outputUtf8Writer.WriteLine($"extern const unsigned char {tuple.symbol}[];");
-            outputUtf8Writer.WriteLine($"extern const int {tuple.symbol}_len;");
+            // extern symbols
+            StringBuilder preallocatedData = new();
+            preallocatedData.AppendLine($"extern const unsigned char {tuple.symbol}_data[];");
+            if (!string.IsNullOrEmpty(tuple.symfileSymbol))
+            {
+                preallocatedData.AppendLine($"extern const unsigned char {tuple.symfileSymbol}_data[];");
+            }
+            preallocatedSource.AppendLine(preallocatedData.ToString());
+
+            // Generate Preloaded MonoBundled*Resource structs
+            string preloadedStruct;
+            switch (GetFileType(tuple.registeredName)) {
+            case "MONO_BUNDLED_ASSEMBLY": {
+                preloadedStruct = Utils.GetEmbeddedResource("mono-bundled-assembly.c");
+                break;
+            }
+            case "MONO_BUNDLED_SATELLITE_ASSEMBLY": {
+                preloadedStruct = Utils.GetEmbeddedResource("mono-bundled-satellite-assembly.c");
+                break;
+            }
+            case "MONO_BUNDLED_DATA":
+            default: {
+                preloadedStruct = Utils.GetEmbeddedResource("mono-bundled-data.c");
+                break;
+            }
+            }
+            // Add associated symfile information to MonoBundledAssemblyResource/MonoBundleSatelliteAssemblyResource structs
+            string preloadedSymfile = "";
+            if (!string.IsNullOrEmpty(tuple.symfileSymbol))
+            {
+                preloadedSymfile = Utils.GetEmbeddedResource("mono-bundled-symfile.c")
+                                            .Replace("%SymfileSymbol%", tuple.symfileSymbol)
+                                            .Replace("%SymLen%", symbolDataLen[tuple.symfileSymbol].ToString());
+            }
+            preallocatedSource.AppendLine(preloadedStruct.Replace("%RegisteredName%", tuple.registeredName)
+                                         .Replace("%Symbol%", tuple.symbol)
+                                         .Replace("%Len%", symbolDataLen[tuple.symbol].ToString())
+                                         .Replace("%MonoBundledSymfile%", preloadedSymfile));
         }
 
-        outputUtf8Writer.WriteLine();
-        outputUtf8Writer.WriteLine($"void {newFunctionName}() {{");
-
-        foreach (var tuple in files)
-        {
-            outputUtf8Writer.WriteLine($"  mono_add_bundled_resource (\"{tuple.registeredName}\", 0, {tuple.symbol}, {tuple.symbol}_len, {tuple.type});");
-        }
-
-        outputUtf8Writer.WriteLine($"  mono_register_bundled_resources ();");
-
-        outputUtf8Writer.WriteLine("}");
+        File.WriteAllText(Path.Combine(outputDir, "mono-bundled-preallocated-source.c"), Utils.GetEmbeddedResource("mono-bundled-preallocated-source.c")
+                                        .Replace("%PreallocatedStructs%", preallocatedSource.ToString()));
     }
 
     private static void BundleFileToCSource(string symbolName, FileStream inputStream, Stream outputStream)
@@ -226,6 +249,8 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         outputUtf8Writer.WriteLine($"unsigned int {symbolName}_len = {generatedArrayLength};");
         outputUtf8Writer.Flush();
         outputStream.Flush();
+
+        symbolDataLen.Add(symbolName, generatedArrayLength);
     }
 
     private static string ToSafeSymbolName(string destinationFileName)
