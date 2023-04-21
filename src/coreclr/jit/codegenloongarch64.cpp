@@ -8575,7 +8575,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
     unsigned varNum;
     unsigned regArgMaskIsInt = 0;
-    unsigned regArgNum       = 0;
+    int      regArgNum       = 0;
     // Process any circular dependencies
     unsigned regArg[MAX_REG_ARG * 2]     = {0};
     unsigned regArgInit[MAX_REG_ARG * 2] = {0};
@@ -8925,75 +8925,83 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 assert(genIsValidIntReg((regNumber)regArg[i]));
                 assert(genIsValidIntReg((regNumber)regArgInit[i]));
 
-                regArgNum--;
-                regArgMaskLive &= ~genRegMask((regNumber)regArg[i]);
-                if ((regArgMaskIsInt & (1 << regArg[i])) != 0)
+                unsigned tmpRegs[MAX_REG_ARG] = {0};
+
+                unsigned tmpArg  = regArg[i];
+                unsigned nextReg = regArgInit[i] - REG_ARG_FIRST;
+
+                assert(tmpArg <= REG_ARG_LAST);
+                assert(nextReg < MAX_REG_ARG);
+                assert(nextReg != i);
+
+                regArg[i] = 0;
+                int count = 0;
+
+                while (regArg[nextReg] != 0)
                 {
-                    ins = INS_slli_w;
+                    tmpRegs[count] = nextReg;
+                    nextReg        = regArgInit[nextReg] - REG_ARG_FIRST;
+                    assert(nextReg < MAX_REG_ARG);
+
+                    for (int count2 = 0; count2 < count; count2++)
+                    {
+                        if (nextReg == tmpRegs[count2])
+                        {
+                            NYI_LOONGARCH64("-----------CodeGen::genFnPrologCalleeRegArgs() error: intRegs!");
+                        }
+                    }
+
+                    count++;
+                }
+
+                if (nextReg == i)
+                {
+                    GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, (regNumber)tmpArg, 0);
+                    regArgMaskLive &= ~genRegMask((regNumber)tmpArg);
+                    assert(count > 0);
+                }
+                else if (count == 0)
+                {
+                    tmpRegs[0] = i;
+                    regArg[i]  = tmpArg;
                 }
                 else
                 {
-                    ins = INS_ori;
+                    count--;
                 }
 
-                if (regArgNum == 0)
+                do
                 {
-                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
-                    break;
-                }
-                else if (regArgInit[i] > regArg[i])
-                {
-                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
-                }
-                else
-                {
-                    assert(i > 0);
-                    assert(regArgNum > 0);
+                    tmpArg = tmpRegs[count];
 
-                    int j = regArgInit[i] - REG_ARG_FIRST;
-                    assert((j >= 0) && (j < MAX_REG_ARG));
-                    if (regArg[j] == 0)
-                    {
-                        GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
-                    }
-                    else
-                    {
-                        int k = regArgInit[j] - REG_ARG_FIRST;
-                        assert((k >= 0) && (k < MAX_REG_ARG));
-                        instruction ins2 = (regArgMaskIsInt & (1 << regArg[j])) != 0 ? INS_slli_w : INS_ori;
-                        if ((regArg[k] == 0) || (k > i))
-                        {
-                            GetEmitter()->emitIns_R_R_I(ins2, EA_PTRSIZE, (regNumber)regArgInit[j],
-                                                        (regNumber)regArg[j], 0);
-                            GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i],
-                                                        0);
-                            regArgNum--;
-                            regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
-                            if (regArgNum == 0)
-                            {
-                                break;
-                            }
-                        }
-                        else if (k == i)
-                        {
-                            GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, REG_R21, (regNumber)regArg[i], 0);
-                            GetEmitter()->emitIns_R_R_I(ins2, EA_PTRSIZE, (regNumber)regArgInit[j],
-                                                        (regNumber)regArg[j], 0);
-                            GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, (regNumber)regArgInit[i], REG_R21, 0);
-                            regArgNum--;
-                            regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
-                            regArg[j] = 0;
-                            if (regArgNum == 0)
-                            {
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            NYI_LOONGARCH64("-----------CodeGen::genFnPrologCalleeRegArgs() error!--");
-                        }
-                    }
+                    instruction ins = (regArgMaskIsInt & (1 << regArg[tmpArg])) != 0 ? INS_slli_w : INS_ori;
+                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[tmpArg],
+                                                (regNumber)regArg[tmpArg], 0);
+
+                    regArgMaskLive &= ~genRegMask((regNumber)regArg[tmpArg]);
+                    regArg[tmpArg] = 0;
+                    count--;
+                    regArgNum--;
+                    assert(regArgNum >= 0);
+                } while (count >= 0);
+
+                if (nextReg == i)
+                {
+                    instruction ins = (regArgMaskIsInt & (1 << regArg[i])) != 0 ? INS_slli_w : INS_ori;
+                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], REG_R21, 0);
+                    regArgNum--;
+                    assert(regArgNum >= 0);
                 }
+                else if (tmpRegs[0] != i)
+                {
+                    instruction ins = (regArgMaskIsInt & (1 << (i + REG_ARG_FIRST))) != 0 ? INS_slli_w : INS_ori;
+                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i],
+                                                (regNumber)(i + REG_ARG_FIRST), 0);
+
+                    regArgMaskLive &= ~genRegMask((regNumber)(i + REG_ARG_FIRST));
+                    regArgNum--;
+                }
+                assert(regArgNum >= 0);
             }
         }
 
