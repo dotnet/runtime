@@ -985,6 +985,9 @@ public:
 
 private:
     // Determine which locals are candidates for allocation
+    template <bool localVarsEnregistered>
+    void identifyCandidates();
+
     void identifyCandidates();
 
     // determine which locals are used in EH constructs we don't want to deal with
