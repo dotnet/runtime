@@ -6466,10 +6466,12 @@ void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regN
         case INS_extractps:
         case INS_vextractf128:
         case INS_vextractf32x8:
+        case INS_vextractf64x2:
         case INS_vextractf64x4:
         case INS_vextracti128:
-        case INS_vextracti64x4:
         case INS_vextracti32x8:
+        case INS_vextracti64x2:
+        case INS_vextracti64x4:
         case INS_shld:
         case INS_shrd:
         {
@@ -6954,10 +6956,12 @@ void emitter::emitIns_R_R_R_I(
         case INS_extractps:
         case INS_vextractf128:
         case INS_vextractf32x8:
+        case INS_vextractf64x2:
         case INS_vextractf64x4:
         case INS_vextracti128:
-        case INS_vextracti64x4:
         case INS_vextracti32x8:
+        case INS_vextracti64x2:
+        case INS_vextracti64x4:
         {
             code = insCodeMR(ins);
             break;
@@ -10859,7 +10863,9 @@ void emitter::emitDispIns(
             switch (ins)
             {
                 case INS_vextractf128:
+                case INS_vextractf64x2:
                 case INS_vextracti128:
+                case INS_vextracti64x2:
                 {
                     // vextracti/f128 extracts 128-bit data, so we fix sstr as "xmm ptr"
                     sstr = codeGen->genSizeStr(EA_ATTR(16));
@@ -10868,8 +10874,8 @@ void emitter::emitDispIns(
 
                 case INS_vextractf32x8:
                 case INS_vextractf64x4:
-                case INS_vextracti64x4:
                 case INS_vextracti32x8:
+                case INS_vextracti64x4:
                 {
                     // vextracti/f*x* extracts 256-bit data, so we fix sstr as "ymm ptr"
                     sstr = codeGen->genSizeStr(EA_ATTR(32));
@@ -11310,17 +11316,19 @@ void emitter::emitDispIns(
 
             switch (ins)
             {
-                case INS_vinsertf64x4:
                 case INS_vinsertf32x8:
-                case INS_vinserti64x4:
+                case INS_vinsertf64x4:
                 case INS_vinserti32x8:
+                case INS_vinserti64x4:
                 {
                     attr = EA_32BYTE;
                     break;
                 }
 
                 case INS_vinsertf128:
+                case INS_vinsertf64x2:
                 case INS_vinserti128:
+                case INS_vinserti64x2:
                 {
                     attr = EA_16BYTE;
                     break;
@@ -11365,7 +11373,9 @@ void emitter::emitDispIns(
             switch (ins)
             {
                 case INS_vextractf128:
+                case INS_vextractf64x2:
                 case INS_vextracti128:
+                case INS_vextracti64x2:
                 {
                     tgtAttr = EA_16BYTE;
                     break;
@@ -11373,8 +11383,8 @@ void emitter::emitDispIns(
 
                 case INS_vextractf32x8:
                 case INS_vextractf64x4:
-                case INS_vextracti64x4:
                 case INS_vextracti32x8:
+                case INS_vextracti64x4:
                 {
                     tgtAttr = EA_32BYTE;
                     break;
@@ -11499,7 +11509,9 @@ void emitter::emitDispIns(
             switch (ins)
             {
                 case INS_vextractf128:
+                case INS_vextractf64x2:
                 case INS_vextracti128:
+                case INS_vextracti64x2:
                 {
                     // vextracti/f128 extracts 128-bit data, so we fix sstr as "xmm ptr"
                     sstr = codeGen->genSizeStr(EA_ATTR(16));
@@ -11508,8 +11520,8 @@ void emitter::emitDispIns(
 
                 case INS_vextractf32x8:
                 case INS_vextractf64x4:
-                case INS_vextracti64x4:
                 case INS_vextracti32x8:
+                case INS_vextracti64x4:
                 {
                     // vextracti/f*x* extracts 256-bit data, so we fix sstr as "ymm ptr"
                     sstr = codeGen->genSizeStr(EA_ATTR(32));
@@ -16515,8 +16527,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_MWR_RRD_CNS:
-            assert((ins == INS_vextractf128) || (ins == INS_vextractf32x8) || (ins == INS_vextractf64x4) ||
-                   (ins == INS_vextracti128) || (ins == INS_vextracti32x8) || (ins == INS_vextracti64x4));
+            assert((ins == INS_vextractf128) || (ins == INS_vextractf32x8) || (ins == INS_vextractf64x2) ||
+                   (ins == INS_vextractf64x4) || (ins == INS_vextracti128) || (ins == INS_vextracti32x8) ||
+                   (ins == INS_vextracti64x2) || (ins == INS_vextracti64x4));
             assert(UseSimdEncoding());
             emitGetInsDcmCns(id, &cnsVal);
             code = insCodeMR(ins);
@@ -18112,16 +18125,20 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vperm2f128:
         case INS_vextractf128:
         case INS_vextractf32x8:
+        case INS_vextractf64x2:
         case INS_vextractf64x4:
         case INS_vextracti128:
         case INS_vextracti32x8:
+        case INS_vextracti64x2:
         case INS_vextracti64x4:
         case INS_vinsertf128:
-        case INS_vinsertf64x4:
         case INS_vinsertf32x8:
+        case INS_vinsertf64x2:
+        case INS_vinsertf64x4:
         case INS_vinserti128:
-        case INS_vinserti64x4:
         case INS_vinserti32x8:
+        case INS_vinserti64x2:
+        case INS_vinserti64x4:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_3C;
             break;

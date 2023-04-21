@@ -466,6 +466,210 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<float> DuplicateOddIndexed(Vector512<float> value) => DuplicateOddIndexed(value);
 
         /// <summary>
+        /// __m128i _mm512_extracti128_si512 (__m512i a, const int imm8)
+        ///   VEXTRACTI32x4 xmm1/m128 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector128<sbyte> ExtractVector128(Vector512<sbyte> value, [ConstantExpected] byte index) => ExtractVector128(value, index);
+        /// <summary>
+        /// __m128i _mm512_extracti128_si512 (__m512i a, const int imm8)
+        ///   VEXTRACTI32x4 xmm1/m128 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector128<byte> ExtractVector128(Vector512<byte> value, [ConstantExpected] byte index) => ExtractVector128(value, index);
+        /// <summary>
+        /// __m128i _mm512_extracti128_si512 (__m512i a, const int imm8)
+        ///   VEXTRACTI32x4 xmm1/m128 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector128<short> ExtractVector128(Vector512<short> value, [ConstantExpected] byte index) => ExtractVector128(value, index);
+        /// <summary>
+        /// __m128i _mm512_extracti128_si512 (__m512i a, const int imm8)
+        ///   VEXTRACTI32x4 xmm1/m128 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector128<ushort> ExtractVector128(Vector512<ushort> value, [ConstantExpected] byte index) => ExtractVector128(value, index);
+        /// <summary>
+        /// __m128i _mm512_extracti32x4_epi32 (__m512i a, const int imm8)
+        ///   VEXTRACTI32x4 xmm1/m128 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector128<int> ExtractVector128(Vector512<int> value, [ConstantExpected] byte index) => ExtractVector128(value, index);
+        /// <summary>
+        /// __m128i _mm512_extracti32x4_epi32 (__m512i a, const int imm8)
+        ///   VEXTRACTI32x4 xmm1/m128 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector128<uint> ExtractVector128(Vector512<uint> value, [ConstantExpected] byte index) => ExtractVector128(value, index);
+        /// <summary>
+        /// __m128i _mm512_extracti128_si512 (__m512i a, const int imm8)
+        ///   VEXTRACTI32x4 xmm1/m128 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector128<long> ExtractVector128(Vector512<long> value, [ConstantExpected] byte index) => ExtractVector128(value, index);
+        /// <summary>
+        /// __m128i _mm512_extracti128_si512 (__m512i a, const int imm8)
+        ///   VEXTRACTI32x4 xmm1/m128 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector128<ulong> ExtractVector128(Vector512<ulong> value, [ConstantExpected] byte index) => ExtractVector128(value, index);
+        /// <summary>
+        /// __m128 _mm512_extractf32x4_ps (__m512 a, const int imm8)
+        ///   VEXTRACTF32x4 xmm1/m128 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector128<float> ExtractVector128(Vector512<float> value, [ConstantExpected] byte index) => ExtractVector128(value, index);
+        /// <summary>
+        /// __m128d _mm512_extractf128_pd (__m512d a, const int imm8)
+        ///   VEXTRACTF32x4 xmm1/m128 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector128<double> ExtractVector128(Vector512<double> value, [ConstantExpected] byte index) => ExtractVector128(value, index);
+
+        /// <summary>
+        /// __m256i _mm512_extracti256_si512 (__m512i a, const int imm8)
+        ///   VEXTRACTI64x4 ymm1/m256 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector256<sbyte> ExtractVector256(Vector512<sbyte> value, [ConstantExpected] byte index) => ExtractVector256(value, index);
+        /// <summary>
+        /// __m256i _mm512_extracti256_si512 (__m512i a, const int imm8)
+        ///   VEXTRACTI64x4 ymm1/m256 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector256<byte> ExtractVector256(Vector512<byte> value, [ConstantExpected] byte index) => ExtractVector256(value, index);
+        /// <summary>
+        /// __m256i _mm512_extracti256_si512 (__m512i a, const int imm8)
+        ///   VEXTRACTI64x4 ymm1/m256 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector256<short> ExtractVector256(Vector512<short> value, [ConstantExpected] byte index) => ExtractVector256(value, index);
+        /// <summary>
+        /// __m256i _mm512_extracti256_si512 (__m512i a, const int imm8)
+        ///   VEXTRACTI64x4 ymm1/m256 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector256<ushort> ExtractVector256(Vector512<ushort> value, [ConstantExpected] byte index) => ExtractVector256(value, index);
+        /// <summary>
+        /// __m256i _mm512_extracti256_si512 (__m512i a, const int imm8)
+        ///   VEXTRACTI64x4 ymm1/m256 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector256<int> ExtractVector256(Vector512<int> value, [ConstantExpected] byte index) => ExtractVector256(value, index);
+        /// <summary>
+        /// __m256i _mm512_extracti256_si512 (__m512i a, const int imm8)
+        ///   VEXTRACTI64x4 ymm1/m256 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector256<uint> ExtractVector256(Vector512<uint> value, [ConstantExpected] byte index) => ExtractVector256(value, index);
+        /// <summary>
+        /// __m256i _mm512_extracti64x4_epi64 (__m512i a, const int imm8)
+        ///   VEXTRACTI64x4 ymm1/m256 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector256<long> ExtractVector256(Vector512<long> value, [ConstantExpected] byte index) => ExtractVector256(value, index);
+        /// <summary>
+        /// __m256i _mm512_extracti64x4_epi64 (__m512i a, const int imm8)
+        ///   VEXTRACTI64x4 ymm1/m256 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector256<ulong> ExtractVector256(Vector512<ulong> value, [ConstantExpected] byte index) => ExtractVector256(value, index);
+        /// <summary>
+        /// __m256 _mm512_extractf256_ps (__m512 a, const int imm8)
+        ///   VEXTRACTF64x4 ymm1/m256 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector256<float> ExtractVector256(Vector512<float> value, [ConstantExpected] byte index) => ExtractVector256(value, index);
+        /// <summary>
+        /// __m256d _mm512_extractf64x4_pd (__m512d a, const int imm8)
+        ///   VEXTRACTF64x4 ymm1/m256 {k1}{z}, zmm2, imm8
+        /// </summary>
+        public static Vector256<double> ExtractVector256(Vector512<double> value, [ConstantExpected] byte index) => ExtractVector256(value, index);
+
+        /// <summary>
+        /// __m512i _mm512_inserti128_si512 (__m512i a, __m128i b, const int imm8)
+        ///   VINSERTI32x4 zmm1 {k1}{z}, zmm2, xmm3/m128, imm8
+        /// </summary>
+        public static Vector512<sbyte> InsertVector128(Vector512<sbyte> value, Vector128<sbyte> data, [ConstantExpected] byte index) => InsertVector128(value, data, index);
+        /// <summary>
+        /// __m512i _mm512_inserti128_si512 (__m512i a, __m128i b, const int imm8)
+        ///   VINSERTI32x4 zmm1 {k1}{z}, zmm2, xmm3/m128, imm8
+        /// </summary>
+        public static Vector512<byte> InsertVector128(Vector512<byte> value, Vector128<byte> data, [ConstantExpected] byte index) => InsertVector128(value, data, index);
+        /// <summary>
+        /// __m512i _mm512_inserti128_si512 (__m512i a, __m128i b, const int imm8)
+        ///   VINSERTI32x4 zmm1 {k1}{z}, zmm2, xmm3/m128, imm8
+        /// </summary>
+        public static Vector512<short> InsertVector128(Vector512<short> value, Vector128<short> data, [ConstantExpected] byte index) => InsertVector128(value, data, index);
+        /// <summary>
+        /// __m512i _mm512_inserti128_si512 (__m512i a, __m128i b, const int imm8)
+        ///   VINSERTI32x4 zmm1 {k1}{z}, zmm2, xmm3/m128, imm8
+        /// </summary>
+        public static Vector512<ushort> InsertVector128(Vector512<ushort> value, Vector128<ushort> data, [ConstantExpected] byte index) => InsertVector128(value, data, index);
+        /// <summary>
+        /// __m512i _mm512_inserti32x4_epi32 (__m512i a, __m128i b, const int imm8)
+        ///   VINSERTI32x4 zmm1 {k1}{z}, zmm2, xmm3/m128, imm8
+        /// </summary>
+        public static Vector512<int> InsertVector128(Vector512<int> value, Vector128<int> data, [ConstantExpected] byte index) => InsertVector128(value, data, index);
+        /// <summary>
+        /// __m512i _mm512_inserti32x4_epi32 (__m512i a, __m128i b, const int imm8)
+        ///   VINSERTI32x4 zmm1 {k1}{z}, zmm2, xmm3/m128, imm8
+        /// </summary>
+        public static Vector512<uint> InsertVector128(Vector512<uint> value, Vector128<uint> data, [ConstantExpected] byte index) => InsertVector128(value, data, index);
+        /// <summary>
+        /// __m512i _mm512_inserti128_si512 (__m512i a, __m128i b, const int imm8)
+        ///   VINSERTI32x4 zmm1 {k1}{z}, zmm2, xmm3/m128, imm8
+        /// </summary>
+        public static Vector512<long> InsertVector128(Vector512<long> value, Vector128<long> data, [ConstantExpected] byte index) => InsertVector128(value, data, index);
+        /// <summary>
+        /// __m512i _mm512_inserti128_si512 (__m512i a, __m128i b, const int imm8)
+        ///   VINSERTI32x4 zmm1 {k1}{z}, zmm2, xmm3/m128, imm8
+        /// </summary>
+        public static Vector512<ulong> InsertVector128(Vector512<ulong> value, Vector128<ulong> data, [ConstantExpected] byte index) => InsertVector128(value, data, index);
+        /// <summary>
+        /// __m512 _mm512_insertf32x4_ps (__m512 a, __m128 b, int imm8)
+        ///   VINSERTF32x4 zmm1 {k1}{z}, zmm2, xmm3/m128, imm8
+        /// </summary>
+        public static Vector512<float> InsertVector128(Vector512<float> value, Vector128<float> data, [ConstantExpected] byte index) => InsertVector128(value, data, index);
+        /// <summary>
+        /// __m512d _mm512_insertf128_pd (__m512d a, __m128d b, int imm8)
+        ///   VINSERTF32x4 zmm1 {k1}{z}, zmm2, xmm3/m128, imm8
+        /// </summary>
+        public static Vector512<double> InsertVector128(Vector512<double> value, Vector128<double> data, [ConstantExpected] byte index) => InsertVector128(value, data, index);
+
+        /// <summary>
+        /// __m512i _mm512_inserti256_si512 (__m512i a, __m256i b, const int imm8)
+        ///   VINSERTI64x4 zmm1 {k1}{z}, zmm2, xmm3/m256, imm8
+        /// </summary>
+        public static Vector512<sbyte> InsertVector256(Vector512<sbyte> value, Vector256<sbyte> data, [ConstantExpected] byte index) => InsertVector256(value, data, index);
+        /// <summary>
+        /// __m512i _mm512_inserti256_si512 (__m512i a, __m256i b, const int imm8)
+        ///   VINSERTI64x4 zmm1 {k1}{z}, zmm2, xmm3/m256, imm8
+        /// </summary>
+        public static Vector512<byte> InsertVector256(Vector512<byte> value, Vector256<byte> data, [ConstantExpected] byte index) => InsertVector256(value, data, index);
+        /// <summary>
+        /// __m512i _mm512_inserti256_si512 (__m512i a, __m256i b, const int imm8)
+        ///   VINSERTI64x4 zmm1 {k1}{z}, zmm2, xmm3/m256, imm8
+        /// </summary>
+        public static Vector512<short> InsertVector256(Vector512<short> value, Vector256<short> data, [ConstantExpected] byte index) => InsertVector256(value, data, index);
+        /// <summary>
+        /// __m512i _mm512_inserti256_si512 (__m512i a, __m256i b, const int imm8)
+        ///   VINSERTI64x4 zmm1 {k1}{z}, zmm2, xmm3/m256, imm8
+        /// </summary>
+        public static Vector512<ushort> InsertVector256(Vector512<ushort> value, Vector256<ushort> data, [ConstantExpected] byte index) => InsertVector256(value, data, index);
+        /// <summary>
+        /// __m512i _mm512_inserti256_si512 (__m512i a, __m256i b, const int imm8)
+        ///   VINSERTI64x4 zmm1 {k1}{z}, zmm2, xmm3/m256, imm8
+        /// </summary>
+        public static Vector512<int> InsertVector256(Vector512<int> value, Vector256<int> data, [ConstantExpected] byte index) => InsertVector256(value, data, index);
+        /// <summary>
+        /// __m512i _mm512_inserti256_si512 (__m512i a, __m256i b, const int imm8)
+        ///   VINSERTI64x4 zmm1 {k1}{z}, zmm2, xmm3/m256, imm8
+        /// </summary>
+        public static Vector512<uint> InsertVector256(Vector512<uint> value, Vector256<uint> data, [ConstantExpected] byte index) => InsertVector256(value, data, index);
+        /// <summary>
+        /// __m512i _mm512_inserti64x4_epi64 (__m512i a, __m256i b, const int imm8)
+        ///   VINSERTI64x4 zmm1 {k1}{z}, zmm2, xmm3/m256, imm8
+        /// </summary>
+        public static Vector512<long> InsertVector256(Vector512<long> value, Vector256<long> data, [ConstantExpected] byte index) => InsertVector256(value, data, index);
+        /// <summary>
+        /// __m512i _mm512_inserti64x4_epi64 (__m512i a, __m256i b, const int imm8)
+        ///   VINSERTI64x4 zmm1 {k1}{z}, zmm2, xmm3/m256, imm8
+        /// </summary>
+        public static Vector512<ulong> InsertVector256(Vector512<ulong> value, Vector256<ulong> data, [ConstantExpected] byte index) => InsertVector256(value, data, index);
+        /// <summary>
+        /// __m512 _mm512_insertf256_ps (__m512 a, __m256 b, int imm8)
+        ///   VINSERTF64x4 zmm1 {k1}{z}, zmm2, xmm3/m256, imm8
+        /// </summary>
+        public static Vector512<float> InsertVector256(Vector512<float> value, Vector256<float> data, [ConstantExpected] byte index) => InsertVector256(value, data, index);
+        /// <summary>
+        /// __m512d _mm512_insertf64x4_pd (__m512d a, __m256d b, int imm8)
+        ///   VINSERTF64x4 zmm1 {k1}{z}, zmm2, xmm3/m256, imm8
+        /// </summary>
+        public static Vector512<double> InsertVector256(Vector512<double> value, Vector256<double> data, [ConstantExpected] byte index) => InsertVector256(value, data, index);
+
+        /// <summary>
         /// __m512i _mm512_load_si512 (__m512i const * mem_addr)
         ///   VMOVDQA32 zmm1 {k1}{z}, m512
         /// </summary>

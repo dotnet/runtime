@@ -19073,6 +19073,8 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX512BW_ConvertToVector128SByte:
         case NI_AVX512BW_ConvertToVector256Byte:
         case NI_AVX512BW_ConvertToVector256SByte:
+        case NI_AVX512DQ_ExtractVector128:
+        case NI_AVX512DQ_ExtractVector256:
         {
             // These HWIntrinsic operations are contained as part of a store
             return true;
