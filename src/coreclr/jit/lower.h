@@ -89,6 +89,7 @@ private:
     insCflags TruthifyingFlags(GenCondition cond);
     void ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void ContainCheckNeg(GenTreeOp* neg);
+    void TryLowerCselToCinc(GenTreeOp* select, GenTree* cond);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);
@@ -352,6 +353,7 @@ private:
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
     GenTree* LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
+    GenTree* LowerHWIntrinsicCmpOpWithKReg(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
@@ -473,7 +475,7 @@ public:
     }
 
 #ifdef TARGET_ARM64
-    bool IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const;
+    bool IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childNode) const;
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_HW_INTRINSICS)

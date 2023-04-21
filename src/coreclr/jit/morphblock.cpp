@@ -218,7 +218,7 @@ void MorphInitBlockHelper::PrepareDst()
     else
     {
         assert(m_dst == m_dst->gtEffectiveVal() && "the commas were skipped in MorphBlock");
-        assert(m_dst->OperIs(GT_IND, GT_BLK, GT_OBJ) && (!m_dst->OperIs(GT_IND) || !m_dst->TypeIs(TYP_STRUCT)));
+        assert(m_dst->OperIs(GT_IND, GT_BLK) && (!m_dst->OperIs(GT_IND) || !m_dst->TypeIs(TYP_STRUCT)));
     }
 
     if (m_dst->TypeIs(TYP_STRUCT))
@@ -767,11 +767,6 @@ void MorphCopyBlockHelper::PrepareSrc()
     if (m_dst->TypeIs(TYP_STRUCT))
     {
         assert(ClassLayout::AreCompatible(m_blockLayout, m_src->GetLayout(m_comp)));
-    }
-    // TODO-1stClassStructs: produce simple "IND<simd>" nodes in importer.
-    else if (m_src->OperIsBlk())
-    {
-        m_src->SetOper(GT_IND);
     }
 }
 
@@ -1624,7 +1619,7 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
         if ((size != 0) && FitsIn<int32_t>(size))
         {
             ClassLayout* layout = typGetBlkLayout(static_cast<unsigned>(size));
-            GenTree*     dst    = gtNewStructVal(layout, tree->Addr(), tree->gtFlags & GTF_IND_FLAGS);
+            GenTree*     dst    = gtNewLoadValueNode(layout, tree->Addr(), tree->gtFlags & GTF_IND_FLAGS);
             dst->gtFlags |= GTF_GLOB_REF;
 
             GenTree* src = tree->Data();

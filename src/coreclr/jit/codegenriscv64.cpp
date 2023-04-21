@@ -2345,7 +2345,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     }
 }
 
-void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
+void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
     GenTree*  dstAddr       = cpObjNode->Addr();
     GenTree*  source        = cpObjNode->Data();
@@ -4537,7 +4537,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_ld, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
-        case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
@@ -4805,9 +4804,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         {
             genPutArgStkFieldList(treeNode, varNumOut);
         }
-        else // We must have a GT_OBJ or a GT_LCL_VAR
+        else // We must have a GT_BLK or a GT_LCL_VAR
         {
-            noway_assert((source->OperGet() == GT_LCL_VAR) || (source->OperGet() == GT_OBJ));
+            noway_assert((source->OperGet() == GT_LCL_VAR) || (source->OperGet() == GT_BLK));
 
             var_types targetType = source->TypeGet();
             noway_assert(varTypeIsStruct(targetType));
@@ -4824,9 +4823,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             {
                 varNode = source->AsLclVarCommon();
             }
-            else // we must have a GT_OBJ
+            else // we must have a GT_BLK
             {
-                assert(source->OperGet() == GT_OBJ);
+                assert(source->OperGet() == GT_BLK);
 
                 addrNode = source->AsOp()->gtOp1;
 
@@ -4834,7 +4833,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 //
                 if (addrNode->OperGet() == GT_LCL_ADDR)
                 {
-                    // We have a GT_OBJ(GT_LCL_ADDR)
+                    // We have a GT_BLK(GT_LCL_ADDR<0>)
                     //
                     // We will treat this case the same as above
                     // (i.e if we just had this GT_LCL_VAR directly as the source)
@@ -4877,18 +4876,16 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                                             // as that is how much stack is allocated for this LclVar
                 layout = varDsc->GetLayout();
             }
-            else // we must have a GT_OBJ
+            else // we must have a GT_BLK
             {
-                assert(source->OperGet() == GT_OBJ);
+                assert(source->OperGet() == GT_BLK);
 
-                // If the source is an OBJ node then we need to use the type information
+                // If the source is an BLK node then we need to use the type information
                 // it provides (size and GC layout) even if the node wraps a lclvar. Due
                 // to struct reinterpretation (e.g. Unsafe.As<X, Y>) it is possible that
-                // the OBJ node has a different type than the lclvar.
-                CORINFO_CLASS_HANDLE objClass = source->AsObj()->GetLayout()->GetClassHandle();
-
-                srcSize = compiler->info.compCompHnd->getClassSize(objClass);
-                layout  = source->AsObj()->GetLayout();
+                // the BLK node has a different type than the lclvar.
+                layout  = source->AsBlk()->GetLayout();
+                srcSize = layout->GetSize();
             }
 
             unsigned structSize;
@@ -6396,23 +6393,15 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
 }
 
 //------------------------------------------------------------------------
-// genCodeForStoreBlk: Produce code for a GT_STORE_OBJ/GT_STORE_DYN_BLK/GT_STORE_BLK node.
+// genCodeForStoreBlk: Produce code for a GT_STORE_DYN_BLK/GT_STORE_BLK node.
 //
 // Arguments:
 //    tree - the node
 //
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
-    assert(blkOp->OperIs(GT_STORE_OBJ, GT_STORE_DYN_BLK, GT_STORE_BLK));
+    assert(blkOp->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
 
-    if (blkOp->OperIs(GT_STORE_OBJ))
-    {
-        assert(!blkOp->gtBlkOpGcUnsafe);
-        assert(blkOp->OperIsCopyBlkOp());
-        assert(blkOp->AsObj()->GetLayout()->HasGCPtr());
-        genCodeForCpObj(blkOp->AsObj());
-        return;
-    }
     if (blkOp->gtBlkOpGcUnsafe)
     {
         GetEmitter()->emitDisableGC();
@@ -6421,6 +6410,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 
     switch (blkOp->gtBlkOpKind)
     {
+        case GenTreeBlk::BlkOpKindCpObjUnroll:
+            assert(!blkOp->gtBlkOpGcUnsafe);
+            genCodeForCpObj(blkOp->AsBlk());
+            break;
+
         case GenTreeBlk::BlkOpKindHelper:
             if (isCopyBlk)
             {
@@ -7695,21 +7689,4 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         return;
     }
 }
-
-// return size
-// alignmentWB is out param
-unsigned CodeGenInterface::InferOpSizeAlign(GenTree* op, unsigned* alignmentWB)
-{
-    NYI_RISCV64("CodeGenInterface::InferOpSizeAlign-----unimplemented/unused on RISCV64 yet----");
-    return 0;
-}
-
-// return size
-// alignmentWB is out param
-unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignmentWB)
-{
-    NYI_RISCV64("CodeGenInterface::InferStructOpSizeAlign-----unimplemented/unused on RISCV64 yet----");
-    return 0;
-}
-
 #endif // TARGET_RISCV64

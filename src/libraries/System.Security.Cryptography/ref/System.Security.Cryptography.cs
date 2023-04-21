@@ -542,6 +542,8 @@ namespace System.Security.Cryptography
     public partial class CryptographicUnexpectedOperationException : System.Security.Cryptography.CryptographicException
     {
         public CryptographicUnexpectedOperationException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected CryptographicUnexpectedOperationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public CryptographicUnexpectedOperationException(string? message) { }
         public CryptographicUnexpectedOperationException(string? message, System.Exception? inner) { }
@@ -2749,6 +2751,8 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate(byte[] rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(System.IntPtr handle) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public X509Certificate(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(System.Security.Cryptography.X509Certificates.X509Certificate cert) { }
@@ -2846,6 +2850,8 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate2(System.ReadOnlySpan<byte> rawData) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(System.ReadOnlySpan<byte> rawData, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected X509Certificate2(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(System.Security.Cryptography.X509Certificates.X509Certificate certificate) { }

@@ -597,7 +597,7 @@ namespace Internal.Runtime.TypeLoader
             if (state.ThreadDataSize != 0)
                 TypeLoaderEnvironment.Instance.RegisterDynamicThreadStaticsInfo(state.HalfBakedRuntimeTypeHandle, state.ThreadStaticOffset, state.ThreadStaticDesc);
 
-            TypeLoaderLogger.WriteLine("Allocated new type " + type.ToString() + " with hashcode value = 0x" + type.GetHashCode().LowLevelToString() + " with MethodTable = " + rtt.ToIntPtr().LowLevelToString() + " of size " + rtt.ToEETypePtr()->BaseSize.LowLevelToString());
+            TypeLoaderLogger.WriteLine("Allocated new type " + type.ToString() + " with hashcode value = 0x" + type.GetHashCode().LowLevelToString() + " with MethodTable = " + rtt.ToIntPtr().LowLevelToString() + " of size " + rtt.ToEETypePtr()->RawBaseSize.LowLevelToString());
         }
 
         private static void AllocateRuntimeMethodDictionary(InstantiatedMethod method)
@@ -998,7 +998,13 @@ namespace Internal.Runtime.TypeLoader
             {
                 ParameterizedType typeAsParameterizedType = _typesThatNeedTypeHandles[i] as ParameterizedType;
                 if (typeAsParameterizedType == null)
+                {
+                    if (_typesThatNeedTypeHandles[i] is FunctionPointerType typeAsFunctionPointerType)
+                    {
+                        throw new NotImplementedException();
+                    }
                     continue;
+                }
 
                 Debug.Assert(!typeAsParameterizedType.RuntimeTypeHandle.IsNull());
                 Debug.Assert(!typeAsParameterizedType.ParameterType.RuntimeTypeHandle.IsNull());

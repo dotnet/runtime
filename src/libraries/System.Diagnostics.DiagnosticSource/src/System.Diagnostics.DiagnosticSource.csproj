@@ -62,7 +62,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\Metrics\ObservableGauge.cs" />
     <Compile Include="System\Diagnostics\Metrics\ObservableInstrument.cs" />
     <Compile Include="System\Diagnostics\Metrics\ObservableUpDownCounter.cs" />
-    <Compile Include="System\Diagnostics\Metrics\RateAggregator.cs" />
+    <Compile Include="System\Diagnostics\Metrics\CounterAggregator.cs" />
     <Compile Include="System\Diagnostics\Metrics\StringSequence.cs" />
     <Compile Include="System\Diagnostics\Metrics\TagList.cs" />
     <Compile Include="System\Diagnostics\Metrics\UpDownCounter.cs" />

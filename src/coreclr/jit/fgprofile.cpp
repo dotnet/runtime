@@ -2333,12 +2333,42 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
 
     // In majority of cases, methods marked with [Intrinsic] are imported directly
-    // in Tier1 so the profile will never be consumed. Thus, let's avoid unnecessary probes.
+    // in Tier1 so the profile will never be consumed. Thus, let's avoid unnecessary probes...
     if (minimalProfiling && (info.compFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
-        fgCountInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
-        fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
-        return PhaseStatus::MODIFIED_NOTHING;
+        //... except a few intrinsics that might still need it:
+        bool           shouldBeInstrumented = false;
+        NamedIntrinsic ni                   = lookupNamedIntrinsic(info.compMethodHnd);
+        switch (ni)
+        {
+            // These are marked as [Intrinsic] only to be handled (unrolled) for constant inputs.
+            // In other cases they have large managed implementations we want to profile.
+            case NI_System_String_Equals:
+            case NI_System_Buffer_Memmove:
+            case NI_System_MemoryExtensions_Equals:
+            case NI_System_MemoryExtensions_SequenceEqual:
+            case NI_System_MemoryExtensions_StartsWith:
+
+            // Same here, these are only folded when JIT knows the exact types
+            case NI_System_Type_IsAssignableFrom:
+            case NI_System_Type_IsAssignableTo:
+            case NI_System_Type_op_Equality:
+            case NI_System_Type_op_Inequality:
+                shouldBeInstrumented = true;
+                break;
+
+            default:
+                // Some Math intrinsics have large managed implementations we want to profile.
+                shouldBeInstrumented = ni >= NI_SYSTEM_MATH_START && ni <= NI_SYSTEM_MATH_END;
+                break;
+        }
+
+        if (!shouldBeInstrumented)
+        {
+            fgCountInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
+            fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+            return PhaseStatus::MODIFIED_NOTHING;
+        }
     }
 
     if (minimalProfiling && (fgBBcount < 2))

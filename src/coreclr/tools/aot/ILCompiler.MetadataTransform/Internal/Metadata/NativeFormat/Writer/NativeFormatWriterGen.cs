@@ -3192,7 +3192,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public CallingConventions CallingConvention;
+        public SignatureCallingConvention CallingConvention;
         public int GenericParameterCount;
         public MetadataRecord ReturnType;
         public List<MetadataRecord> Parameters = new List<MetadataRecord>();
