@@ -852,6 +852,7 @@ public:
                     result.AddStatement(CreateWriteBack(dstLcl->GetLclNum(), *dstFirstRep));
 
                     dstFirstRep->NeedsWriteBack = false;
+                    dstFirstRep->NeedsReadBack  = true;
                     dstFirstRep++;
                 }
 
@@ -865,6 +866,7 @@ public:
                         result.AddStatement(CreateWriteBack(dstLcl->GetLclNum(), *dstLastRep));
 
                         dstLastRep->NeedsWriteBack = false;
+                        dstLastRep->NeedsReadBack  = true;
                         dstEndRep--;
                     }
                 }
