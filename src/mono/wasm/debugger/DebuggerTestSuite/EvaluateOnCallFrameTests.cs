@@ -11,6 +11,7 @@ using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/85168")]
     // TODO: static async, static method args
     public class EvaluateOnCallFrameTests : DebuggerTests
     {
