@@ -9,13 +9,51 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     internal enum MethodSpecifier
     {
         None = 0x0,
-        // Root methods
-        Bind = 0x1,
-        Get = 0x2,
-        Configure = 0x4,
+
+        // ConfigurationBinder binding methods.
+
+        /// <summary>
+        /// ConfiguationBinder.Bind(IConfiguration, object).
+        /// </summary>
+        Bind_object = 0x1,
+
+        /// <summary>
+        /// ConfiguationBinder.Bind(IConfiguration, object, Action<BinderOptions>).
+        /// </summary>
+        Bind_object_BinderOptions = 0x2,
+
+        /// <summary>
+        /// ConfiguationBinder.Bind(IConfiguration, string, object).
+        /// </summary>
+        Bind_key_object = 0x4,
+
+        /// <summary>
+        /// ConfiguationBinder.Get<T>(IConfiguration).
+        /// </summary>
+        Get_T = 0x8,
+
+        /// <summary>
+        /// ConfiguationBinder.Get<T>(IConfiguration, Action<BinderOptions>).
+        /// </summary>
+        Get_T_BinderOptions = 0x10,
+
+        /// <summary>
+        /// ConfiguationBinder.Get<T>(IConfiguration, Type).
+        /// </summary>
+        Get_TypeOf = 0x20,
+
+        /// <summary>
+        /// ConfiguationBinder.Get<T>(IConfiguration, Type, Action<BinderOptions>).
+        /// </summary>
+        Get_TypeOf_BinderOptions = 0x40,
+
+        // Higher level binding methods from Microsoft.Extensions.DependencyInjection
+
+        Configure = 0x80,
+
         // Helper methods
-        BindCore = 0x8,
-        HasValueOrChildren = 0x10,
-        HasChildren = 0x20,
+        BindCore = 0x100,
+        HasValueOrChildren = 0x200,
+        HasChildren = 0x400,
     }
 }

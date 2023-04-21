@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitGetMethod()
             {
-                if (!IncludeMethodsForGen(MethodSpecifier.Get))
+                if (!IncludeMethodsForGen(MethodSpecifier.Get_T))
                 {
                     return;
                 }
@@ -124,7 +124,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitIConfigurationHasValueOrChildrenCheck();
 
-                foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.Get])
+                foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.Get_T])
                 {
                     string typeDisplayString = type.FullyQualifiedDisplayString;
 
@@ -141,17 +141,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBindMethods()
             {
-                if (!IncludeMethodsForGen(MethodSpecifier.Bind))
+                if (!IncludeMethodsForGen(MethodSpecifier.Bind_object))
                 {
                     return;
                 }
 
-                if (IncludeMethodsForGen(MethodSpecifier.Configure | MethodSpecifier.Get))
+                if (IncludeMethodsForGen(MethodSpecifier.Configure | MethodSpecifier.Get_T))
                 {
                     _writer.WriteBlankLine();
                 }
 
-                foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.Bind])
+                foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.Bind_object])
                 {
                     EmitBindMethod(type);
                     _writer.WriteBlankLine();

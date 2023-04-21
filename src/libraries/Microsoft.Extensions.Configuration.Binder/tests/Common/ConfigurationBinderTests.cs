@@ -30,7 +30,15 @@ namespace Microsoft.Extensions
                 .Build();
 
             var result = configuration.Get<RootConfig>();
+            Assert.Equal("Dummy", result.Nested.MyProp);
 
+            result = (RootConfig)configuration.Get(typeof(RootConfig));
+            Assert.Equal("Dummy", result.Nested.MyProp);
+
+            result = result = configuration.Get<RootConfig>(options => { });
+            Assert.Equal("Dummy", result.Nested.MyProp);
+
+            result = (RootConfig)configuration.Get(typeof(RootConfig), options => { });
             Assert.Equal("Dummy", result.Nested.MyProp);
         }
 
@@ -71,15 +79,31 @@ namespace Microsoft.Extensions
 
             var options = config.Get<ConfigurationInterfaceOptions>();
             var childOptions = options.Section.Get<DerivedOptions>();
+            Test();
 
-            Assert.True(childOptions.Boolean);
-            Assert.Equal(-2, childOptions.Integer);
-            Assert.Equal(11, childOptions.Nested.Integer);
-            Assert.Equal("Derived:Sup", childOptions.Virtual);
+            options = (ConfigurationInterfaceOptions)config.Get(typeof(ConfigurationInterfaceOptions));
+            childOptions = (DerivedOptions)options.Section.Get(typeof(DerivedOptions));
+            Test();
 
-            Assert.Equal("Section", options.Section.Key);
-            Assert.Equal("Section", options.Section.Path);
-            Assert.Null(options.Section.Value);
+            options = config.Get<ConfigurationInterfaceOptions>(options => { });
+            childOptions = options.Section.Get<DerivedOptions>(options => { });
+            Test();
+
+            options = (ConfigurationInterfaceOptions)config.Get(typeof(ConfigurationInterfaceOptions), options => { });
+            childOptions = (DerivedOptions)options.Section.Get(typeof(DerivedOptions), options => { });
+            Test();
+
+            void Test()
+            {
+                Assert.True(childOptions.Boolean);
+                Assert.Equal(-2, childOptions.Integer);
+                Assert.Equal(11, childOptions.Nested.Integer);
+                Assert.Equal("Derived:Sup", childOptions.Virtual);
+
+                Assert.Equal("Section", options.Section.Key);
+                Assert.Equal("Section", options.Section.Path);
+                Assert.Null(options.Section.Value);
+            }
         }
 
         [Fact]
@@ -232,7 +256,7 @@ namespace Microsoft.Extensions
         }
 
         [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need to honor binder options.
-        public void ThrowsIfPropertyInConfigMissingInModel()
+        public void ThrowsIfPropertyInConfigMissingInModel_Bind()
         {
             var dic = new Dictionary<string, string>
             {
@@ -257,7 +281,57 @@ namespace Microsoft.Extensions
         }
 
         [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need to honor binder options.
-        public void ThrowsIfPropertyInConfigMissingInNestedModel()
+        public void ThrowsIfPropertyInConfigMissingInNestedModel_Bind()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Nested:ThisDoesNotExistInTheModel", "42"},
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var instance = new ComplexOptions();
+
+            string expectedMessage = SR.Format(SR.Error_MissingConfig,
+                nameof(BinderOptions.ErrorOnUnknownConfiguration), nameof(BinderOptions), typeof(NestedOptions), "'ThisDoesNotExistInTheModel'");
+
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true));
+
+            Assert.Equal(expectedMessage, ex.Message);
+        }
+
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need to honor binder options.
+        public void ThrowsIfPropertyInConfigMissingInModel_Get()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"ThisDoesNotExistInTheModel", "42"},
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var instance = new ComplexOptions();
+
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true));
+
+            string expectedMessage = SR.Format(SR.Error_MissingConfig,
+                nameof(BinderOptions.ErrorOnUnknownConfiguration), nameof(BinderOptions), typeof(ComplexOptions), "'ThisDoesNotExistInTheModel'");
+
+            Assert.Equal(expectedMessage, ex.Message);
+        }
+
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need to honor binder options.
+        public void ThrowsIfPropertyInConfigMissingInNestedModel_Get()
         {
             var dic = new Dictionary<string, string>
             {
@@ -640,8 +714,12 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            Assert.Throws<NotSupportedException>(() => config.Get<ComplexOptions>(o => o.BindNonPublicProperties = true));
+#else
             var options = config.Get<ComplexOptions>(o => o.BindNonPublicProperties = true);
             Assert.Equal("stuff", options.GetType().GetTypeInfo().GetDeclaredProperty(property).GetValue(options));
+#endif
         }
 
         [Theory]
@@ -658,8 +736,12 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            Assert.Throws<NotSupportedException>(() => config.Get<ComplexOptions>(o => o.BindNonPublicProperties = true));
+#else
             var options = config.Get<ComplexOptions>(o => o.BindNonPublicProperties = true);
             Assert.Null(options.GetType().GetTypeInfo().GetDeclaredProperty(property).GetValue(options));
+#endif
         }
 
         [Theory]
@@ -1394,7 +1476,7 @@ namespace Microsoft.Extensions
         }
 
         [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need to honor binder options.
-        public void CanBindPrivatePropertiesFromBaseClass()
+        public void PrivatePropertiesFromBaseClass_Bind()
         {
             ConfigurationBuilder configurationBuilder = new();
             configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
@@ -1406,6 +1488,28 @@ namespace Microsoft.Extensions
             var test = new ClassOverridingVirtualProperty();
             config.Bind(test, b => b.BindNonPublicProperties = true);
             Assert.Equal("a", test.ExposePrivatePropertyValue());
+        }
+
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need to honor binder options.
+        public void PrivatePropertiesFromBaseClass_Get()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                { "PrivateProperty", "a" }
+            });
+            IConfiguration config = configurationBuilder.Build();
+
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            Assert.Throws<NotSupportedException>(() => config.Get<ClassOverridingVirtualProperty>(b => b.BindNonPublicProperties = true));
+            Assert.Throws<NotSupportedException>(() => config.Get(typeof(ClassOverridingVirtualProperty), b => b.BindNonPublicProperties = true));
+#else
+            var test = config.Get<ClassOverridingVirtualProperty>(b => b.BindNonPublicProperties = true);
+            Assert.Equal("a", test.ExposePrivatePropertyValue());
+
+            test = config.Get(typeof(ClassOverridingVirtualProperty), b => b.BindNonPublicProperties = true);
+            Assert.Equal("a", test.ExposePrivatePropertyValue());
+#endif
         }
 
         [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need collection support.
