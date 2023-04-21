@@ -1311,26 +1311,19 @@ ves_array_element_address (InterpFrame *frame, MonoClass *required_type, MonoArr
 
 /* Does not handle `this` argument */
 static guint32
-compute_arg_offset (MonoMethodSignature *sig, int index, int prev_offset)
+compute_arg_offset (MonoMethodSignature *sig, int index)
 {
 	if (index == 0)
 		return 0;
 
-	if (prev_offset == -1) {
-		guint32 offset = 0;
-		for (int i = 0; i < index; i++) {
-			int size, align;
-			MonoType *type = sig->params [i];
-			size = mono_type_size (type, &align);
-			offset += ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
-		}
-		return offset;
-	} else {
+	guint32 offset = 0;
+	for (int i = 0; i < index; i++) {
 		int size, align;
-		MonoType *type = sig->params [index - 1];
+		MonoType *type = sig->params [i];
 		size = mono_type_size (type, &align);
-		return prev_offset + ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+		offset += ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 	}
+	return offset;
 }
 
 static guint32*
@@ -1347,16 +1340,20 @@ initialize_arg_offsets (InterpMethod *imethod, MonoMethodSignature *csig)
 	int arg_count = sig->hasthis + sig->param_count;
 	g_assert (arg_count);
 	guint32 *arg_offsets = (guint32*) g_malloc ((sig->hasthis + sig->param_count) * sizeof (int));
-	int index = 0, offset_addend = 0, prev_offset = 0;
+	int index = 0, offset = 0;
 
 	if (sig->hasthis) {
 		arg_offsets [index++] = 0;
-		offset_addend = MINT_STACK_SLOT_SIZE;
+		offset = MINT_STACK_SLOT_SIZE;
 	}
 
 	for (int i = 0; i < sig->param_count; i++) {
-		prev_offset = compute_arg_offset (sig, i, prev_offset);
-		arg_offsets [index++] = prev_offset + offset_addend;
+		MonoType *type = sig->params [i];
+		int size, align;
+		size = mono_type_size (type, &align);
+
+		arg_offsets [index++] = offset;
+		offset += ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 	}
 
 	mono_memory_write_barrier ();
@@ -1384,7 +1381,7 @@ get_arg_offset (InterpMethod *imethod, MonoMethodSignature *sig, int index)
 		return get_arg_offset_fast (imethod, sig, index);
 	} else {
 		g_assert (!sig->hasthis);
-		return compute_arg_offset (sig, index, -1);
+		return compute_arg_offset (sig, index);
 	}
 }
 
