@@ -37,7 +37,8 @@ namespace System.Globalization
         private unsafe int JsCompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
         {
             AssertHybridOnWasm(options);
-            AssertComparisonSupported(options, m_name);
+            string cultureName = m_name;
+            AssertComparisonSupported(options, cultureName);
 
             string exceptionMessage;
             int cmpResult;
@@ -57,8 +58,8 @@ namespace System.Globalization
         {
             AssertHybridOnWasm(options);
             Debug.Assert(!prefix.IsEmpty);
-            AssertIndexingSupported(options);
             string cultureName = m_name;
+            AssertIndexingSupported(options, cultureName);
 
             string exceptionMessage;
             bool result;
@@ -78,8 +79,8 @@ namespace System.Globalization
         {
             AssertHybridOnWasm(options);
             Debug.Assert(!prefix.IsEmpty);
-            AssertIndexingSupported(options);
             string cultureName = m_name;
+            AssertIndexingSupported(options, cultureName);
 
             string exceptionMessage;
             bool result;
