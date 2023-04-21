@@ -7064,6 +7064,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
         MethodDesc * pMD = (MethodDesc *)((BYTE *)pChunk + offset);
 
         pMD->SetChunkIndex(pChunk);
+        pMD->SetMethodDescIndex(methodDescCount);
 
         InitNewMethodDesc(pMDMethod, pMD);
 
@@ -7107,6 +7108,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
 
             // Reset the chunk index
             pUnboxedMD->SetChunkIndex(pChunk);
+            pUnboxedMD->SetMethodDescIndex(methodDescCount);
 
             if (bmtGenerics->GetNumGenericArgs() == 0) {
                 pUnboxedMD->SetHasNonVtableSlot();

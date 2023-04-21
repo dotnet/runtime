@@ -1720,6 +1720,7 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
         for (DWORD i = 0; i < count; i++)
         {
             pMD->SetChunkIndex(pChunk);
+            pMD->SetMethodDescIndex(i);
 
             pMD->SetClassification(classification);
             if (fNonVtableSlot)
@@ -2204,7 +2205,7 @@ void MethodDesc::Reset()
         // We should go here only for the rental methods
         _ASSERTE(GetLoaderModule()->IsReflection());
 
-        InterlockedUpdateFlags2(enum_flag2_HasStableEntryPoint | enum_flag2_HasPrecode, FALSE);
+        InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, FALSE);
 
         *GetAddrOfSlot() = GetTemporaryEntryPoint();
     }
@@ -2774,7 +2775,7 @@ TADDR MethodDescChunk::AllocateCompactEntryPoints(LoaderAllocator *pLoaderAlloca
         }
 
         *(p+0) = X86_INSTR_MOV_AL;
-        int methodDescIndex = pMD->GetMethodDescIndex() - pBaseMD->GetMethodDescIndex();
+        int methodDescIndex = pMD->GetMethodDescChunkIndex() - pBaseMD->GetMethodDescChunkIndex();
         _ASSERTE(FitsInU1(methodDescIndex));
         *(p+1) = (BYTE)methodDescIndex;
 
@@ -2867,28 +2868,7 @@ PCODE MethodDesc::GetTemporaryEntryPoint()
     CONTRACTL_END;
 
     MethodDescChunk* pChunk = GetMethodDescChunk();
-    int lo = 0, hi = pChunk->GetCount() - 1;
-
-    // Find the temporary entrypoint in the chunk by binary search
-    while (lo < hi)
-    {
-        int mid = (lo + hi) / 2;
-
-        TADDR pEntryPoint = pChunk->GetTemporaryEntryPoint(mid);
-
-        MethodDesc * pMD = MethodDesc::GetMethodDescFromStubAddr(pEntryPoint);
-        if (PTR_HOST_TO_TADDR(this) == PTR_HOST_TO_TADDR(pMD))
-            return pEntryPoint;
-
-        if (PTR_HOST_TO_TADDR(this) > PTR_HOST_TO_TADDR(pMD))
-            lo = mid + 1;
-        else
-            hi = mid - 1;
-    }
-
-    _ASSERTE(lo == hi);
-
-    TADDR pEntryPoint = pChunk->GetTemporaryEntryPoint(lo);
+    TADDR pEntryPoint = pChunk->GetTemporaryEntryPoint(GetMethodDescIndex());
 
 #ifdef _DEBUG
     MethodDesc * pMD = MethodDesc::GetMethodDescFromStubAddr(pEntryPoint);
@@ -2941,27 +2921,6 @@ void MethodDescChunk::CreateTemporaryEntryPoints(LoaderAllocator *pLoaderAllocat
 }
 
 //*******************************************************************************
-void MethodDesc::InterlockedUpdateFlags2(BYTE bMask, BOOL fSet)
-{
-    WRAPPER_NO_CONTRACT;
-
-    LONG* pLong = (LONG*)(&m_bFlags2 - 3);
-    static_assert_no_msg(offsetof(MethodDesc, m_bFlags2) % sizeof(LONG) == 3);
-
-#if BIGENDIAN
-    if (fSet)
-        InterlockedOr(pLong, (ULONG)bMask);
-    else
-        InterlockedAnd(pLong, ~(ULONG)bMask);
-#else // !BIGENDIAN
-    if (fSet)
-        InterlockedOr(pLong, (LONG)bMask << (3 * 8));
-    else
-        InterlockedAnd(pLong, ~((LONG)bMask << (3 * 8)));
-#endif // !BIGENDIAN
-}
-
-//*******************************************************************************
 Precode* MethodDesc::GetOrCreatePrecode()
 {
     WRAPPER_NO_CONTRACT;
@@ -2998,7 +2957,7 @@ Precode* MethodDesc::GetOrCreatePrecode()
     }
 
     // Set the flags atomically
-    InterlockedUpdateFlags2(enum_flag2_HasStableEntryPoint | enum_flag2_HasPrecode, TRUE);
+    InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, TRUE);
 
     return Precode::GetPrecodeFromEntryPoint(*pSlot);
 }
@@ -3038,7 +2997,7 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Policy - Tiered compilation is not disabled by the profiler
         !CORProfilerDisableTieredCompilation())
     {
-        m_bFlags2 |= enum_flag2_IsEligibleForTieredCompilation;
+        m_wFlags3AndTokenRemainder |= enum_flag3_IsEligibleForTieredCompilation;
         _ASSERTE(IsVersionable());
         return true;
     }
@@ -3323,7 +3282,7 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
 
     BOOL fResult = InterlockedCompareExchangeT(pSlot, addr, pExpected) == pExpected;
 
-    InterlockedUpdateFlags2(enum_flag2_HasStableEntryPoint, TRUE);
+    InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint, TRUE);
 
     return fResult;
 }
