@@ -3494,7 +3494,7 @@ hot_reload_get_method_params (MonoImage *base_image, uint32_t methoddef_token, u
 static const char *
 hot_reload_get_capabilities (void)
 {
-	return "Baseline AddMethodToExistingType AddStaticFieldToExistingType NewTypeDefinition ChangeCustomAttributes AddInstanceFieldToExistingType";
+	return "Baseline AddMethodToExistingType AddStaticFieldToExistingType NewTypeDefinition ChangeCustomAttributes AddInstanceFieldToExistingType GenericAddMethodToExistingType GenericUpdateMethod";
 }
 
 static GENERATE_GET_CLASS_WITH_CACHE_DECL (hot_reload_instance_field_table);
