@@ -313,6 +313,9 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig);
 void
 mono_interp_error_cleanup (MonoError *error);
 
+int
+mono_mint_type (MonoType *type);
+
 #if HOST_BROWSER
 
 gboolean
@@ -349,63 +352,5 @@ int
 mono_jiterp_get_simd_opcode (int arity, int index);
 
 #endif
-
-static inline int
-mint_type(MonoType *type)
-{
-	if (m_type_is_byref (type))
-		return MINT_TYPE_I;
-enum_type:
-	switch (type->type) {
-	case MONO_TYPE_I1:
-		return MINT_TYPE_I1;
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-		return MINT_TYPE_U1;
-	case MONO_TYPE_I2:
-		return MINT_TYPE_I2;
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-		return MINT_TYPE_U2;
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-		return MINT_TYPE_I4;
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_FNPTR:
-		return MINT_TYPE_I;
-	case MONO_TYPE_R4:
-		return MINT_TYPE_R4;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		return MINT_TYPE_I8;
-	case MONO_TYPE_R8:
-		return MINT_TYPE_R8;
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_ARRAY:
-		return MINT_TYPE_O;
-	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype_internal (type->data.klass);
-			goto enum_type;
-		} else
-			return MINT_TYPE_VT;
-	case MONO_TYPE_TYPEDBYREF:
-		return MINT_TYPE_VT;
-	case MONO_TYPE_GENERICINST:
-		type = m_class_get_byval_arg (type->data.generic_class->container_class);
-		goto enum_type;
-	case MONO_TYPE_VOID:
-		return MINT_TYPE_VOID;
-	default:
-		g_warning ("got type 0x%02x", type->type);
-		g_assert_not_reached ();
-	}
-	return -1;
-}
 
 #endif /* __MONO_MINI_INTERPRETER_INTERNALS_H__ */

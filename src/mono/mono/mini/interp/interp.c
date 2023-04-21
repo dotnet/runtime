@@ -2594,7 +2594,7 @@ init_jit_call_info (InterpMethod *rmethod, MonoError *error)
 	cinfo->wrapper = jit_wrapper;
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
-		int mt = mint_type (sig->ret);
+		int mt = mono_mint_type (sig->ret);
 		if (mt == MINT_TYPE_VT) {
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
 			/*
@@ -2617,7 +2617,7 @@ init_jit_call_info (InterpMethod *rmethod, MonoError *error)
 
 		for (guint i = 0; i < rmethod->param_count; ++i) {
 			MonoType *t = rmethod->param_types [i];
-			int mt = mint_type (t);
+			int mt = mono_mint_type (t);
 			if (m_type_is_byref (sig->params [i])) {
 				cinfo->arginfo [i] = JIT_ARG_BYVAL;
 			} else if (mt == MINT_TYPE_O) {
