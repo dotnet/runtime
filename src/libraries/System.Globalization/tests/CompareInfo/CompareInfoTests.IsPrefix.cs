@@ -78,8 +78,10 @@ namespace System.Globalization.Tests
             }
 
             // Platform differences
-            bool useNls = PlatformDetection.IsNlsGlobalization;
-            if (useNls || PlatformDetection.IsHybridGlobalizationOnBrowser)
+            // in HybridGlobalization on Browser we use TextEncoder that is not supported for v8 and the manual decoding works like NLS
+            bool behavesLikeNls = PlatformDetection.IsNlsGlobalization || 
+                (PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsBrowserDomSupportedOrNodeJS);
+            if (behavesLikeNls)
             {
                 if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
                 {
@@ -93,7 +95,8 @@ namespace System.Globalization.Tests
             else
             {
                 yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, false, 0 };
-                yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, false, 0 };
+                if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+                    yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, false, 0 };
                 yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, false, 0 };
                 yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.None, false, 0 };
                 yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.IgnoreCase, false, 0 };

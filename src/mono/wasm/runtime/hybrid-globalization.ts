@@ -5,7 +5,7 @@ import { Module } from "./imports";
 import { mono_wasm_new_external_root } from "./roots";
 import {MonoString, MonoStringRef } from "./types";
 import { Int32Ptr } from "./types/emscripten";
-import { conv_string_root, js_string_to_mono_string_root } from "./strings";
+import { conv_string_root, js_string_to_mono_string_root, string_decoder } from "./strings";
 import { setU16 } from "./memory";
 
 export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
@@ -69,7 +69,7 @@ export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: Mo
     }
 }
 
-export function get_utf16_string(ptr: number, length: number): string{
+function get_utf16_string(ptr: number, length: number): string{
     const view = new Uint16Array(Module.HEAPU16.buffer, ptr, length);
     let string = "";
     for (let i = 0; i < length; i++)
@@ -146,7 +146,7 @@ export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStr
 
 function get_clean_string(strPtr: number, strLen: number)
 {
-    const str = get_utf16_string(strPtr, strLen);
+    const str = string_decoder.decode(<any>strPtr, <any>(strPtr + 2*strLen));
     const nStr = str.normalize();
     return nStr.replace(/[\u200B-\u200D\uFEFF\0]/g, "");
 }
