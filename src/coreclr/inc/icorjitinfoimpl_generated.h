@@ -643,6 +643,12 @@ bool getReadonlyStaticFieldValue(
           int valueOffset,
           bool ignoreMovableObjects) override;
 
+bool readObject(
+          CORINFO_OBJECT_HANDLE obj,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset) override;
+
 CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,
           bool* pIsSpeculative) override;

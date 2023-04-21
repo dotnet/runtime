@@ -1258,6 +1258,16 @@ bool interceptor_ICJI::getReadonlyStaticFieldValue(
     return original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
 }
 
+bool interceptor_ICJI::readObject(
+          CORINFO_OBJECT_HANDLE obj,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset)
+{
+    mcs->AddCall("readObject");
+    return original_ICorJitInfo->readObject(obj, buffer, bufferSize, valueOffset);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,
           bool* pIsSpeculative)

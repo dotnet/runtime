@@ -3244,6 +3244,13 @@ public:
                     bool                    ignoreMovableObjects = true
                     ) = 0;
 
+    virtual bool readObject(
+                    CORINFO_OBJECT_HANDLE   obj,
+                    uint8_t*                buffer,
+                    int                     bufferSize,
+                    int                     valueOffset
+                    ) = 0;
+
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed
     // static readonly fields, if there is a unique location for the static and the class
     // is already initialized.

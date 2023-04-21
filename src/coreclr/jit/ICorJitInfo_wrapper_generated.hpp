@@ -1535,6 +1535,18 @@ bool WrapICorJitInfo::getReadonlyStaticFieldValue(
     return temp;
 }
 
+bool WrapICorJitInfo::readObject(
+          CORINFO_OBJECT_HANDLE obj,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset)
+{
+    API_ENTER(readObject);
+    bool temp = wrapHnd->readObject(obj, buffer, bufferSize, valueOffset);
+    API_LEAVE(readObject);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,
           bool* pIsSpeculative)

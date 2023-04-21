@@ -3028,6 +3028,11 @@ namespace Internal.JitInterface
             return false;
         }
 
+        private bool readObject(CORINFO_OBJECT_STRUCT_* obj, byte* buffer, int bufferSize, int valueOffset)
+        {
+            throw new NotSupportedException();
+        }
+
         private CORINFO_CLASS_STRUCT_* getObjectType(CORINFO_OBJECT_STRUCT_* objPtr)
         {
             throw new NotSupportedException();
