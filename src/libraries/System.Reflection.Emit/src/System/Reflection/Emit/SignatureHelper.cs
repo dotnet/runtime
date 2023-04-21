@@ -13,8 +13,9 @@ namespace System.Reflection.Emit
         internal static BlobBuilder FieldSignatureEncoder(Type fieldType, ModuleBuilderImpl module)
         {
             BlobBuilder fieldSignature = new();
-            FieldTypeEncoder encoder = new BlobEncoder(fieldSignature).Field();
-            WriteSignatureForType(encoder.Type(), fieldType, module, encoder.TypedReference);
+
+            WriteSignatureForType(new BlobEncoder(fieldSignature).FieldSignature(), fieldType, module);
+
             return fieldSignature;
         }
 
@@ -32,7 +33,7 @@ namespace System.Reflection.Emit
 
             if (returnType != null && returnType != module.GetTypeFromCoreAssembly(CoreTypeId.Void))
             {
-                WriteSignatureForType(retEncoder.Type(), returnType, module, retEncoder.TypedReference);
+                WriteSignatureForType(retEncoder.Type(), returnType, module);
             }
             else // If null mark ReturnTypeEncoder as void
             {
@@ -43,15 +44,14 @@ namespace System.Reflection.Emit
             {
                 foreach (Type parameter in parameters)
                 {
-                    ParameterTypeEncoder parameterEncoder = parEncoder.AddParameter();
-                    WriteSignatureForType(parameterEncoder.Type(), parameter, module, parameterEncoder.TypedReference);
+                    WriteSignatureForType(parEncoder.AddParameter().Type(), parameter, module);
                 }
             }
 
             return methodSignature;
         }
 
-        private static void WriteSignatureForType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module, Action typedReference)
+        private static void WriteSignatureForType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
         {
             CoreTypeId? typeId = module.GetTypeIdFromCoreTypes(type);
 
@@ -106,7 +106,7 @@ namespace System.Reflection.Emit
                     signature.String();
                     return;
                 case CoreTypeId.TypedReference:
-                    typedReference();
+                    signature.Builder.WriteByte((byte)SignatureTypeCode.TypedReference);
                     return;
             }
 

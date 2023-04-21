@@ -17,7 +17,7 @@ namespace System.Reflection.Emit
         private readonly MetadataBuilder _metadataBuilder;
         private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyReferences = new();
         private readonly Dictionary<Type, TypeReferenceHandle> _typeReferences = new();
-        private readonly List<TypeDefinitionWrapper> _typeDefinitions = new();
+        private readonly List<TypeBuilderImpl> _typeDefinitions = new();
         private int _nextTypeDefRowId = 1;
         private int _nextMethodDefRowId = 1;
         private int _nextFieldDefRowId = 1;
@@ -114,25 +114,25 @@ namespace System.Reflection.Emit
                 methodList: MetadataTokens.MethodDefinitionHandle(1)); ;
 
             // Add each type definition to metadata table.
-            foreach (TypeDefinitionWrapper typeDefinition in _typeDefinitions)
+            foreach (TypeBuilderImpl typeBuilder in _typeDefinitions)
             {
                 EntityHandle parent = default;
-                if (typeDefinition.typeBuilder.BaseType is not null)
+                if (typeBuilder.BaseType is not null)
                 {
-                    parent = GetTypeHandle(typeDefinition.typeBuilder.BaseType);
+                    parent = GetTypeHandle(typeBuilder.BaseType);
                 }
 
-                TypeDefinitionHandle typeDefinitionHandle = MetadataHelper.AddTypeDefinition(_metadataBuilder, typeDefinition.typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
-                Debug.Assert(typeDefinition.handle.Equals(typeDefinitionHandle));
+                TypeDefinitionHandle typeDefinitionHandle = MetadataHelper.AddTypeDefinition(_metadataBuilder, typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
+                Debug.Assert(typeBuilder._handle.Equals(typeDefinitionHandle));
 
                 // Add each method definition to metadata table.
-                foreach (MethodBuilderImpl method in typeDefinition.typeBuilder._methodDefStore)
+                foreach (MethodBuilderImpl method in typeBuilder._methodDefStore)
                 {
                     MetadataHelper.AddMethodDefinition(_metadataBuilder, method, method.GetMethodSignatureBlob());
                     _nextMethodDefRowId++;
                 }
 
-                foreach (FieldBuilderImpl field in typeDefinition.typeBuilder._fieldDefStore)
+                foreach (FieldBuilderImpl field in typeBuilder._fieldDefStore)
                 {
                     MetadataHelper.AddFieldDefinition(_metadataBuilder, field, MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this));
                     _nextFieldDefRowId++;
@@ -166,13 +166,7 @@ namespace System.Reflection.Emit
         {
             if (type is TypeBuilderImpl tb && Equals(tb.Module))
             {
-                foreach(TypeDefinitionWrapper typeDef in _typeDefinitions)
-                {
-                    if (!typeDef.typeBuilder.Equals(tb))
-                    {
-                        return typeDef.handle;
-                    }
-                }
+                return tb._handle;
             }
 
             return GetTypeReference(type);
@@ -195,9 +189,9 @@ namespace System.Reflection.Emit
         protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet) => throw new NotImplementedException();
         protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr, [DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
-            TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this);
             TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
-            _typeDefinitions.Add(new TypeDefinitionWrapper(_type, typeHandle));
+            TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this, typeHandle);
+            _typeDefinitions.Add(_type);
             return _type;
         }
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
