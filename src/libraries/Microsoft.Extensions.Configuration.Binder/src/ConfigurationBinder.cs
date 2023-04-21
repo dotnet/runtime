@@ -50,14 +50,15 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions)
         {
-            ThrowHelper.ThrowIfNull(configuration);
+            throw new InvalidOperationException();
+            //ThrowHelper.ThrowIfNull(configuration);
 
-            object? result = configuration.Get(typeof(T), configureOptions);
-            if (result == null)
-            {
-                return default(T);
-            }
-            return (T)result;
+            //object? result = configuration.Get(typeof(T), configureOptions);
+            //if (result == null)
+            //{
+            //    return default(T);
+            //}
+            //return (T)result;
         }
 
         /// <summary>
@@ -90,13 +91,14 @@ namespace Microsoft.Extensions.Configuration
             Type type,
             Action<BinderOptions>? configureOptions)
         {
-            ThrowHelper.ThrowIfNull(configuration);
+            //ThrowHelper.ThrowIfNull(configuration);
 
-            var options = new BinderOptions();
-            configureOptions?.Invoke(options);
-            var bindingPoint = new BindingPoint();
-            BindInstance(type, bindingPoint, config: configuration, options: options);
-            return bindingPoint.Value;
+            //var options = new BinderOptions();
+            //configureOptions?.Invoke(options);
+            //var bindingPoint = new BindingPoint();
+            //BindInstance(type, bindingPoint, config: configuration, options: options);
+            //return bindingPoint.Value;
+            throw new InvalidOperationException();
         }
 
         /// <summary>
@@ -108,7 +110,10 @@ namespace Microsoft.Extensions.Configuration
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
         public static void Bind(this IConfiguration configuration, string key, object? instance)
-            => configuration.GetSection(key).Bind(instance);
+        {
+            throw new InvalidOperationException();
+        }
+        //=> configuration.GetSection(key).Bind(instance);
 
         /// <summary>
         /// Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.
@@ -130,15 +135,16 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
         public static void Bind(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)
         {
-            ThrowHelper.ThrowIfNull(configuration);
+            //ThrowHelper.ThrowIfNull(configuration);
 
-            if (instance != null)
-            {
-                var options = new BinderOptions();
-                configureOptions?.Invoke(options);
-                var bindingPoint = new BindingPoint(instance, isReadOnly: true);
-                BindInstance(instance.GetType(), bindingPoint, configuration, options);
-            }
+            //if (instance != null)
+            //{
+            //    var options = new BinderOptions();
+            //    configureOptions?.Invoke(options);
+            //    var bindingPoint = new BindingPoint(instance, isReadOnly: true);
+            //    BindInstance(instance.GetType(), bindingPoint, configuration, options);
+            //}
+            throw new InvalidOperationException();
         }
 
         /// <summary>
@@ -200,13 +206,14 @@ namespace Microsoft.Extensions.Configuration
             Type type, string key,
             object? defaultValue)
         {
-            IConfigurationSection section = configuration.GetSection(key);
-            string? value = section.Value;
-            if (value != null)
-            {
-                return ConvertValue(type, value, section.Path);
-            }
-            return defaultValue;
+            throw new InvalidOperationException();
+            //IConfigurationSection section = configuration.GetSection(key);
+            //string? value = section.Value;
+            //if (value != null)
+            //{
+            //    return ConvertValue(type, value, section.Path);
+            //}
+            //return defaultValue;
         }
 
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
