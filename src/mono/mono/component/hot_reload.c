@@ -3584,6 +3584,7 @@ recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataU
 		info = mono_class_new0 (ginst, MonoClassMetadataUpdateInfo, 1);
 
 	// replace info->added_props by a new list re-computed from gtd_info->added_props
+	info->added_props = NULL;
 	for (GSList *ptr = gtd_info->added_props; ptr; ptr = ptr->next) {
 		MonoClassMetadataUpdateProperty *gtd_added_prop = (MonoClassMetadataUpdateProperty *)ptr->data;
 		MonoClassMetadataUpdateProperty *added_prop = mono_class_new0 (ginst, MonoClassMetadataUpdateProperty, 1);
