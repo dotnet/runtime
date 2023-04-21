@@ -1327,7 +1327,14 @@ PhaseStatus LinearScan::doLinearScan()
 
     allocationPassComplete = true;
     compiler->EndPhase(PHASE_LINEAR_SCAN_ALLOC);
-    resolveRegisters();
+    if (enregisterLocalVars)
+    {
+        resolveRegisters<true>();
+    }
+    else
+    {
+        resolveRegisters<false>();
+    }
     compiler->EndPhase(PHASE_LINEAR_SCAN_RESOLVE);
 
     assert(blockSequencingDone); // Should do at least one traversal.
@@ -6914,6 +6921,7 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
 // This is the final phase of register allocation.  It writes the register assignments to
 // the tree, and performs resolution across joins and backedges.
 //
+template <bool localVarsEnregistered>
 void LinearScan::resolveRegisters()
 {
     // Iterate over the tree and the RefPositions in lockstep
@@ -6941,7 +6949,7 @@ void LinearScan::resolveRegisters()
 
     // Clear register assignments - these will be reestablished as lclVar defs (including RefTypeParamDefs)
     // are encountered.
-    if (enregisterLocalVars)
+    if (localVarsEnregistered)
     {
         for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
         {
@@ -6974,7 +6982,7 @@ void LinearScan::resolveRegisters()
     // handle incoming arguments and special temps
     RefPositionIterator currentRefPosition = refPositions.begin();
 
-    if (enregisterLocalVars)
+    if (localVarsEnregistered)
     {
         VarToRegMap entryVarToRegMap = inVarToRegMaps[compiler->fgFirstBB->bbNum];
         for (; currentRefPosition != refPositions.end(); ++currentRefPosition)
@@ -7013,7 +7021,7 @@ void LinearScan::resolveRegisters()
     {
         assert(curBBNum == block->bbNum);
 
-        if (enregisterLocalVars)
+        if (localVarsEnregistered)
         {
             // Record the var locations at the start of this block.
             // (If it's fgFirstBB, we've already done that above, see entryVarToRegMap)
@@ -7298,13 +7306,13 @@ void LinearScan::resolveRegisters()
             }
         }
 
-        if (enregisterLocalVars)
+        if (localVarsEnregistered)
         {
             processBlockEndLocations(block);
         }
     }
 
-    if (enregisterLocalVars)
+    if (localVarsEnregistered)
     {
 #ifdef DEBUG
         if (VERBOSE)
