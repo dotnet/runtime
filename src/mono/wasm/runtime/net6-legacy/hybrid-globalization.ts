@@ -47,11 +47,11 @@ export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoS
     }
 }
 
-export function get_utf16_string(ptr: number, length: number): string{
+function get_utf16_string(ptr: number, length: number): string{
     const view = new Uint16Array(Module.HEAPU16.buffer, ptr, length);
     let string = "";
     for (let i = 0; i < length; i++)
-        string += String.fromCharCode(view[i]);
+        string += String.fromCharCode(view[i]);        
     return string;
 }
 
@@ -59,8 +59,8 @@ export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: Mo
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
         const cultureName = conv_string_root(cultureRoot);
-        const string1 = string_decoder.decode(<any>str1, <any>(str1 + str1Length));
-        const string2 = string_decoder.decode(<any>str2, <any>(str2 + str2Length));
+        const string1 = string_decoder.decode(<any>str1, <any>(str1 + 2*str1Length));
+        const string2 = string_decoder.decode(<any>str2, <any>(str2 + 2*str2Length));
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
         const result = compare_strings(string1, string2, locale, casePicker);
