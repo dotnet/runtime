@@ -40,6 +40,7 @@
       <_CoreClrBuildArg Condition="'$(HostArchitecture)' != ''" Include="-hostarch $(HostArchitecture)" />
       <_CoreClrBuildArg Condition="'$(EnableNativeSanitizers)' != ''" Include="-fsanitize $(EnableNativeSanitizers)" />
       <_CoreClrBuildArg Include="-outputrid $(OutputRid)" />
+      <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(ClrFullNativeBuild)' != 'true'">
@@ -52,6 +53,7 @@
       <_CoreClrBuildArg Condition="'$(ClrNativeAotSubset)' == 'true'" Include="-component nativeaot" />
       <_CoreClrBuildArg Condition="'$(ClrSpmiSubset)' == 'true'" Include="-component spmi" />
       <_CoreClrBuildArg Condition="'$(ClrCrossComponentsSubset)' == 'true'" Include="-component crosscomponents" />
+      <_CoreClrBuildArg Condition="'$(ClrDebugSubset)' == 'true'" Include="-component debug" />
     </ItemGroup>
 
     <PropertyGroup>
