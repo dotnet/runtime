@@ -3827,20 +3827,25 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
 void LinearScan::processBlockEndAllocation(BasicBlock* currentBlock)
 {
     assert(currentBlock != nullptr);
+    markBlockVisited(currentBlock);
+
     if (enregisterLocalVars)
     {
         processBlockEndLocations(currentBlock);
+        
+        // Get the next block to allocate.
+        // When the last block in the method has successors, there will be a final "RefTypeBB" to
+        // ensure that we get the varToRegMap set appropriately, but in that case we don't need
+        // to worry about "nextBlock".
+        BasicBlock* nextBlock = getNextBlock();
+        if (nextBlock != nullptr)
+        {
+            processBlockStartLocations(nextBlock);
+        }
     }
-    markBlockVisited(currentBlock);
-
-    // Get the next block to allocate.
-    // When the last block in the method has successors, there will be a final "RefTypeBB" to
-    // ensure that we get the varToRegMap set appropriately, but in that case we don't need
-    // to worry about "nextBlock".
-    BasicBlock* nextBlock = getNextBlock();
-    if (nextBlock != nullptr)
+    else
     {
-        processBlockStartLocations(nextBlock);
+        resetAllRegistersState();
     }
 }
 
@@ -4087,6 +4092,29 @@ void LinearScan::unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap in
 }
 
 //------------------------------------------------------------------------
+// resetAllRegistersState: Resets the next interval ref, spill cost and clears
+//                         the constant registers.
+//
+void LinearScan::resetAllRegistersState()
+{
+    assert(!enregisterLocalVars);
+    // Just clear any constant registers and return.
+    resetAvailableRegs();
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    {
+        RegRecord* physRegRecord    = getRegisterRecord(reg);
+        Interval*  assignedInterval = physRegRecord->assignedInterval;
+        clearNextIntervalRef(reg, physRegRecord->registerType);
+        clearSpillCost(reg, physRegRecord->registerType);
+        if (assignedInterval != nullptr)
+        {
+            assert(assignedInterval->isConstant);
+            physRegRecord->assignedInterval = nullptr;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // processBlockStartLocations: Update var locations on entry to 'currentBlock' and clear constant
 //                             registers.
 //
@@ -4107,25 +4135,6 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     // If we have no register candidates we should only call this method during allocation.
 
     assert(enregisterLocalVars || !allocationPassComplete);
-
-    if (!enregisterLocalVars)
-    {
-        // Just clear any constant registers and return.
-        resetAvailableRegs();
-        for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
-        {
-            RegRecord* physRegRecord    = getRegisterRecord(reg);
-            Interval*  assignedInterval = physRegRecord->assignedInterval;
-            clearNextIntervalRef(reg, physRegRecord->registerType);
-            clearSpillCost(reg, physRegRecord->registerType);
-            if (assignedInterval != nullptr)
-            {
-                assert(assignedInterval->isConstant);
-                physRegRecord->assignedInterval = nullptr;
-            }
-        }
-        return;
-    }
 
     unsigned    predBBNum       = blockInfo[currentBlock->bbNum].predBBNum;
     VarToRegMap predVarToRegMap = getOutVarToRegMap(predBBNum);

@@ -1010,6 +1010,7 @@ private:
     // Record variable locations at start/end of block
     void processBlockStartLocations(BasicBlock* current);
     void processBlockEndLocations(BasicBlock* current);
+    void resetAllRegistersState();
 
 #ifdef TARGET_ARM
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
