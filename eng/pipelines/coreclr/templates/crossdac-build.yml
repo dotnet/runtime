@@ -22,10 +22,7 @@ steps:
             [Parameter(Mandatory)][string]$targetDir
           )
 
-          if ('${{ parameters.archType }}' -ne '${{ parameters.hostArchType }}')
-          {
-            $crossDacDir = Join-Path $crossDacDir -ChildPath '${{ parameters.hostArchType }}'
-          }
+          $crossDacDir = Join-Path $crossDacDir -ChildPath '${{ parameters.hostArchType }}'
 
           $availableFiles = ls -File $crossDacDir
 
