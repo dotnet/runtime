@@ -5561,6 +5561,8 @@ struct GenTreeCall final : public GenTree
 
     bool IsHelperCall(Compiler* compiler, unsigned helper) const;
 
+    CorInfoHelpFunc GetHelperNum() const;
+
     bool AreArgsComplete() const;
 
     CorInfoCallConvExtension GetUnmanagedCallConv() const

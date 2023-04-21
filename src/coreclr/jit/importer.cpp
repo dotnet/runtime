@@ -8336,15 +8336,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // via an underlying address, just null check the address.
                             if (op1->OperIs(GT_FIELD, GT_IND, GT_BLK))
                             {
-                                GenTree* addr = op1->gtGetOp1();
-                                if ((addr != nullptr) && fgAddrCouldBeNull(addr))
-                                {
-                                    gtChangeOperToNullCheck(op1, block);
-                                }
-                                else
-                                {
-                                    op1 = gtNewNothingNode();
-                                }
+                                gtChangeOperToNullCheck(op1, block);
                             }
                             else
                             {

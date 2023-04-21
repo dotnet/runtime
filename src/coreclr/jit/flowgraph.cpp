@@ -899,6 +899,9 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
         case GT_COMMA:
             return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
 
+        case GT_CALL:
+            return !addr->IsHelperCall() || !s_helperCallProperties.NonNullReturn(addr->AsCall()->GetHelperNum());
+
         case GT_ADD:
             if (addr->AsOp()->gtOp1->gtOper == GT_CNS_INT)
             {

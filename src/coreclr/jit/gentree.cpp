@@ -2391,6 +2391,18 @@ bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
     return IsHelperCall(compiler->eeFindHelper(helper));
 }
 
+//-------------------------------------------------------------------------
+// GetHelperNum: Get the helper identifier for this call.
+//
+// Return Value:
+//     CORINFO_HELP_UNDEF if this call is not a helper call, appropriate
+//     CorInfoHelpFunc otherwise.
+//
+CorInfoHelpFunc GenTreeCall::GetHelperNum() const
+{
+    return IsHelperCall() ? Compiler::eeGetHelperNum(gtCallMethHnd) : CORINFO_HELP_UNDEF;
+}
+
 //--------------------------------------------------------------------------
 // Equals: Check if 2 CALL nodes are equal.
 //
@@ -16556,23 +16568,11 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
                 {
                     if (node->OperIsBlk() && !node->OperIsStoreBlk())
                     {
-                        // Check for a guaranteed non-faulting IND, and create a NOP node instead of a NULLCHECK in that
-                        // case.
-                        if (m_compiler->fgAddrCouldBeNull(node->AsBlk()->Addr()))
-                        {
-                            Append(node);
-                            JITDUMP("Replace an unused OBJ/BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
-                            m_compiler->gtChangeOperToNullCheck(node, m_compiler->compCurBB);
-                        }
-                        else
-                        {
-                            JITDUMP("Dropping non-faulting OBJ/BLK node [%06d]\n", dspTreeID(node));
-                        }
+                        JITDUMP("Replace an unused BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
+                        m_compiler->gtChangeOperToNullCheck(node, m_compiler->compCurBB);
                     }
-                    else
-                    {
-                        Append(node);
-                    }
+
+                    Append(node);
                     return Compiler::WALK_SKIP_SUBTREES;
                 }
 
