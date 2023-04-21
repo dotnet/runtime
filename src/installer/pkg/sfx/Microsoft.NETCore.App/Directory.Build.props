@@ -179,8 +179,6 @@
     <PlatformManifestFileEntry Include="libbootstrapperdll.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libeventpipe-disabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libeventpipe-enabled.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libnumasupportdynamic.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libnumasupportstatic.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libRuntime.ServerGC.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libRuntime.WorkstationGC.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstdc++compat.a" IsNative="true" />
