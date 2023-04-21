@@ -31,15 +31,15 @@ namespace System.Text
             {
                 for (int i = 0; i < right.Length; i++)
                 {
-                    char c = right[i];
                     byte b = left[i];
+                    char c = right[i];
 
-                    if (c != b)
+                    if (b != c)
                     {
                         return false;
                     }
 
-                    if (!UnicodeUtility.IsAsciiCodePoint(c) || !UnicodeUtility.IsAsciiCodePoint(b))
+                    if (!UnicodeUtility.IsAsciiCodePoint((uint)(b | c)))
                     {
                         return false;
                     }
@@ -58,8 +58,8 @@ namespace System.Text
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    charValues = Vector256.LoadUnsafe(ref currentCharsSearchSpace);
                     byteValues = Vector128.LoadUnsafe(ref currentBytesSearchSpace);
+                    charValues = Vector256.LoadUnsafe(ref currentCharsSearchSpace);
 
                     // it's OK to widen the bytes, it's NOT OK to narrow the chars (we could loose some information)
                     if (Vector256.Equals(Widen(byteValues), charValues) != Vector256<ushort>.AllBitsSet)
@@ -67,7 +67,7 @@ namespace System.Text
                         return false;
                     }
 
-                    if ((charValues.AsByte() | byteValues).ExtractMostSignificantBits() != 0)
+                    if (byteValues.ExtractMostSignificantBits() != 0 || charValues.AsByte().ExtractMostSignificantBits() != 0)
                     {
                         return false;
                     }
@@ -80,8 +80,8 @@ namespace System.Text
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)right.Length % Vector256<ushort>.Count != 0)
                 {
-                    charValues = Vector256.LoadUnsafe(ref oneVectorAwayFromCharsEnd);
                     byteValues = Vector128.LoadUnsafe(ref oneVectorAwayFromBytesEnd);
+                    charValues = Vector256.LoadUnsafe(ref oneVectorAwayFromCharsEnd);
 
                     // it's OK to widen the bytes, it's NOT OK to narrow the chars (we could loose some information)
                     if (Vector256.Equals(Widen(byteValues), charValues) != Vector256<ushort>.AllBitsSet)
@@ -89,7 +89,7 @@ namespace System.Text
                         return false;
                     }
 
-                    if (charValues.AsByte().ExtractMostSignificantBits() != 0 || byteValues.ExtractMostSignificantBits() != 0)
+                    if (byteValues.ExtractMostSignificantBits() != 0 || charValues.AsByte().ExtractMostSignificantBits() != 0)
                     {
                         return false;
                     }
@@ -108,8 +108,8 @@ namespace System.Text
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    charValues = Vector128.LoadUnsafe(ref currentCharsSearchSpace);
                     byteValues = Vector64.LoadUnsafe(ref currentBytesSearchSpace);
+                    charValues = Vector128.LoadUnsafe(ref currentCharsSearchSpace);
 
                     // it's OK to widen the bytes, it's NOT OK to narrow the chars (we could loose some information)
                     if (Vector128.Equals(Widen(byteValues), charValues) != Vector128<ushort>.AllBitsSet)
@@ -117,13 +117,13 @@ namespace System.Text
                         return false;
                     }
 
-                    if (VectorContainsNonAsciiChar(charValues) || VectorContainsNonAsciiChar(byteValues))
+                    if (VectorContainsNonAsciiChar(byteValues) | VectorContainsNonAsciiChar(charValues))
                     {
                         return false;
                     }
 
-                    currentCharsSearchSpace = ref Unsafe.Add(ref currentCharsSearchSpace, Vector128<ushort>.Count);
                     currentBytesSearchSpace = ref Unsafe.Add(ref currentBytesSearchSpace, Vector64<byte>.Count);
+                    currentCharsSearchSpace = ref Unsafe.Add(ref currentCharsSearchSpace, Vector128<ushort>.Count);
                 }
                 while (!Unsafe.IsAddressGreaterThan(ref currentCharsSearchSpace, ref oneVectorAwayFromCharsEnd));
 
@@ -139,7 +139,7 @@ namespace System.Text
                         return false;
                     }
 
-                    if (VectorContainsNonAsciiChar(charValues) || VectorContainsNonAsciiChar(byteValues))
+                    if (VectorContainsNonAsciiChar(byteValues) || VectorContainsNonAsciiChar(charValues))
                     {
                         return false;
                     }
@@ -152,6 +152,10 @@ namespace System.Text
         /// <inheritdoc cref="Equals(ReadOnlySpan{byte}, ReadOnlySpan{char})"/>
         public static bool Equals(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
             => left.Length == right.Length && Equals<byte>(left, right);
+
+        /// <inheritdoc cref="Equals(ReadOnlySpan{byte}, ReadOnlySpan{char})"/>
+        public static bool Equals(ReadOnlySpan<char> left, ReadOnlySpan<byte> right)
+            => Equals(right, left);
 
         /// <inheritdoc cref="Equals(ReadOnlySpan{byte}, ReadOnlySpan{char})"/>
         public static bool Equals(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
@@ -171,7 +175,7 @@ namespace System.Text
                         return false;
                     }
 
-                    if (!UnicodeUtility.IsAsciiCodePoint(valueA) || !UnicodeUtility.IsAsciiCodePoint(valueB))
+                    if (!UnicodeUtility.IsAsciiCodePoint(valueA | valueB))
                     {
                         return false;
                     }
@@ -198,7 +202,7 @@ namespace System.Text
                         return false;
                     }
 
-                    if (rightValues.AsByte().ExtractMostSignificantBits() != 0 || leftValues.ExtractMostSignificantBits() != 0)
+                    if ((leftValues.AsByte() | rightValues.AsByte()).ExtractMostSignificantBits() != 0)
                     {
                         return false;
                     }
@@ -219,7 +223,7 @@ namespace System.Text
                         return false;
                     }
 
-                    if (rightValues.AsByte().ExtractMostSignificantBits() != 0 || leftValues.ExtractMostSignificantBits() != 0)
+                    if ((leftValues.AsByte() | rightValues.AsByte()).ExtractMostSignificantBits() != 0)
                     {
                         return false;
                     }
@@ -246,7 +250,7 @@ namespace System.Text
                         return false;
                     }
 
-                    if (VectorContainsAnyNonAsciiData(leftValues) || VectorContainsAnyNonAsciiData(rightValues))
+                    if (VectorContainsAnyNonAsciiData(leftValues | rightValues))
                     {
                         return false;
                     }
@@ -259,15 +263,15 @@ namespace System.Text
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)right.Length % Vector128<T>.Count != 0)
                 {
-                    rightValues = Vector128.LoadUnsafe(ref oneVectorAwayFromRightEnd);
                     leftValues = Vector128.LoadUnsafe(ref oneVectorAwayFromLeftEnd);
+                    rightValues = Vector128.LoadUnsafe(ref oneVectorAwayFromRightEnd);
 
                     if (Vector128.Equals(leftValues, rightValues) != Vector128<T>.AllBitsSet)
                     {
                         return false;
                     }
 
-                    if (VectorContainsAnyNonAsciiData(leftValues) || VectorContainsAnyNonAsciiData(rightValues))
+                    if (VectorContainsAnyNonAsciiData(leftValues | rightValues))
                     {
                         return false;
                     }
@@ -290,6 +294,10 @@ namespace System.Text
         /// <inheritdoc cref="EqualsIgnoreCase(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
         public static bool EqualsIgnoreCase(ReadOnlySpan<byte> left, ReadOnlySpan<char> right)
             => left.Length == right.Length && SequenceEqualIgnoreCase(right, left);
+
+        /// <inheritdoc cref="EqualsIgnoreCase(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
+        public static bool EqualsIgnoreCase(ReadOnlySpan<char> left, ReadOnlySpan<byte> right)
+            => EqualsIgnoreCase(right, left);
 
         /// <inheritdoc cref="EqualsIgnoreCase(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
         public static bool EqualsIgnoreCase(ReadOnlySpan<char> left, ReadOnlySpan<char> right)

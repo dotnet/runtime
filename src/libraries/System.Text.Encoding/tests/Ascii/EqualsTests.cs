@@ -3,70 +3,48 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Intrinsics;
 using Xunit;
 
 namespace System.Text.Tests
 {
-    public static class EqualsTests
+    public abstract class AsciiEqualityTests
     {
-        [Fact]
-        public static void EqualValues_ButNonAscii_ReturnsFalse() => Assert_NotEqual(128, 128); // 128 is first non-ascii character
+        protected abstract bool Equals(string left, string right);
+        protected abstract bool EqualsIgnoreCase(string left, string right);
+        protected abstract bool Equals(byte[] left, byte[] right);
+        protected abstract bool EqualsIgnoreCase(byte[] left, byte[] right);
 
-        [Fact]
-        public static void NonEqualValues_AndNonAsciiCharacters_ReturnsFalse() => Assert_NotEqual(127, 128);
-
-        private static void Assert_NotEqual(byte left, byte right)
-        {
-            // Equals
-            // (byte, byte)
-            Assert.False(Ascii.Equals(new byte[] { left }, new byte[] { right })); // non-vectorized code path
-            Assert.False(Ascii.Equals(Enumerable.Repeat(left, 100).ToArray(), Enumerable.Repeat(right, 100).ToArray())); // vectorized code path
-            // (byte, char)
-            Assert.False(Ascii.Equals(new byte[] { left }, new char[] { (char)right }));
-            Assert.False(Ascii.Equals(Enumerable.Repeat(left, 100).ToArray(), Enumerable.Repeat((char)right, 100).ToArray()));
-            // (char, char)
-            Assert.False(Ascii.Equals(new char[] { (char)left }, new char[] { (char)right }));
-            Assert.False(Ascii.Equals(Enumerable.Repeat((char)left, 100).ToArray(), Enumerable.Repeat((char)right, 100).ToArray()));
-
-            // EqualsIgnoreCase
-            // (byte, byte)
-            Assert.False(Ascii.EqualsIgnoreCase(new byte[] { left }, new byte[] { right }));
-            Assert.False(Ascii.EqualsIgnoreCase(Enumerable.Repeat(left, 100).ToArray(), Enumerable.Repeat(right, 100).ToArray()));
-            // (byte, char)
-            Assert.False(Ascii.EqualsIgnoreCase(new byte[] { left }, new char[] { (char)right }));
-            Assert.False(Ascii.EqualsIgnoreCase(Enumerable.Repeat(left, 100).ToArray(), Enumerable.Repeat((char)right, 100).ToArray()));
-            // (char, char)
-            Assert.False(Ascii.EqualsIgnoreCase(new char[] { (char)left }, new char[] { (char)right }));
-            Assert.False(Ascii.EqualsIgnoreCase(Enumerable.Repeat((char)left, 100).ToArray(), Enumerable.Repeat((char)right, 100).ToArray()));
-        }
-
-        public static IEnumerable<object[]> ExactlyTheSame_TestData
+        public static IEnumerable<object[]> ValidAsciiInputs
         {
             get
             {
-                yield return new object[] { "test", "test" };
+                yield return new object[] { "test" };
 
                 for (char textLength = (char)0; textLength <= 127; textLength++)
                 {
-                    yield return new object[] { new string(textLength, textLength), new string(textLength, textLength) };
+                    yield return new object[] { new string(textLength, textLength) };
                 }
             }
         }
 
         [Theory]
-        [MemberData(nameof(ExactlyTheSame_TestData))]
-        public static void ExactlyTheSame_ReturnsTrue(string left, string right)
+        [MemberData(nameof(ValidAsciiInputs))]
+        public void Equals_ExactlyTheSameInputs_ReturnsTrue(string input)
         {
-            Assert.True(Ascii.Equals(Encoding.ASCII.GetBytes(left), Encoding.ASCII.GetBytes(right)));
-            Assert.True(Ascii.Equals(Encoding.ASCII.GetBytes(left), right));
-            Assert.True(Ascii.Equals(left, right));
-
-            Assert.True(Ascii.EqualsIgnoreCase(Encoding.ASCII.GetBytes(left), Encoding.ASCII.GetBytes(right)));
-            Assert.True(Ascii.EqualsIgnoreCase(left, right));
-            Assert.True(Ascii.EqualsIgnoreCase(Encoding.ASCII.GetBytes(left), right));
+            Assert.True(Equals(input, input)); // reference equality
+            Assert.True(Equals(input, new StringBuilder(input).ToString())); // content equality
         }
 
-        public static IEnumerable<object[]> Different_TestData
+        [Theory]
+        [MemberData(nameof(ValidAsciiInputs))]
+        public void EqualsIgnoreCase_ExactlyTheSameInputs_ReturnsTrue(string input)
+        {
+            Assert.True(EqualsIgnoreCase(input, input)); // reference equality
+            Assert.True(EqualsIgnoreCase(input, new StringBuilder(input).ToString())); // content equality
+        }
+
+        public static IEnumerable<object[]> DifferentInputs
         {
             get
             {
@@ -87,19 +65,22 @@ namespace System.Text.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Different_TestData))]
-        public static void Different_ReturnsFalse(string left, string right)
+        [MemberData(nameof(DifferentInputs))]
+        public void Equals_DifferentInputs_ReturnsFalse(string left, string right)
         {
-            Assert.False(Ascii.Equals(Encoding.ASCII.GetBytes(left), Encoding.ASCII.GetBytes(right)));
-            Assert.False(Ascii.Equals(Encoding.ASCII.GetBytes(left), right));
-            Assert.False(Ascii.Equals(left, right));
-
-            Assert.False(Ascii.EqualsIgnoreCase(Encoding.ASCII.GetBytes(left), Encoding.ASCII.GetBytes(right)));
-            Assert.False(Ascii.EqualsIgnoreCase(left, right));
-            Assert.False(Ascii.EqualsIgnoreCase(Encoding.ASCII.GetBytes(left), right));
+            Assert.False(Equals(left, right));
+            Assert.False(Equals(right, left));
         }
 
-        public static IEnumerable<object[]> EqualIgnoreCase_TestData
+        [Theory]
+        [MemberData(nameof(DifferentInputs))]
+        public void EqualsIgnoreCase_DifferentInputs_ReturnsFalse(string left, string right)
+        {
+            Assert.False(EqualsIgnoreCase(left, right));
+            Assert.False(EqualsIgnoreCase(right, left));
+        }
+
+        public static IEnumerable<object[]> EqualIgnoringCaseConsiderations
         {
             get
             {
@@ -115,12 +96,109 @@ namespace System.Text.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EqualIgnoreCase_TestData))]
-        public static void EqualIgnoreCase_ReturnsTrue(string left, string right)
+        [MemberData(nameof(EqualIgnoringCaseConsiderations))]
+        public void EqualIgnoreCase_EqualIgnoringCaseConsiderations_ReturnsTrue(string left, string right)
         {
-            Assert.True(Ascii.EqualsIgnoreCase(Encoding.ASCII.GetBytes(left), Encoding.ASCII.GetBytes(right)));
-            Assert.True(Ascii.EqualsIgnoreCase(left, right));
-            Assert.True(Ascii.EqualsIgnoreCase(Encoding.ASCII.GetBytes(left), right));
+            Assert.True(EqualsIgnoreCase(left, right));
+            Assert.True(EqualsIgnoreCase(right, left));
         }
+
+        public static IEnumerable<object[]> ContainingNonAsciiCharactersBuffers
+        {
+            get
+            {
+                foreach (int length in new[] { 1, Vector128<byte>.Count - 1, Vector128<byte>.Count, Vector256<byte>.Count + 1 })
+                {
+                    for (int index = 0; index < length; index++)
+                    {
+                        yield return new object[] { Create(length, index) };
+                    }
+                }
+
+                static byte[] Create(int length, int invalidCharacterIndex)
+                {
+                    byte[] buffer = Enumerable.Repeat(GetNextValidAsciiByte(), length).ToArray();
+                    buffer[invalidCharacterIndex] = GetNextInvalidAsciiByte();
+
+                    Assert.False(Ascii.IsValid(buffer));
+
+                    return buffer;
+                }
+
+                static byte GetNextValidAsciiByte() => (byte)Random.Shared.Next(0, 127 + 1);
+
+                static byte GetNextInvalidAsciiByte() => (byte)Random.Shared.Next(128, 255 + 1);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ContainingNonAsciiCharactersBuffers))]
+        public void Equals_EqualValues_ButNonAscii_ReturnsFalse(byte[] input)
+            => Assert.False(Equals(input, input));
+
+        [Theory]
+        [MemberData(nameof(ContainingNonAsciiCharactersBuffers))]
+        public void EqualsIgnoreCase_EqualValues_ButNonAscii_ReturnsFalse(byte[] input)
+            => Assert.False(EqualsIgnoreCase(input, input));
+    }
+
+    public class AsciiEqualityTests_Byte_Byte : AsciiEqualityTests
+    {
+        protected override bool Equals(string left, string right)
+            => Ascii.Equals(Encoding.ASCII.GetBytes(left), Encoding.ASCII.GetBytes(right));
+
+        protected override bool EqualsIgnoreCase(string left, string right)
+            => Ascii.EqualsIgnoreCase(Encoding.ASCII.GetBytes(left), Encoding.ASCII.GetBytes(right));
+
+        protected override bool Equals(byte[] left, byte[] right)
+            => Ascii.Equals(left, right);
+
+        protected override bool EqualsIgnoreCase(byte[] left, byte[] right)
+            => Ascii.EqualsIgnoreCase(left, right);
+    }
+
+    public class AsciiEqualityTests_Byte_Char : AsciiEqualityTests
+    {
+        protected override bool Equals(string left, string right)
+            => Ascii.Equals(Encoding.ASCII.GetBytes(left), right);
+
+        protected override bool EqualsIgnoreCase(string left, string right)
+            => Ascii.EqualsIgnoreCase(Encoding.ASCII.GetBytes(left), right);
+
+        protected override bool Equals(byte[] left, byte[] right)
+            => Ascii.Equals(left, right.Select(b => (char)b).ToArray());
+
+        protected override bool EqualsIgnoreCase(byte[] left, byte[] right)
+            => Ascii.EqualsIgnoreCase(left, right.Select(b => (char)b).ToArray());
+    }
+
+    public class AsciiEqualityTests_Char_Byte : AsciiEqualityTests
+    {
+        protected override bool Equals(string left, string right)
+            => Ascii.Equals(left, Encoding.ASCII.GetBytes(right));
+
+        protected override bool EqualsIgnoreCase(string left, string right)
+            => Ascii.EqualsIgnoreCase(left, Encoding.ASCII.GetBytes(right));
+
+        protected override bool Equals(byte[] left, byte[] right)
+            => Ascii.Equals(left.Select(b => (char)b).ToArray(), right);
+
+        protected override bool EqualsIgnoreCase(byte[] left, byte[] right)
+            => Ascii.EqualsIgnoreCase(left.Select(b => (char)b).ToArray(), right);
+    }
+
+    public class AsciiEqualityTests_Char_Char : AsciiEqualityTests
+    {
+        protected override bool Equals(string left, string right)
+            => Ascii.Equals(left, right);
+
+        protected override bool EqualsIgnoreCase(string left, string right)
+            => Ascii.EqualsIgnoreCase(left, right);
+
+        protected override bool Equals(byte[] left, byte[] right)
+            => Ascii.Equals(left.Select(b => (char)b).ToArray(), right.Select(b => (char)b).ToArray());
+
+        protected override bool EqualsIgnoreCase(byte[] left, byte[] right)
+            => Ascii.EqualsIgnoreCase(left.Select(b => (char)b).ToArray(), right.Select(b => (char)b).ToArray());
     }
 }
