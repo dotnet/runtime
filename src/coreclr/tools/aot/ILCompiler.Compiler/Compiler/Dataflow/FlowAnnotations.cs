@@ -1025,6 +1025,10 @@ namespace ILLink.Shared.TrimAnalysis
                 // All values except for Nullable<T>, including Nullable<> (with no type arguments)
                 return new SystemTypeValue(genericArgumentType);
             }
+            else if (genericArgument is ArrayType arrayType)
+            {
+                return new SystemTypeValue(arrayType);
+            }
             else
             {
                 return UnknownValue.Instance;
