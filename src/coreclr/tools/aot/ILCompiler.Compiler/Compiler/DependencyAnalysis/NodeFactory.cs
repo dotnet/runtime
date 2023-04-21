@@ -209,12 +209,19 @@ namespace ILCompiler.DependencyAnalysis
             });
 
             _threadStatics = new NodeCache<MetadataType, ISymbolDefinitionNode>(CreateThreadStaticsNode);
+            TypeThreadStaticIndexNode inlinedNodeIndex = null;
+
+            if (_inlinedThreadStatics.IsComputed())
+            {
+                var inlinedStaticsNode = new ThreadStaticsNode(_inlinedThreadStatics, this);
+                inlinedNodeIndex = new TypeThreadStaticIndexNode(inlinedStaticsNode);
+            }
 
             _typeThreadStaticIndices = new NodeCache<MetadataType, TypeThreadStaticIndexNode>(type =>
             {
-                if (_inlinedThreadStatics.IsComputed())
+                if (inlinedNodeIndex != null)
                 {
-                    return null;
+                    return inlinedNodeIndex;
                 }
 
                 return new TypeThreadStaticIndexNode(type);
@@ -1278,11 +1285,13 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(InterfaceDispatchCellSection, "Interface dispatch cell section is always generated");
             graph.AddRoot(ModuleInitializerList, "Module initializer list is always generated");
 
-            if (_inlinedThreadStatics.IsComputed())
-            {
-                ThreadStaticsNode inlinedThreadStaticNode = new ThreadStaticsNode(_inlinedThreadStatics, this);
-                graph.AddRoot(inlinedThreadStaticNode, "Inlined threadstatics are used if present");
-            }
+            // TODO: VS do we need to root tls?
+
+            //if (_inlinedThreadStatics.IsComputed())
+            //{
+            //    ThreadStaticsNode inlinedThreadStaticNode = new ThreadStaticsNode(_inlinedThreadStatics, this);
+            //    graph.AddRoot(inlinedThreadStaticNode, "Inlined threadstatics are used if present");
+            //}
 
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);

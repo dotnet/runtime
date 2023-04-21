@@ -72,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         MetadataType target = (MetadataType)Target;
                         ISortableSymbolNode index = factory.TypeThreadStaticIndex(target);
-                        if (index == null)
+                        if (index is TypeThreadStaticIndexNode ti && ti.Type == null)
                         {
                             ISymbolNode helper = factory.ExternSymbol("RhpGetThreadStaticBaseForType");
 
