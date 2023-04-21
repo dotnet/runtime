@@ -23358,10 +23358,9 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         // TODO-XArch-AVX512: Switch to VPERMI2*
         if (needsZero)
         {
-            op2                          = gtNewVconNode(type);
-            op2->AsVecCon()->gtSimdVal   = mskCns;
-            GenTree* zero = gtNewZeroConNode(type);
-            retNode       = gtNewSimdCndSelNode(type, op2, retNode, zero, simdBaseJitType, simdSize);
+            op2                        = gtNewVconNode(type);
+            op2->AsVecCon()->gtSimdVal = mskCns;
+            retNode                    = gtNewSimdBinOpNode(GT_AND, type, op2, retNode, simdBaseJitType, simdSize);
         }
 
         return retNode;
@@ -23412,13 +23411,11 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
     if (needsZero)
     {
-        assert(!compIsaSupportedDebugOnly(InstructionSet_SSSE3));
+        assert((simdSize == 32) || !compIsaSupportedDebugOnly(InstructionSet_SSSE3));
 
-        op2                          = gtNewVconNode(type);
-        op2->AsVecCon()->gtSimd16Val = mskCns.v128[0];
-
-        GenTree* zero = gtNewZeroConNode(type);
-        retNode       = gtNewSimdCndSelNode(type, op2, retNode, zero, simdBaseJitType, simdSize);
+        op2                        = gtNewVconNode(type);
+        op2->AsVecCon()->gtSimdVal = mskCns;
+        retNode                    = gtNewSimdBinOpNode(GT_AND, type, op2, retNode, simdBaseJitType, simdSize);
     }
 
     return retNode;
