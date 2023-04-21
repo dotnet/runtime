@@ -10650,15 +10650,19 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     if (isExact && (handle != NO_CLASS_HANDLE))
                     {
                         JITDUMP("IND(obj) is actually a class handle for %s\n", eeGetClassName(handle));
-                        void* pEmbedClsHnd;
-                        void* embedClsHnd = (void*)info.compCompHnd->embedClassHandle(handle, &pEmbedClsHnd);
-                        if (pEmbedClsHnd == nullptr)
+                        // Filter out all shared generic instantiations
+                        if (info.compCompHnd->compareTypesForEquality(handle, handle) != TypeCompareState::May)
                         {
-                            // Skip indirect handles for now since this path is mostly for PGO scenarios
-                            assert(embedClsHnd != nullptr);
-                            ValueNum handleVN  = vnStore->VNForHandle((ssize_t)embedClsHnd, GTF_ICON_CLASS_HDL);
-                            tree->gtVNPair     = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), addrXvnp);
-                            returnsTypeHandle  = true;
+                            void* pEmbedClsHnd;
+                            void* embedClsHnd = (void*)info.compCompHnd->embedClassHandle(handle, &pEmbedClsHnd);
+                            if (pEmbedClsHnd == nullptr)
+                            {
+                                // Skip indirect handles for now since this path is mostly for PGO scenarios
+                                assert(embedClsHnd != nullptr);
+                                ValueNum handleVN = vnStore->VNForHandle((ssize_t)embedClsHnd, GTF_ICON_CLASS_HDL);
+                                tree->gtVNPair    = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), addrXvnp);
+                                returnsTypeHandle = true;
+                            }
                         }
                     }
                     else
