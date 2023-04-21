@@ -19360,8 +19360,9 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
             intrinsic = NI_AVX512F_Abs;
         }
-        else if (varTypeIsSmall(simdBaseType))
+        else
         {
+            assert(varTypeIsSmall(simdBaseType));
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
             intrinsic = NI_AVX512BW_Abs;
         }
