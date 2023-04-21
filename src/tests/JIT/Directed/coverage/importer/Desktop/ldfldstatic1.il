@@ -10,7 +10,7 @@
 .assembly extern xunit.core {}
 
 .assembly extern legacy library mscorlib {}
-.assembly legacy library ldfldstatic1 { }
+.assembly legacy library ASSEMBLY_NAME { }
 .class public auto ansi beforefieldinit ldfldstatic1
        extends [mscorlib]System.Object
 {

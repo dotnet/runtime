@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <RestorePackages>true</RestorePackages>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="tlstest_r.il" />
+    <Compile Include="tlstest.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="tls1.ilproj" />
+    <ProjectReference Include="tls2.ilproj" />
+  </ItemGroup>
+</Project>

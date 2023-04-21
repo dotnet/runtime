@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="callconv3_d.il" />
+    <Compile Include="callconv3.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\PREFIX\PrimitiveVT\helper.csproj" />
+  </ItemGroup>
+</Project>
