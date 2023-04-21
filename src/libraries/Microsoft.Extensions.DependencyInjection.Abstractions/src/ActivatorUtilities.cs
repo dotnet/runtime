@@ -314,6 +314,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return (IServiceProvider serviceProvider, object?[]? arguments) =>
             {
+                if (serviceProvider is null)
+                {
+                    throw new ArgumentNullException(nameof(serviceProvider));
+                }
+
                 object?[] constructorArguments = new object?[parameters.Length];
                 for (int i = 0; i < parameters.Length; i++)
                 {
