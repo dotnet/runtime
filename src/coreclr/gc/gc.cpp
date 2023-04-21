@@ -48665,6 +48665,9 @@ CFinalize::UpdatePromotedGenerations (int gen, BOOL gen_0_empty_p)
                 int new_gen = g_theGCHeap->WhichGeneration (*po);
                 if (new_gen != i)
                 {
+                    // We never promote objects to a non-GC heap
+                    assert (new_gen <= max_generation);
+
                     dprintf (3, ("Moving object %p->%p from gen %d to gen %d", po, *po, i, new_gen));
 
                     if (new_gen > i)

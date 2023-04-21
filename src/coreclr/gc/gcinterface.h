@@ -722,6 +722,7 @@ public:
 
     // Returns the generation in which obj is found. Also used by the VM
     // in some places, in particular syncblk code.
+    // Returns INT32_MAX if obj belongs to a non-GC heap.
     virtual unsigned WhichGeneration(Object* obj) PURE_VIRTUAL
 
     // Returns the number of GCs that have transpired in the given generation
