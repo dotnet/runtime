@@ -34,6 +34,7 @@
 //
 
 #if MONO_FEATURE_SRE
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -386,9 +387,7 @@ namespace System.Reflection.Emit
             switch (con.ReflectedType!.FullName)
             {
                 case "System.Runtime.CompilerServices.MethodImplAttribute":
-                    int impla; // the (stupid) ctor takes a short or an int ...
-                    impla = (int)binaryAttribute[2];
-                    impla |= ((int)binaryAttribute[3]) << 8;
+                    int impla = BinaryPrimitives.ReadUInt16LittleEndian(binaryAttribute.Slice(2));
                     iattrs |= (MethodImplAttributes)impla;
                     return;
 

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -42,10 +43,7 @@ namespace System.Reflection.Emit
             {
                 case "System.Runtime.InteropServices.FieldOffsetAttribute":
                    Debug.Assert(binaryAttribute.Length >= 6);
-                    _offset = (int)binaryAttribute[2];
-                    _offset |= ((int)binaryAttribute[3]) << 8;
-                    _offset |= ((int)binaryAttribute[4]) << 16;
-                    _offset |= ((int)binaryAttribute[5]) << 24;
+                    _offset = BinaryPrimitives.ReadInt32LittleEndian(binaryAttribute.Slice(2));
                     break;
                 case "System.NonSerializedAttribute":
 #pragma warning disable SYSLIB0050 // 'FieldAttributes.NotSerialized' is obsolete: 'Formatter-based serialization is obsolete and should not be used'.

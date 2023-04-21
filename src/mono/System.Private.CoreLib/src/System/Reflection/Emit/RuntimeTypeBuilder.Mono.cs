@@ -34,6 +34,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -1437,8 +1438,8 @@ namespace System.Reflection.Emit
                 int pos = 6;
                 if (ctor_type.FullName == "System.Int16")
                     pos = 4;
-                int nnamed = (int)binaryAttribute[pos++];
-                nnamed |= ((int)binaryAttribute[pos++]) << 8;
+                int nnamed = BinaryPrimitives.ReadUInt16LittleEndian(binaryAttribute.Slice(pos++));
+                pos++;
                 for (int i = 0; i < nnamed; ++i)
                 {
                     //byte named_type = data [pos++];
@@ -1461,10 +1462,8 @@ namespace System.Reflection.Emit
                     named_name = CustomAttributeBuilder.string_from_bytes(binaryAttribute, pos, len);
                     pos += len;
                     /* all the fields are integers in StructLayout */
-                    int value = (int)binaryAttribute[pos++];
-                    value |= ((int)binaryAttribute[pos++]) << 8;
-                    value |= ((int)binaryAttribute[pos++]) << 16;
-                    value |= ((int)binaryAttribute[pos++]) << 24;
+                    int value = BinaryPrimitives.ReadInt32LittleEndian(binaryAttribute.Slice(pos++));
+                    pos += 3;
                     switch (named_name)
                     {
                         case "CharSet":

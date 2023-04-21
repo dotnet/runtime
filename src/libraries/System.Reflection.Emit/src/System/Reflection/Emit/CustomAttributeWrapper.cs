@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection.Metadata;
 
 namespace System.Reflection.Emit
 {
@@ -13,7 +15,7 @@ namespace System.Reflection.Emit
         public CustomAttributeWrapper(ConstructorInfo constructorInfo, ReadOnlySpan<byte> binaryAttribute)
         {
             _constructorInfo = constructorInfo;
-            _binaryAttribute = binaryAttribute.ToArray();
+            _binaryAttribute = binaryAttribute.ToArray(); // TODO: Update to BlobHandle when public API public APi for MetadataBuilder.GetOrAddBlob(ReadOnlySpan<byte>) added
         }
 
         public ConstructorInfo Ctor => _constructorInfo;
@@ -143,7 +145,7 @@ namespace System.Reflection.Emit
                     return StringFromBytes(data, pos, len);
                 case TypeCode.Int32:
                     rpos = pos + 4;
-                    return data[pos] + (data[pos + 1] << 8) + (data[pos + 2] << 16) + (data[pos + 3] << 24);
+                    return BinaryPrimitives.ReadInt32LittleEndian(data.Slice(pos));
                 case TypeCode.Boolean:
                     rpos = pos + 1;
                     return (data[pos] == 0) ? false : true;
@@ -153,7 +155,7 @@ namespace System.Reflection.Emit
 
                     if (subtype >= 0x02 && subtype <= 0x0e)
                     {
-                        return DecodeCustomAttributeValue(ElementTypeToType(subtype), data, pos, out rpos);
+                        return DecodeCustomAttributeValue(ElementTypeToType((PrimitiveSerializationTypeCode)subtype), data, pos, out rpos);
                     }
                     break;
             }
@@ -161,24 +163,23 @@ namespace System.Reflection.Emit
             throw new NotImplementedException(SR.Format(SR.NotImplemented_TypeForValue, t));
         }
 
-        private static Type ElementTypeToType(int elementType) =>
-           /* Partition II, section 23.1.16 */
-           elementType switch
-           {
-               0x02 => typeof(bool),
-               0x03 => typeof(char),
-               0x04 => typeof(sbyte),
-               0x05 => typeof(byte),
-               0x06 => typeof(short),
-               0x07 => typeof(ushort),
-               0x08 => typeof(int),
-               0x09 => typeof(uint),
-               0x0a => typeof(long),
-               0x0b => typeof(ulong),
-               0x0c => typeof(float),
-               0x0d => typeof(double),
-               0x0e => typeof(string),
-               _ => throw new ArgumentException(SR.Format(SR.ArgumentException_InvalidTypeArgument, elementType)),
-           };
+        private static Type ElementTypeToType(PrimitiveSerializationTypeCode elementType) =>
+            elementType switch
+            {
+                PrimitiveSerializationTypeCode.Boolean => typeof(bool),
+                PrimitiveSerializationTypeCode.Char => typeof(char),
+                PrimitiveSerializationTypeCode.SByte => typeof(sbyte),
+                PrimitiveSerializationTypeCode.Byte => typeof(byte),
+                PrimitiveSerializationTypeCode.Int16 => typeof(short),
+                PrimitiveSerializationTypeCode.UInt16 => typeof(ushort),
+                PrimitiveSerializationTypeCode.Int32 => typeof(int),
+                PrimitiveSerializationTypeCode.UInt32 => typeof(uint),
+                PrimitiveSerializationTypeCode.Int64 => typeof(long),
+                PrimitiveSerializationTypeCode.UInt64 => typeof(ulong),
+                PrimitiveSerializationTypeCode.Single => typeof(float),
+                PrimitiveSerializationTypeCode.Double => typeof(double),
+                PrimitiveSerializationTypeCode.String => typeof(string),
+                _ => throw new ArgumentException(SR.ArgumentException_InvalidTypeArgument),
+            };
     }
 }

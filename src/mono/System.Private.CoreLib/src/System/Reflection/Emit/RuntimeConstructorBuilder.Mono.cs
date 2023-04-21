@@ -37,6 +37,7 @@
 using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Buffers.Binary;
 
 namespace System.Reflection.Emit
 {
@@ -259,9 +260,7 @@ namespace System.Reflection.Emit
             string? attrname = con.ReflectedType!.FullName;
             if (attrname == "System.Runtime.CompilerServices.MethodImplAttribute")
             {
-                int impla; // the (stupid) ctor takes a short or an int ...
-                impla = (int)binaryAttribute[2];
-                impla |= ((int)binaryAttribute[3]) << 8;
+                int impla = BinaryPrimitives.ReadUInt16LittleEndian(binaryAttribute.Slice(2));
                 SetImplementationFlags((MethodImplAttributes)impla);
                 return;
             }

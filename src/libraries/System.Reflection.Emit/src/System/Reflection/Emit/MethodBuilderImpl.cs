@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -66,9 +67,8 @@ namespace System.Reflection.Emit
             switch (attributeName)
             {
                 case "System.Runtime.CompilerServices.MethodImplAttribute":
-                    int impla = data[2];
-                    impla |= data[3] << 8;
-                    _methodImplFlags |= (MethodImplAttributes)impla;
+                    int implValue = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(2));
+                    _methodImplFlags |= (MethodImplAttributes)implValue;
                     break;
                 case "System.Runtime.InteropServices.DllImportAttribute":
                     {

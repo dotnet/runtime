@@ -142,7 +142,7 @@
     <value>The invoked member is not supported in a dynamic module.</value>
   </data>
   <data name="ArgumentException_InvalidTypeArgument" xml:space="preserve">
-    <value>The type code '{0}' may not be used as a type argument of a custom attribute .</value>
+    <value>The type code may not be used as a type argument of a custom attribute .</value>
   </data>
   <data name="InvalidOperation_EmptyFieldForCustomAttribute" xml:space="preserve">
     <value>Custom attribute '{0}' doesn't contain a field named '{1}'.</value>

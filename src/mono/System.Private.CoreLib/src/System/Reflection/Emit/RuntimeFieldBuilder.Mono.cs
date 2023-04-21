@@ -37,6 +37,7 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Buffers.Binary;
 
 namespace System.Reflection.Emit
 {
@@ -181,10 +182,7 @@ namespace System.Reflection.Emit
             string? attrname = con.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.FieldOffsetAttribute")
             {
-                offset = (int)binaryAttribute[2];
-                offset |= ((int)binaryAttribute[3]) << 8;
-                offset |= ((int)binaryAttribute[4]) << 16;
-                offset |= ((int)binaryAttribute[5]) << 24;
+                offset = BinaryPrimitives.ReadInt32LittleEndian(binaryAttribute.Slice(2));
                 return;
             }
 #pragma warning disable SYSLIB0050 // FieldAttributes.NotSerialized is obsolete
