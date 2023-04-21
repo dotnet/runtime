@@ -8108,8 +8108,7 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, MonoOb
 	MonoMethodILState *il_state = (MonoMethodILState*)il_state_ptr;
 	MonoMethodSignature *sig;
 	ThreadContext *context = get_context ();
-	stackval *orig_sp;
-	stackval *sp, *sp_args;
+	stackval *sp;
 	InterpMethod *imethod;
 	FrameClauseArgs clause_args;
 	ERROR_DECL (error);
@@ -8124,7 +8123,7 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, MonoOb
 		mono_error_assert_ok (error);
 	}
 
-	orig_sp = sp_args = sp = (stackval*)context->stack_pointer;
+	sp = (stackval*)context->stack_pointer;
 
 	gpointer ret_addr = NULL;
 
@@ -8133,24 +8132,23 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, MonoOb
 		ret_addr = il_state->data [findex];
 		findex ++;
 	}
+	int first_param_index = 0;
 	if (sig->hasthis) {
 		if (il_state->data [findex])
-			sp_args->data.p = *(gpointer*)il_state->data [findex];
-		sp_args++;
+			sp->data.p = *(gpointer*)il_state->data [findex];
+		first_param_index = 1;
 		findex ++;
 	}
 
 	for (int i = 0; i < sig->param_count; ++i) {
 		if (il_state->data [findex]) {
-			int size = stackval_from_data (sig->params [i], sp_args, il_state->data [findex], FALSE);
-			sp_args = STACK_ADD_BYTES (sp_args, size);
-		} else {
-			int size = stackval_size (sig->params [i], FALSE);
-			sp_args = STACK_ADD_BYTES (sp_args, size);
+			int arg_offset = get_arg_offset_fast (imethod, NULL, first_param_index + i);
+			stackval *sval = STACK_ADD_ALIGNED_BYTES (sp, arg_offset);
+
+			stackval_from_data (sig->params [i], sval, il_state->data [findex], FALSE);
 		}
 		findex ++;
 	}
-	sp_args = (stackval*)ALIGN_TO (sp_args, MINT_STACK_ALIGNMENT);
 
 	/* Allocate frame */
 	InterpFrame frame = {0};
@@ -8158,7 +8156,8 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, MonoOb
 	frame.stack = sp;
 	frame.retval = sp;
 
-	context->stack_pointer = (guchar*)sp_args;
+	int params_size = get_arg_offset_fast (imethod, NULL, first_param_index + sig->param_count);
+	context->stack_pointer = (guchar*)ALIGN_TO ((guchar*)sp + params_size, MINT_STACK_ALIGNMENT);
 	context->stack_pointer += imethod->alloca_size;
 	g_assert (context->stack_pointer < context->stack_end);
 
@@ -8207,22 +8206,19 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, MonoOb
 	mono_interp_exec_method (&frame, context, &clause_args);
 
 	/* Write back args */
-	sp_args = sp;
 	findex = 0;
 	if (sig->ret->type != MONO_TYPE_VOID)
 		findex ++;
 	if (sig->hasthis) {
 		// FIXME: This
-		sp_args++;
 		findex ++;
 	}
 	for (int i = 0; i < sig->param_count; ++i) {
 		if (il_state->data [findex]) {
-			int size = stackval_to_data (sig->params [i], sp_args, il_state->data [findex], FALSE);
-			sp_args = STACK_ADD_BYTES (sp_args, size);
-		} else {
-			int size = stackval_size (sig->params [i], FALSE);
-			sp_args = STACK_ADD_BYTES (sp_args, size);
+			int arg_offset = get_arg_offset_fast (imethod, NULL, first_param_index + i);
+			stackval *sval = STACK_ADD_ALIGNED_BYTES (sp, arg_offset);
+
+			stackval_to_data (sig->params [i], sval, il_state->data [findex], FALSE);
 		}
 		findex ++;
 	}
@@ -8240,8 +8236,8 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, MonoOb
 		*filtered = frame.retval->data.i;
 	}
 
-	memset (orig_sp, 0, (guint8*)context->stack_pointer - (guint8*)orig_sp);
-	context->stack_pointer = (guchar*)orig_sp;
+	memset (sp, 0, (guint8*)context->stack_pointer - (guint8*)sp);
+	context->stack_pointer = (guchar*)sp;
 
 	check_pending_unwind (context);
 
