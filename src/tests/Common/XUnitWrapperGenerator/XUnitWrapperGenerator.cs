@@ -166,30 +166,41 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         CodeBuilder builder = new();
         AppendAliasMap(builder, aliasMap);
 
-        builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
+        builder.AppendLine("XUnitWrapperLibrary.TestFilter filter;");
+        builder.AppendLine("XUnitWrapperLibrary.TestSummary summary;");
+        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch;");
+        builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder;");
         builder.AppendLine();
 
-        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
+        builder.AppendLine("void Initialize()");
         using (builder.NewBracesScope())
         {
-            builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.xml"");");
-        }
-        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.testStats.csv""))");
-        using (builder.NewBracesScope())
-        {
-            builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.testStats.csv"");");
+            builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
+            builder.AppendLine();
+
+            builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.xml"");");
+            }
+            builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.testStats.csv""))");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.testStats.csv"");");
+            }
+            builder.AppendLine();
+
+            builder.AppendLine("filter = new (args, testExclusionList);");
+            builder.AppendLine("summary = new();");
+            builder.AppendLine("stopwatch = System.Diagnostics.Stopwatch.StartNew();");
+            builder.AppendLine("outputRecorder = new(System.Console.Out);");
+            builder.AppendLine("System.Console.SetOut(outputRecorder);");
         }
         builder.AppendLine();
 
-        builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = new (args, testExclusionList);");
-        builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
-        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();");
-        builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
-        builder.AppendLine("System.Console.SetOut(outputRecorder);");
-        builder.AppendLine();
-
+        builder.AppendLine("Initialize();");
         builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.tempLog.xml""))");
-        builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv"")){{");
+        builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv""))");
         CodeBuilder testExecutorBuilder = new();
         int totalTestsEmitted = 0;
 
@@ -209,7 +220,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
             if (testInfos.Length > 0)
             {
-                // Break tests into groups of 50 so that we don't create an unreasonably large main method
+                // Break tests into groups of 1 so that we don't create an unreasonably large main method
                 // Excessively large methods are known to take a long time to compile, and use excessive stack
                 // leading to test failures.
                 foreach (ITestInfo test in testInfos)
@@ -229,7 +240,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         testExecutorBuilder.PushIndent();
 
                         builder.AppendLine($"TestExecutor{currentTestExecutor}(tempLogSw, statsCsvSw);");
-                        testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empirically seems to work well
+                        testsLeftInCurrentTestExecutor = 1; // Break test executors into groups of 1, which empirically seems to work well
                     }
                     else
                     {
@@ -246,21 +257,27 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 testExecutorBuilder.AppendLine();
             }
 
-            testExecutorBuilder.AppendLine("}");
-            builder.AppendLine("tempLogSw.WriteLine(\"</assembly>\");");
+            builder.AppendLine("summary.WriteFooterToTempLog(tempLogSw);");
         }
         builder.AppendLine();
 
-        builder.AppendLine($@"string testResults = summary.GetTestResultOutput(""{assemblyName}"");");
-        builder.AppendLine($@"string workitemUploadRoot = System.Environment.GetEnvironmentVariable(""HELIX_WORKITEM_UPLOAD_ROOT"");");
-        builder.AppendLine($@"if (workitemUploadRoot != null)");
+        builder.AppendLine("void Finish()");
         using (builder.NewBracesScope())
         {
-            builder.AppendLine($@"System.IO.File.WriteAllText(System.IO.Path.Combine(workitemUploadRoot, ""{assemblyName}.testResults.xml.txt""), testResults);");
-        }
-        builder.AppendLine();
+            builder.AppendLine($@"string testResults = summary.GetTestResultOutput(""{assemblyName}"");");
+            builder.AppendLine($@"string workitemUploadRoot = System.Environment.GetEnvironmentVariable(""HELIX_WORKITEM_UPLOAD_ROOT"");");
+            builder.AppendLine($@"if (workitemUploadRoot != null)");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine($@"System.IO.File.WriteAllText(System.IO.Path.Combine(workitemUploadRoot, ""{assemblyName}.testResults.xml.txt""), testResults);");
+            }
+            builder.AppendLine();
 
-        builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", testResults);");
+            builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", testResults);");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("Finish();");
         builder.AppendLine("return 100;");
         builder.AppendLine();
 
