@@ -16390,7 +16390,17 @@ bool Compiler::gtSplitTree(
 
         bool IsValue(const UseInfo& useInf)
         {
-            GenTree* node = (*useInf.Use)->gtEffectiveVal();
+            GenTree* node = *useInf.Use;
+
+            // Some places create void-typed commas that wrap actual values
+            // (e.g. VN-based dead store removal), so we need the double check
+            // here.
+            if (!node->IsValue())
+            {
+                return false;
+            }
+
+            node = node->gtEffectiveVal();
             if (!node->IsValue())
             {
                 return false;
