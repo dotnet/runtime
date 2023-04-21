@@ -91,7 +91,10 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "a\u0000b", "b\u0000b", CompareOptions.None, false, 0 };
 
             // Platform differences
-            if (PlatformDetection.IsNlsGlobalization || PlatformDetection.IsHybridGlobalizationOnBrowser)
+            // in HybridGlobalization on Browser we use TextEncoder that is not supported for v8 and the manual decoding works like NLS
+            bool behavesLikeNls = PlatformDetection.IsNlsGlobalization || 
+                (PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsBrowserDomSupportedOrNodeJS);
+            if (behavesLikeNls)
             {
                 if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
                 {

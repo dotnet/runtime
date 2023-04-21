@@ -104,7 +104,7 @@ namespace System.Globalization.Tests
 
             // ICU bugs
             // UInt16 overflow: https://unicode-org.atlassian.net/browse/ICU-20832 fixed in https://github.com/unicode-org/icu/pull/840 (ICU 65)
-            if (useNls || PlatformDetection.ICUVersion.Major >= 65)
+            if (PlatformDetection.IsNlsGlobalization || PlatformDetection.ICUVersion.Major >= 65)
             {
                 yield return new object[] { s_frenchCompare, "b", new string('a', UInt16.MaxValue + 1), CompareOptions.None, false, 0 };
             }
