@@ -130,6 +130,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				AddMethod (method);
 			}
 
+			foreach (MethodDesc method in testResult.TrimmingResults.ReflectedMethods) {
+				AddMethod (method);
+			}
+
 			void AddMethod (MethodDesc method)
 			{
 				MethodDesc methodDef = method.GetTypicalMethodDefinition ();
