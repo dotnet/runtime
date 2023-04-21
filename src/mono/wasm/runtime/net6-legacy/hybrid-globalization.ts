@@ -5,7 +5,7 @@ import { Module } from "../imports";
 import { mono_wasm_new_external_root } from "../roots";
 import {MonoString, MonoStringRef } from "../types";
 import { Int32Ptr } from "../types/emscripten";
-import { conv_string_root, js_string_to_mono_string_root } from "../strings";
+import { conv_string_root, js_string_to_mono_string_root, string_decoder } from "../strings";
 import { setU16 } from "../memory";
 
 export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
@@ -47,12 +47,20 @@ export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoS
     }
 }
 
+function get_utf16_string(ptr: number, length: number): string{
+    const view = new Uint16Array(Module.HEAPU16.buffer, ptr, length);
+    let string = "";
+    for (let i = 0; i < length; i++)
+        string += String.fromCharCode(view[i]);        
+    return string;
+}
+
 export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number) : number{
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
         const cultureName = conv_string_root(cultureRoot);
-        const string1  = get_utf16_string(str1, str1Length);
-        const string2 = get_utf16_string(str2, str2Length);
+        const string1 = string_decoder.decode(<any>str1, <any>(str1 + 2*str1Length));
+        const string2 = string_decoder.decode(<any>str2, <any>(str2 + 2*str2Length));
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
         const result = compare_strings(string1, string2, locale, casePicker);
@@ -67,14 +75,6 @@ export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: Mo
     finally {
         cultureRoot.release();
     }
-}
-
-export function get_utf16_string(ptr: number, length: number): string{
-    const view = new Uint16Array(Module.HEAPU16.buffer, ptr, length);
-    let string = "";
-    for (let i = 0; i < length; i++)
-        string += String.fromCharCode(view[i]);
-    return string;
 }
 
 export function pass_exception_details(ex: any, exceptionMessage: Int32Ptr){

@@ -252,7 +252,7 @@ namespace System.Text.Json.Serialization.Metadata
             // First, walk up the class hierarchy for any supported types.
             for (Type? candidate = typeInfo.Type.BaseType; candidate != null; candidate = candidate.BaseType)
             {
-                JsonTypeInfo? candidateInfo = typeInfo.Options.GetTypeInfoInternal(candidate, ensureNotNull: null);
+                JsonTypeInfo? candidateInfo = ResolveAncestorTypeInfo(candidate, typeInfo.Options);
                 if (candidateInfo?.PolymorphismOptions != null)
                 {
                     // stop on the first ancestor that has a match
@@ -264,7 +264,7 @@ namespace System.Text.Json.Serialization.Metadata
             // Now, walk the interface hierarchy for any polymorphic interface declarations.
             foreach (Type interfaceType in typeInfo.Type.GetInterfaces())
             {
-                JsonTypeInfo? candidateInfo = typeInfo.Options.GetTypeInfoInternal(interfaceType, ensureNotNull: null);
+                JsonTypeInfo? candidateInfo = ResolveAncestorTypeInfo(interfaceType, typeInfo.Options);
                 if (candidateInfo?.PolymorphismOptions != null)
                 {
                     if (matchingResult != null)
@@ -294,6 +294,20 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             return matchingResult;
+
+            static JsonTypeInfo? ResolveAncestorTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                try
+                {
+                    return options.GetTypeInfoInternal(type, ensureNotNull: null);
+                }
+                catch
+                {
+                    // The resolver produced an exception when resolving the ancestor type.
+                    // Eat the exception and report no result instead.
+                    return null;
+                }
+            }
         }
 
         /// <summary>
