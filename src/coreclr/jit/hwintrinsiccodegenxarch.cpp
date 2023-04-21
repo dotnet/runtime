@@ -1760,6 +1760,64 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_AVX512F_CompareGreaterThanOrEqualSpecial:
+        {
+            GenTree* op2     = node->Op(2);
+            op1Reg           = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+
+            instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareGreaterThanOrEqualSpecial, baseType);
+
+            assert(compareIns != INS_invalid);
+            assert(emitter::isMaskReg(targetReg));
+
+            emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 5);
+            break;
+        }
+
+        case NI_AVX512F_CompareGreaterThanSpecial:
+        {
+            GenTree* op2     = node->Op(2);
+            op1Reg           = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+
+            instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareGreaterThanSpecial, baseType);
+
+            assert(compareIns != INS_invalid);
+            assert(emitter::isMaskReg(targetReg));
+
+            emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 6);
+            break;
+        }
+        case NI_AVX512F_CompareLessThanOrEqualSpecial:
+        {
+            GenTree* op2     = node->Op(2);
+            op1Reg           = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+
+            instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareLessThanOrEqualSpecial, baseType);
+
+            assert(compareIns != INS_invalid);
+            assert(emitter::isMaskReg(targetReg));
+
+            emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 2);
+            break;
+        }
+
+        case NI_AVX512F_CompareLessThanSpecial:
+        {
+            GenTree* op2     = node->Op(2);
+            op1Reg           = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+
+            instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareLessThanSpecial, baseType);
+
+            assert(compareIns != INS_invalid);
+            assert(emitter::isMaskReg(targetReg));
+
+            emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 1);
+            break;
+        }
         case NI_AVX512F_MoveMaskToVectorSpecial:
         {
             op1Reg = op1->GetRegNum();
