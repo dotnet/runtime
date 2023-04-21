@@ -334,10 +334,16 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _defaultStreamErrorCode = options.DefaultStreamErrorCode;
             _defaultCloseErrorCode = options.DefaultCloseErrorCode;
 
+            // RFC 6066 forbids IP literals, avoid setting IP address here for consistency with SslStream
+            if (TargetHostNameHelper.IsValidAddress(targetHost))
+            {
+                targetHost = string.Empty;
+            }
+
             _sslConnectionOptions = new SslConnectionOptions(
                 this,
                 isClient: false,
-                targetHost: targetHost,
+                targetHost,
                 options.ServerAuthenticationOptions.ClientCertificateRequired,
                 options.ServerAuthenticationOptions.CertificateRevocationCheckMode,
                 options.ServerAuthenticationOptions.RemoteCertificateValidationCallback,
