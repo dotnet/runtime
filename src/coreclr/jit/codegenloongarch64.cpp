@@ -8925,7 +8925,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 assert(genIsValidIntReg((regNumber)regArg[i]));
                 assert(genIsValidIntReg((regNumber)regArgInit[i]));
 
-                unsigned tmp_regs[MAX_REG_ARG] = {0};
+                unsigned tmpRegs[MAX_REG_ARG] = {0};
 
                 unsigned tmpArg  = regArg[i];
                 unsigned nextReg = regArgInit[i] - REG_ARG_FIRST;
@@ -8939,13 +8939,13 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
                 while (regArg[nextReg] != 0)
                 {
-                    tmp_regs[count] = nextReg;
-                    nextReg         = regArgInit[nextReg] - REG_ARG_FIRST;
+                    tmpRegs[count] = nextReg;
+                    nextReg        = regArgInit[nextReg] - REG_ARG_FIRST;
                     assert(nextReg < MAX_REG_ARG);
 
                     for (int count2 = 0; count2 < count; count2++)
                     {
-                        if (nextReg == tmp_regs[count2])
+                        if (nextReg == tmpRegs[count2])
                         {
                             NYI_LOONGARCH64("-----------CodeGen::genFnPrologCalleeRegArgs() error: intRegs!");
                         }
@@ -8962,8 +8962,8 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 }
                 else if (count == 0)
                 {
-                    tmp_regs[0] = i;
-                    regArg[i]   = tmpArg;
+                    tmpRegs[0] = i;
+                    regArg[i]  = tmpArg;
                 }
                 else
                 {
@@ -8972,7 +8972,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
                 do
                 {
-                    tmpArg = tmp_regs[count];
+                    tmpArg = tmpRegs[count];
 
                     instruction ins = (regArgMaskIsInt & (1 << regArg[tmpArg])) != 0 ? INS_slli_w : INS_ori;
                     GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[tmpArg],
@@ -8992,7 +8992,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     regArgNum--;
                     assert(regArgNum >= 0);
                 }
-                else if (tmp_regs[0] != i)
+                else if (tmpRegs[0] != i)
                 {
                     instruction ins = (regArgMaskIsInt & (1 << (i + REG_ARG_FIRST))) != 0 ? INS_slli_w : INS_ori;
                     GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i],
