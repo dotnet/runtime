@@ -402,8 +402,10 @@ namespace System.Runtime.InteropServices
             static bool IsRootedCallback(IntPtr pObj)
             {
                 // We are paused in the GC, so this is safe.
-                ManagedObjectWrapperHolder holder = Unsafe.AsRef<ManagedObjectWrapperHolder>((void*)&pObj);
-                return holder._wrapper->IsRooted;
+#pragma warning disable CS8500 // Takes a pointer to a managed type
+                ManagedObjectWrapperHolder* holder = (ManagedObjectWrapperHolder*)&pObj;
+                return holder->_wrapper->IsRooted;
+#pragma warning restore CS8500
             }
 
             private ManagedObjectWrapper* _wrapper;
