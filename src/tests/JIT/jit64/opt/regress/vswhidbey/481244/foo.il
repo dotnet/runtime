@@ -11,7 +11,7 @@
   .ver 2:0:0:0
 }
 .assembly extern xunit.core {}
-.assembly foo
+.assembly ASSEMBLY_NAME
 {
 }
 

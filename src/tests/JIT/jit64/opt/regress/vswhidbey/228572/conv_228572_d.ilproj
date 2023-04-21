@@ -3,6 +3,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="mul_exception.il" />
+    <Compile Include="conv_d.il" />
+    <Compile Include="conv.il" />
   </ItemGroup>
 </Project>

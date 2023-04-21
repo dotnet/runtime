@@ -3,10 +3,10 @@
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
-    <DebugType>PdbOnly</DebugType>
-    <Optimize>True</Optimize>
+    <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="div.il" />
+    <Compile Include="bne_d.il" />
+    <Compile Include="bne.il" />
   </ItemGroup>
 </Project>
