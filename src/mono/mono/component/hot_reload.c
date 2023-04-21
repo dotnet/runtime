@@ -3602,14 +3602,6 @@ recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataU
 
 		added_prop->prop.parent = ginst;
 
-		// if (!info->added_props) {
-		// 	info->added_props = g_list_alloc ();
-		// 	info->added_props->data = (gpointer)added_prop;
-		// }
-		// GSList *l = g_list_append (info->added_props, added_prop);
-		// g_assert (l != NULL && l->next != NULL && l->next->next == NULL);
-		// info->added_props = l->next;
-
 		info->added_props = g_slist_prepend_mem_manager (m_class_get_mem_manager (ginst), info->added_props, (gpointer)added_prop);
 	}
 
@@ -3633,14 +3625,6 @@ recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataU
 		g_assert (is_ok (error)); /*FIXME proper error handling*/
 		
 		added_event->evt.parent = ginst;
-
-		// if (!info->added_events) {
-		// 	info->added_events = g_list_alloc ();
-		// 	info->added_events->data = (gpointer)added_event;
-		// }
-		// GSList *l = g_list_append (info->added_events, added_event);
-		// g_assert (l != NULL && l->next != NULL && l->next->next == NULL);
-		// info->added_events = l->next;
 
 		info->added_events = g_slist_prepend_mem_manager (m_class_get_mem_manager (ginst), info->added_events, (gpointer)added_event);
 	}
