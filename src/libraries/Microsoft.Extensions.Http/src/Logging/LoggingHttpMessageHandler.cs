@@ -69,6 +69,24 @@ namespace Microsoft.Extensions.Http.Logging
             }
         }
 
+        /// <inheritdoc />
+        /// <remarks>Loggs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
+        protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            ThrowHelper.ThrowIfNull(request);
+
+            var shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
+
+            // Not using a scope here because we always expect this to be at the end of the pipeline, thus there's
+            // not really anything to surround.
+            Log.RequestStart(_logger, request, shouldRedactHeaderValue);
+            var stopwatch = ValueStopwatch.StartNew();
+            var response = base.Send(request, cancellationToken);
+            Log.RequestEnd(_logger, response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
+
+            return response;
+        }
+
         // Used in tests.
         internal static class Log
         {
