@@ -3775,7 +3775,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         jtrue->AsCC()->gtCondition = condCode;
     }
 
-    JITDUMP("Result:\n");
+    JITDUMP("Lowering JTRUE Result:\n");
     DISPTREERANGE(BlockRange(), jtrue);
     JITDUMP("\n");
 
@@ -3876,6 +3876,10 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
 //
 bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* cond)
 {
+    JITDUMP("Lowering condition:\n");
+    DISPTREERANGE(BlockRange(), condition);
+    JITDUMP("\n");
+
     if (condition->OperIsCompare())
     {
         if (!IsInvariantInRange(condition, parent))

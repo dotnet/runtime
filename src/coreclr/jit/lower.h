@@ -475,7 +475,7 @@ public:
     }
 
 #ifdef TARGET_ARM64
-    bool IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const;
+    bool IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childNode) const;
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_HW_INTRINSICS)
