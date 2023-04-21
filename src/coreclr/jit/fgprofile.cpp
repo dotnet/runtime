@@ -2337,8 +2337,8 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     if (minimalProfiling && (info.compFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
         //... except a few intrinsics that might still need it:
-        bool shouldBeInstrumented = false;
-        NamedIntrinsic ni         = lookupNamedIntrinsic(info.compMethodHnd);
+        bool           shouldBeInstrumented = false;
+        NamedIntrinsic ni                   = lookupNamedIntrinsic(info.compMethodHnd);
         switch (ni)
         {
             // These are marked as [Intrinsic] only to be handled (unrolled) for constant inputs.
