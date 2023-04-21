@@ -2338,7 +2338,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     {
         //... except a few intrinsics that might still need it:
         bool shouldBeInstrumented = false;
-        NamedIntrinsic ni = lookupNamedIntrinsic(info.compMethodHnd);
+        NamedIntrinsic ni         = lookupNamedIntrinsic(info.compMethodHnd);
         switch (ni)
         {
             // These are marked as [Intrinsic] only to be handled (unrolled) for constant inputs.
