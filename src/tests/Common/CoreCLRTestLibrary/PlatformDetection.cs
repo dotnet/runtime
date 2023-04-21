@@ -27,9 +27,5 @@ namespace TestLibrary
         public static bool IsMonoLLVMAOT => _variant == "llvmaot";
         public static bool IsMonoLLVMFULLAOT => _variant == "llvmfullaot";
         public static bool IsMonoInterpreter => _variant == "monointerpreter";
-
-        public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
-
-        public static bool IsNativeAot => !IsMonoRuntime && !RuntimeFeature.IsDynamicCodeSupported;
     }
 }

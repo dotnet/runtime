@@ -2250,6 +2250,8 @@ uint64_t    gc_heap::gc_last_ephemeral_decommit_time = 0;
 
 CLRCriticalSection gc_heap::check_commit_cs;
 
+CLRCriticalSection gc_heap::decommit_lock;
+
 size_t      gc_heap::current_total_committed = 0;
 
 size_t      gc_heap::committed_by_oh[recorded_committed_bucket_counts];
@@ -2277,12 +2279,12 @@ int         gc_heap::high_mem_percent_from_config = 0;
 
 bool        gc_heap::use_frozen_segments_p = false;
 
-bool        gc_heap::hard_limit_config_p = false;
-
 #ifdef FEATURE_LOH_COMPACTION
 gc_heap::etw_loh_compact_info* gc_heap::loh_compact_info;
 #endif //FEATURE_LOH_COMPACTION
 #endif //FEATURE_EVENT_TRACE
+
+bool        gc_heap::hard_limit_config_p = false;
 
 #if defined(SHORT_PLUGS) && !defined(USE_REGIONS)
 double      gc_heap::short_plugs_pad_ratio = 0;
@@ -3770,7 +3772,7 @@ void region_allocator::print_map (const char* msg)
 
     uint32_t total_regions = (uint32_t)((global_region_end - global_region_start) / region_alignment);
 
-    dprintf (REGIONS_LOG, ("[%s]-----end printing----[%d total, left used %zd (free: %d), right used %zd (free: %d)]\n", heap_type, total_regions, 
+    dprintf (REGIONS_LOG, ("[%s]-----end printing----[%d total, left used %zd (free: %d), right used %zd (free: %d)]\n", heap_type, total_regions,
         (region_map_left_end - region_map_left_start), num_left_used_free_units, (region_map_right_end - region_map_right_start), num_right_used_free_units));
 #endif //_DEBUG
 }
@@ -4049,7 +4051,7 @@ void region_allocator::delete_region_impl (uint8_t* region_start)
         assert (free_index >= region_map_right_start);
         num_right_used_free_units += free_block_size;
     }
-    
+
     if ((current_index != region_map_left_start) && (current_index != region_map_right_start))
     {
         uint32_t previous_val = *(current_index - 1);
@@ -6827,7 +6829,9 @@ void gc_heap::gc_thread_function ()
             uint32_t wait_result = gc_heap::ee_suspend_event.Wait(gradual_decommit_in_progress_p ? DECOMMIT_TIME_STEP_MILLISECONDS : INFINITE, FALSE);
             if (wait_result == WAIT_TIMEOUT)
             {
+                decommit_lock.Enter();
                 gradual_decommit_in_progress_p = decommit_step (DECOMMIT_TIME_STEP_MILLISECONDS);
+                decommit_lock.Leave();
                 continue;
             }
 
@@ -6986,7 +6990,9 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
 
     dprintf(3, ("commit-accounting:  commit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
 
+#ifndef COMMITTED_BYTES_SHADOW
     if (heap_hard_limit)
+#endif //!COMMITTED_BYTES_SHADOW
     {
         check_commit_cs.Enter();
         bool exceeded_p = false;
@@ -7009,6 +7015,11 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
                 exceeded_p = true;
             }
         }
+#ifdef COMMITTED_BYTES_SHADOW
+        if (!heap_hard_limit) {
+            exceeded_p = false;
+        }
+#endif //COMMITTED_BYTES_SHADOW
 
         if (!exceeded_p)
         {
@@ -7087,7 +7098,10 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_nu
 
     dprintf(3, ("commit-accounting:  decommit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
 
-    if (decommit_succeeded_p && heap_hard_limit)
+    if (decommit_succeeded_p)
+#ifndef COMMITTED_BYTES_SHADOW
+    if (heap_hard_limit)
+#endif //!COMMITTED_BYTES_SHADOW
     {
         check_commit_cs.Enter();
         assert (committed_by_oh[bucket] >= size);
@@ -8859,6 +8873,87 @@ bool gc_heap::on_used_changed (uint8_t* new_used)
     return true;
 }
 
+bool gc_heap::get_card_table_commit_layout (uint8_t* from, uint8_t* to,
+                    uint8_t* commit_begins[total_bookkeeping_elements],
+                    size_t commit_sizes[total_bookkeeping_elements],
+                    size_t new_sizes[total_bookkeeping_elements])
+{
+    uint8_t* start = g_gc_lowest_address;
+    uint8_t* end = g_gc_highest_address;
+
+    bool initial_commit = (from == start);
+    bool additional_commit = !initial_commit && (to > from);
+
+    if (!initial_commit && !additional_commit)
+    {
+        return false;
+    }
+#ifdef DEBUG
+    size_t offsets[total_bookkeeping_elements + 1];
+    get_card_table_element_layout(start, end, offsets);
+
+    dprintf (REGIONS_LOG, ("layout"));
+    for (int i = card_table_element; i <= total_bookkeeping_elements; i++)
+    {
+        assert (offsets[i] == card_table_element_layout[i]);
+        dprintf (REGIONS_LOG, ("%zd", card_table_element_layout[i]));
+    }
+#endif //DEBUG
+    get_card_table_element_sizes (start, to, new_sizes);
+#ifdef DEBUG
+    dprintf (REGIONS_LOG, ("new_sizes"));
+    for (int i = card_table_element; i < total_bookkeeping_elements; i++)
+    {
+        dprintf (REGIONS_LOG, ("%zd", new_sizes[i]));
+    }
+    if (additional_commit)
+    {
+        size_t current_sizes[total_bookkeeping_elements];
+        get_card_table_element_sizes (start, from, current_sizes);
+        dprintf (REGIONS_LOG, ("old_sizes"));
+        for (int i = card_table_element; i < total_bookkeeping_elements; i++)
+        {
+            assert (current_sizes[i] == bookkeeping_sizes[i]);
+            dprintf (REGIONS_LOG, ("%zd", bookkeeping_sizes[i]));
+        }
+    }
+#endif //DEBUG
+    for (int i = card_table_element; i <= seg_mapping_table_element; i++)
+    {
+        uint8_t* required_begin = nullptr;
+        uint8_t* required_end = nullptr;
+        uint8_t* commit_begin = nullptr;
+        uint8_t* commit_end = nullptr;
+        if (initial_commit)
+        {
+            required_begin = bookkeeping_start + ((i == card_table_element) ? 0 : card_table_element_layout[i]);
+            required_end = bookkeeping_start + card_table_element_layout[i] + new_sizes[i];
+            commit_begin = align_lower_page(required_begin);
+        }
+        else
+        {
+            assert (additional_commit);
+            required_begin = bookkeeping_start + card_table_element_layout[i] + bookkeeping_sizes[i];
+            required_end = required_begin + new_sizes[i] - bookkeeping_sizes[i];
+            commit_begin = align_on_page(required_begin);
+        }
+        assert (required_begin <= required_end);
+        commit_end = align_on_page(required_end);
+
+        commit_end = min (commit_end, align_lower_page(bookkeeping_start + card_table_element_layout[i + 1]));
+        commit_begin = min (commit_begin, commit_end);
+        assert (commit_begin <= commit_end);
+
+        dprintf (REGIONS_LOG, ("required = [%p, %p), size = %zd", required_begin, required_end, required_end - required_begin));
+        dprintf (REGIONS_LOG, ("commit   = [%p, %p), size = %zd", commit_begin, commit_end, commit_end - commit_begin));
+
+        commit_begins[i] = commit_begin;
+        commit_sizes[i] = (size_t)(commit_end - commit_begin);
+    }
+    dprintf (REGIONS_LOG, ("---------------------------------------"));
+    return true;
+}
+
 bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
 {
     dprintf (REGIONS_LOG, ("inplace_commit_card_table(%p, %p), size = %zd", from, to, to - from));
@@ -8870,76 +8965,7 @@ bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
     size_t commit_sizes[total_bookkeeping_elements];
     size_t new_sizes[total_bookkeeping_elements];
 
-    bool initial_commit = (from == start);
-    bool additional_commit = !initial_commit && (to > from);
-
-    if (initial_commit || additional_commit)
-    {
-#ifdef DEBUG
-        size_t offsets[total_bookkeeping_elements + 1];
-        get_card_table_element_layout(start, end, offsets);
-
-        dprintf (REGIONS_LOG, ("layout"));
-        for (int i = card_table_element; i <= total_bookkeeping_elements; i++)
-        {
-            assert (offsets[i] == card_table_element_layout[i]);
-            dprintf (REGIONS_LOG, ("%zd", card_table_element_layout[i]));
-        }
-#endif
-        get_card_table_element_sizes (start, to, new_sizes);
-#ifdef DEBUG
-        dprintf (REGIONS_LOG, ("new_sizes"));
-        for (int i = card_table_element; i < total_bookkeeping_elements; i++)
-        {
-            dprintf (REGIONS_LOG, ("%zd", new_sizes[i]));
-        }
-        if (additional_commit)
-        {
-            size_t current_sizes[total_bookkeeping_elements];
-            get_card_table_element_sizes (start, from, current_sizes);
-            dprintf (REGIONS_LOG, ("old_sizes"));
-            for (int i = card_table_element; i < total_bookkeeping_elements; i++)
-            {
-                assert (current_sizes[i] == bookkeeping_sizes[i]);
-                dprintf (REGIONS_LOG, ("%zd", bookkeeping_sizes[i]));
-            }
-        }
-#endif
-        for (int i = card_table_element; i <= seg_mapping_table_element; i++)
-        {
-            uint8_t* required_begin = nullptr;
-            uint8_t* required_end = nullptr;
-            uint8_t* commit_begin = nullptr;
-            uint8_t* commit_end = nullptr;
-            if (initial_commit)
-            {
-                required_begin = bookkeeping_start + ((i == card_table_element) ? 0 : card_table_element_layout[i]);
-                required_end = bookkeeping_start + card_table_element_layout[i] + new_sizes[i];
-                commit_begin = align_lower_page(required_begin);
-            }
-            else
-            {
-                assert (additional_commit);
-                required_begin = bookkeeping_start + card_table_element_layout[i] + bookkeeping_sizes[i];
-                required_end = required_begin + new_sizes[i] - bookkeeping_sizes[i];
-                commit_begin = align_on_page(required_begin);
-            }
-            assert (required_begin <= required_end);
-            commit_end = align_on_page(required_end);
-
-            commit_end = min (commit_end, align_lower_page(bookkeeping_start + card_table_element_layout[i + 1]));
-            commit_begin = min (commit_begin, commit_end);
-            assert (commit_begin <= commit_end);
-
-            dprintf (REGIONS_LOG, ("required = [%p, %p), size = %zd", required_begin, required_end, required_end - required_begin));
-            dprintf (REGIONS_LOG, ("commit   = [%p, %p), size = %zd", commit_begin, commit_end, commit_end - commit_begin));
-
-            commit_begins[i] = commit_begin;
-            commit_sizes[i] = (size_t)(commit_end - commit_begin);
-        }
-        dprintf (REGIONS_LOG, ("---------------------------------------"));
-    }
-    else
+    if (!get_card_table_commit_layout(from, to, commit_begins, commit_sizes, new_sizes))
     {
         return true;
     }
@@ -11370,7 +11396,9 @@ void gc_heap::return_free_region (heap_segment* region)
 {
     gc_oh_num oh = heap_segment_oh (region);
     dprintf(3, ("commit-accounting:  from %d to free [%p, %p) for heap %d", oh, get_region_start (region), heap_segment_committed (region), heap_number));
+#ifndef COMMITTED_BYTES_SHADOW
     if (heap_hard_limit)
+#endif //!COMMITTED_BYTES_SHADOW
     {
         size_t committed = heap_segment_committed (region) - get_region_start (region);
         if (committed > 0)
@@ -11456,7 +11484,9 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
 
         gc_oh_num oh = gen_to_oh (gen_number);
         dprintf(3, ("commit-accounting:  from free to %d [%p, %p) for heap %d", oh, get_region_start (region), heap_segment_committed (region), heap_number));
+#ifndef COMMITTED_BYTES_SHADOW
         if (heap_hard_limit)
+#endif //!COMMITTED_BYTES_SHADOW
         {
             size_t committed = heap_segment_committed (region) - get_region_start (region);
             if (committed > 0)
@@ -13710,10 +13740,13 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     int number_of_heaps = 1;
 #endif //MULTIPLE_HEAPS
 
+#ifndef COMMITTED_BYTES_SHADOW
     if (heap_hard_limit)
+#endif //!COMMITTED_BYTES_SHADOW
     {
         check_commit_cs.Initialize();
     }
+    decommit_lock.Initialize();
 
 #ifdef USE_REGIONS
     if (regions_range)
@@ -23254,7 +23287,9 @@ heap_segment* gc_heap::unlink_first_rw_region (int gen_idx)
     dprintf (REGIONS_LOG, ("unlink_first_rw_region on heap: %d gen: %d region: %p", heap_number, gen_idx, heap_segment_mem (region)));
 
 #if defined(_DEBUG) && defined(HOST_64BIT)
+#ifndef COMMITTED_BYTES_SHADOW
     if (heap_hard_limit)
+#endif //!COMMITTED_BYTES_SHADOW
     {
         int old_oh = heap_segment_oh (region);
         int old_heap = heap_segment_heap (region)->heap_number;
@@ -23291,7 +23326,9 @@ void gc_heap::thread_rw_region_front (int gen_idx, heap_segment* region)
     dprintf (REGIONS_LOG, ("thread_rw_region_front on heap: %d gen: %d region: %p", heap_number, gen_idx, heap_segment_mem (region)));
 
 #if defined(_DEBUG) && defined(HOST_64BIT)
+#ifndef COMMITTED_BYTES_SHADOW
     if (heap_hard_limit)
+#endif //!COMMITTED_BYTES_SHADOW
     {
         int new_oh = gen_to_oh (gen_idx);
         int new_heap = this->heap_number;
@@ -27995,7 +28032,7 @@ uint8_t* gc_heap::loh_allocate_in_condemned (size_t size)
 retry:
     {
         heap_segment* seg = generation_allocation_segment (gen);
-        if (!(loh_size_fit_p (size, generation_allocation_pointer (gen), generation_allocation_limit (gen), 
+        if (!(loh_size_fit_p (size, generation_allocation_pointer (gen), generation_allocation_limit (gen),
                               (generation_allocation_limit (gen) == heap_segment_plan_allocated (seg)))))
         {
             if ((!(loh_pinned_plug_que_empty_p()) &&
@@ -45292,127 +45329,11 @@ HRESULT GCHeap::Initialize()
     {
         gc_heap::total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&gc_heap::is_restricted_physical_mem);
     }
-    gc_heap::heap_hard_limit_oh[soh] = 0;
-#ifdef HOST_64BIT
-    gc_heap::heap_hard_limit = (size_t)GCConfig::GetGCHeapHardLimit();
-    gc_heap::heap_hard_limit_oh[soh] = (size_t)GCConfig::GetGCHeapHardLimitSOH();
-    gc_heap::heap_hard_limit_oh[loh] = (size_t)GCConfig::GetGCHeapHardLimitLOH();
-    gc_heap::heap_hard_limit_oh[poh] = (size_t)GCConfig::GetGCHeapHardLimitPOH();
-
     memset (gc_heap::committed_by_oh, 0, sizeof (gc_heap::committed_by_oh));
-
-    gc_heap::use_large_pages_p = GCConfig::GetGCLargePages();
-
-    if (gc_heap::heap_hard_limit_oh[soh] || gc_heap::heap_hard_limit_oh[loh] || gc_heap::heap_hard_limit_oh[poh])
-    {
-        if (!gc_heap::heap_hard_limit_oh[soh])
-        {
-            return CLR_E_GC_BAD_HARD_LIMIT;
-        }
-        if (!gc_heap::heap_hard_limit_oh[loh])
-        {
-            return CLR_E_GC_BAD_HARD_LIMIT;
-        }
-        gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[soh] +
-            gc_heap::heap_hard_limit_oh[loh] + gc_heap::heap_hard_limit_oh[poh];
-    }
-    else
-    {
-        uint32_t percent_of_mem_soh = (uint32_t)GCConfig::GetGCHeapHardLimitSOHPercent();
-        uint32_t percent_of_mem_loh = (uint32_t)GCConfig::GetGCHeapHardLimitLOHPercent();
-        uint32_t percent_of_mem_poh = (uint32_t)GCConfig::GetGCHeapHardLimitPOHPercent();
-        if (percent_of_mem_soh || percent_of_mem_loh || percent_of_mem_poh)
-        {
-            if ((percent_of_mem_soh <= 0) || (percent_of_mem_soh >= 100))
-            {
-                return CLR_E_GC_BAD_HARD_LIMIT;
-            }
-            if ((percent_of_mem_loh <= 0) || (percent_of_mem_loh >= 100))
-            {
-                return CLR_E_GC_BAD_HARD_LIMIT;
-            }
-            else if ((percent_of_mem_poh < 0) || (percent_of_mem_poh >= 100))
-            {
-                return CLR_E_GC_BAD_HARD_LIMIT;
-            }
-            if ((percent_of_mem_soh + percent_of_mem_loh + percent_of_mem_poh) >= 100)
-            {
-                return CLR_E_GC_BAD_HARD_LIMIT;
-            }
-            gc_heap::heap_hard_limit_oh[soh] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_soh / (uint64_t)100);
-            gc_heap::heap_hard_limit_oh[loh] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_loh / (uint64_t)100);
-            gc_heap::heap_hard_limit_oh[poh] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_poh / (uint64_t)100);
-            gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[soh] +
-                gc_heap::heap_hard_limit_oh[loh] + gc_heap::heap_hard_limit_oh[poh];
-        }
-    }
-
-    if (gc_heap::heap_hard_limit_oh[soh] && (!gc_heap::heap_hard_limit_oh[poh]) && (!gc_heap::use_large_pages_p))
+    if (!gc_heap::compute_hard_limit())
     {
         return CLR_E_GC_BAD_HARD_LIMIT;
     }
-
-    if (!(gc_heap::heap_hard_limit))
-    {
-        uint32_t percent_of_mem = (uint32_t)GCConfig::GetGCHeapHardLimitPercent();
-        if ((percent_of_mem > 0) && (percent_of_mem < 100))
-        {
-            gc_heap::heap_hard_limit = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem / (uint64_t)100);
-        }
-    }
-
-    // If the hard limit is specified, the user is saying even if the process is already
-    // running in a container, use this limit for the GC heap.
-    if (gc_heap::heap_hard_limit)
-    {
-#ifdef FEATURE_EVENT_TRACE
-        gc_heap::hard_limit_config_p = true;
-#endif //FEATURE_EVENT_TRACE
-    }
-    else
-    {
-        if (gc_heap::is_restricted_physical_mem)
-        {
-            uint64_t physical_mem_for_gc = gc_heap::total_physical_mem * (uint64_t)75 / (uint64_t)100;
-            gc_heap::heap_hard_limit = (size_t)max ((20 * 1024 * 1024), physical_mem_for_gc);
-        }
-    }
-
-    if ((!gc_heap::heap_hard_limit) && gc_heap::use_large_pages_p)
-    {
-        return CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT;
-    }
-
-#ifdef USE_REGIONS
-    gc_heap::regions_range = (size_t)GCConfig::GetGCRegionRange();
-    if (gc_heap::regions_range == 0)
-    {
-        if (gc_heap::heap_hard_limit)
-        {
-            if (gc_heap::heap_hard_limit_oh[soh])
-            {
-                gc_heap::regions_range = gc_heap::heap_hard_limit;
-            }
-            else
-            {
-                // We use this calculation because it's close to what we used for segments.
-                gc_heap::regions_range = ((gc_heap::use_large_pages_p) ? (2 * gc_heap::heap_hard_limit)
-                                                                       : (5 * gc_heap::heap_hard_limit));
-            }
-        }
-        else
-        {
-            // If no hard_limit is configured the reservation size is max of 256gb or 2x physical limit
-            gc_heap::regions_range = max(((size_t)256 * 1024 * 1024 * 1024), (size_t)(2 * gc_heap::total_physical_mem));
-        }
-        gc_heap::regions_range = align_on_page(gc_heap::regions_range);
-    }
-
-    GCConfig::SetGCRegionRange(gc_heap::regions_range);
-#endif //USE_REGIONS
-
-#endif //HOST_64BIT
-    GCConfig::SetGCLargePages(gc_heap::use_large_pages_p);
 
     uint32_t nhp = 1;
     uint32_t nhp_from_config = 0;
@@ -45478,32 +45399,51 @@ HRESULT GCHeap::Initialize()
     }
 #endif //!MULTIPLE_HEAPS
 
+    if (gc_heap::heap_hard_limit)
+    {
+        gc_heap::hard_limit_config_p = true;
+    }
+
+    size_t seg_size_from_config = 0;
+    bool compute_memory_settings_succeed = gc_heap::compute_memory_settings(true, nhp, nhp_from_config, seg_size_from_config, 0);
+    assert (compute_memory_settings_succeed);
+
+    if ((!gc_heap::heap_hard_limit) && gc_heap::use_large_pages_p)
+    {
+        return CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT;
+    }
+    GCConfig::SetGCLargePages(gc_heap::use_large_pages_p);
+
+#ifdef USE_REGIONS
+    gc_heap::regions_range = (size_t)GCConfig::GetGCRegionRange();
+    if (gc_heap::regions_range == 0)
+    {
+        if (gc_heap::heap_hard_limit)
+        {
+            if (gc_heap::heap_hard_limit_oh[soh])
+            {
+                gc_heap::regions_range = gc_heap::heap_hard_limit;
+            }
+            else
+            {
+                // We use this calculation because it's close to what we used for segments.
+                gc_heap::regions_range = ((gc_heap::use_large_pages_p) ? (2 * gc_heap::heap_hard_limit)
+                                                                       : (5 * gc_heap::heap_hard_limit));
+            }
+        }
+        else
+        {
+            // If no hard_limit is configured the reservation size is max of 256gb or 2x physical limit
+            gc_heap::regions_range = max(((size_t)256 * 1024 * 1024 * 1024), (size_t)(2 * gc_heap::total_physical_mem));
+        }
+        gc_heap::regions_range = align_on_page(gc_heap::regions_range);
+    }
+    GCConfig::SetGCRegionRange(gc_heap::regions_range);
+#endif //USE_REGIONS
+
     size_t seg_size = 0;
     size_t large_seg_size = 0;
     size_t pin_seg_size = 0;
-    size_t seg_size_from_config = 0;
-
-    if (gc_heap::heap_hard_limit)
-    {
-        if (!nhp_from_config)
-        {
-            nhp = gc_heap::adjust_heaps_hard_limit (nhp);
-        }
-
-        seg_size_from_config = (size_t)GCConfig::GetSegmentSize();
-        if (seg_size_from_config)
-        {
-            seg_size_from_config = gc_heap::adjust_segment_size_hard_limit_va (seg_size_from_config);
-        }
-
-        size_t limit_to_check = (gc_heap::heap_hard_limit_oh[soh] ? gc_heap::heap_hard_limit_oh[soh] : gc_heap::heap_hard_limit);
-        gc_heap::soh_segment_size = max (gc_heap::adjust_segment_size_hard_limit (limit_to_check, nhp), seg_size_from_config);
-    }
-    else
-    {
-        gc_heap::soh_segment_size = get_valid_segment_size();
-    }
-
     seg_size = gc_heap::soh_segment_size;
 
 #ifndef USE_REGIONS
@@ -45551,8 +45491,8 @@ HRESULT GCHeap::Initialize()
     gc_heap::enable_special_regions_p = (bool)GCConfig::GetGCEnableSpecialRegions();
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
 
-    // Constraining the size of region size to be < 2 GB.       
-    if (gc_region_size >= MAX_REGION_SIZE) 
+    // Constraining the size of region size to be < 2 GB.
+    if (gc_region_size >= MAX_REGION_SIZE)
     {
         return CLR_E_GC_BAD_REGION_SIZE;
     }
@@ -45604,41 +45544,6 @@ HRESULT GCHeap::Initialize()
 
     if (hr != S_OK)
         return hr;
-
-    gc_heap::mem_one_percent = gc_heap::total_physical_mem / 100;
-#ifndef MULTIPLE_HEAPS
-    gc_heap::mem_one_percent /= g_num_processors;
-#endif //!MULTIPLE_HEAPS
-
-    uint32_t highmem_th_from_config = (uint32_t)GCConfig::GetGCHighMemPercent();
-    if (highmem_th_from_config)
-    {
-        gc_heap::high_memory_load_th = min (99, highmem_th_from_config);
-        gc_heap::v_high_memory_load_th = min (99, (highmem_th_from_config + 7));
-#ifdef FEATURE_EVENT_TRACE
-        gc_heap::high_mem_percent_from_config = highmem_th_from_config;
-#endif //FEATURE_EVENT_TRACE
-    }
-    else
-    {
-        // We should only use this if we are in the "many process" mode which really is only applicable
-        // to very powerful machines - before that's implemented, temporarily I am only enabling this for 80GB+ memory.
-        // For now I am using an estimate to calculate these numbers but this should really be obtained
-        // programmatically going forward.
-        // I am assuming 47 processes using WKS GC and 3 using SVR GC.
-        // I am assuming 3 in part due to the "very high memory load" is 97%.
-        int available_mem_th = 10;
-        if (gc_heap::total_physical_mem >= ((uint64_t)80 * 1024 * 1024 * 1024))
-        {
-            int adjusted_available_mem_th = 3 + (int)((float)47 / (float)g_num_processors);
-            available_mem_th = min (available_mem_th, adjusted_available_mem_th);
-        }
-
-        gc_heap::high_memory_load_th = 100 - available_mem_th;
-        gc_heap::v_high_memory_load_th = 97;
-    }
-
-    gc_heap::m_high_memory_load_th = min ((gc_heap::high_memory_load_th + 5), gc_heap::v_high_memory_load_th);
 
     gc_heap::pm_stress_on = (GCConfig::GetGCProvModeStress() != 0);
 
@@ -47499,6 +47404,12 @@ size_t
 GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 {
     dprintf (2, ("triggered a GC!"));
+
+#ifdef COMMITTED_BYTES_SHADOW
+    // This stress the refresh memory limit work by
+    // refreshing all the time when a GC happens.
+    GCHeap::RefreshMemoryLimit();
+#endif //COMMITTED_BYTES_SHADOW
 
 #ifdef MULTIPLE_HEAPS
     gc_heap* hpt = gc_heap::g_heaps[0];
@@ -49377,3 +49288,421 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->generation_field_offsets = reinterpret_cast<int**>(&generation_field_offsets);
     gcDacVars->bookkeeping_start = &gc_heap::bookkeeping_start;
 }
+
+int GCHeap::RefreshMemoryLimit()
+{
+    return gc_heap::refresh_memory_limit();
+}
+
+bool gc_heap::compute_hard_limit()
+{
+    heap_hard_limit_oh[soh] = 0;
+#ifdef HOST_64BIT
+    heap_hard_limit = (size_t)GCConfig::GetGCHeapHardLimit();
+    heap_hard_limit_oh[soh] = (size_t)GCConfig::GetGCHeapHardLimitSOH();
+    heap_hard_limit_oh[loh] = (size_t)GCConfig::GetGCHeapHardLimitLOH();
+    heap_hard_limit_oh[poh] = (size_t)GCConfig::GetGCHeapHardLimitPOH();
+
+    use_large_pages_p = GCConfig::GetGCLargePages();
+
+    if (heap_hard_limit_oh[soh] || heap_hard_limit_oh[loh] || heap_hard_limit_oh[poh])
+    {
+        if (!heap_hard_limit_oh[soh])
+        {
+            return false;
+        }
+        if (!heap_hard_limit_oh[loh])
+        {
+            return false;
+        }
+        heap_hard_limit = heap_hard_limit_oh[soh] +
+            heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh];
+    }
+    else
+    {
+        uint32_t percent_of_mem_soh = (uint32_t)GCConfig::GetGCHeapHardLimitSOHPercent();
+        uint32_t percent_of_mem_loh = (uint32_t)GCConfig::GetGCHeapHardLimitLOHPercent();
+        uint32_t percent_of_mem_poh = (uint32_t)GCConfig::GetGCHeapHardLimitPOHPercent();
+        if (percent_of_mem_soh || percent_of_mem_loh || percent_of_mem_poh)
+        {
+            if ((percent_of_mem_soh <= 0) || (percent_of_mem_soh >= 100))
+            {
+                return false;
+            }
+            if ((percent_of_mem_loh <= 0) || (percent_of_mem_loh >= 100))
+            {
+                return false;
+            }
+            else if ((percent_of_mem_poh < 0) || (percent_of_mem_poh >= 100))
+            {
+                return false;
+            }
+            if ((percent_of_mem_soh + percent_of_mem_loh + percent_of_mem_poh) >= 100)
+            {
+                return false;
+            }
+            heap_hard_limit_oh[soh] = (size_t)(total_physical_mem * (uint64_t)percent_of_mem_soh / (uint64_t)100);
+            heap_hard_limit_oh[loh] = (size_t)(total_physical_mem * (uint64_t)percent_of_mem_loh / (uint64_t)100);
+            heap_hard_limit_oh[poh] = (size_t)(total_physical_mem * (uint64_t)percent_of_mem_poh / (uint64_t)100);
+            heap_hard_limit = heap_hard_limit_oh[soh] +
+                heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh];
+        }
+    }
+
+    if (heap_hard_limit_oh[soh] && (!heap_hard_limit_oh[poh]) && (!use_large_pages_p))
+    {
+        return false;
+    }
+
+    if (!(heap_hard_limit))
+    {
+        uint32_t percent_of_mem = (uint32_t)GCConfig::GetGCHeapHardLimitPercent();
+        if ((percent_of_mem > 0) && (percent_of_mem < 100))
+        {
+            heap_hard_limit = (size_t)(total_physical_mem * (uint64_t)percent_of_mem / (uint64_t)100);
+        }
+    }
+#endif //HOST_64BIT
+    return true;
+}
+
+bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t nhp_from_config, size_t& seg_size_from_config, size_t new_current_total_committed)
+{
+    // If the hard limit is specified, the user is saying even if the process is already
+    // running in a container, use this limit for the GC heap.
+    if (!hard_limit_config_p)
+    {
+        if (is_restricted_physical_mem)
+        {
+            uint64_t physical_mem_for_gc = total_physical_mem * (uint64_t)75 / (uint64_t)100;
+#ifndef USE_REGIONS
+            // Establishing a heap_hard_limit when we don't already have one requires
+            // us to figure out how many bytes are committed for what purposes. This is going
+            // to be very tedious for segments and therefore we chose not to support this scenario.
+            if (is_initialization)
+#endif //USE_REGIONS
+            {
+                heap_hard_limit = (size_t)max ((20 * 1024 * 1024), physical_mem_for_gc);
+            }
+        }
+    }
+
+    if (heap_hard_limit && (heap_hard_limit < new_current_total_committed))
+    {
+        return false;
+    }
+
+#ifdef USE_REGIONS
+    {
+#else
+    // Changing segment size in the hard limit case for segments is not supported
+    if (is_initialization)
+    {
+#endif //USE_REGIONS
+        if (heap_hard_limit)
+        {
+            if (is_initialization && (!nhp_from_config))
+            {
+                nhp = adjust_heaps_hard_limit (nhp);
+            }
+
+            seg_size_from_config = (size_t)GCConfig::GetSegmentSize();
+            if (seg_size_from_config)
+            {
+                seg_size_from_config = adjust_segment_size_hard_limit_va (seg_size_from_config);
+            }
+
+            size_t limit_to_check = (heap_hard_limit_oh[soh] ? heap_hard_limit_oh[soh] : heap_hard_limit);
+            soh_segment_size = max (adjust_segment_size_hard_limit (limit_to_check, nhp), seg_size_from_config);
+        }
+        else
+        {
+            soh_segment_size = get_valid_segment_size();
+        }
+    }
+
+    mem_one_percent = total_physical_mem / 100;
+#ifndef MULTIPLE_HEAPS
+    mem_one_percent /= g_num_processors;
+#endif //!MULTIPLE_HEAPS
+
+    uint32_t highmem_th_from_config = (uint32_t)GCConfig::GetGCHighMemPercent();
+    if (highmem_th_from_config)
+    {
+        high_memory_load_th = min (99, highmem_th_from_config);
+        v_high_memory_load_th = min (99, (highmem_th_from_config + 7));
+#ifdef FEATURE_EVENT_TRACE
+        high_mem_percent_from_config = highmem_th_from_config;
+#endif //FEATURE_EVENT_TRACE
+    }
+    else
+    {
+        // We should only use this if we are in the "many process" mode which really is only applicable
+        // to very powerful machines - before that's implemented, temporarily I am only enabling this for 80GB+ memory.
+        // For now I am using an estimate to calculate these numbers but this should really be obtained
+        // programmatically going forward.
+        // I am assuming 47 processes using WKS GC and 3 using SVR GC.
+        // I am assuming 3 in part due to the "very high memory load" is 97%.
+        int available_mem_th = 10;
+        if (total_physical_mem >= ((uint64_t)80 * 1024 * 1024 * 1024))
+        {
+            int adjusted_available_mem_th = 3 + (int)((float)47 / (float)g_num_processors);
+            available_mem_th = min (available_mem_th, adjusted_available_mem_th);
+        }
+
+        high_memory_load_th = 100 - available_mem_th;
+        v_high_memory_load_th = 97;
+    }
+
+    m_high_memory_load_th = min ((high_memory_load_th + 5), v_high_memory_load_th);
+
+    return true;
+}
+
+int gc_heap::refresh_memory_limit()
+{
+    int status = REFRESH_MEMORY_SUCCEED;
+
+    if (GCConfig::GetGCTotalPhysicalMemory() != 0)
+    {
+        return status;
+    }
+
+    GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
+
+#ifdef USE_REGIONS
+    decommit_lock.Enter();
+    size_t total_committed = 0;
+    size_t committed_bookkeeping = 0;
+    size_t new_current_total_committed;
+    size_t new_current_total_committed_bookkeeping;
+    size_t new_committed_by_oh[recorded_committed_bucket_counts];
+
+    // Accounting for the bytes committed for the regions
+    for (int oh = soh; oh < total_oh_count; oh++)
+    {
+        int start_generation = (oh == 0) ? 0 : oh + max_generation;
+        int end_generation = oh + max_generation;
+        size_t total_committed_per_oh = 0;
+#ifdef MULTIPLE_HEAPS
+        for (int h = 0; h < n_heaps; h++)
+        {
+            gc_heap* heap = g_heaps[h];
+#else
+        {
+            gc_heap* heap = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+            size_t total_committed_per_heap = 0;
+            for (int gen = start_generation; gen <= end_generation; gen++)
+            {
+                heap->accumulate_committed_bytes ( generation_start_segment (heap->generation_of (gen)), total_committed_per_heap, committed_bookkeeping);
+            }
+            if (oh == soh)
+            {
+                heap->accumulate_committed_bytes (heap->freeable_soh_segment, total_committed_per_heap, committed_bookkeeping);
+            }
+            else
+            {
+                heap->accumulate_committed_bytes (heap->freeable_uoh_segment, total_committed_per_heap, committed_bookkeeping, (gc_oh_num)oh);
+            }
+#if defined(MULTIPLE_HEAPS) && defined(_DEBUG)
+            heap->committed_by_oh_per_heap_refresh[oh] = total_committed_per_heap;
+#endif //MULTIPLE_HEAPS && _DEBUG
+            total_committed_per_oh += total_committed_per_heap;
+        }
+        new_committed_by_oh[oh] = total_committed_per_oh;
+        total_committed += total_committed_per_oh;
+    }
+
+    // Accounting for the bytes committed for the free lists
+    size_t committed_free = 0;
+#ifdef MULTIPLE_HEAPS
+    for (int h = 0; h < n_heaps; h++)
+    {
+        gc_heap* heap = g_heaps[h];
+#else
+    {
+        gc_heap* heap = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+        for (int i = 0; i < count_free_region_kinds; i++)
+        {
+            heap_segment* seg = heap->free_regions[i].get_first_free_region();
+            heap->accumulate_committed_bytes (seg, committed_free, committed_bookkeeping);
+        }
+    }
+    for (int i = 0; i < count_free_region_kinds; i++)
+    {
+        heap_segment* seg = global_regions_to_decommit[i].get_first_free_region();
+#ifdef MULTIPLE_HEAPS
+        gc_heap* heap = g_heaps[0];
+#else
+        gc_heap* heap = nullptr;
+#endif //MULTIPLE_HEAPS
+        heap->accumulate_committed_bytes (seg, committed_free, committed_bookkeeping);
+    }
+    {
+        heap_segment* seg = global_free_huge_regions.get_first_free_region();
+#ifdef MULTIPLE_HEAPS
+        gc_heap* heap = g_heaps[0];
+#else
+        gc_heap* heap = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+        heap->accumulate_committed_bytes (seg, committed_free, committed_bookkeeping);
+    }
+
+    new_committed_by_oh[recorded_committed_free_bucket] = committed_free;
+    total_committed += committed_free;
+
+    // Accounting for the bytes committed for the book keeping elements
+    uint8_t* commit_begins[total_bookkeeping_elements];
+    size_t commit_sizes[total_bookkeeping_elements];
+    size_t new_sizes[total_bookkeeping_elements];
+    bool get_card_table_commit_layout_result = get_card_table_commit_layout(g_gc_lowest_address, bookkeeping_covered_committed, commit_begins, commit_sizes, new_sizes);
+    assert (get_card_table_commit_layout_result);
+
+    for (int i = card_table_element; i <= seg_mapping_table_element; i++)
+    {
+        // In case background GC is disabled - the software write watch table is still there
+        // but with size 0
+        assert (commit_sizes[i] >= 0);
+        committed_bookkeeping += commit_sizes[i];
+    }
+
+    new_current_total_committed_bookkeeping = committed_bookkeeping;
+    new_committed_by_oh[recorded_committed_bookkeeping_bucket] = committed_bookkeeping;
+    total_committed += committed_bookkeeping;
+    new_current_total_committed = total_committed;
+#endif //USE_REGIONS
+
+    uint32_t nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
+#ifdef MULTIPLE_HEAPS
+    uint32_t nhp = n_heaps;
+#else
+    uint32_t nhp = 1;
+#endif //MULTIPLE_HEAPS
+    size_t seg_size_from_config;
+
+    bool old_is_restricted_physical_mem = is_restricted_physical_mem;
+    uint64_t old_total_physical_mem = total_physical_mem;
+    size_t old_heap_hard_limit = heap_hard_limit;
+    size_t old_heap_hard_limit_soh = heap_hard_limit_oh[soh];
+    size_t old_heap_hard_limit_loh = heap_hard_limit_oh[loh];
+    size_t old_heap_hard_limit_poh = heap_hard_limit_oh[poh];
+    bool old_hard_limit_config_p = hard_limit_config_p;
+
+    total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&is_restricted_physical_mem);
+
+    bool succeed = true;
+
+#ifdef USE_REGIONS
+    GCConfig::RefreshHeapHardLimitSettings();
+
+    if (!compute_hard_limit())
+    {
+        succeed = false;
+        status = REFRESH_MEMORY_HARD_LIMIT_INVALID;
+    }
+    hard_limit_config_p = heap_hard_limit != 0;
+#else
+    size_t new_current_total_committed = 0;
+#endif //USE_REGIONS
+
+    if (succeed && !compute_memory_settings(false, nhp, nhp_from_config, seg_size_from_config, new_current_total_committed))
+    {
+        succeed = false;
+        status = REFRESH_MEMORY_HARD_LIMIT_TOO_LOW;
+    }
+
+    if (!succeed)
+    {
+        is_restricted_physical_mem = old_is_restricted_physical_mem;
+        total_physical_mem = old_total_physical_mem;
+        heap_hard_limit = old_heap_hard_limit;
+        heap_hard_limit_oh[soh] = old_heap_hard_limit_soh;
+        heap_hard_limit_oh[loh] = old_heap_hard_limit_loh;
+        heap_hard_limit_oh[poh] = old_heap_hard_limit_poh;
+        hard_limit_config_p = old_hard_limit_config_p;
+    }
+    else
+#ifndef COMMITTED_BYTES_SHADOW
+    if (!old_heap_hard_limit && heap_hard_limit)
+#endif //COMMITTED_BYTES_SHADOW
+    {
+#ifdef USE_REGIONS
+        check_commit_cs.Initialize();
+#ifdef COMMITTED_BYTES_SHADOW
+        assert (new_current_total_committed == current_total_committed);
+        assert (new_current_total_committed_bookkeeping == current_total_committed_bookkeeping);
+#else
+        current_total_committed = new_current_total_committed;
+        current_total_committed_bookkeeping = new_current_total_committed_bookkeeping;
+#endif
+        for (int i = 0; i < recorded_committed_bucket_counts; i++)
+        {
+#ifdef COMMITTED_BYTES_SHADOW
+            assert (new_committed_by_oh[i] == committed_by_oh[i]);
+#else
+            new_committed_by_oh[i] = committed_by_oh[i];
+#endif
+        }
+#ifdef MULTIPLE_HEAPS
+#ifdef _DEBUG
+        for (int h = 0; h < n_heaps; h++)
+        {
+            for (int oh = soh; oh < total_oh_count; oh++)
+            {
+#ifdef COMMITTED_BYTES_SHADOW
+                assert (g_heaps[h]->committed_by_oh_per_heap[oh] == g_heaps[h]->committed_by_oh_per_heap_refresh[oh]);
+#else
+                g_heaps[h]->committed_by_oh_per_heap[oh] = g_heaps[h]->committed_by_oh_per_heap_refresh[oh];
+#endif
+            }
+        }
+#endif //_DEBUG
+#endif //MULTIPLE_HEAPS
+#else
+        assert (!"NYI - Segments");
+#endif //USE_REGIONS
+    }
+
+
+#ifdef USE_REGIONS
+    decommit_lock.Leave();
+#endif
+    GCToEEInterface::RestartEE(TRUE);
+
+    return status;
+}
+
+#ifdef USE_REGIONS
+
+void gc_heap::accumulate_committed_bytes(heap_segment* seg, size_t& committed_bytes, size_t& mark_array_committed_bytes, gc_oh_num oh)
+{
+    seg = heap_segment_rw (seg);
+    while (seg)
+    {
+        if ((oh == unknown) || (heap_segment_oh (seg) == oh))
+        {
+            mark_array_committed_bytes += get_mark_array_size (seg);
+            committed_bytes += (heap_segment_committed (seg) - get_region_start (seg));
+        }
+        seg = heap_segment_next_rw (seg);
+    }
+}
+
+size_t gc_heap::get_mark_array_size (heap_segment* seg)
+{
+    if (seg->flags & heap_segment_flags_ma_committed)
+    {
+        uint32_t* mark_array_addr = mark_array;
+        uint8_t* begin = get_start_address (seg);
+        uint8_t* end = heap_segment_reserved (seg);
+        size_t beg_word = mark_word_of (begin);
+        size_t end_word = mark_word_of (align_on_mark_word (end));
+        uint8_t* commit_start = align_lower_page ((uint8_t*)&mark_array_addr[beg_word]);
+        uint8_t* commit_end = align_on_page ((uint8_t*)&mark_array_addr[end_word]);
+        return (size_t)(commit_end - commit_start);
+    }
+    return 0;
+}
+#endif //USE_REGIONS

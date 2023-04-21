@@ -1482,10 +1482,8 @@ export function append_memset_dest (builder: WasmBuilder, value: number, count: 
 
 export function try_append_memmove_fast (
     builder: WasmBuilder, destLocalOffset: number, srcLocalOffset: number,
-    count: number, addressesOnStack: boolean
+    count: number, addressesOnStack: boolean, destLocal?: string, srcLocal?: string
 ) {
-    let destLocal = "math_lhs32", srcLocal = "math_rhs32";
-
     if (count <= 0) {
         if (addressesOnStack) {
             builder.appendU8(WasmOpcode.drop);
@@ -1498,10 +1496,14 @@ export function try_append_memmove_fast (
         return false;
 
     if (addressesOnStack) {
+        destLocal = destLocal || "math_lhs32";
+        srcLocal = srcLocal || "math_rhs32";
         builder.local(srcLocal, WasmOpcode.set_local);
         builder.local(destLocal, WasmOpcode.set_local);
-    } else {
+    } else if (!destLocal || !srcLocal) {
         destLocal = srcLocal = "pLocals";
+    } else {
+        // the addresses were already stored in the local args
     }
 
     let destOffset = addressesOnStack ? 0 : destLocalOffset,
