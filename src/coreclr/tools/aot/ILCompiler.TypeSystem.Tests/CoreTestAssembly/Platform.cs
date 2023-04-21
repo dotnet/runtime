@@ -60,6 +60,11 @@ namespace System
     public struct RuntimeMethodHandle { }
     public struct RuntimeFieldHandle { }
 
+    public class Type
+    {
+        public static Type GetTypeFromHandle(RuntimeTypeHandle handle) => null;
+    }
+
     public class Attribute { }
     public class AttributeUsageAttribute : Attribute
     {
@@ -159,9 +164,14 @@ namespace System.Runtime.CompilerServices
     {
     }
 
+    public class CallConvCdecl { }
+    public class CallConvStdcall { }
+    public class CallConvSuppressGCTransition { }
+
     public static class RuntimeFeature
     {
         public const string ByRefFields = nameof(ByRefFields);
+        public const string UnmanagedSignatureCallingConvention = nameof(UnmanagedSignatureCallingConvention);
         public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
     }
 

@@ -954,10 +954,10 @@
         <Destination>$(RuntimeBinDir)%(_MonoRuntimeComponentsSharedFilePath.Filename)%(_MonoRuntimeComponentsSharedFilePath.Extension)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRid)\$(MonoAotCrossFileName)</Destination>
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossFileName)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossPdbFilePath)" Condition="Exists('$(_MonoAotCrossPdbFilePath)')">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRid)\$(MonoAotCrossPdbFileName)</Destination>
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossPdbFileName)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\bin\llc$(ExeSuffix)">
         <Destination>$(RuntimeBinDir)\llc$(ExeSuffix)</Destination>
@@ -966,10 +966,10 @@
         <Destination>$(RuntimeBinDir)\opt$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(MonoAOTBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\bin\llc$(ExeSuffix)">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRid)\llc$(ExeSuffix)</Destination>
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\llc$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(MonoAOTBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\bin\opt$(ExeSuffix)">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRid)\opt$(ExeSuffix)</Destination>
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\opt$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
       <_MonoRuntimeArtifacts Condition="'$(MonoComponentsStatic)' != 'true' and Exists('$(MonoObjDir)out\lib\Mono.release.framework')" Include="@(_MonoRuntimeComponentsSharedFilePath)">
@@ -981,7 +981,10 @@
       <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Versions\Current\Mono.release">
         <Destination>$(RuntimeBinDir)\Mono.release.framework\Mono</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Mono.release.dwarf">
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and !Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Mono.release.dwarf">
+        <Destination>$(RuntimeBinDir)\Mono.release.framework\Mono.dwarf</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Versions\Current\Mono.release.dwarf">
         <Destination>$(RuntimeBinDir)\Mono.release.framework\Mono.dwarf</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(MonoComponentsStatic)' != 'true' and Exists('$(MonoObjDir)out\lib\Mono.debug.framework')" Include="@(_MonoRuntimeComponentsSharedFilePath)">
@@ -993,7 +996,10 @@
       <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework') and Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Versions\Current\Mono.debug">
         <Destination>$(RuntimeBinDir)\Mono.debug.framework\Mono</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Mono.debug.dwarf">
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework') and !Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Mono.debug.dwarf">
+        <Destination>$(RuntimeBinDir)\Mono.debug.framework\Mono.dwarf</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework') and Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Versions\Current\Mono.debug.dwarf">
         <Destination>$(RuntimeBinDir)\Mono.debug.framework\Mono.dwarf</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and !Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Info.plist">

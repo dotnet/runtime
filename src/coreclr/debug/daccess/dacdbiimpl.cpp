@@ -5199,7 +5199,7 @@ void DacDbiInterfaceImpl::Hijack(
     HRESULT hr = m_pTarget->GetThreadContext(
         dwThreadId,
         CONTEXT_FULL,
-        sizeof(ctx),
+        sizeof(DT_CONTEXT),
         (BYTE*) &ctx);
     IfFailThrow(hr);
 
@@ -5346,7 +5346,7 @@ void DacDbiInterfaceImpl::Hijack(
     //
     // Commit the context.
     //
-    hr = m_pMutableTarget->SetThreadContext(dwThreadId, sizeof(ctx), reinterpret_cast<BYTE*> (&ctx));
+    hr = m_pMutableTarget->SetThreadContext(dwThreadId, sizeof(DT_CONTEXT), reinterpret_cast<BYTE*> (&ctx));
     IfFailThrow(hr);
 }
 
@@ -5717,7 +5717,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
         pContextBuffer->ContextFlags = DT_CONTEXT_ALL;
         HRESULT hr = m_pTarget->GetThreadContext(pThread->GetOSThreadId(),
                                                 pContextBuffer->ContextFlags,
-                                                sizeof(*pContextBuffer),
+                                                sizeof(DT_CONTEXT),
                                                 reinterpret_cast<BYTE *>(pContextBuffer));
         if (hr == E_NOTIMPL)
         {

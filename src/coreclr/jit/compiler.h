@@ -1355,7 +1355,7 @@ public:
 
     static IntegralRange ForNode(GenTree* node, Compiler* compiler);
     static IntegralRange ForCastInput(GenTreeCast* cast);
-    static IntegralRange ForCastOutput(GenTreeCast* cast);
+    static IntegralRange ForCastOutput(GenTreeCast* cast, Compiler* compiler);
     static IntegralRange Union(IntegralRange range1, IntegralRange range2);
 
 #ifdef DEBUG
@@ -2501,6 +2501,8 @@ public:
 
     GenTreeVecCon* gtNewVconNode(var_types type);
 
+    GenTreeVecCon* gtNewVconNode(var_types type, void* data);
+
     GenTree* gtNewAllBitsSetConNode(var_types type);
 
     GenTree* gtNewZeroConNode(var_types type);
@@ -2516,8 +2518,6 @@ public:
     GenTree* gtNewBitCastNode(var_types type, GenTree* arg);
 
 public:
-    GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
-
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
                                CORINFO_METHOD_HANDLE handle,
                                var_types             type,
@@ -2833,6 +2833,19 @@ public:
 
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
+    GenTree* gtNewLoadValueNode(
+        var_types type, ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
+
+    GenTree* gtNewLoadValueNode(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        return gtNewLoadValueNode(layout->GetType(), layout, addr, indirFlags);
+    }
+
+    GenTree* gtNewLoadValueNode(var_types type, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        return gtNewLoadValueNode(type, nullptr, addr, indirFlags);
+    }
+
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 
     var_types gtTypeForNullCheck(GenTree* tree);
@@ -2851,7 +2864,6 @@ public:
                               CORINFO_ACCESS_FLAGS    access,
                               CORINFO_FIELD_INFO*     pFieldInfo,
                               var_types               lclTyp,
-                              CORINFO_CLASS_HANDLE    structType,
                               GenTree*                assg);
 
     GenTree* gtNewNothingNode();
@@ -8608,9 +8620,7 @@ private:
         return getBaseJitTypeAndSizeOfSIMDType(typeHnd, nullptr);
     }
 
-    // Pops and returns GenTree node from importers type stack.
-    // Normalizes TYP_STRUCT value in case of GT_CALL, GT_RET_EXPR and arg nodes.
-    GenTree* impSIMDPopStack(var_types type, bool expectAddr = false, CORINFO_CLASS_HANDLE structType = nullptr);
+    GenTree* impSIMDPopStack();
 
     void setLclRelatedToSIMDIntrinsic(GenTree* tree);
     bool areFieldsContiguous(GenTree* op1, GenTree* op2);
@@ -10111,6 +10121,9 @@ public:
     ClassLayout* typGetObjLayout(CORINFO_CLASS_HANDLE classHandle);
     // Get the number of a layout for the specified class handle.
     unsigned typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle);
+
+    var_types TypeHandleToVarType(CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
+    var_types TypeHandleToVarType(CorInfoType jitType, CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
 
 //-------------------------- Global Compiler Data ------------------------------------
 

@@ -64,6 +64,9 @@ namespace Internal.Reflection.Core.Execution
 
         public abstract bool TryGetMultiDimArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, int rank, out RuntimeTypeHandle arrayTypeHandle);
 
+        public abstract bool TryGetFunctionPointerTypeForComponents(RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, bool isUnmanaged, out RuntimeTypeHandle functionPointerTypeHandle);
+        public abstract void GetFunctionPointerTypeComponents(RuntimeTypeHandle functionPointerHandle, out RuntimeTypeHandle returnTypeHandle, out RuntimeTypeHandle[] parameterHandles, out bool isUnmanaged);
+
         public abstract bool TryGetPointerTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle pointerTypeHandle);
         public abstract bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle);
 
