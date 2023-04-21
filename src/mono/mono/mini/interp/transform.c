@@ -4175,15 +4175,14 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	td->il_locals_offset = offset;
 	for (int i = 0; i < num_il_locals; ++i) {
 		int index = num_args + i;
-		size = mono_type_size (header->locals [i], &align);
+		int mt = mint_type (header->locals [i]);
+		size = interp_type_size (header->locals [i], mt, &align);
 		if (header->locals [i]->type == MONO_TYPE_VALUETYPE) {
 			if (mono_class_has_failure (header->locals [i]->data.klass)) {
 				mono_error_set_for_class_failure (error, header->locals [i]->data.klass);
 				return;
 			}
 		}
-		int mt = mint_type (header->locals [i]);
-		size = interp_type_size (header->locals [i], mt, &align);
 		offset = ALIGN_TO (offset, align);
 		imethod->local_offsets [i] = offset;
 		td->locals [index].type = header->locals [i];
