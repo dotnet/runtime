@@ -430,8 +430,11 @@ public:
   virtual ~AbstractUnwindCursor() {}
   virtual bool validReg(int) { _LIBUNWIND_ABORT("validReg not implemented"); }
   virtual unw_word_t getReg(int) { _LIBUNWIND_ABORT("getReg not implemented"); }
-  virtual void setReg(int, unw_word_t) {
+  virtual void setReg(int, unw_word_t, unw_word_t) {
     _LIBUNWIND_ABORT("setReg not implemented");
+  }
+  virtual unw_word_t getRegLocation(int) { 
+    _LIBUNWIND_ABORT("getRegLocation not implemented");
   }
   virtual bool validFloatReg(int) {
     _LIBUNWIND_ABORT("validFloatReg not implemented");
@@ -916,12 +919,14 @@ template <typename A, typename R>
 class UnwindCursor : public AbstractUnwindCursor{
   typedef typename A::pint_t pint_t;
 public:
+                      UnwindCursor(A &as);
                       UnwindCursor(unw_context_t *context, A &as);
                       UnwindCursor(A &as, void *threadArg);
   virtual             ~UnwindCursor() {}
   virtual bool        validReg(int);
   virtual unw_word_t  getReg(int);
-  virtual void        setReg(int, unw_word_t);
+  virtual void        setReg(int, unw_word_t, unw_word_t);
+  virtual unw_word_t  getRegLocation(int);
   virtual bool        validFloatReg(int);
   virtual unw_fpreg_t getFloatReg(int);
   virtual void        setFloatReg(int, unw_fpreg_t);
@@ -997,6 +1002,8 @@ private:
   bool getInfoFromFdeCie(const typename CFI_Parser<A>::FDE_Info &fdeInfo,
                          const typename CFI_Parser<A>::CIE_Info &cieInfo,
                          pint_t pc, uintptr_t dso_base);
+
+public:
   bool getInfoFromDwarfSection(pint_t pc, const UnwindInfoSections &sects,
                                             uint32_t fdeSectionOffsetHint=0);
   int stepWithDwarfFDE(bool stage2) {
@@ -1299,6 +1306,13 @@ private:
 #endif
 };
 
+template <typename A, typename R>
+UnwindCursor<A, R>::UnwindCursor(A &as)
+    : _addressSpace(as)
+    , _unwindInfoMissing(false)
+    , _isSignalFrame(false) {
+  memset(&_info, 0, sizeof(_info));
+}
 
 template <typename A, typename R>
 UnwindCursor<A, R>::UnwindCursor(unw_context_t *context, A &as)
@@ -1312,9 +1326,11 @@ UnwindCursor<A, R>::UnwindCursor(unw_context_t *context, A &as)
 }
 
 template <typename A, typename R>
-UnwindCursor<A, R>::UnwindCursor(A &as, void *)
-    : _addressSpace(as), _unwindInfoMissing(false), _isSignalFrame(false) {
+UnwindCursor<A, R>::UnwindCursor(A &as, void *arg)
+    : _addressSpace(as),_registers(arg), _unwindInfoMissing(false),
+        _isSignalFrame(false) {
   memset(&_info, 0, sizeof(_info));
+
   // FIXME
   // fill in _registers from thread arg
 }
@@ -1331,8 +1347,13 @@ unw_word_t UnwindCursor<A, R>::getReg(int regNum) {
 }
 
 template <typename A, typename R>
-void UnwindCursor<A, R>::setReg(int regNum, unw_word_t value) {
-  _registers.setRegister(regNum, (typename A::pint_t)value);
+void UnwindCursor<A, R>::setReg(int regNum, unw_word_t value, unw_word_t location) {
+  _registers.setRegister(regNum, (typename A::pint_t)value, (typename A::pint_t)location);
+}
+
+template <typename A, typename R>
+unw_word_t UnwindCursor<A, R>::getRegLocation(int regNum) {
+  return _registers.getRegisterLocation(regNum);
 }
 
 template <typename A, typename R>
@@ -1639,6 +1660,7 @@ bool UnwindCursor<A, R>::getInfoFromDwarfSection(pint_t pc,
   typename CFI_Parser<A>::CIE_Info cieInfo;
   bool foundFDE = false;
   bool foundInCache = false;
+
   // If compact encoding table gave offset into dwarf section, go directly there
   if (fdeSectionOffsetHint != 0) {
     foundFDE = CFI_Parser<A>::findFDE(_addressSpace, pc, sects.dwarf_section,
@@ -1646,6 +1668,7 @@ bool UnwindCursor<A, R>::getInfoFromDwarfSection(pint_t pc,
                                     sects.dwarf_section + fdeSectionOffsetHint,
                                     &fdeInfo, &cieInfo);
   }
+
 #if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
   if (!foundFDE && (sects.dwarf_index_section != 0)) {
     foundFDE = EHHeaderParser<A>::findFDE(
@@ -1653,6 +1676,7 @@ bool UnwindCursor<A, R>::getInfoFromDwarfSection(pint_t pc,
         (uint32_t)sects.dwarf_index_section_length, &fdeInfo, &cieInfo);
   }
 #endif
+
   if (!foundFDE) {
     // otherwise, search cache of previously found FDEs.
     pint_t cachedFDE = DwarfFDECache<A>::findFDE(sects.dso_base, pc);
@@ -2695,10 +2719,10 @@ int UnwindCursor<A, R>::stepThroughSigReturn(Registers_arm64 &) {
   for (int i = 0; i <= 30; ++i) {
     uint64_t value = _addressSpace.get64(sigctx + kOffsetGprs +
                                          static_cast<pint_t>(i * 8));
-    _registers.setRegister(UNW_AARCH64_X0 + i, value);
+    _registers.setRegister(UNW_AARCH64_X0 + i, value, 0);
   }
-  _registers.setSP(_addressSpace.get64(sigctx + kOffsetSp));
-  _registers.setIP(_addressSpace.get64(sigctx + kOffsetPc));
+  _registers.setSP(_addressSpace.get64(sigctx + kOffsetSp), 0);
+  _registers.setIP(_addressSpace.get64(sigctx + kOffsetPc), 0);
   _isSignalFrame = true;
   return UNW_STEP_SUCCESS;
 }

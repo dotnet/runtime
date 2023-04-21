@@ -38,8 +38,8 @@
 # endif
 # if defined(__i386__)
 #  define _LIBUNWIND_TARGET_I386
-#  define _LIBUNWIND_CONTEXT_SIZE 8
-#  define _LIBUNWIND_CURSOR_SIZE 15
+#  define _LIBUNWIND_CONTEXT_SIZE 13
+#  define _LIBUNWIND_CURSOR_SIZE 19
 #  define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_X86
 # elif defined(__x86_64__)
 #  define _LIBUNWIND_TARGET_X86_64 1
@@ -51,8 +51,8 @@
 #      define _LIBUNWIND_CURSOR_SIZE 66
 #    endif
 #  else
-#    define _LIBUNWIND_CONTEXT_SIZE 21
-#    define _LIBUNWIND_CURSOR_SIZE 33
+#    define _LIBUNWIND_CONTEXT_SIZE 38
+#    define _LIBUNWIND_CURSOR_SIZE 50
 #  endif
 #  define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_X86_64
 # elif defined(__powerpc64__)
@@ -67,11 +67,11 @@
 #  define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_PPC
 # elif defined(__aarch64__)
 #  define _LIBUNWIND_TARGET_AARCH64 1
-#  define _LIBUNWIND_CONTEXT_SIZE 66
+#  define _LIBUNWIND_CONTEXT_SIZE 100
 #  if defined(__SEH__)
-#    define _LIBUNWIND_CURSOR_SIZE 164
+#    define _LIBUNWIND_CURSOR_SIZE 198
 #  else
-#    define _LIBUNWIND_CURSOR_SIZE 78
+#    define _LIBUNWIND_CURSOR_SIZE 112
 #  endif
 #  define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_ARM64
 # elif defined(__arm__)
@@ -83,8 +83,8 @@
 #    define _LIBUNWIND_CONTEXT_SIZE 61
 #    define _LIBUNWIND_CURSOR_SIZE 68
 #  else
-#    define _LIBUNWIND_CONTEXT_SIZE 42
-#    define _LIBUNWIND_CURSOR_SIZE 49
+#    define _LIBUNWIND_CONTEXT_SIZE 50
+#    define _LIBUNWIND_CURSOR_SIZE 57
 #  endif
 #  define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_ARM
 # elif defined(__or1k__)
@@ -172,6 +172,11 @@
 #if __loongarch_grlen == 64
 #define _LIBUNWIND_CONTEXT_SIZE 65
 #define _LIBUNWIND_CURSOR_SIZE 77
+#elif defined(HOST_WASM)
+#define _LIBUNWIND_TARGET_WASM 1
+// TODO: Determine the right values
+#define _LIBUNWIND_CONTEXT_SIZE 0xbadf00d
+#define _LIBUNWIND_CURSOR_SIZE 0xbadf00d
 #else
 #error "Unsupported LoongArch ABI"
 #endif
