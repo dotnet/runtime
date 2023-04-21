@@ -2162,16 +2162,14 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
                 rec.code_addr = (guint64)dmji->code_start;
                 rec.header.total_size = sizeof(rec) + sizeof(ent) + 1;
                 rec.nr_entry=1;
-                for(i=0;i < dmji->num_line_numbers;++i)
-                {
-                        loc = mono_debug_lookup_source_location_by_il(jinfo->d.method,dmji->line_numbers[i].il_offset,NULL);
+                for(i=0;i < dmji->num_line_numbers;++i){
+                        
+			loc = mono_debug_lookup_source_location_by_il(jinfo->d.method,dmji->line_numbers[i].il_offset,NULL);
 
-                        if(!(loc))
-                        {
+                        if(!(loc)
                                 continue;
-                        }
-                        if(!(loc->source_file))
-                        {
+                        
+			if(!(loc->source_file)){
                                 mono_debug_free_source_location(loc);
                                 continue;
                         }
@@ -2183,24 +2181,23 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
                 fwrite(&rec,sizeof(rec), 1 ,perf_dump_file);
 
 
-                for( i = 0; i < dmji->num_line_numbers;++i)
-		 {
+                for( i = 0; i < dmji->num_line_numbers;++i){
+		
 			//get the line number using il offset
                         loc = mono_debug_lookup_source_location_by_il(jinfo->d.method,dmji->line_numbers[i].il_offset,NULL);
 
                         if(!loc)
                                 continue;
-                        if(!(loc->source_file))
-                        {
-                                mono_debug_free_source_location(loc);
+				
+                        if(!(loc->source_file)){
+                                
+				mono_debug_free_source_location(loc);
                                 continue;
                         }
 
                         ent.code_addr = (guint64)dmji->code_start + dmji->line_numbers[i].native_offset;
                         ent.discrim = 0;
                         ent.line = (guint32)loc->row;
-
-
 
                         fwrite(&ent, sizeof(ent),1,perf_dump_file);
                         fwrite(loc->source_file,strlen(loc->source_file)+1,1,perf_dump_file);
