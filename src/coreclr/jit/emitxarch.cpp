@@ -1091,6 +1091,8 @@ static bool IsDstSrcImmAvxInstruction(instruction ins)
         case INS_pshuflw:
         case INS_roundpd:
         case INS_roundps:
+        case INS_vrndscalepd:
+        case INS_vrndscaleps:
             return true;
         default:
             return false;
@@ -17830,6 +17832,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_roundps:
         case INS_roundsd:
         case INS_roundss:
+        case INS_vrndscalepd:
+        case INS_vrndscaleps:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_8C;
             break;
