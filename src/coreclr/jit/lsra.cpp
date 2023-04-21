@@ -1672,7 +1672,7 @@ void LinearScan::identifyCandidates()
 // TODO-Cleanup: This was cloned from Compiler::lvaSortByRefCount() in lclvars.cpp in order
 // to avoid perturbation, but should be merged.
 template <bool localVarsEnregistered>
-void LinearScan::identifyCandidates()
+void           LinearScan::identifyCandidates()
 {
     if (localVarsEnregistered)
     {
@@ -3839,7 +3839,7 @@ void LinearScan::processBlockEndAllocation(BasicBlock* currentBlock)
     if (enregisterLocalVars)
     {
         processBlockEndLocations(currentBlock);
-        
+
         // Get the next block to allocate.
         // When the last block in the method has successors, there will be a final "RefTypeBB" to
         // ensure that we get the varToRegMap set appropriately, but in that case we don't need
@@ -6922,7 +6922,7 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
 // the tree, and performs resolution across joins and backedges.
 //
 template <bool localVarsEnregistered>
-void LinearScan::resolveRegisters()
+void           LinearScan::resolveRegisters()
 {
     // Iterate over the tree and the RefPositions in lockstep
     //  - annotate the tree with register assignments by setting GetRegNum() or gtRegPair (for longs)

@@ -652,7 +652,7 @@ public:
 
     // This is the resolution phase, where cross-block mismatches are fixed up
     template <bool localVarsEnregistered>
-    void resolveRegisters();
+    void           resolveRegisters();
 
     void writeRegisters(RefPosition* currentRefPosition, GenTree* tree);
 
@@ -987,8 +987,8 @@ public:
 private:
     // Determine which locals are candidates for allocation
     template <bool localVarsEnregistered>
-    void identifyCandidates();
-    void identifyCandidates();
+    void           identifyCandidates();
+    void           identifyCandidates();
 
     // determine which locals are used in EH constructs we don't want to deal with
     void identifyCandidatesExceptionDataflow();
