@@ -71,9 +71,11 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\uD800\uD800", "\uD800\uD800", CompareOptions.None, true, 2 };
 
             // Ignore symbols
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser) // only a few symbols are ignored
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+            {
                 yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.IgnoreSymbols, true, 6 };
-            yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.None, false, 0 };
+                yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.None, false, 0 };
+            }
 
             // Platform differences
             bool useNls = PlatformDetection.IsNlsGlobalization;

@@ -65,6 +65,7 @@ namespace System.Globalization
         {
             AssertHybridOnWasm(options);
             Debug.Assert(!prefix.IsEmpty);
+            IndexingOptionsNotSupported(options);
             string cultureName = m_name;
 
             string exceptionMessage;
@@ -85,6 +86,7 @@ namespace System.Globalization
         {
             AssertHybridOnWasm(options);
             Debug.Assert(!prefix.IsEmpty);
+            IndexingOptionsNotSupported(options);
             string cultureName = m_name;
 
             string exceptionMessage;

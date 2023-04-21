@@ -81,8 +81,10 @@ namespace System.Globalization.Tests
 
             // Ignore symbols
             if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+            {
                 yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.IgnoreSymbols, true, 6 };
-            yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.None, false, 0 };
+                yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.None, false, 0 };
+            }
 
             // NULL character
             yield return new object[] { s_invariantCompare, "a\u0000b", "a\u0000b", CompareOptions.None, true, 3 };
