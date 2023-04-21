@@ -1304,7 +1304,15 @@ PhaseStatus LinearScan::doLinearScan()
 
     DBEXEC(VERBOSE, lsraDumpIntervals("after buildIntervals"));
 
-    initVarRegMaps();
+    if (!enregisterLocalVars)
+    {
+        inVarToRegMaps  = nullptr;
+        outVarToRegMaps = nullptr;
+    }
+    else
+    {
+        initVarRegMaps();
+    }
 
 #ifdef TARGET_ARM64
     if (compiler->info.compNeedsConsecutiveRegisters)
@@ -2034,12 +2042,7 @@ void LinearScan::identifyCandidates()
 // TODO-Throughput: This mapping can surely be more efficiently done
 void LinearScan::initVarRegMaps()
 {
-    if (!enregisterLocalVars)
-    {
-        inVarToRegMaps  = nullptr;
-        outVarToRegMaps = nullptr;
-        return;
-    }
+    assert(enregisterLocalVars);
     assert(compiler->lvaTrackedFixed); // We should have already set this to prevent us from adding any new tracked
                                        // variables.
 
