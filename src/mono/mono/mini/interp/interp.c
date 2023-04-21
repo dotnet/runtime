@@ -771,129 +771,66 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 	}
 }
 
-// Returns the size it uses on the interpreter stack
-static int
-stackval_size (MonoType *type, gboolean pinvoke)
-{
-	if (m_type_is_byref (type))
-		return MINT_STACK_SLOT_SIZE;
-	switch (type->type) {
-	case MONO_TYPE_VOID:
-		return 0;
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U:
-	case MONO_TYPE_I:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_FNPTR:
-	case MONO_TYPE_U4:
-		return MINT_STACK_SLOT_SIZE;
-	case MONO_TYPE_R4:
-		return MINT_STACK_SLOT_SIZE;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		return MINT_STACK_SLOT_SIZE;
-	case MONO_TYPE_R8:
-		return MINT_STACK_SLOT_SIZE;
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_ARRAY:
-		return MINT_STACK_SLOT_SIZE;
-	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			return stackval_size (mono_class_enum_basetype_internal (type->data.klass), pinvoke);
-		} else {
-			int size;
-			if (pinvoke)
-				size = mono_class_native_size (type->data.klass, NULL);
-			else
-				size = mono_class_value_size (type->data.klass, NULL);
-			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
-		}
-	case MONO_TYPE_GENERICINST: {
-		if (mono_type_generic_inst_is_valuetype (type)) {
-			MonoClass *klass = mono_class_from_mono_type_internal (type);
-			int size;
-			if (pinvoke)
-				size = mono_class_native_size (klass, NULL);
-			else
-				size = mono_class_value_size (klass, NULL);
-			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
-		}
-		return stackval_size (m_class_get_byval_arg (type->data.generic_class->container_class), pinvoke);
-	}
-	default:
-		g_error ("got type 0x%02x", type->type);
-	}
-}
-
-// Returns the size it uses on the interpreter stack
-static int
+static void
 stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean pinvoke)
 {
 	if (m_type_is_byref (type)) {
 		result->data.p = *(gpointer*)data;
-		return MINT_STACK_SLOT_SIZE;
+		return;
 	}
 	switch (type->type) {
 	case MONO_TYPE_VOID:
-		return 0;
+		break;;
 	case MONO_TYPE_I1:
 		result->data.i = *(gint8*)data;
-		return MINT_STACK_SLOT_SIZE;
+		break;
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
 		result->data.i = *(guint8*)data;
-		return MINT_STACK_SLOT_SIZE;
+		break;
 	case MONO_TYPE_I2:
 		result->data.i = *(gint16*)data;
-		return MINT_STACK_SLOT_SIZE;
+		break;
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
 		result->data.i = *(guint16*)data;
-		return MINT_STACK_SLOT_SIZE;
+		break;
 	case MONO_TYPE_I4:
 		result->data.i = *(gint32*)data;
-		return MINT_STACK_SLOT_SIZE;
+		break;
 	case MONO_TYPE_U:
 	case MONO_TYPE_I:
 		result->data.nati = *(mono_i*)data;
-		return MINT_STACK_SLOT_SIZE;
+		break;
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 		result->data.p = *(gpointer*)data;
-		return MINT_STACK_SLOT_SIZE;
+		break;
 	case MONO_TYPE_U4:
 		result->data.i = *(guint32*)data;
-		return MINT_STACK_SLOT_SIZE;
+		break;
 	case MONO_TYPE_R4:
 		/* memmove handles unaligned case */
 		memmove (&result->data.f_r4, data, sizeof (float));
-		return MINT_STACK_SLOT_SIZE;
+		break;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		memmove (&result->data.l, data, sizeof (gint64));
-		return MINT_STACK_SLOT_SIZE;
+		break;
 	case MONO_TYPE_R8:
 		memmove (&result->data.f, data, sizeof (double));
-		return MINT_STACK_SLOT_SIZE;
+		break;
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_ARRAY:
 		result->data.p = *(gpointer*)data;
-		return MINT_STACK_SLOT_SIZE;
+		break;
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (type->data.klass)) {
-			return stackval_from_data (mono_class_enum_basetype_internal (type->data.klass), result, data, pinvoke);
+			stackval_from_data (mono_class_enum_basetype_internal (type->data.klass), result, data, pinvoke);
+			break;
 		} else {
 			int size;
 			if (pinvoke)
@@ -901,7 +838,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 			else
 				size = mono_class_value_size (type->data.klass, NULL);
 			memcpy (result, data, size);
-			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+			break;
 		}
 	case MONO_TYPE_GENERICINST: {
 		if (mono_type_generic_inst_is_valuetype (type)) {
@@ -912,9 +849,10 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 			else
 				size = mono_class_value_size (klass, NULL);
 			memcpy (result, data, size);
-			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+			break;
 		}
-		return stackval_from_data (m_class_get_byval_arg (type->data.generic_class->container_class), result, data, pinvoke);
+		stackval_from_data (m_class_get_byval_arg (type->data.generic_class->container_class), result, data, pinvoke);
+		break;
 	}
 	default:
 		g_error ("got type 0x%02x", type->type);
@@ -8752,13 +8690,15 @@ mono_ee_interp_init (const char *opts)
 EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_stackval_to_data (MonoType *type, stackval *val, void *data)
 {
-	return stackval_to_data (type, val, data, FALSE);
+	g_error ("FIXME");
+	return 0; //stackval_to_data (type, val, data, FALSE);
 }
 
 EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_stackval_from_data (MonoType *type, stackval *result, const void *data)
 {
-	return stackval_from_data (type, result, data, FALSE);
+	g_error ("FIXME");
+	return 0; //stackval_from_data (type, result, data, FALSE);
 }
 
 EMSCRIPTEN_KEEPALIVE int
