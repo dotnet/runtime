@@ -323,7 +323,7 @@ public class AppleAppBuilderTask : Task
         if (GenerateXcodeProject)
         {
             XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, UseNativeAOTRuntime);
+                AppDir, binDir, MonoRuntimeHeaders, false, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, UseNativeAOTRuntime);
 
             if (BuildAppBundle)
             {
@@ -349,7 +349,7 @@ public class AppleAppBuilderTask : Task
         else if (GenerateCMakeProject)
         {
              generator.GenerateCMake(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, UseNativeAOTRuntime);
+                AppDir, binDir, MonoRuntimeHeaders, false, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, UseNativeAOTRuntime);
         }
 
         return true;

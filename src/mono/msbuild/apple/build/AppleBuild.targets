@@ -56,7 +56,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''">marshal-ilgen</RuntimeComponents>
+      <RuntimeComponents Condition="'$(RuntimeComponents)' == '' and '$(_IsLibraryMode)' == 'true'">marshal-ilgen</RuntimeComponents>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">

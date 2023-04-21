@@ -307,7 +307,11 @@ internal sealed class Xcode
         }
 
         string appResources = string.Join(Environment.NewLine, asmDataFiles.Select(r => "    " + r));
-        appResources += string.Join(Environment.NewLine, resources.Where(r => !r.EndsWith("-llvm.o")).Select(r => "    " + Path.GetRelativePath(binDir, r)));
+        appResources += string.Join(Environment.NewLine, resources.Where(r =>
+        {
+            bool ret = !r.EndsWith("-llvm.o");
+            return (preferDylibs) ? ret : ret && !r.EndsWith(".dylib");
+        }).Select(r => "    " + Path.GetRelativePath(binDir, r)));
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
             .Replace("%UseNativeAOTRuntime%", useNativeAOTRuntime ? "TRUE" : "FALSE")
