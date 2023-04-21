@@ -768,11 +768,6 @@ void MorphCopyBlockHelper::PrepareSrc()
     {
         assert(ClassLayout::AreCompatible(m_blockLayout, m_src->GetLayout(m_comp)));
     }
-    // TODO-1stClassStructs: produce simple "IND<simd>" nodes in importer.
-    else if (m_src->OperIsBlk())
-    {
-        m_src->SetOper(GT_IND);
-    }
 }
 
 // TrySpecialCases: check special cases that require special transformations.
@@ -1624,7 +1619,7 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
         if ((size != 0) && FitsIn<int32_t>(size))
         {
             ClassLayout* layout = typGetBlkLayout(static_cast<unsigned>(size));
-            GenTree*     dst    = gtNewStructVal(layout, tree->Addr(), tree->gtFlags & GTF_IND_FLAGS);
+            GenTree*     dst    = gtNewLoadValueNode(layout, tree->Addr(), tree->gtFlags & GTF_IND_FLAGS);
             dst->gtFlags |= GTF_GLOB_REF;
 
             GenTree* src = tree->Data();

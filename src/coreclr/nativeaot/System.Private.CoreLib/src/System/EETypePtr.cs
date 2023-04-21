@@ -120,6 +120,14 @@ namespace System
             }
         }
 
+        internal bool IsFunctionPointer
+        {
+            get
+            {
+                return _value->IsFunctionPointerType;
+            }
+        }
+
         internal bool IsByRef
         {
             get
@@ -211,7 +219,7 @@ namespace System
         {
             get
             {
-                return !_value->IsParameterizedType;
+                return !_value->IsParameterizedType && !_value->IsFunctionPointerType;
             }
         }
 
@@ -302,7 +310,7 @@ namespace System
                 if (IsArray)
                     return EETypePtr.EETypePtrOf<Array>();
 
-                if (IsPointer || IsByRef)
+                if (IsPointer || IsByRef || IsFunctionPointer)
                     return new EETypePtr(default(IntPtr));
 
                 EETypePtr baseEEType = new EETypePtr(_value->NonArrayBaseType);
@@ -369,15 +377,15 @@ namespace System
                     (byte)CorElementType.ELEMENT_TYPE_SZARRAY,   // EETypeElementType.SzArray
                     (byte)CorElementType.ELEMENT_TYPE_BYREF,     // EETypeElementType.ByRef
                     (byte)CorElementType.ELEMENT_TYPE_PTR,       // EETypeElementType.Pointer
+                    (byte)CorElementType.ELEMENT_TYPE_FNPTR,     // EETypeElementType.FunctionPointer
                     default, // Pad the map to 32 elements to enable range check elimination
-                    default,
                     default,
                     default,
                     default
                 };
 
                 // Verify last element of the map
-                Debug.Assert((byte)CorElementType.ELEMENT_TYPE_PTR == map[(int)EETypeElementType.Pointer]);
+                Debug.Assert((byte)CorElementType.ELEMENT_TYPE_FNPTR == map[(int)EETypeElementType.FunctionPointer]);
 
                 return (CorElementType)map[(int)ElementType];
             }
