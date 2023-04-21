@@ -12,7 +12,7 @@ public class EmitBundleSourceFiles : EmitBundleBase
 {
     public override bool Emit(string destinationFile, Action<Stream> inputProvider)
     {
-        using (var fileStream = File.Create(destinationFile))
+        using (var fileStream = new FileStream(destinationFile, FileMode.Append, FileAccess.Write))
         {
             inputProvider(fileStream);
         }

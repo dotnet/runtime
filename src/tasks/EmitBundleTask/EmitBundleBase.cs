@@ -27,6 +27,18 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
     [Required]
     public string BundleFile { get; set; } = default!;
 
+    /// <summary>
+    /// Filename for the unified source containing all byte data and len
+    /// of the FilesToBundle resources.
+    /// Leave empty to keep sources separate.
+    /// </summary>
+    public string? CombinedResourceSource { get; set; }
+
+    /// <summary>
+    /// Path to store build artifacts
+    /// <summary>
+    public string OutputDirectory {get; set; } = default!;
+
     public override bool Execute()
     {
         // The DestinationFile (output filename) already includes a content hash. Grouping by this filename therefore
@@ -68,6 +80,8 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             int allowedParallelism = Math.Max(Math.Min(remainingDestinationFilesToBundle.Length, Environment.ProcessorCount), 1);
             if (BuildEngine is IBuildEngine9 be9)
                 allowedParallelism = be9.RequestCores(allowedParallelism);
+            if (!string.IsNullOrEmpty(CombinedResourceSource))
+                allowedParallelism = 1;
 
             Parallel.For(0, remainingDestinationFilesToBundle.Length, new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism, CancellationToken = BuildTaskCancelled.Token }, (i, state) =>
             {
@@ -78,6 +92,8 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                 var contentSourceFile = group.First();
 
                 var outputFile = group.Key;
+                if (!string.IsNullOrEmpty(CombinedResourceSource))
+                    outputFile = Path.Combine(OutputDirectory, CombinedResourceSource);
                 var inputFile = contentSourceFile.ItemSpec;
                 if (verbose)
                 {
@@ -90,8 +106,8 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                     Log.LogMessage(MessageImportance.Low, "{0}/{1} Bundling {2} ...", count, remainingDestinationFilesToBundle.Length, registeredName);
                 }
 
-                Log.LogMessage(MessageImportance.Low, "Bundling {0} as {1}", inputFile, outputFile);
-                var symbolName = ToSafeSymbolName(outputFile);
+                Log.LogMessage(MessageImportance.Low, "Bundling {0} into {1}", inputFile, outputFile);
+                var symbolName = ToSafeSymbolName(group.Key);
                 if (!Emit(outputFile, (codeStream) => {
                     using var inputStream = File.OpenRead(inputFile);
                     BundleFileToCSource(symbolName, inputStream, codeStream);
@@ -188,7 +204,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
         using var outputUtf8Writer = new StreamWriter(outputStream, Utf8NoBom);
 
-        outputUtf8Writer.Write($"unsigned char {symbolName}[] = {{");
+        outputUtf8Writer.Write($"unsigned char {symbolName}_data[] = {{");
         outputUtf8Writer.Flush();
         while ((bytesRead = inputStream.Read(buf, 0, buf.Length)) > 0)
         {
