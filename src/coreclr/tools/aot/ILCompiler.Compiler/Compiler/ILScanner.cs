@@ -252,6 +252,11 @@ namespace ILCompiler
             return new ScannedPreinitializationPolicy(_factory.PreinitializationManager, MarkedNodes);
         }
 
+        public InlinedThreadStatics GetInlinedThreadStatics()
+        {
+            return new ScannedInlinedThreadStatics(MarkedNodes);
+        }
+
         private sealed class ScannedVTableProvider : VTableSliceProvider
         {
             private Dictionary<TypeDesc, IReadOnlyList<MethodDesc>> _vtableSlices = new Dictionary<TypeDesc, IReadOnlyList<MethodDesc>>();
@@ -672,6 +677,33 @@ namespace ILCompiler
 
             public override TypeSystemException GetCompilationError(MethodDesc method)
                 => _importationErrors.TryGetValue(method, out var exception) ? exception : null;
+        }
+
+        private sealed class ScannedInlinedThreadStatics : InlinedThreadStatics
+        {
+            public ScannedInlinedThreadStatics(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
+            {
+                List<ThreadStaticsNode> threadStaticNodes = new List<ThreadStaticsNode>();
+                foreach (var markedNode in markedNodes)
+                {
+                    if (markedNode is ThreadStaticsNode threadStaticNode)
+                    {
+                        threadStaticNodes.Add(threadStaticNode);
+                    }
+                }
+
+                threadStaticNodes.Sort(CompilerComparer.Instance);
+
+                Dictionary<MetadataType, int> offsets = new Dictionary<MetadataType, int>();
+                int lastOffset = 0;
+                foreach(var threadStaticNode in threadStaticNodes)
+                {
+                    MetadataType t = threadStaticNode.ForType;
+                    lastOffset = lastOffset.AlignUp(t.ThreadGcStaticFieldAlignment.AsInt);
+                    offsets.Add(t, lastOffset);
+                    lastOffset += t.ThreadGcStaticFieldSize.AsInt;
+                }
+            }
         }
 
         private sealed class ScannedPreinitializationPolicy : TypePreinit.TypePreinitializationPolicy

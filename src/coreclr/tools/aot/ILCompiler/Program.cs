@@ -485,6 +485,11 @@ namespace ILCompiler
                     preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, scanResults.GetPreinitializationPolicy());
                     builder.UsePreinitializationManager(preinitManager);
                 }
+
+                // If we have a scanner, we can drive devirtualization using the information
+                // we collected at scanning time (effectively sealing unsealed types if possible).
+                // This could be a command line switch if we really wanted to.
+                builder.UseInlinedThreadStatics(scanResults.GetInlinedThreadStatics());
             }
 
             string ilDump = Get(_command.IlDump);
