@@ -35,7 +35,7 @@ bool emitter::IsSSEOrAVXInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// IsKInstruction: Does this instruction require K register.
+// IsKInstruction: Does this instruction require K register?
 //
 // Arguments:
 //    ins - The instruction to check.
@@ -72,7 +72,7 @@ bool emitter::IsAVXOnlyInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// IsAvx512OnlyInstruction: Is this an Avx512 instruction.
+// IsAvx512OnlyInstruction: Is this an Avx512 instruction?
 //
 // Arguments:
 //    ins - The instruction to check.

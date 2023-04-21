@@ -49,8 +49,8 @@ export function mono_wasm_get_js_handle(js_obj: any): JSHandle {
         js_obj[cs_owned_js_handle_symbol] = js_handle;
     }
     // else
-    //   The consequence of not adding the cs_owned_js_handle_symbol is, that we could have multiple JSHandles and multiple proxy instances. 
-    //   Throwing exception would prevent us from creating any proxy of non-extensible things. 
+    //   The consequence of not adding the cs_owned_js_handle_symbol is, that we could have multiple JSHandles and multiple proxy instances.
+    //   Throwing exception would prevent us from creating any proxy of non-extensible things.
     //   If we have weakmap instead, we would pay the price of the lookup for all proxies, not just non-extensible objects.
 
     return js_handle as JSHandle;
@@ -131,3 +131,4 @@ export function _lookup_js_owned_object(gc_handle: GCHandle): any {
     }
     return null;
 }
+

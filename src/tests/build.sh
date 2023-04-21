@@ -333,7 +333,6 @@ __ConfigureOnly=0
 __CopyNativeProjectsAfterCombinedTestBuild=true
 __CopyNativeTestBinaries=0
 __CrossBuild=0
-__DistroRid=""
 __CompositeBuildMode=
 __CreatePerfmap=
 __TestBuildMode=

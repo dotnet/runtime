@@ -1784,6 +1784,12 @@ private:
     void clearSpillCost(regNumber reg, var_types regType);
     void updateSpillCost(regNumber reg, Interval* interval);
 
+    FORCEINLINE void updateRegsFreeBusyState(RefPosition& refPosition,
+                                             regMaskTP    regsBusy,
+                                             regMaskTP*   regsToFree,
+                                             regMaskTP* delayRegsToFree DEBUG_ARG(Interval* interval)
+                                                 DEBUG_ARG(regNumber assignedReg));
+
     regMaskTP m_RegistersWithConstants;
     void clearConstantReg(regNumber reg, var_types regType)
     {
@@ -2652,6 +2658,10 @@ public:
         }
         return false;
     }
+
+#ifdef DEBUG
+    bool isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegistersLocation);
+#endif
 #endif // TARGET_ARM64
 
 #ifdef DEBUG
