@@ -73,9 +73,11 @@ namespace System.Linq
         }
 
         private static T SumSignedIntegersVectorized<T>(ReadOnlySpan<T> span)
-            where T : struct, IBinaryInteger<T>
+            where T : struct, IBinaryInteger<T>, ISignedNumber<T>
         {
             Debug.Assert(span.Length >= Vector<T>.Count * 4);
+            Debug.Assert(Vector<T>.Count > 2);
+            Debug.Assert(Vector.IsHardwareAccelerated);
 
             ref T ptr = ref MemoryMarshal.GetReference(span);
             int length = span.Length;
