@@ -26,12 +26,6 @@ namespace System.Net.Security
             // RFC 6066 section 3 says to exclude trailing dot from fully qualified DNS hostname
             targetHost = targetHost.TrimEnd('.');
 
-            // RFC 6066 forbids IP literals
-            if (IsValidAddress(targetHost))
-            {
-                return string.Empty;
-            }
-
             try
             {
                 return s_idnMapping.GetAscii(targetHost);
@@ -46,8 +40,15 @@ namespace System.Net.Security
 
         // Simplified version of IPAddressParser.Parse to avoid allocations and dependencies.
         // It purposely ignores scopeId as we don't really use so we do not need to map it to actual interface id.
-        private static unsafe bool IsValidAddress(ReadOnlySpan<char> ipSpan)
+        internal static unsafe bool IsValidAddress(string? hostname)
         {
+            if (string.IsNullOrEmpty(hostname))
+            {
+                return false;
+            }
+
+            ReadOnlySpan<char> ipSpan = hostname.AsSpan();
+
             int end = ipSpan.Length;
 
             if (ipSpan.Contains(':'))

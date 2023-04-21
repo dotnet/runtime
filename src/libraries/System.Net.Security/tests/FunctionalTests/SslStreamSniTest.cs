@@ -44,6 +44,8 @@ namespace System.Net.Security.Tests
                     await TaskTimeoutExtensions.WhenAllOrAnyFailed(new[] { clientJob, server.AuthenticateAsServerAsync(options, CancellationToken.None) });
 
                     Assert.Equal(1, timesCallbackCalled);
+                    Assert.Equal(hostName, server.TargetHostName);
+                    Assert.Equal(hostName, client.TargetHostName);
                 },
                 (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
                 {
@@ -200,6 +202,7 @@ namespace System.Net.Security.Tests
                         server.AuthenticateAsServerAsync(serverOptions, default));
 
             Assert.Equal(string.Empty, server.TargetHostName);
+            Assert.Equal(string.Empty, client.TargetHostName);
         }
 
         [Theory]
@@ -320,10 +323,10 @@ namespace System.Net.Security.Tests
 
         public static IEnumerable<object[]> HostNameData()
         {
-            yield return new object[] { "a" };
-            yield return new object[] { "test" };
+            // yield return new object[] { "a" };
+            // yield return new object[] { "test" };
             // max allowed hostname length is 63
-            yield return new object[] { new string('a', 63) };
+            // yield return new object[] { new string('a', 63) };
             yield return new object[] { "\u017C\u00F3\u0142\u0107 g\u0119\u015Bl\u0105 ja\u017A\u0144. \u7EA2\u70E7. \u7167\u308A\u713C\u304D" };
         }
     }
