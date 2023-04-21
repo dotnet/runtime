@@ -232,6 +232,85 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
+        /// Walks the type hierarchy above the current type for any types that use polymorphic configuration.
+        /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "The call to GetInterfaces will cross-reference results with interface types " +
+                            "already declared as derived types of the polymorphic base type.")]
+        internal static JsonTypeInfo? FindNearestPolymorphicBaseType(JsonTypeInfo typeInfo)
+        {
+            Debug.Assert(typeInfo.IsConfigured);
+
+            if (typeInfo.PolymorphismOptions != null)
+            {
+                // Type defines its own polymorphic configuration.
+                return null;
+            }
+
+            JsonTypeInfo? matchingResult = null;
+
+            // First, walk up the class hierarchy for any supported types.
+            for (Type? candidate = typeInfo.Type.BaseType; candidate != null; candidate = candidate.BaseType)
+            {
+                JsonTypeInfo? candidateInfo = ResolveAncestorTypeInfo(candidate, typeInfo.Options);
+                if (candidateInfo?.PolymorphismOptions != null)
+                {
+                    // stop on the first ancestor that has a match
+                    matchingResult = candidateInfo;
+                    break;
+                }
+            }
+
+            // Now, walk the interface hierarchy for any polymorphic interface declarations.
+            foreach (Type interfaceType in typeInfo.Type.GetInterfaces())
+            {
+                JsonTypeInfo? candidateInfo = ResolveAncestorTypeInfo(interfaceType, typeInfo.Options);
+                if (candidateInfo?.PolymorphismOptions != null)
+                {
+                    if (matchingResult != null)
+                    {
+                        // Resolve any conflicting matches.
+                        if (matchingResult.Type.IsAssignableFrom(interfaceType))
+                        {
+                            // interface is more derived than previous match, replace it.
+                            matchingResult = candidateInfo;
+                        }
+                        else if (interfaceType.IsAssignableFrom(matchingResult.Type))
+                        {
+                            // interface is less derived than previous match, keep the previous one.
+                            continue;
+                        }
+                        else
+                        {
+                            // Diamond ambiguity, do not report any ancestors.
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        matchingResult = candidateInfo;
+                    }
+                }
+            }
+
+            return matchingResult;
+
+            static JsonTypeInfo? ResolveAncestorTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                try
+                {
+                    return options.GetTypeInfoInternal(type, ensureNotNull: null);
+                }
+                catch
+                {
+                    // The resolver produced an exception when resolving the ancestor type.
+                    // Eat the exception and report no result instead.
+                    return null;
+                }
+            }
+        }
+
+        /// <summary>
         /// Lazy JsonTypeInfo result holder for a derived type.
         /// </summary>
         private sealed class DerivedJsonTypeInfo

@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-
+    <HWITestsXarchOnly>true</HWITestsXarchOnly>
     <!-- https://github.com/dotnet/runtime/issues/57352 -->
     <MonoAotIncompatible>true</MonoAotIncompatible>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
@@ -10,12 +9,6 @@
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
     <Optimize />
-  </PropertyGroup>
-  <PropertyGroup>
-    <!-- We have a lot of tests here so run them in outerloop on platforms where they aren't accelerated -->
-    <CLRTestPriority>1</CLRTestPriority>
-    <CLRTestPriority Condition="'$(TargetArchitecture)' == 'x64'">0</CLRTestPriority>
-    <CLRTestPriority Condition="'$(TargetArchitecture)' == 'x86' AND '$(TargetsWindows)' == 'true'">0</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.Vector256_1.cs" />

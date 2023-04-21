@@ -109,6 +109,10 @@ if(CLR_CMAKE_HOST_UNIX)
         endif()
     endif()
 
+    if(CLR_CMAKE_TARGET_LINUX AND CLR_CMAKE_TARGET_ARCH_I386)
+      add_linker_flag(-Wl,-z,notext)
+    endif()
+
     if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
       add_subdirectory(pal)
       add_subdirectory(hosts)

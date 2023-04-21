@@ -3133,6 +3133,16 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	try_llvm = mono_use_llvm || llvm;
 #endif
 
+#ifdef MONO_ARCH_FLOAT32_SUPPORTED
+	/* Force float32 mode on platforms where its supported */
+	opts |= MONO_OPT_FLOAT32;
+#else
+	opts &= ~MONO_OPT_FLOAT32;
+#ifdef ENABLE_LLVM
+	g_assert (!llvm);
+#endif
+#endif
+
  restart_compile:
 	if (method_is_gshared) {
 		method_to_compile = method;
@@ -3209,6 +3219,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 
 	if (!is_simd_supported (cfg))
 		cfg->opt &= ~MONO_OPT_SIMD;
+	cfg->r4fp = (cfg->opt & MONO_OPT_FLOAT32) ? 1 : 0;
+	cfg->r4_stack_type = cfg->r4fp ? STACK_R4 : STACK_R8;
 
 	if (cfg->gen_seq_points)
 		cfg->seq_points = g_ptr_array_new ();

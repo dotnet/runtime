@@ -696,7 +696,7 @@ namespace System.Net.Http
                     await FillForHeadersAsync(async).ConfigureAwait(false);
                 }
 
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop((int)response.StatusCode);
 
                 if (allowExpect100ToContinue != null)
                 {

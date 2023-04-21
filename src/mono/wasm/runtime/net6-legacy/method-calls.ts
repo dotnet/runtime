@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
-import { Module, runtimeHelpers, INTERNAL } from "../imports";
+import { Module, runtimeHelpers, INTERNAL, ENVIRONMENT_IS_PTHREAD } from "../imports";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
-import { setU16, _release_temp_frame } from "../memory";
+import { _release_temp_frame } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
 import { find_entry_point } from "../run";
 import { conv_string_root, js_string_to_mono_string_root } from "../strings";
@@ -90,6 +91,9 @@ export function mono_call_assembly_entry_point(assembly: string, args?: any[], s
 }
 
 export function mono_wasm_invoke_js_with_args_ref(js_handle: JSHandle, method_name: MonoStringRef, args: MonoObjectRef, is_exception: Int32Ptr, result_address: MonoObjectRef): any {
+    if (MonoWasmThreads && ENVIRONMENT_IS_PTHREAD) {
+        throw new Error("Legacy interop is not supported with WebAssembly threads.");
+    }
     const argsRoot = mono_wasm_new_external_root<MonoArray>(args),
         nameRoot = mono_wasm_new_external_root<MonoString>(method_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
@@ -282,6 +286,9 @@ export function mono_wasm_get_global_object_ref(global_name: MonoStringRef, is_e
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo: any, arg0: any, arg1: any, arg2: any): void | number {
     try {
+        if (MonoWasmThreads) {
+            throw new Error("Legacy interop is not supported with WebAssembly threads.");
+        }
         const blazorExports = (<any>globalThis).Blazor;
         if (!blazorExports) {
             throw new Error("The blazor.webassembly.js library is not loaded.");
@@ -296,59 +303,4 @@ export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo:
         exceptionRoot.release();
         return 0;
     }
-}
-
-export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
-    try{
-        const input = get_uft16_string(src, srcLength);
-        let result = toUpper ? input.toUpperCase() : input.toLowerCase();
-        // Unicode defines some codepoints which expand into multiple codepoints,
-        // originally we do not support this expansion
-        if (result.length > dstLength)
-            result = input;
-
-        for (let i = 0; i < result.length; i++)
-            setU16(dst + i*2, result.charCodeAt(i));
-    }
-    catch (ex: any) {
-        pass_exception_details(ex, exceptionMessage);
-    }
-}
-
-export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoStringRef, src: number, srcLength: number, dst: number, destLength: number, toUpper: number) : void{
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
-    try{
-        const cultureName = conv_string_root(cultureRoot);
-        if (!cultureName)
-            throw new Error("Cannot change case, the culture name is null.");
-        const input = get_uft16_string(src, srcLength);
-        let result = toUpper ? input.toLocaleUpperCase(cultureName) : input.toLocaleLowerCase(cultureName);
-        if (result.length > destLength)
-            result = input;
-
-        for (let i = 0; i < destLength; i++)
-            setU16(dst + i*2, result.charCodeAt(i));
-    }
-    catch (ex: any) {
-        pass_exception_details(ex, exceptionMessage);
-    }
-    finally {
-        cultureRoot.release();
-    }
-}
-
-function get_uft16_string (ptr: number, length: number): string{
-    const view = new Uint16Array(Module.HEAPU16.buffer, ptr, length);
-    let string = "";
-    for (let i = 0; i < length; i++)
-        string += String.fromCharCode(view[i]);
-    return string;
-}
-
-function pass_exception_details(ex: any, exceptionMessage: Int32Ptr){
-    const exceptionJsString = ex.message + "\n" + ex.stack;
-    const exceptionRoot = mono_wasm_new_root<MonoString>();
-    js_string_to_mono_string_root(exceptionJsString, exceptionRoot);
-    exceptionRoot.copy_to_address(<any>exceptionMessage);
-    exceptionRoot.release();
 }

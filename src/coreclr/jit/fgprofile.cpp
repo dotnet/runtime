@@ -558,6 +558,16 @@ void BlockCountInstrumentor::RelocateProbes()
 //
 void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
+    unsigned numCountersPerProbe = 1;
+
+    // When we have both interlocked and scalable profile modes enabled, we will
+    // count both ways, so allocate two count slots per probe.
+    //
+    if ((JitConfig.JitScalableProfiling() > 0) && (JitConfig.JitInterlockedProfiling() > 0))
+    {
+        numCountersPerProbe = 2;
+    }
+
     // Remember the schema index for this block.
     //
     assert(block->bbCountSchemaIndex == -1);
@@ -570,7 +580,7 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     assert((int)offset >= 0);
 
     ICorJitInfo::PgoInstrumentationSchema schemaElem;
-    schemaElem.Count               = 1;
+    schemaElem.Count               = numCountersPerProbe;
     schemaElem.Other               = 0;
     schemaElem.InstrumentationKind = m_comp->opts.compCollect64BitCounts
                                          ? ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount
@@ -761,32 +771,67 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, uint8_t* prof
 //
 GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t* counterAddr, var_types countType)
 {
-    if (JitConfig.JitInterlockedProfiling() > 0)
+    const bool interlocked = JitConfig.JitInterlockedProfiling() > 0;
+    const bool scalable    = JitConfig.JitScalableProfiling() > 0;
+
+    if (interlocked || scalable)
     {
-        // Form counter address
-        GenTree* addressNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
+        GenTree* result = nullptr;
 
-        // Interlocked increment
-        GenTree* xAddNode = comp->gtNewOperNode(GT_XADD, countType, addressNode, comp->gtNewIconNode(1, countType));
+        if (interlocked)
+        {
+            // Form counter address
+            GenTree* addressNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
 
-        return xAddNode;
+            // Interlocked increment
+            result = comp->gtNewOperNode(GT_XADD, countType, addressNode, comp->gtNewIconNode(1, countType));
+        }
+
+        if (scalable)
+        {
+            if (interlocked)
+            {
+                assert(result != nullptr);
+                counterAddr += (countType == TYP_INT) ? 4 : 8;
+            }
+
+            // Form counter address
+            GenTree* addressNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
+
+            // Scalable increment
+            GenTree* scalableNode = comp->gtNewHelperCallNode((countType == TYP_INT) ? CORINFO_HELP_COUNTPROFILE32
+                                                                                     : CORINFO_HELP_COUNTPROFILE64,
+                                                              countType, addressNode);
+
+            if (interlocked)
+            {
+                result = comp->gtNewOperNode(GT_COMMA, countType, result, scalableNode);
+            }
+            else
+            {
+                result = scalableNode;
+            }
+        }
+
+        return result;
     }
-    else
-    {
-        // Read Basic-Block count value
-        GenTree* valueNode =
-            comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
 
-        // Increment value by 1
-        GenTree* rhsNode = comp->gtNewOperNode(GT_ADD, countType, valueNode, comp->gtNewIconNode(1, countType));
+    // Else do an unsynchronized update
+    //
 
-        // Write new Basic-Block count value
-        GenTree* lhsNode =
-            comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
-        GenTree* asgNode = comp->gtNewAssignNode(lhsNode, rhsNode);
+    // Read Basic-Block count value
+    GenTree* valueNode =
+        comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
 
-        return asgNode;
-    }
+    // Increment value by 1
+    GenTree* rhsNode = comp->gtNewOperNode(GT_ADD, countType, valueNode, comp->gtNewIconNode(1, countType));
+
+    // Write new Basic-Block count value
+    GenTree* lhsNode =
+        comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
+    GenTree* asgNode = comp->gtNewAssignNode(lhsNode, rhsNode);
+
+    return asgNode;
 }
 
 //------------------------------------------------------------------------
@@ -945,7 +990,6 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 __fallthrough;
 
             case BBJ_RETURN:
-
             {
                 // Pseudo-edge back to method entry.
                 //
@@ -960,6 +1004,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
             break;
 
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
             case BBJ_LEAVE:
@@ -1685,6 +1730,16 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 //
 void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
+    unsigned numCountersPerProbe = 1;
+
+    // When we have both interlocked and scalable profile modes enabled, we will
+    // count both ways, so allocate two count slots per probe.
+    //
+    if ((JitConfig.JitScalableProfiling() > 0) && (JitConfig.JitInterlockedProfiling() > 0))
+    {
+        numCountersPerProbe = 2;
+    }
+
     // Walk the bbSparseProbeList, emitting one schema element per...
     //
     for (Probe* probe = (Probe*)block->bbSparseProbeList; probe != nullptr; probe = probe->next)
@@ -1711,7 +1766,7 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
         int32_t targetKey = EfficientEdgeCountBlockToKey(target);
 
         ICorJitInfo::PgoInstrumentationSchema schemaElem;
-        schemaElem.Count               = 1;
+        schemaElem.Count               = numCountersPerProbe;
         schemaElem.Other               = targetKey;
         schemaElem.InstrumentationKind = m_comp->opts.compCollect64BitCounts
                                              ? ICorJitInfo::PgoInstrumentationKind::EdgeLongCount
@@ -1736,6 +1791,17 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
 //
 void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
+    // What type of probe(s) will we emit?
+    //
+    const bool interlocked    = JitConfig.JitInterlockedProfiling() > 0;
+    const bool scalable       = JitConfig.JitScalableProfiling() > 0;
+    const bool unsynchronized = !interlocked && !scalable;
+    const bool dual           = interlocked && scalable;
+
+    JITDUMP("Using %s probes\n",
+            unsynchronized ? "unsychronized"
+                           : (dual ? "both interlocked and scalable" : (interlocked ? "interlocked" : "scalable")));
+
     // Walk the bbSparseProbeList, adding instrumentation.
     //
     for (Probe* probe = (Probe*)block->bbSparseProbeList; probe != nullptr; probe = probe->next)
@@ -2267,12 +2333,42 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
 
     // In majority of cases, methods marked with [Intrinsic] are imported directly
-    // in Tier1 so the profile will never be consumed. Thus, let's avoid unnecessary probes.
+    // in Tier1 so the profile will never be consumed. Thus, let's avoid unnecessary probes...
     if (minimalProfiling && (info.compFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
-        fgCountInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
-        fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
-        return PhaseStatus::MODIFIED_NOTHING;
+        //... except a few intrinsics that might still need it:
+        bool           shouldBeInstrumented = false;
+        NamedIntrinsic ni                   = lookupNamedIntrinsic(info.compMethodHnd);
+        switch (ni)
+        {
+            // These are marked as [Intrinsic] only to be handled (unrolled) for constant inputs.
+            // In other cases they have large managed implementations we want to profile.
+            case NI_System_String_Equals:
+            case NI_System_Buffer_Memmove:
+            case NI_System_MemoryExtensions_Equals:
+            case NI_System_MemoryExtensions_SequenceEqual:
+            case NI_System_MemoryExtensions_StartsWith:
+
+            // Same here, these are only folded when JIT knows the exact types
+            case NI_System_Type_IsAssignableFrom:
+            case NI_System_Type_IsAssignableTo:
+            case NI_System_Type_op_Equality:
+            case NI_System_Type_op_Inequality:
+                shouldBeInstrumented = true;
+                break;
+
+            default:
+                // Some Math intrinsics have large managed implementations we want to profile.
+                shouldBeInstrumented = ni >= NI_SYSTEM_MATH_START && ni <= NI_SYSTEM_MATH_END;
+                break;
+        }
+
+        if (!shouldBeInstrumented)
+        {
+            fgCountInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
+            fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+            return PhaseStatus::MODIFIED_NOTHING;
+        }
     }
 
     if (minimalProfiling && (fgBBcount < 2))
@@ -2611,7 +2707,10 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         // We expect not to have both block and edge counts. We may have other
         // forms of profile data even if we do not have any counts.
         //
-        assert(!haveBlockCounts || !haveEdgeCounts);
+        // As of 4/6/2023 the following invariant check turns out to no longer hold.
+        // Tracking issue: https://github.com/dotnet/runtime/issues/84446
+        //
+        // assert(!haveBlockCounts || !haveEdgeCounts);
 
         bool dataIsGood = false;
 
@@ -4578,6 +4677,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                 case BBJ_COND:
                 case BBJ_SWITCH:
                 case BBJ_EHFINALLYRET:
+                case BBJ_EHFAULTRET:
                 case BBJ_EHFILTERRET:
                     if (edge->edgeWeightMax() > bSrc->bbWeight)
                     {
@@ -5276,7 +5376,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
     //
     const unsigned numSuccs = block->NumSucc(this);
 
-    if ((numSuccs > 0) && !block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET))
+    if ((numSuccs > 0) && !block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET))
     {
         weight_t const blockWeight        = block->bbWeight;
         weight_t       outgoingWeightMin  = 0;

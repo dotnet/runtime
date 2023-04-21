@@ -202,7 +202,7 @@ namespace System.Text
                         return false;
                     }
 
-                    if ((leftValues.AsByte() | rightValues.AsByte()).ExtractMostSignificantBits() != 0)
+                    if (!AllCharsInVectorAreAscii(leftValues | rightValues))
                     {
                         return false;
                     }
@@ -223,7 +223,7 @@ namespace System.Text
                         return false;
                     }
 
-                    if ((leftValues.AsByte() | rightValues.AsByte()).ExtractMostSignificantBits() != 0)
+                    if (!AllCharsInVectorAreAscii(leftValues | rightValues))
                     {
                         return false;
                     }
@@ -250,7 +250,7 @@ namespace System.Text
                         return false;
                     }
 
-                    if (VectorContainsAnyNonAsciiData(leftValues | rightValues))
+                    if (!AllCharsInVectorAreAscii(leftValues | rightValues))
                     {
                         return false;
                     }
@@ -271,7 +271,7 @@ namespace System.Text
                         return false;
                     }
 
-                    if (VectorContainsAnyNonAsciiData(leftValues | rightValues))
+                    if (!AllCharsInVectorAreAscii(leftValues | rightValues))
                     {
                         return false;
                     }

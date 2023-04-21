@@ -23,6 +23,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private DynamicBindingFailedException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -470,6 +471,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
             }
 
+            [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
             private DynamicDebugViewEmptyException(SerializationInfo info, StreamingContext context)
                 : base(info, context)
             {

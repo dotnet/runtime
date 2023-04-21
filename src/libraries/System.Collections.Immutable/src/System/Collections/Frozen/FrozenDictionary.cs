@@ -6,7 +6,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.Frozen
@@ -202,14 +201,26 @@ namespace System.Collections.Frozen
                 {
                     if (source.Count <= Constants.MaxItemsInSmallValueTypeFrozenCollection)
                     {
+                        // If the key is a something we know we can efficiently compare, use a specialized implementation
+                        // that will enable quickly ruling out values outside of the range of keys stored.
+                        if (Constants.IsKnownComparable<TKey>())
+                        {
+                            return (FrozenDictionary<TKey, TValue>)(object)new SmallValueTypeComparableFrozenDictionary<TKey, TValue>(source);
+                        }
+
+                        // Otherwise, use an implementation optimized for a small number of value types using the default comparer.
                         return (FrozenDictionary<TKey, TValue>)(object)new SmallValueTypeDefaultComparerFrozenDictionary<TKey, TValue>(source);
                     }
 
+                    // Use a hash-based implementation.
+
+                    // For Int32 keys, we can reuse the key storage as the hash storage, saving on space and extra indirection.
                     if (typeof(TKey) == typeof(int))
                     {
                         return (FrozenDictionary<TKey, TValue>)(object)new Int32FrozenDictionary<TValue>((Dictionary<int, TValue>)(object)source);
                     }
 
+                    // Fallback to an implementation usable with any value type and the default comparer.
                     return new ValueTypeDefaultComparerFrozenDictionary<TKey, TValue>(source);
                 }
             }

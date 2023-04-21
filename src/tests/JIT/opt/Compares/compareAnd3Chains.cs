@@ -219,7 +219,7 @@ public class ComparisonTestAnd3Chains
         //ARM64-FULL-LINE-NEXT: ccmp {{x[0-9]+}}, #21, 0, {{eq|ne}}
         //ARM64-FULL-LINE-NEXT: ccmp {{x[0-9]+}}, #19, z, {{eq|ne}}
         //ARM64-FULL-LINE-NEXT: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{eq|ne}}
-        if (a1 == 19 || a2 == 20 && a3 == 21) { a1 = 10; } else { a1 = 11; }
+        if (a1 == 19 || a2 == 20 && a3 == 21) { a1 = 10; } else { a1 = 12; }
         consume<long>(a1, a2, a3);
     }
 
