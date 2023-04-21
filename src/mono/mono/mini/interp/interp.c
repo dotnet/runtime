@@ -1317,12 +1317,19 @@ compute_arg_offset (MonoMethodSignature *sig, int index)
 		return 0;
 
 	guint32 offset = 0;
+	int size, align;
+	MonoType *type;
 	for (int i = 0; i < index; i++) {
-		int size, align;
-		MonoType *type = sig->params [i];
-		size = mono_type_size (type, &align);
-		offset += ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+		type = sig->params [i];
+		size = mono_interp_type_size (type, mono_mint_type (type), &align);
+
+		offset = ALIGN_TO (offset, align);
+		offset += size;
 	}
+	type = sig->params [index];
+	mono_interp_type_size (type, mono_mint_type (type), &align);
+
+	offset = ALIGN_TO (offset, align);
 	return offset;
 }
 
@@ -1350,10 +1357,11 @@ initialize_arg_offsets (InterpMethod *imethod, MonoMethodSignature *csig)
 	for (int i = 0; i < sig->param_count; i++) {
 		MonoType *type = sig->params [i];
 		int size, align;
-		size = mono_type_size (type, &align);
+		size = mono_interp_type_size (type, mono_mint_type (type), &align);
 
+		offset = ALIGN_TO (offset, align);
 		arg_offsets [index++] = offset;
-		offset += ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+		offset += size;
 	}
 
 	mono_memory_write_barrier ();

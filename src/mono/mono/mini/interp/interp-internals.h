@@ -316,6 +316,9 @@ mono_interp_error_cleanup (MonoError *error);
 int
 mono_mint_type (MonoType *type);
 
+int
+mono_interp_type_size (MonoType *type, int mt, int *align_p);
+
 #if HOST_BROWSER
 
 gboolean

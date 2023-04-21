@@ -4172,8 +4172,8 @@ interp_emit_memory_barrier (TransformData *td, int kind)
 			goto exit; \
 	} while (0)
 
-static int
-interp_type_size (MonoType *type, int mt, int *align_p)
+int
+mono_interp_type_size (MonoType *type, int mt, int *align_p)
 {
 	int size, align;
 	if (mt == MINT_TYPE_VT) {
@@ -4223,7 +4223,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		td->locals [i].indirects = 0;
 		td->locals [i].mt = mt;
 		td->locals [i].def = NULL;
-		size = interp_type_size (type, mt, &align);
+		size = mono_interp_type_size (type, mt, &align);
 		td->locals [i].size = size;
 		offset = ALIGN_TO (offset, align);
 		td->locals [i].offset = offset;
@@ -4235,7 +4235,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	for (int i = 0; i < num_il_locals; ++i) {
 		int index = num_args + i;
 		int mt = mono_mint_type (header->locals [i]);
-		size = interp_type_size (header->locals [i], mt, &align);
+		size = mono_interp_type_size (header->locals [i], mt, &align);
 		if (header->locals [i]->type == MONO_TYPE_VALUETYPE) {
 			if (mono_class_has_failure (header->locals [i]->data.klass)) {
 				mono_error_set_for_class_failure (error, header->locals [i]->data.klass);
