@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -10,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
 
 public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelableTask
 {
@@ -32,6 +34,9 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
     /// Path to store build artifacts
     /// <summary>
     public string OutputDirectory {get; set; } = default!;
+
+    [Output]
+    public ITaskItem[] PreallocatedSymbols { get; set; } = Array.Empty<ITaskItem>();
 
     public override bool Execute()
     {
@@ -117,7 +122,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         File.WriteAllText(Path.Combine(OutputDirectory, "mono-bundled-source.h"), Utils.GetEmbeddedResource("mono-bundled-source.h"));
 
         // Generate source file containing preallocated MonoBundled*Resource structs
-        GeneratePreallocatedMonoBundleStructs(OutputDirectory, files);
+        PreallocatedSymbols = GeneratePreallocatedMonoBundleStructs(OutputDirectory, files);
 
         return true;
     }
@@ -161,12 +166,15 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
     private static Dictionary<string, int> symbolDataLen = new();
 
-    private static void GeneratePreallocatedMonoBundleStructs(string outputDir, ICollection<(string registeredName, string symbol, string? symfileSymbol)> files)
+    private static ITaskItem[] GeneratePreallocatedMonoBundleStructs(string outputDir, ICollection<(string registeredName, string symbol, string? symfileSymbol)> files)
     {
+        var preallocatedSymbols = new ArrayList();
         StringBuilder preallocatedSource = new();
 
         foreach (var tuple in files)
         {
+            var preallocatedSymbol = new TaskItem(tuple.symbol);
+
             // extern symbols
             StringBuilder preallocatedData = new();
             preallocatedData.AppendLine($"extern const unsigned char {tuple.symbol}_data[];");
@@ -181,15 +189,18 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             switch (GetFileType(tuple.registeredName)) {
             case "MONO_BUNDLED_ASSEMBLY": {
                 preloadedStruct = Utils.GetEmbeddedResource("mono-bundled-assembly.c");
+                preallocatedSymbol.SetMetadata("ResourceType", "MonoBundledAssemblyResource");
                 break;
             }
             case "MONO_BUNDLED_SATELLITE_ASSEMBLY": {
                 preloadedStruct = Utils.GetEmbeddedResource("mono-bundled-satellite-assembly.c");
+                preallocatedSymbol.SetMetadata("ResourceType", "MonoBundledSatelliteAssemblyResource");
                 break;
             }
             case "MONO_BUNDLED_DATA":
             default: {
                 preloadedStruct = Utils.GetEmbeddedResource("mono-bundled-data.c");
+                preallocatedSymbol.SetMetadata("ResourceType", "MonoBundledDataResource");
                 break;
             }
             }
@@ -205,10 +216,14 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                                          .Replace("%Symbol%", tuple.symbol)
                                          .Replace("%Len%", symbolDataLen[tuple.symbol].ToString())
                                          .Replace("%MonoBundledSymfile%", preloadedSymfile));
+
+            preallocatedSymbols.Add(preallocatedSymbol);
         }
 
         File.WriteAllText(Path.Combine(outputDir, "mono-bundled-preallocated-source.c"), Utils.GetEmbeddedResource("mono-bundled-preallocated-source.c")
                                         .Replace("%PreallocatedStructs%", preallocatedSource.ToString()));
+
+        return (ITaskItem[])preallocatedSymbols.ToArray(typeof(ITaskItem));
     }
 
     private static void BundleFileToCSource(string symbolName, FileStream inputStream, Stream outputStream)
