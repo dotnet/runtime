@@ -5,6 +5,6 @@ namespace ILCompiler
 {
     public class InlinedThreadStatics
     {
-
+        internal virtual bool IsComputed() => false;
     }
 }

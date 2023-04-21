@@ -681,6 +681,11 @@ namespace ILCompiler
 
         private sealed class ScannedInlinedThreadStatics : InlinedThreadStatics
         {
+            private readonly List<MetadataType> _types;
+            private readonly Dictionary<MetadataType, int> _offsets;
+
+            internal override bool IsComputed() => true;
+
             public ScannedInlinedThreadStatics(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
                 List<ThreadStaticsNode> threadStaticNodes = new List<ThreadStaticsNode>();
@@ -694,8 +699,10 @@ namespace ILCompiler
 
                 threadStaticNodes.Sort(CompilerComparer.Instance);
 
-                Dictionary<MetadataType, int> offsets = new Dictionary<MetadataType, int>();
                 int lastOffset = 0;
+                List<MetadataType> types = new List<MetadataType>();
+                Dictionary<MetadataType, int> offsets = new Dictionary<MetadataType, int>();
+
                 foreach(var threadStaticNode in threadStaticNodes)
                 {
                     MetadataType t = threadStaticNode.ForType;
@@ -703,6 +710,9 @@ namespace ILCompiler
                     offsets.Add(t, lastOffset);
                     lastOffset += t.ThreadGcStaticFieldSize.AsInt;
                 }
+
+                _types = types;
+                _offsets = offsets;
             }
         }
 

@@ -70,48 +70,58 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.GetThreadStaticBase:
                     {
-                        bool isMultiFile = !factory.CompilationModuleGroup.IsSingleFileCompilation;
-
                         MetadataType target = (MetadataType)Target;
-
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.TypeThreadStaticIndex(target));
-
-                        // First arg: index of the type in the ThreadStatic section of the modules
-                        AddrMode loadFromArg2AndDelta = new AddrMode(encoder.TargetRegister.Arg2, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
-                        encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadFromArg2AndDelta);
-
-                        ISymbolNode helper = isMultiFile ?
-                            factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType) :
-                            factory.ExternSymbol("RhpGetThreadStaticBaseForType");
-
-                        if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                        ISortableSymbolNode index = factory.TypeThreadStaticIndex(target);
+                        if (index == null)
                         {
-                            if (isMultiFile)
-                            {
-                                // Second arg: address of the TypeManager slot that provides the helper with
-                                // information about module index and the type manager instance (which is used
-                                // for initialization on first access).
-                                AddrMode loadFromArg2 = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
-                                encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromArg2);
-                            }
+                            ISymbolNode helper = factory.ExternSymbol("RhpGetThreadStaticBaseForType");
 
-                            encoder.EmitJMP(helper);
+                            if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                            {
+                                encoder.EmitJMP(helper);
+                            }
+                            else
+                            {
+                                encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target), -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
+
+                                AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
+                                encoder.EmitCMP(ref initialized, 0);
+                                encoder.EmitJE(helper);
+
+                                encoder.EmitMOV(encoder.TargetRegister.Arg0, 0);
+                                encoder.EmitMOV(encoder.TargetRegister.Arg1, 0);
+                                encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+                            }
                         }
                         else
                         {
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg2, index);
+
+                            // First arg: index of the type in the ThreadStatic section of the modules
+                            AddrMode loadFromArg2AndDelta = new AddrMode(encoder.TargetRegister.Arg2, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
+                            encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadFromArg2AndDelta);
+
                             // Second arg: address of the TypeManager slot that provides the helper with
                             // information about module index and the type manager instance (which is used
                             // for initialization on first access).
                             AddrMode loadFromArg2 = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromArg2);
 
-                            encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target), - NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
+                            ISymbolNode helper = factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType);
+                            if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                            {
+                                encoder.EmitJMP(helper);
+                            }
+                            else
+                            {
+                                encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target), -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
 
-                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
-                            encoder.EmitCMP(ref initialized, 0);
-                            encoder.EmitJE(helper);
+                                AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
+                                encoder.EmitCMP(ref initialized, 0);
+                                encoder.EmitJE(helper);
 
-                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+                                encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+                            }
                         }
                     }
                     break;
