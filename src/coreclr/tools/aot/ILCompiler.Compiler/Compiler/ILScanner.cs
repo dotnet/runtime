@@ -683,8 +683,12 @@ namespace ILCompiler
         {
             private readonly List<MetadataType> _types;
             private readonly Dictionary<MetadataType, int> _offsets;
+            private readonly int _size;
 
             internal override bool IsComputed() => true;
+            internal override List<MetadataType> GetTypes() => _types;
+            internal override Dictionary<MetadataType, int> GetOffsets() => _offsets;
+            internal override int GetSize() => _size;
 
             public ScannedInlinedThreadStatics(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
@@ -705,7 +709,7 @@ namespace ILCompiler
 
                 foreach(var threadStaticNode in threadStaticNodes)
                 {
-                    MetadataType t = threadStaticNode.ForType;
+                    MetadataType t = threadStaticNode.Type;
                     lastOffset = lastOffset.AlignUp(t.ThreadGcStaticFieldAlignment.AsInt);
                     offsets.Add(t, lastOffset);
                     lastOffset += t.ThreadGcStaticFieldSize.AsInt;
@@ -713,6 +717,7 @@ namespace ILCompiler
 
                 _types = types;
                 _offsets = offsets;
+                _size = lastOffset;
             }
         }
 

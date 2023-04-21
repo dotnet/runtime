@@ -16,6 +16,7 @@ namespace ILCompiler.DependencyAnalysis
     public class ThreadStaticsNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
         private MetadataType _type;
+        private InlinedThreadStatics _inlined;
 
         public ThreadStaticsNode(MetadataType type, NodeFactory factory)
         {
@@ -24,7 +25,10 @@ namespace ILCompiler.DependencyAnalysis
             _type = type;
         }
 
-        public MetadataType ForType => _type;
+        public ThreadStaticsNode(InlinedThreadStatics inlined, NodeFactory factory)
+        {
+            _inlined = inlined;
+        }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
@@ -44,12 +48,20 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(GetMangledName(_type, nameMangler));
+            string mangledName = _type == null ? "_inlinedThreadStatics" : GetMangledName(_type, nameMangler);
+            sb.Append(mangledName);
         }
 
         private ISymbolNode GetGCStaticEETypeNode(NodeFactory factory)
         {
-            GCPointerMap map = GCPointerMap.FromThreadStaticLayout(_type);
+            GCPointerMap map = _type != null ?
+                GCPointerMap.FromThreadStaticLayout(_type) :
+                GCPointerMap.FromInlinedThreadStatics(
+                    _inlined.GetTypes(),
+                    _inlined.GetOffsets(),
+                    _inlined.GetSize(),
+                    factory.Target.PointerSize);
+
             return factory.GCStaticEEType(map);
         }
 
@@ -59,28 +71,85 @@ namespace ILCompiler.DependencyAnalysis
 
             result.Add(new DependencyListEntry(GetGCStaticEETypeNode(factory), "ThreadStatic MethodTable"));
 
-            if (factory.PreinitializationManager.HasEagerStaticConstructor(_type))
+            if (_type != null)
             {
-                result.Add(new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor"));
-            }
 
-            ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref result, factory, _type.Module);
+                if (factory.PreinitializationManager.HasEagerStaticConstructor(_type))
+                {
+                    result.Add(new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor"));
+                }
+
+                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref result, factory, _type.Module);
+            }
+            else
+            {
+                foreach (var type in _inlined.GetTypes())
+                {
+                    if (factory.PreinitializationManager.HasEagerStaticConstructor(type))
+                    {
+                        result.Add(new DependencyListEntry(factory.EagerCctorIndirection(type.GetStaticConstructor()), "Eager .cctor"));
+                    }
+
+                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref result, factory, type.Module);
+                }
+            }
 
             return result;
         }
 
-        public override bool HasConditionalStaticDependencies => _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type;
+        public override bool HasConditionalStaticDependencies
+        {
+            get
+            {
+                if (_type != null)
+                {
+                    return _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type;
+                }
+                else
+                {
+                    foreach (var type in _inlined.GetTypes())
+                    {
+                        if (type.ConvertToCanonForm(CanonicalFormKind.Specific) != type)
+                        {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+            }
+        }
+
+        private IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependenciesMany(NodeFactory factory)
+        {
+            foreach (var type in _inlined.GetTypes())
+            {
+                if (type.ConvertToCanonForm(CanonicalFormKind.Specific) != type)
+                {
+                    yield return new CombinedDependencyListEntry(factory.NecessaryTypeSymbol(_type),
+                        factory.NativeLayout.TemplateTypeLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                        "Keeping track of template-constructable type static bases");
+                }
+            }
+        }
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
-            // If we have a type loader template for this type, we need to keep track of the generated
-            // bases in the type info hashtable. The type symbol node does such accounting.
-            return new CombinedDependencyListEntry[]
+            if (_type != null)
             {
+                // If we have a type loader template for this type, we need to keep track of the generated
+                // bases in the type info hashtable. The type symbol node does such accounting.
+                return new CombinedDependencyListEntry[]
+                {
                 new CombinedDependencyListEntry(factory.NecessaryTypeSymbol(_type),
                     factory.NativeLayout.TemplateTypeLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific)),
                     "Keeping track of template-constructable type static bases"),
-            };
+                };
+            }
+            else
+            {
+                return GetConditionalStaticDependenciesMany(factory);
+            }
         }
 
         public override bool StaticDependenciesAreComputed => true;
@@ -92,6 +161,8 @@ namespace ILCompiler.DependencyAnalysis
             builder.RequireInitialPointerAlignment();
             builder.EmitPointerReloc(GetGCStaticEETypeNode(factory));
         }
+
+        public MetadataType Type => _type;
 
         public override int ClassCode => 2091208431;
 

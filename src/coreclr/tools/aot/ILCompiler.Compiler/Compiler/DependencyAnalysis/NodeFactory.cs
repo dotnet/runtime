@@ -1271,6 +1271,12 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(InterfaceDispatchCellSection, "Interface dispatch cell section is always generated");
             graph.AddRoot(ModuleInitializerList, "Module initializer list is always generated");
 
+            if (_inlinedThreadStatics.IsComputed())
+            {
+                ThreadStaticsNode inlinedThreadStaticNode = new ThreadStaticsNode(_inlinedThreadStatics, this);
+                graph.AddRoot(inlinedThreadStaticNode, "Inlined threadstatics are used if present");
+            }
+
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
