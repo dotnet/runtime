@@ -145,6 +145,7 @@ namespace System.Runtime.InteropServices
                     if (!rooted)
                     {
                         // TODO: global pegging state
+                        // https://github.com/dotnet/runtime/issues/85137
                         rooted = GetTrackerCount(refCount) > 0 && (Flags & CreateComInterfaceFlagsEx.IsPegged) != 0;
                     }
                     return rooted;
@@ -442,7 +443,12 @@ namespace System.Runtime.InteropServices
                 }
                 else
                 {
-                    // There are still outstanding references on the COM side
+                    // There are still outstanding references on the COM side.
+                    // This case should only be hit when an outstanding
+                    // tracker refcount exists from AddRefFromReferenceTracker.
+                    // When implementing IReferenceTrackerHost, this should be
+                    // reconsidered.
+                    // https://github.com/dotnet/runtime/issues/85137
                     GC.ReRegisterForFinalize(this);
                 }
             }
