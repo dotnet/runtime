@@ -67,7 +67,7 @@ namespace System.Text
                         return false;
                     }
 
-                    if (charValues.AsByte().ExtractMostSignificantBits() != 0 || byteValues.ExtractMostSignificantBits() != 0)
+                    if ((charValues.AsByte() | byteValues).ExtractMostSignificantBits() != 0)
                     {
                         return false;
                     }
@@ -306,7 +306,7 @@ namespace System.Text
                 uint valueA = uint.CreateTruncating(left[i]);
                 uint valueB = uint.CreateTruncating(right[i]);
 
-                if (!UnicodeUtility.IsAsciiCodePoint(valueA) || !UnicodeUtility.IsAsciiCodePoint(valueB))
+                if (!UnicodeUtility.IsAsciiCodePoint(valueA | valueB))
                 {
                     return false;
                 }
