@@ -3607,6 +3607,7 @@ recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataU
 	}
 
 	// replace info->added_events by a new list re-computed from gtd_info->added_events
+	info->added_events = NULL;
 	for (GSList *ptr = gtd_info->added_events; ptr; ptr = ptr->next) {
 		MonoClassMetadataUpdateEvent *gtd_added_event = (MonoClassMetadataUpdateEvent *)ptr->data;
 		MonoClassMetadataUpdateEvent *added_event = mono_class_new0 (ginst, MonoClassMetadataUpdateEvent, 1);
