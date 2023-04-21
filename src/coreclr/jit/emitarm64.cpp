@@ -6510,8 +6510,8 @@ void emitter::emitIns_SS_R_R_R_I(instruction ins,
                                  regNumber   reg3,
                                  ssize_t     imm,
                                  int         varx1,
-                                 int         offs,
-                                 int         varx2)
+                                 int         varx2,
+                                 int         offs)
 {
     assert((ins == INS_stp) || (ins == INS_stnp));
     emitAttr  size  = EA_SIZE(attr);
@@ -16319,7 +16319,10 @@ bool emitter::IsRedundantLdStr(
 //     reg2     - Register 2
 //     imm      - Immediate offset, prior to scaling by operand size
 //     size     - Operand size
-//     fmt      - Instruction format
+//     fmt               - Instruction format
+//     localVar          - If current instruction has local var
+//     currLclVarNum     - LclVarNum if this instruction contains local variable
+//     offs     - Stack offset where it is accessed (loaded / stored).
 //
 // Return Value:
 //    "true" if the previous instruction has been overwritten.
@@ -16332,7 +16335,7 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
                                          emitAttr    size,
                                          insFormat   fmt,
                                          bool        localVar,
-                                         int         varx,
+                                         int         currLclVarNum,
                                          int         offs)
 {
     RegisterOrder optimizationOrder = IsOptimizableLdrStrWithPair(ins, reg1, reg2, imm, size, fmt);
@@ -16403,16 +16406,16 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
                 if (optimizationOrder == eRO_ascending)
                 {
                     emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum,
-                                       prevOffset, varx);
+                                       currLclVarNum, prevOffset);
                 }
                 else
                 {
-                    emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, varx, offs,
-                                       prevLclVarNum);
+                    emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, currLclVarNum,
+                                       prevLclVarNum, offs);
                 }
                 return true;
             }
-            else if (isLastGCLclVar)
+            else if (emitLastIns->idIsLclVar())
             {
                 // if (ascending)
                 //    - idGCref() = last instruction's GCtype
@@ -16428,16 +16431,16 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
                 if (optimizationOrder == eRO_ascending)
                 {
                     emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum,
-                                       prevOffset);
+                                       -1, prevOffset);
                 }
                 else
                 {
                     emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, prevLclVarNum,
-                                       prevOffset);
+                                       -1, prevOffset);
                 }
                 return true;
             }
-            else if (isCurrGCLclVar)
+            else if (localVar)
             {
                 // if (ascending)
                 //    - idGCref() = GCT_NONE
@@ -16452,11 +16455,25 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
 
                 if (optimizationOrder == eRO_ascending)
                 {
-                    emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, varx, offs);
+                    emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, currLclVarNum,
+                                       -1, offs);
                 }
                 else
                 {
-                    emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, varx, offs);
+                    emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, currLclVarNum, -1, offs);
+                }
+                return true;
+            }
+            else
+            {
+                if (optimizationOrder == eRO_ascending)
+                {
+                    emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, -1, -1, -1);
+                }
+                else
+                {
+                    emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, -1, -1, -1);
+
                 }
                 return true;
             }

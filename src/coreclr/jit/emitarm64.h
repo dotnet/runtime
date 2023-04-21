@@ -135,9 +135,9 @@ bool ReplaceLdrStrWithPairInstr(instruction ins,
                                 ssize_t     imm,
                                 emitAttr    size,
                                 insFormat   fmt,
-                                bool        localVar = false,
-                                int         varx     = 0,
-                                int         offs     = 0);
+                                bool        localVar      = false,
+                                int         currLclVarNum = 0,
+                                int         offs          = 0);
 bool IsOptimizableLdrToMov(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
 
 // Try to optimize a Ldr or Str with an alternative instruction.
@@ -893,8 +893,8 @@ void emitIns_SS_R_R_R_I(instruction ins,
                         regNumber   reg3,
                         ssize_t     imm,
                         int         varx1 = -1,
-                        int         offs  = -1,
-                        int         varx2 = -1);
+                        int         varx2 = -1,
+                        int offs  = -1);
 
 void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
