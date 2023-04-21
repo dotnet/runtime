@@ -75,7 +75,8 @@ namespace System.ComponentModel
             Guid.NewGuid()  // events
         };
 
-        private static readonly object s_internalSyncObject = new object();
+        private static readonly ReaderWriterLockSlim s_defaultProvidersLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        private static readonly ReaderWriterLockSlim s_providerTableLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
         private TypeDescriptor()
         {
@@ -176,7 +177,8 @@ namespace System.ComponentModel
             ArgumentNullException.ThrowIfNull(provider);
             ArgumentNullException.ThrowIfNull(type);
 
-            lock (s_providerTable)
+            s_providerTableLock.EnterWriteLock();
+            try
             {
                 // Get the root node, hook it up, and stuff it back into
                 // the provider cache.
@@ -184,6 +186,10 @@ namespace System.ComponentModel
                 var head = new TypeDescriptionNode(provider) { Next = node };
                 s_providerTable[type] = head;
                 s_providerTypeTable.Clear();
+            }
+            finally
+            {
+                s_providerTableLock.ExitWriteLock();
             }
 
             Refresh(type);
@@ -204,15 +210,26 @@ namespace System.ComponentModel
 
             bool refreshNeeded;
 
-            // Get the root node, hook it up, and stuff it back into
-            // the provider cache.
-            lock (s_providerTable)
+            s_providerTableLock.EnterUpgradeableReadLock();
+            try
             {
                 refreshNeeded = s_providerTable.ContainsKey(instance);
                 TypeDescriptionNode node = NodeFor(instance, true);
                 var head = new TypeDescriptionNode(provider) { Next = node };
-                s_providerTable.SetWeak(instance, head);
-                s_providerTypeTable.Clear();
+                s_providerTableLock.EnterWriteLock();
+                try
+                {
+                    s_providerTable.SetWeak(instance, head);
+                    s_providerTypeTable.Clear();
+                }
+                finally
+                {
+                    s_providerTableLock.ExitWriteLock();
+                }
+            }
+            finally
+            {
+                s_providerTableLock.ExitUpgradeableReadLock();
             }
 
             if (refreshNeeded)
@@ -262,52 +279,58 @@ namespace System.ComponentModel
         /// </summary>
         private static void CheckDefaultProvider(Type type)
         {
-            if (s_defaultProviders.ContainsKey(type))
+            s_defaultProvidersLock.EnterUpgradeableReadLock();
+            try
             {
-                return;
-            }
-
-            lock (s_internalSyncObject)
-            {
-                if (s_defaultProviders.ContainsKey(type))
+                if (!s_defaultProviders.ContainsKey(type))
                 {
-                    return;
-                }
+                    s_defaultProvidersLock.EnterWriteLock();
+                    try
+                    {
+                        // Immediately clear this. If we find a default provider
+                        // and it starts messing around with type information,
+                        // this could infinitely recurse.
+                        s_defaultProviders[type] = null;
 
-                // Immediately clear this. If we find a default provider
-                // and it starts messing around with type information,
-                // this could infinitely recurse.
-                s_defaultProviders[type] = null;
+                        // Always use core reflection when checking for
+                        // the default provider attribute. If there is a
+                        // provider, we probably don't want to build up our
+                        // own cache state against the type. There shouldn't be
+                        // more than one of these, but walk anyway. Walk in
+                        // reverse order so that the most derived takes precidence.
+                        object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false);
+                        bool providerAdded = false;
+                        for (int idx = attrs.Length - 1; idx >= 0; idx--)
+                        {
+                            TypeDescriptionProviderAttribute pa = (TypeDescriptionProviderAttribute)attrs[idx];
+                            Type? providerType = Type.GetType(pa.TypeName);
+                            if (providerType != null && typeof(TypeDescriptionProvider).IsAssignableFrom(providerType))
+                            {
+                                TypeDescriptionProvider prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType)!;
+                                AddProvider(prov, type);
+                                providerAdded = true;
+                            }
+                        }
+
+                        // If we did not add a provider, check the base class.
+                        if (!providerAdded)
+                        {
+                            Type? baseType = type.BaseType;
+                            if (baseType != null && baseType != type)
+                            {
+                                CheckDefaultProvider(baseType);
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        s_defaultProvidersLock.ExitWriteLock();
+                    }
+                }
             }
-
-            // Always use core reflection when checking for
-            // the default provider attribute. If there is a
-            // provider, we probably don't want to build up our
-            // own cache state against the type. There shouldn't be
-            // more than one of these, but walk anyway. Walk in
-            // reverse order so that the most derived takes precidence.
-            object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false);
-            bool providerAdded = false;
-            for (int idx = attrs.Length - 1; idx >= 0; idx--)
+            finally
             {
-                TypeDescriptionProviderAttribute pa = (TypeDescriptionProviderAttribute)attrs[idx];
-                Type? providerType = Type.GetType(pa.TypeName);
-                if (providerType != null && typeof(TypeDescriptionProvider).IsAssignableFrom(providerType))
-                {
-                    TypeDescriptionProvider prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType)!;
-                    AddProvider(prov, type);
-                    providerAdded = true;
-                }
-            }
-
-            // If we did not add a provider, check the base class.
-            if (!providerAdded)
-            {
-                Type? baseType = type.BaseType;
-                if (baseType != null && baseType != type)
-                {
-                    CheckDefaultProvider(baseType);
-                }
+                s_defaultProvidersLock.ExitUpgradeableReadLock();
             }
         }
 
@@ -1457,44 +1480,62 @@ namespace System.ComponentModel
             TypeDescriptionNode? node = null;
             Type searchType = type;
 
-            while (node == null)
+            s_providerTableLock.EnterUpgradeableReadLock();
+            try
             {
-                node = (TypeDescriptionNode?)s_providerTypeTable[searchType] ??
-                       (TypeDescriptionNode?)s_providerTable[searchType];
-
-                if (node == null)
+                while (node == null)
                 {
-                    Type? baseType = GetNodeForBaseType(searchType);
+                    node = (TypeDescriptionNode?)s_providerTypeTable[searchType] ??
+                           (TypeDescriptionNode?)s_providerTable[searchType];
 
-                    if (searchType == typeof(object) || baseType == null)
+                    if (node == null)
                     {
-                        lock (s_providerTable)
-                        {
-                            node = (TypeDescriptionNode?)s_providerTable[searchType];
+                        Type? baseType = GetNodeForBaseType(searchType);
 
-                            if (node == null)
+                        if (searchType == typeof(object) || baseType == null)
+                        {
+                            s_providerTableLock.EnterWriteLock();
+                            try
                             {
-                                // The reflect type description provider is a default provider that
-                                // can provide type information for all objects.
-                                node = new TypeDescriptionNode(new ReflectTypeDescriptionProvider());
-                                s_providerTable[searchType] = node;
+                                node = (TypeDescriptionNode?)s_providerTable[searchType];
+
+                                if (node == null)
+                                {
+                                    // The reflect type description provider is a default provider that
+                                    // can provide type information for all objects.
+                                    node = new TypeDescriptionNode(new ReflectTypeDescriptionProvider());
+                                    s_providerTable[searchType] = node;
+                                }
+                            }
+                            finally
+                            {
+                                s_providerTableLock.ExitWriteLock();
                             }
                         }
-                    }
-                    else if (createDelegator)
-                    {
-                        node = new TypeDescriptionNode(new DelegatingTypeDescriptionProvider(baseType));
-                        lock (s_providerTable)
+                        else if (createDelegator)
                         {
-                            s_providerTypeTable[searchType] = node;
+                            node = new TypeDescriptionNode(new DelegatingTypeDescriptionProvider(baseType));
+                            s_providerTableLock.EnterWriteLock();
+                            try
+                            {
+                                s_providerTypeTable[searchType] = node;
+                            }
+                            finally
+                            {
+                                s_providerTableLock.ExitWriteLock();
+                            }
+                        }
+                        else
+                        {
+                            // Continue our search
+                            searchType = baseType;
                         }
                     }
-                    else
-                    {
-                        // Continue our search
-                        searchType = baseType;
-                    }
                 }
+            }
+            finally
+            {
+                s_providerTableLock.ExitUpgradeableReadLock();
             }
 
             return node;
@@ -1587,7 +1628,8 @@ namespace System.ComponentModel
         /// </summary>
         private static void NodeRemove(object key, TypeDescriptionProvider provider)
         {
-            lock (s_providerTable)
+            s_providerTableLock.EnterUpgradeableReadLock();
+            try
             {
                 TypeDescriptionNode? head = (TypeDescriptionNode?)s_providerTable[key];
                 TypeDescriptionNode? target = head;
@@ -1623,7 +1665,15 @@ namespace System.ComponentModel
                         if (target == head && target.Provider is DelegatingTypeDescriptionProvider)
                         {
                             Debug.Assert(target.Next == null, "Delegating provider should always be the last provider in the chain.");
-                            s_providerTable.Remove(key);
+                            s_providerTableLock.EnterWriteLock();
+                            try
+                            {
+                                s_providerTable.Remove(key);
+                            }
+                            finally
+                            {
+                                s_providerTableLock.ExitWriteLock();
+                            }
                         }
                     }
                     else if (target != head)
@@ -1645,13 +1695,25 @@ namespace System.ComponentModel
                     }
                     else
                     {
-                        s_providerTable.Remove(key);
+                        s_providerTableLock.EnterWriteLock();
+                        try
+                        {
+                            s_providerTable.Remove(key);
+                        }
+                        finally
+                        {
+                            s_providerTableLock.ExitWriteLock();
+                        }
                     }
 
                     // Finally, clear our cache of provider types; it might be invalid
                     // now.
                     s_providerTypeTable.Clear();
                 }
+            }
+            finally
+            {
+                s_providerTableLock.ExitUpgradeableReadLock();
             }
         }
 
@@ -2107,8 +2169,9 @@ namespace System.ComponentModel
             if (refreshReflectionProvider)
             {
                 Type type = component.GetType();
+                s_providerTableLock.EnterReadLock();
 
-                lock (s_providerTable)
+                try
                 {
                     // ReflectTypeDescritionProvider is only bound to object, but we
                     // need go to through the entire table to try to find custom
@@ -2140,6 +2203,10 @@ namespace System.ComponentModel
                             }
                         }
                     }
+                }
+                finally
+                {
+                    s_providerTableLock.ExitReadLock();
                 }
             }
 
@@ -2192,7 +2259,8 @@ namespace System.ComponentModel
 
             bool found = false;
 
-            lock (s_providerTable)
+            s_providerTableLock.EnterReadLock();
+            try
             {
                 // ReflectTypeDescritionProvider is only bound to object, but we
                 // need go to through the entire table to try to find custom
@@ -2224,6 +2292,10 @@ namespace System.ComponentModel
                         }
                     }
                 }
+            }
+            finally
+            {
+                s_providerTableLock.ExitReadLock();
             }
 
             // We only clear our filter and fire the refresh event if there was one or
@@ -2257,7 +2329,8 @@ namespace System.ComponentModel
             // each of these levels.
             Hashtable? refreshedTypes = null;
 
-            lock (s_providerTable)
+            s_providerTableLock.EnterReadLock();
+            try
             {
                 // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
                 IDictionaryEnumerator e = s_providerTable.GetEnumerator();
@@ -2289,6 +2362,10 @@ namespace System.ComponentModel
                         }
                     }
                 }
+            }
+            finally
+            {
+                s_providerTableLock.ExitReadLock();
             }
 
             // And raise the event if types were refresh and handlers are attached.

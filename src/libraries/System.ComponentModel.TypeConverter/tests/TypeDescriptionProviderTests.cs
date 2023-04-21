@@ -3,6 +3,8 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Moq;
 using Moq.Protected;
 using Xunit;
@@ -806,6 +808,57 @@ namespace System.ComponentModel.Tests
             var mockParentProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             var provider = new SubTypeDescriptionProvider(mockParentProvider.Object);
             AssertExtensions.Throws<ArgumentNullException>("type", () => provider.IsSupportedType(null));
+        }
+
+        [Fact]
+        public async void GetConverter_ByMultithread_ReturnsExpected()
+        {
+            TypeConverter[] actualConverters = await Task.WhenAll(
+                Enumerable.Range(0, 100).Select(_ =>
+                    Task.Run(() => TypeDescriptor.GetConverter(typeof(MyClass)))));
+            Assert.All(actualConverters,
+                currentConverter => Assert.IsType<MyTypeConverter>(currentConverter));
+        }
+
+        [Fact]
+        public async void GetConverterWithAddProvider_ByMultithread_Success()
+        {
+            TypeConverter[] actualConverters = await Task.WhenAll(
+                Enumerable.Range(0, 200).Select(_ =>
+                    Task.Run(() =>
+                    {
+                        var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
+                        var someInstance = new object();
+                        TypeDescriptor.AddProvider(mockProvider.Object, someInstance);
+                        return TypeDescriptor.GetConverter(typeof(MyClass));
+                    })));
+            Assert.All(actualConverters,
+                currentConverter => Assert.IsType<MyTypeConverter>(currentConverter));
+        }
+
+        [TypeDescriptionProvider(typeof(MyClassTypeDescriptionProvider))]
+        public class MyClass
+        {
+        }
+
+        public class MyClassTypeDescriptionProvider : TypeDescriptionProvider
+        {
+            public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
+            {
+                return new MyClassTypeDescriptor();
+            }
+        }
+
+        public class MyClassTypeDescriptor : CustomTypeDescriptor
+        {
+            public override TypeConverter GetConverter()
+            {
+                return new MyTypeConverter();
+            }
+        }
+
+        public class MyTypeConverter : TypeConverter
+        {
         }
 
         private class SubTypeDescriptionProvider : TypeDescriptionProvider
