@@ -4098,19 +4098,35 @@ GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueTy
     return tree;
 }
 
+//------------------------------------------------------------------------
+// impImportStaticFieldAccess: Generate an access of a static field
+//
+// Arguments:
+//   pResolvedToken - resolved token for the static field to access
+//   access - type of access to the field, distinguishes address-taken vs load/store
+//   pFieldInfo - EE instructions for accessing the field
+//   lclTyp - type of the field
+//   pIsHoistable - optional out parameter - whether any type initialization side effects
+//                  of the returned tree can be hoisted to occur earlier
+//
+// Return Value:
+//   Tree representing the access to the static field
+//
+// Notes:
+//   Ordinary static fields never overlap. RVA statics, however, can overlap (if they're
+//   mapped to the same ".data" declaration). That said, such mappings only appear to be
+//   possible with ILASM, and in ILASM-produced (ILONLY) images, RVA statics are always
+//   read-only (using "stsfld" on them is UB). In mixed-mode assemblies, RVA statics can
+//   be mutable, but the only current producer of such images, the C++/CLI compiler, does
+//   not appear to support mapping different fields to the same address. So we will say
+//   that "mutable overlapping RVA statics" are UB as well.
+
 GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                               CORINFO_ACCESS_FLAGS    access,
                                               CORINFO_FIELD_INFO*     pFieldInfo,
-                                              var_types               lclTyp)
+                                              var_types               lclTyp,
+                                              /* OUT */ bool*         pIsHoistable)
 {
-    // Ordinary static fields never overlap. RVA statics, however, can overlap (if they're
-    // mapped to the same ".data" declaration). That said, such mappings only appear to be
-    // possible with ILASM, and in ILASM-produced (ILONLY) images, RVA statics are always
-    // read-only (using "stsfld" on them is UB). In mixed-mode assemblies, RVA statics can
-    // be mutable, but the only current producer of such images, the C++/CLI compiler, does
-    // not appear to support mapping different fields to the same address. So we will say
-    // that "mutable overlapping RVA statics" are UB as well.
-
     // For statics that are not "boxed", the initial address tree will contain the field sequence.
     // For those that are, we will attach it later, when adding the indirection for the box, since
     // that tree will represent the true address.
@@ -4151,6 +4167,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         outerFldSeq = nullptr;
     }
 
+    bool     isHoistable               = false;
     bool     isStaticReadOnlyInitedRef = false;
     unsigned typeIndex                 = 0;
     GenTree* op1;
@@ -4182,6 +4199,8 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                     break;
             }
 
+            isHoistable = !s_helperCallProperties.MayRunCctor(pFieldInfo->helper) ||
+                          (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT);
             op1 = gtNewHelperCallNode(pFieldInfo->helper, type, op1);
             op1 = gtNewOperNode(GT_ADD, type, op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
         }
@@ -4199,8 +4218,10 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             {
                 GenTreeFlags callFlags = GTF_EMPTY;
 
-                if (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT)
+                if (!s_helperCallProperties.MayRunCctor(pFieldInfo->helper) ||
+                    (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT))
                 {
+                    isHoistable = true;
                     callFlags |= GTF_CALL_HOISTABLE;
                 }
 
@@ -4225,7 +4246,8 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             else
 #endif
             {
-                op1 = fgGetStaticsCCtorHelper(pResolvedToken->hClass, pFieldInfo->helper, typeIndex);
+                op1         = fgGetStaticsCCtorHelper(pResolvedToken->hClass, pFieldInfo->helper, typeIndex);
+                isHoistable = isHoistable || (op1->gtFlags & GTF_CALL_HOISTABLE);
             }
 
             op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
@@ -4249,6 +4271,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 op1 = gtNewIndOfIconHandleNode(TYP_I_IMPL, fldAddr, GTF_ICON_STATIC_ADDR_PTR, true);
             }
             GenTree* offset = gtNewIconNode(pFieldInfo->offset, innerFldSeq);
+            isHoistable     = true;
             op1             = gtNewOperNode(GT_ADD, TYP_I_IMPL, op1, offset);
 #else
             unreached();
@@ -4267,14 +4290,17 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
             GenTree* ctxTree = getRuntimeContextTree(kind.runtimeLookupKind);
 
-            GenTreeFlags callFlags = GTF_EMPTY;
+            CorInfoHelpFunc helper    = CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE;
+            GenTreeFlags    callFlags = GTF_EMPTY;
 
-            if (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT)
+            if (!s_helperCallProperties.MayRunCctor(helper) ||
+                (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT))
             {
+                isHoistable = true;
                 callFlags |= GTF_CALL_HOISTABLE;
             }
             var_types type = TYP_BYREF;
-            op1            = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE, type, ctxTree);
+            op1            = gtNewHelperCallNode(helper, type, ctxTree);
             op1->gtFlags |= callFlags;
 
             op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
@@ -4317,7 +4343,8 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             {
                 handleKind = GTF_ICON_STATIC_HDL;
             }
-            op1 = gtNewIconHandleNode(fldAddr, handleKind, innerFldSeq);
+            isHoistable = true;
+            op1         = gtNewIconHandleNode(fldAddr, handleKind, innerFldSeq);
             INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
             if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
             {
@@ -4354,6 +4381,10 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         }
     }
 
+    if (pIsHoistable)
+    {
+        *pIsHoistable = isHoistable;
+    }
     return op1;
 }
 
@@ -9569,8 +9600,47 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     if (helperNode != nullptr)
                     {
-                        impAppendTree(helperNode, CHECK_SPILL_ALL, impCurStmtDI);
+                        bool isHoistable =
+                            info.compCompHnd->getClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BEFOREFIELDINIT;
+                        unsigned check_spill = isHoistable ? CHECK_SPILL_NONE : CHECK_SPILL_ALL;
+                        impAppendTree(helperNode, check_spill, impCurStmtDI);
                     }
+                }
+
+                // Handle the cases that might trigger type initialization
+                // (and possibly need to spill the tree for the stored value)
+                switch (fieldInfo.fieldAccessor)
+                {
+                    case CORINFO_FIELD_INSTANCE:
+#ifdef FEATURE_READYTORUN
+                    case CORINFO_FIELD_INSTANCE_WITH_BASE:
+#endif
+                    case CORINFO_FIELD_STATIC_TLS:
+                    case CORINFO_FIELD_STATIC_ADDR_HELPER:
+                    case CORINFO_FIELD_INSTANCE_HELPER:
+                    case CORINFO_FIELD_INSTANCE_ADDR_HELPER:
+                        // Nothing now - handled later
+                        break;
+
+                    case CORINFO_FIELD_STATIC_TLS_MANAGED:
+                    case CORINFO_FIELD_STATIC_ADDRESS:
+                    case CORINFO_FIELD_STATIC_RVA_ADDRESS:
+                    case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
+                    case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
+                    case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+                    case CORINFO_FIELD_STATIC_RELOCATABLE:
+                        bool isHoistable;
+                        op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
+                                                         lclTyp, &isHoistable);
+
+                        if (!isHoistable)
+                        {
+                            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("value for stsfld with typeinit"));
+                        }
+                        break;
+
+                    default:
+                        assert(!"Unexpected fieldAccessor");
                 }
 
                 // Pull the value from the stack.
@@ -9606,6 +9676,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     obj = nullptr;
                 }
 
+                // Handle the cases that use the stored value (obj).
+                // Conveniently these don't trigger type initialization, so there aren't
+                // any ordering issues between it and the tree for the stored value.
                 switch (fieldInfo.fieldAccessor)
                 {
                     case CORINFO_FIELD_INSTANCE:
@@ -9674,8 +9747,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
                     case CORINFO_FIELD_STATIC_RELOCATABLE:
-                        op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
-                                                         lclTyp);
+                        // Handled above
                         break;
 
                     default:
