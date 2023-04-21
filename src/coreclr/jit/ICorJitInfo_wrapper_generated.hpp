@@ -981,6 +981,23 @@ void WrapICorJitInfo::getFieldInfo(
     API_LEAVE(getFieldInfo);
 }
 
+uint32_t WrapICorJitInfo::getThreadLocalFieldInfo(
+          CORINFO_FIELD_HANDLE field)
+{
+    API_ENTER(getThreadLocalFieldInfo);
+    uint32_t temp = wrapHnd->getThreadLocalFieldInfo(field);
+    API_LEAVE(getThreadLocalFieldInfo);
+    return temp;
+}
+
+void WrapICorJitInfo::getThreadLocalStaticBlocksInfo(
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+{
+    API_ENTER(getThreadLocalStaticBlocksInfo);
+    wrapHnd->getThreadLocalStaticBlocksInfo(pInfo);
+    API_LEAVE(getThreadLocalStaticBlocksInfo);
+}
+
 bool WrapICorJitInfo::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {
@@ -1269,6 +1286,15 @@ uint32_t WrapICorJitInfo::getLoongArch64PassStructInRegisterFlags(
     API_ENTER(getLoongArch64PassStructInRegisterFlags);
     uint32_t temp = wrapHnd->getLoongArch64PassStructInRegisterFlags(structHnd);
     API_LEAVE(getLoongArch64PassStructInRegisterFlags);
+    return temp;
+}
+
+uint32_t WrapICorJitInfo::getRISCV64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    API_ENTER(getRISCV64PassStructInRegisterFlags);
+    uint32_t temp = wrapHnd->getRISCV64PassStructInRegisterFlags(structHnd);
+    API_LEAVE(getRISCV64PassStructInRegisterFlags);
     return temp;
 }
 

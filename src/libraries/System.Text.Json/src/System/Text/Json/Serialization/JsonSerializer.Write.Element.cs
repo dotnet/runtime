@@ -51,7 +51,7 @@ namespace System.Text.Json
         public static JsonElement SerializeToElement(object? value, Type inputType, JsonSerializerOptions? options = null)
         {
             ValidateInputType(value, inputType);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType, fallBackToNearestAncestorType: true);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
             return WriteElementAsObject(value, jsonTypeInfo);
         }
 

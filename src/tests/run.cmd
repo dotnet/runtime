@@ -24,6 +24,7 @@ set __ToolsDir=%__ProjectDir%\..\Tools
 set "DotNetCli=%__RepoRootDir%\dotnet.cmd"
 
 set __Sequential=
+set __ParallelType=
 set __msbuildExtraArgs=
 set __LongGCTests=
 set __GCSimulatorTests=
@@ -53,13 +54,11 @@ if /i "%1" == "checked"                                 (set __BuildType=Checked
 
 if /i "%1" == "TestEnv"                                 (set __TestEnv=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "sequential"                              (set __Sequential=1&shift&goto Arg_Loop)
-if /i "%1" == "longgc"                                  (set __LongGCTests=1&shift&goto Arg_Loop)
-if /i "%1" == "gcsimulator"                             (set __GCSimulatorTests=1&shift&goto Arg_Loop)
+if /i "%1" == "parallel"                                (set __ParallelType=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "jitstress"                               (set DOTNET_JitStress=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "jitstressregs"                           (set DOTNET_JitStressRegs=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "jitminopts"                              (set DOTNET_JITMinOpts=1&shift&goto Arg_Loop)
 if /i "%1" == "jitforcerelocs"                          (set DOTNET_ForceRelocs=1&shift&goto Arg_Loop)
-if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
 
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=1&shift&goto Arg_Loop)
@@ -68,11 +67,11 @@ if /i "%1" == "runlargeversionbubblecrossgen2tests"     (set RunCrossGen2=1&set 
 if /i "%1" == "synthesizepgo"                           (set CrossGen2SynthesizePgo=1&shift&goto Arg_Loop)
 if /i "%1" == "link"                                    (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcname"                                  (set DOTNET_GCName=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "timeout"                                 (set __TestTimeout=%2&shift&shift&goto Arg_Loop)
-
-REM change it to DOTNET_GCStress when we stop using xunit harness
 if /i "%1" == "gcstresslevel"                           (set DOTNET_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
-
+if /i "%1" == "gcsimulator"                             (set __GCSimulatorTests=1&shift&goto Arg_Loop)
+if /i "%1" == "longgc"                                  (set __LongGCTests=1&shift&goto Arg_Loop)
+if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
+if /i "%1" == "timeout"                                 (set __TestTimeout=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "runincontext"                            (set RunInUnloadableContext=1&shift&goto Arg_Loop)
 if /i "%1" == "tieringtest"                             (set TieringTest=1&shift&goto Arg_Loop)
 if /i "%1" == "runnativeaottests"                       (set RunNativeAot=1&shift&goto Arg_Loop)
@@ -107,7 +106,7 @@ set "__TestWorkingDir=%__RootBinDir%\tests\coreclr\%__TargetOS%.%__BuildArch%.%_
 if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%\
 if not defined XunitTestReportDirBase set  XunitTestReportDirBase=%XunitTestBinBase%\Reports\
 
-REM We are not running in the official build scenario, call run.py
+REM Set up arguments to call run.py
 
 set __RuntestPyArgs=-arch %__BuildArch% -build_type %__BuildType%
 
@@ -133,6 +132,10 @@ if defined __TestEnv (
 
 if defined __Sequential (
     set __RuntestPyArgs=%__RuntestPyArgs% --sequential
+)
+
+if defined __ParallelType (
+    set __RuntestPyArgs=%__RuntestPyArgs% -parallel %__ParallelType%
 )
 
 if defined RunCrossGen2 (
@@ -180,201 +183,6 @@ echo %NEXTCMD%
 
 exit /b %ERRORLEVEL%
 
-:SetupMSBuildAndCallRuntestProj
-
-:: Note: We've disabled node reuse because it causes file locking issues.
-::       The issue is that we extend the build with our own targets which
-::       means that rebuilding cannot successfully delete the task
-::       assembly.
-set __msbuildCommonArgs=/nologo /nodeReuse:false %__msbuildExtraArgs% /p:Platform=%__MSBuildBuildArch%
-
-if not defined __Sequential (
-    set __msbuildCommonArgs=%__msbuildCommonArgs% /maxcpucount
-) else (
-    set __msbuildCommonArgs=%__msbuildCommonArgs% /p:ParallelRun=false
-)
-
-if defined DoLink (
-    set __msbuildCommonArgs=%__msbuildCommonArgs% /p:RunTestsViaIllink=true
-)
-
-if not exist "%__LogsDir%"                      md "%__LogsDir%"
-if not exist "%__MsbuildDebugLogsDir%"          md "%__MsbuildDebugLogsDir%"
-
-REM Set up the directory for MSBuild debug logs.
-set MSBUILDDEBUGPATH=%__MsbuildDebugLogsDir%
-
-REM These log files are created automatically by the test run process. Q: what do they depend on being set?
-set __TestRunHtmlLog=%__LogsDir%\TestRun_%__TargetOS%__%__BuildArch%__%__BuildType%.html
-set __TestRunXmlLog=%__LogsDir%\TestRun_%__TargetOS%__%__BuildArch%__%__BuildType%.xml
-
-REM Prepare the Test Drop
-
-echo %__MsgPrefix%Removing 'ni' files and 'lock' folders from %__TestWorkingDir%
-REM Cleans any NI from the last run
-powershell -NoProfile "Get-ChildItem -path %__TestWorkingDir% -Include '*.ni.*' -Recurse -Force | Remove-Item -force"
-REM Cleans up any lock folder used for synchronization from last run
-powershell -NoProfile "Get-ChildItem -path %__TestWorkingDir% -Include 'lock' -Recurse -Force |  where {$_.Attributes -eq 'Directory'}| Remove-Item -force -Recurse"
-
-if defined CORE_ROOT goto SkipCoreRootSetup
-
-set "CORE_ROOT=%XunitTestBinBase%\Tests\Core_Root"
-echo %__MsgPrefix%Using Default CORE_ROOT as %CORE_ROOT%
-echo %__MsgPrefix%Copying Built binaries from %__BinDir% to %CORE_ROOT%
-if exist "%CORE_ROOT%" rd /s /q "%CORE_ROOT%"
-md "%CORE_ROOT%"
-xcopy "%__BinDir%" "%CORE_ROOT%"
-
-:SkipCoreRootSetup
-
-if not exist %CORE_ROOT%\coreclr.dll (
-    echo %__MsgPrefix%Error: Ensure you have done a successful build of the Product and %CORE_ROOT% contains runtime binaries.
-    exit /b 1
-)
-
-REM =========================================================================================
-REM ===
-REM === Run normal (non-perf) tests
-REM ===
-REM =========================================================================================
-
-call :SetTestEnvironment
-
-call :ResolveDependencies
-if errorlevel 1 exit /b 1
-
-::Check if the test Binaries are built
-if not exist %XunitTestBinBase% (
-    echo %__MsgPrefix%Error: Ensure the Test Binaries are built and are present at %XunitTestBinBase%.
-    echo %__MsgPrefix%Run "buildtest.cmd %__BuildArch% %__BuildType%" to build the tests first.
-    exit /b 1
-)
-
-echo %__MsgPrefix%CORE_ROOT that will be used is: %CORE_ROOT%
-echo %__MsgPrefix%Starting test run at %TIME%
-
-set __BuildLogRootName=TestRunResults
-call :msbuild "%__ProjectFilesDir%\src\runtest.proj" /p:Runtests=true /clp:showcommandline
-set __errorlevel=%errorlevel%
-
-
-if %__errorlevel% GEQ 1 (
-    echo %__MsgPrefix%Test Run failed. Refer to the following:
-    echo     Html report: %__TestRunHtmlLog%
-    exit /b 1
-)
-
-goto TestsDone
-
-REM =========================================================================================
-REM ===
-REM === All tests complete!
-REM ===
-REM =========================================================================================
-
-:TestsDone
-
-echo %__MsgPrefix%Test run successful. Finished at %TIME%. Refer to the log files for details:
-echo     %__TestRunHtmlLog%
-echo     %__TestRunXmlLog%
-exit /b 0
-
-REM =========================================================================================
-REM ===
-REM === Subroutine to invoke msbuild.
-REM ===
-REM === All arguments are passed to msbuild. The first argument should be the .proj file to invoke.
-REM ===
-REM === On entry, environment variable __BuildLogRootName must be set to a file name prefix for the generated log files.
-REM === All the "standard" environment variables that aren't expected to change per invocation must also be set,
-REM === like __msbuildCommonArgs.
-REM ===
-REM === The build log files will be overwritten, not appended to.
-REM ===
-REM =========================================================================================
-
-:msbuild
-
-echo %__MsgPrefix%Invoking msbuild
-
-set "__BuildLog=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.log"
-set "__BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn"
-set "__BuildErr=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.err"
-
-set __msbuildLogArgs=^
-/fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%";Append ^
-/fileloggerparameters1:WarningsOnly;LogFile="%__BuildWrn%" ^
-/fileloggerparameters2:ErrorsOnly;LogFile="%__BuildErr%" ^
-/consoleloggerparameters:Summary ^
-/verbosity:minimal
-
-set __msbuildArgs=%* %__msbuildCommonArgs% %__msbuildLogArgs%
-
-@REM The next line will overwrite the existing log file, if any.
-echo %__MsgPrefix%"%DotNetCli%" msbuild %__msbuildArgs%
-echo Invoking: "%DotNetCli%" msbuild %__msbuildArgs% > "%__BuildLog%"
-
-call "%DotNetCli%" msbuild %__msbuildArgs%
-if errorlevel 1 (
-    echo %__MsgPrefix%Error: msbuild failed. Refer to the log files for details:
-    echo     %__BuildLog%
-    echo     %__BuildWrn%
-    echo     %__BuildErr%
-    exit /b 1
-)
-
-exit /b 0
-
-REM =========================================================================================
-REM ===
-REM === Set various environment variables, based on arguments to this script, before invoking the tests.
-REM ===
-REM =========================================================================================
-
-:SetTestEnvironment
-
-:: Long GC tests take about 10 minutes per test on average, so
-:: they often bump up against the default 10 minute timeout.
-:: 20 minutes is more than enough time for a test to complete successfully.
-if defined __LongGCTests (
-    echo %__MsgPrefix%Running Long GC tests, extending timeout to 20 minutes
-    set __TestTimeout=1200000
-    set RunningLongGCTests=1
-)
-
-:: GCSimulator tests can take up to an hour to complete. They are run twice a week in the
-:: CI, so it's fine if they take a long time.
-if defined __GCSimulatorTests (
-    echo %__MsgPrefix%Running GCSimulator tests, extending timeout to one hour
-    set __TestTimeout=3600000
-    set RunningGCSimulatorTests=1
-)
-
-if defined __IlasmRoundTrip (
-    echo %__MsgPrefix%Running Ilasm round trip
-    set RunningIlasmRoundTrip=1
-)
-
-exit /b 0
-
-REM =========================================================================================
-REM ===
-REM === Generate the "layout" directory in CORE_ROOT; download dependencies.
-REM ===
-REM =========================================================================================
-
-:ResolveDependencies
-
-set __BuildLogRootName=Tests_GenerateRuntimeLayout
-call :msbuild "%__ProjectFilesDir%\src\runtest.proj" /p:GenerateRuntimeLayout=true
-if errorlevel 1 (
-    echo %__MsgPrefix%Test Dependency Resolution Failed
-    exit /b 1
-)
-echo %__MsgPrefix%Created the runtime layout with all dependencies in %CORE_ROOT%
-
-exit /b 0
-
 REM =========================================================================================
 REM ===
 REM === Display a help message describing how to use this script.
@@ -395,7 +203,8 @@ echo./? -? /h -h /help -help   - View this message.
 echo ^<build_architecture^>      - Specifies build architecture: x64, x86, arm, or arm64 ^(default: x64^).
 echo ^<build_type^>              - Specifies build type: Debug, Release, or Checked ^(default: Debug^).
 echo TestEnv ^<test_env_script^> - Run a custom script before every test to set custom test environment settings.
-echo sequential                - Run tests sequentially (no parallelism).
+echo sequential                - Run tests sequentially ^(no parallelism^).
+echo parallel ^<type^>           - Run tests with given level of parallelism: none, collections, assemblies, all. Default: collections.
 echo RunCrossgen2Tests         - Runs ReadytoRun tests compiled with Crossgen2
 echo synthesizepgo             - Enabled synthesizing PGO data in CrossGen2
 echo jitstress ^<n^>             - Runs the tests with DOTNET_JitStress=n
@@ -409,6 +218,7 @@ echo                               2: GC on transitions to preemptive GC
 echo                               4: GC on every allowable JITed instruction
 echo                               8: GC on every allowable NGEN instruction
 echo                              16: GC only on a unique stack trace
+echo                              (Note that the value must be expresed in hex.)
 echo gcsimulator               - Run the GC Simulator tests
 echo longgc                    - Run the long-running GC tests
 echo ilasmroundtrip            - Runs ilasm round trip on the tests
