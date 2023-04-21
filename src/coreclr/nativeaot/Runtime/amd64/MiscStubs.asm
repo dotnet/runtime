@@ -40,20 +40,17 @@ ProbeLoop:
 LEAF_END RhpStackProbe, _TEXT
 
 LEAF_ENTRY RhpGetThreadStaticBaseForType, _TEXT
-        ; On entry and thorough the procedure:
-        ;   rcx - type index
         ; On exit:
         ;   rax - the thread static base for the given type
 
         ;; rax = GetThread(), TRASHES r8
         INLINE_GETTHREAD rax, r8
+
         ;; get per-thread storage
         mov     rax, [rax + OFFSETOF__Thread__m_pInlineThreadLocalStatics]
         test    rax, rax
         jz      RhpGetInlinedThreadStaticBaseSlow
 
-        ;; get the per-type storage
-        mov     rax, [rax + rcx * 8 + 10h]
         ;; return it
         ret
 
