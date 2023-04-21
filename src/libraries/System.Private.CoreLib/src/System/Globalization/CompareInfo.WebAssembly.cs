@@ -39,14 +39,6 @@ namespace System.Globalization
             AssertHybridOnWasm(options);
             AssertComparisonSupported(options, m_name);
 
-            if (CompareOptionsNotSupported(options))
-                throw new PlatformNotSupportedException(GetPNSE(options));
-
-            string cultureName = m_name;
-
-            if (CompareOptionsNotSupportedForCulture(options, cultureName))
-                throw new PlatformNotSupportedException(GetPNSEForCulture(options, cultureName));
-
             string exceptionMessage;
             int cmpResult;
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
@@ -65,7 +57,7 @@ namespace System.Globalization
         {
             AssertHybridOnWasm(options);
             Debug.Assert(!prefix.IsEmpty);
-            IndexingOptionsNotSupported(options);
+            AssertIndexingSupported(options);
             string cultureName = m_name;
 
             string exceptionMessage;
@@ -86,7 +78,7 @@ namespace System.Globalization
         {
             AssertHybridOnWasm(options);
             Debug.Assert(!prefix.IsEmpty);
-            IndexingOptionsNotSupported(options);
+            AssertIndexingSupported(options);
             string cultureName = m_name;
 
             string exceptionMessage;
