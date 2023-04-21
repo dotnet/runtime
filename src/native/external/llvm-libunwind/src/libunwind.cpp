@@ -75,6 +75,10 @@ _LIBUNWIND_HIDDEN int __unw_init_local(unw_cursor_t *cursor,
 # define REGISTER_KIND Registers_riscv
 #elif defined(__ve__)
 # define REGISTER_KIND Registers_ve
+#elif defined(__s390x__)
+# define REGISTER_KIND Registers_s390x
+#elif defined(__loongarch__) && __loongarch_grlen == 64
+#define REGISTER_KIND Registers_loongarch
 #else
 # error Architecture not supported
 #endif
@@ -107,14 +111,14 @@ _LIBUNWIND_WEAK_ALIAS(__unw_get_reg, unw_get_reg)
 
 /// Set value of specified register at cursor position in stack frame.
 _LIBUNWIND_HIDDEN int __unw_set_reg(unw_cursor_t *cursor, unw_regnum_t regNum,
-                                    unw_word_t value, unw_word_t *pos) {
+                                    unw_word_t value) {
   _LIBUNWIND_TRACE_API("__unw_set_reg(cursor=%p, regNum=%d, value=0x%" PRIxPTR
                        ")",
                        static_cast<void *>(cursor), regNum, value);
   typedef LocalAddressSpace::pint_t pint_t;
   AbstractUnwindCursor *co = (AbstractUnwindCursor *)cursor;
   if (co->validReg(regNum)) {
-    co->setReg(regNum, (pint_t)value, (pint_t)pos);
+    co->setReg(regNum, (pint_t)value);
     // special case altering IP to re-find info (being called by personality
     // function)
     if (regNum == UNW_REG_IP) {
@@ -129,7 +133,7 @@ _LIBUNWIND_HIDDEN int __unw_set_reg(unw_cursor_t *cursor, unw_regnum_t regNum,
       // this should actually be - info.gp. LLVM doesn't currently support
       // any such platforms and Clang doesn't export a macro for them.
       if (info.gp)
-        co->setReg(UNW_REG_SP, co->getReg(UNW_REG_SP) + info.gp, 0);
+        co->setReg(UNW_REG_SP, co->getReg(UNW_REG_SP) + info.gp);
     }
     return UNW_ESUCCESS;
   }
@@ -171,21 +175,6 @@ _LIBUNWIND_HIDDEN int __unw_set_fpreg(unw_cursor_t *cursor, unw_regnum_t regNum,
 }
 _LIBUNWIND_WEAK_ALIAS(__unw_set_fpreg, unw_set_fpreg)
 
-/// Get location of specified register at cursor position in stack frame.
-_LIBUNWIND_HIDDEN int __unw_get_save_loc(unw_cursor_t *cursor, int regNum,
-                                       unw_save_loc_t* location)
-{
-  AbstractUnwindCursor *co = (AbstractUnwindCursor *)cursor;
-  if (co->validReg(regNum)) {
-    // We only support memory locations, not register locations
-    location->u.addr = co->getRegLocation(regNum);
-    location->type = (location->u.addr == 0) ? UNW_SLT_NONE : UNW_SLT_MEMORY;
-    return UNW_ESUCCESS;
-  }
-  return UNW_EBADREG;
-}
-_LIBUNWIND_WEAK_ALIAS(__unw_get_save_loc, unw_get_save_loc)
-
 /// Move cursor to next frame.
 _LIBUNWIND_HIDDEN int __unw_step(unw_cursor_t *cursor) {
   _LIBUNWIND_TRACE_API("__unw_step(cursor=%p)", static_cast<void *>(cursor));
@@ -193,6 +182,15 @@ _LIBUNWIND_HIDDEN int __unw_step(unw_cursor_t *cursor) {
   return co->step();
 }
 _LIBUNWIND_WEAK_ALIAS(__unw_step, unw_step)
+
+// Move cursor to next frame and for stage2 of unwinding.
+// This resets MTE tags of tagged frames to zero.
+extern "C" _LIBUNWIND_HIDDEN int __unw_step_stage2(unw_cursor_t *cursor) {
+  _LIBUNWIND_TRACE_API("__unw_step_stage2(cursor=%p)",
+                       static_cast<void *>(cursor));
+  AbstractUnwindCursor *co = (AbstractUnwindCursor *)cursor;
+  return co->step(true);
+}
 
 /// Get unwind info at cursor position in stack frame.
 _LIBUNWIND_HIDDEN int __unw_get_proc_info(unw_cursor_t *cursor,
@@ -261,6 +259,16 @@ _LIBUNWIND_HIDDEN int __unw_is_signal_frame(unw_cursor_t *cursor) {
   return co->isSignalFrame();
 }
 _LIBUNWIND_WEAK_ALIAS(__unw_is_signal_frame, unw_is_signal_frame)
+
+#ifdef _AIX
+_LIBUNWIND_EXPORT uintptr_t __unw_get_data_rel_base(unw_cursor_t *cursor) {
+  _LIBUNWIND_TRACE_API("unw_get_data_rel_base(cursor=%p)",
+                       static_cast<void *>(cursor));
+  AbstractUnwindCursor *co = reinterpret_cast<AbstractUnwindCursor *>(cursor);
+  return co->getDataRelBase();
+}
+_LIBUNWIND_WEAK_ALIAS(__unw_get_data_rel_base, unw_get_data_rel_base)
+#endif
 
 #ifdef __arm__
 // Save VFP registers d0-d15 using FSTMIADX instead of FSTMIADD
