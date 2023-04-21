@@ -242,6 +242,7 @@ reinit_frame (InterpFrame *frame, InterpFrame *parent, InterpMethod *imethod, gp
 	frame->state.ip = NULL;
 }
 
+#define STACK_ADD_ALIGNED_BYTES(sp,bytes) ((stackval*)((char*)(sp) + (bytes)))
 #define STACK_ADD_BYTES(sp,bytes) ((stackval*)((char*)(sp) + ALIGN_TO(bytes, MINT_STACK_SLOT_SIZE)))
 #define STACK_SUB_BYTES(sp,bytes) ((stackval*)((char*)(sp) - ALIGN_TO(bytes, MINT_STACK_SLOT_SIZE)))
 
@@ -1345,8 +1346,7 @@ initialize_arg_offsets (InterpMethod *imethod, MonoMethodSignature *csig)
 	if (!sig)
 		sig = mono_method_signature_internal (imethod->method);
 	int arg_count = sig->hasthis + sig->param_count;
-	g_assert (arg_count);
-	guint32 *arg_offsets = (guint32*) g_malloc ((sig->hasthis + sig->param_count) * sizeof (int));
+	guint32 *arg_offsets = (guint32*) g_malloc ((arg_count + 1) * sizeof (int));
 	int index = 0, offset = 0;
 
 	if (sig->hasthis) {
@@ -1363,6 +1363,9 @@ initialize_arg_offsets (InterpMethod *imethod, MonoMethodSignature *csig)
 		arg_offsets [index++] = offset;
 		offset += size;
 	}
+	// This index is not associated with an actual argument, we just store the offset
+	// for convenience in order to easily determine the size of the param area used
+	arg_offsets [index] = ALIGN_TO (offset, MINT_STACK_SLOT_SIZE);
 
 	mono_memory_write_barrier ();
 	if (mono_atomic_cas_ptr ((gpointer*)&imethod->arg_offsets, arg_offsets, NULL) != NULL)
@@ -2180,7 +2183,8 @@ interp_entry (InterpEntryData *data)
 {
 	InterpMethod *rmethod;
 	ThreadContext *context;
-	stackval *sp, *sp_args;
+	stackval *sp;
+	int stack_index = 0;
 	MonoMethod *method;
 	MonoMethodSignature *sig;
 	MonoType *type;
@@ -2198,7 +2202,7 @@ interp_entry (InterpEntryData *data)
 		orig_domain = mono_threads_attach_coop (mono_domain_get (), &attach_cookie);
 
 	context = get_context ();
-	sp_args = sp = (stackval*)context->stack_pointer;
+	sp = (stackval*)context->stack_pointer;
 
 	method = rmethod->method;
 
@@ -2218,8 +2222,8 @@ interp_entry (InterpEntryData *data)
 	// FIXME: Optimize this
 
 	if (sig->hasthis) {
-		sp_args->data.p = data->this_arg;
-		sp_args++;
+		sp->data.p = data->this_arg;
+		stack_index = 1;
 	}
 
 	gpointer *params;
@@ -2228,22 +2232,22 @@ interp_entry (InterpEntryData *data)
 	else
 		params = data->args;
 	for (i = 0; i < sig->param_count; ++i) {
-		if (m_type_is_byref (sig->params [i])) {
-			sp_args->data.p = params [i];
-			sp_args++;
-		} else {
-			int size = stackval_from_data (sig->params [i], sp_args, params [i], FALSE);
-			sp_args = STACK_ADD_BYTES (sp_args, size);
-		}
+		int arg_offset = get_arg_offset_fast (rmethod, NULL, stack_index + i);
+		stackval *sval = STACK_ADD_ALIGNED_BYTES (sp, arg_offset);
+
+		if (m_type_is_byref (sig->params [i]))
+			sval->data.p = params [i];
+		else
+			stackval_from_data (sig->params [i], sval, params [i], FALSE);
 	}
-	sp_args = (stackval*)ALIGN_TO (sp_args, MINT_STACK_ALIGNMENT);
 
 	InterpFrame frame = {0};
 	frame.imethod = data->rmethod;
 	frame.stack = sp;
 	frame.retval = sp;
 
-	context->stack_pointer = (guchar*)sp_args;
+	int params_size = get_arg_offset_fast (rmethod, NULL, stack_index + sig->param_count);
+	context->stack_pointer = (guchar*)ALIGN_TO ((guchar*)sp + params_size, MINT_STACK_ALIGNMENT);
 	g_assert (context->stack_pointer < context->stack_end);
 
 	MONO_ENTER_GC_UNSAFE;
@@ -2740,7 +2744,7 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 	if (cinfo->ret_mt != -1)
 		args [pindex ++] = ret_sp;
 	for (guint i = 0; i < rmethod->param_count; ++i) {
-		stackval *sval = STACK_ADD_BYTES (sp, get_arg_offset_fast (rmethod, NULL, stack_index + i));
+		stackval *sval = STACK_ADD_ALIGNED_BYTES (sp, get_arg_offset_fast (rmethod, NULL, stack_index + i));
 		if (cinfo->arginfo [i] == JIT_ARG_BYVAL)
 			args [pindex ++] = sval->data.p;
 		else
