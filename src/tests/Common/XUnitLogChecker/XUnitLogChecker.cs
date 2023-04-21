@@ -33,7 +33,7 @@ public class XUnitLogChecker
     private enum TagCategory { OPENING, CLOSING }
     private const int MISSING_ARGS = -1;
 
-    private int TestExitCode;
+    private static int TestExitCode;
 
     static int Main(string[] args)
     {
@@ -66,6 +66,16 @@ public class XUnitLogChecker
         string finalLogPath = Path.Combine(resultsDir, finalLogName);
         string statsCsvPath = Path.Combine(resultsDir, statsCsvName);
 
+        // If the final results log file is present, then we can assume everything
+        // went fine, and it's ready to go without any further processing.
+
+        if (File.Exists(finalLogPath))
+        {
+            Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did"
+                              + " complete successfully!");
+            return TestExitCode;
+        }
+
         // If there are no logs, then this work item was probably entirely skipped.
         // This can happen under certain specific circumstances, such as with the
         // JIT Hardware Intrinsics tests with DOTNET_GCStress enabled. See Github
@@ -82,16 +92,6 @@ public class XUnitLogChecker
             Console.WriteLine($"[XUnitLogChecker]: If this is a mistake, then"
                               + " something went very wrong. The expected temp"
                               + $" log name would be: '{tempLogName}'");
-            return TestExitCode;
-        }
-
-        // If the final results log file is present, then we can assume everything
-        // went fine, and it's ready to go without any further processing.
-
-        if (File.Exists(finalLogPath))
-        {
-            Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did"
-                              + " complete successfully!");
             return TestExitCode;
         }
 
@@ -212,16 +212,6 @@ public class XUnitLogChecker
         Console.WriteLine($"* {workItemEndStatus[3]} tests skipped.\n");
     }
 
-    private static void PrintStackElements(Stack<string> stack)
-    {
-        Console.Write("Stack: ");
-        foreach (string element in stack)
-        {
-            Console.Write($"{element}->");
-        }
-        Console.Write("\n");
-    }
-
     static bool FixTheXml(string xFile)
     {
         var tags = new Stack<string>();
@@ -256,25 +246,25 @@ public class XUnitLogChecker
                     // Get the name of the next tag. We need solely the text, so we
                     // ask LINQ to lend us a hand in removing the symbols from the string.
                     tagText = new String(tr.Value.Where(c => char.IsLetter(c)).ToArray());
-                    Console.WriteLine($"OPENING: {tagText}");
 
                     // We are beginning to process a test's output. Set the flag to
                     // treat everything as such, until we get the closing output tag.
                     if (tagText.Equals("output") && !inOutput && !inCData)
                     {
-                        Console.WriteLine("Setting in Output");
                         inOutput = true;
                     }
                     else if (tagText.Equals("CDATA") && !inCData)
                     {
-                        Console.WriteLine("Setting in CDATA");
                         inCData = true;
+                        tags.Push(tagText);
+                        continue;
                     }
 
-                    tags.Push(tagText);
-                    Console.WriteLine($"Pushing {tagText}");
-                    PrintStackElements(tags);
-                    continue;
+                    // CDATA tags store plain output, which can include tag-like
+                    // looking strings. So, we skip those until we're done processing
+                    // the current CDATA tag.
+                    if (!inCData)
+                        tags.Push(tagText);
                 }
 
                 // Found a closing tag. If we're currently in an output state, then
@@ -292,39 +282,28 @@ public class XUnitLogChecker
                                            .Where(c => char.IsLetter(c))
                                            .ToArray());
 
-                    Console.WriteLine($"CLOSING: {tagText}");
                     if (inCData)
                     {
-                        Console.WriteLine("In CDATA");
-                        if (tagText.Equals("CDATA"))
+                        if (tagText.Equals("CDATA") && tagText.Equals(tags.Peek()))
                         {
-                            Console.WriteLine($"Exiting CDATA with {tagText}");
                             tags.Pop();
-                            PrintStackElements(tags);
                             inCData = false;
                         }
-                        else continue;
+                        continue;
                     }
 
                     if (inOutput)
                     {
-                        Console.WriteLine("In Output");
-                        if (tagText.Equals("output"))
+                        if (tagText.Equals("output") && tagText.Equals(tags.Peek()))
                         {
-                            Console.WriteLine($"Exiting Output with {tagText}");
                             tags.Pop();
-                            PrintStackElements(tags);
                             inOutput = false;
                         }
-                        else continue;
+                        continue;
                     }
 
                     if (tagText.Equals(tags.Peek()))
-                    {
-                        Console.WriteLine($"Popping {tagText}");
                         tags.Pop();
-                        PrintStackElements(tags);
-                    }
                 }
             }
         }
