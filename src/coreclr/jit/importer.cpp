@@ -3663,7 +3663,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
                 exprToBox = gtNewCastNode(genActualType(dstTyp), exprToBox, false, dstTyp);
             }
 
-            op1 = gtNewIndir(dstTyp, op1);
+            op1 = gtNewIndir(dstTyp, op1, GTF_IND_NONFAULTING);
             op1 = gtNewAssignNode(op1, exprToBox);
         }
 
