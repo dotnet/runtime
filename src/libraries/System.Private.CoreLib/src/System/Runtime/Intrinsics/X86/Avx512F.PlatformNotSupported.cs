@@ -578,6 +578,72 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> ExtractVector256(Vector512<double> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m512 _mm512_fmadd_ps (__m512 a, __m512 b, __m512 c)
+        ///   VFMADDPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> FusedMultiplyAdd(Vector512<float> a, Vector512<float> b, Vector512<float> c) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_fmadd_pd (__m512d a, __m512d b, __m512d c)
+        ///   VFMADDPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> FusedMultiplyAdd(Vector512<double> a, Vector512<double> b, Vector512<double> c) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_fmaddsub_ps (__m512 a, __m512 b, __m512 c)
+        ///   VFMADDSUBPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> FusedMultiplyAddSubtract(Vector512<float> a, Vector512<float> b, Vector512<float> c) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_fmaddsub_pd (__m512d a, __m512d b, __m512d c)
+        ///   VFMADDSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<double> FusedMultiplyAddSubtract(Vector512<double> a, Vector512<double> b, Vector512<double> c) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_fmsub_ps (__m512 a, __m512 b, __m512 c)
+        ///   VFMSUBPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> FusedMultiplySubtract(Vector512<float> a, Vector512<float> b, Vector512<float> c) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_fmsub_pd (__m512d a, __m512d b, __m512d c)
+        ///   VFMSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> FusedMultiplySubtract(Vector512<double> a, Vector512<double> b, Vector512<double> c) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_fmsubadd_ps (__m512 a, __m512 b, __m512 c)
+        ///   VFMSUBADDPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> FusedMultiplySubtractAdd(Vector512<float> a, Vector512<float> b, Vector512<float> c) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_fmsubadd_pd (__m512d a, __m512d b, __m512d c)
+        ///   VFMSUBADDPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> FusedMultiplySubtractAdd(Vector512<double> a, Vector512<double> b, Vector512<double> c) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_fnmadd_ps (__m512 a, __m512 b, __m512 c)
+        ///   VFNMADDPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> FusedMultiplyAddNegated(Vector512<float> a, Vector512<float> b, Vector512<float> c) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_fnmadd_pd (__m512d a, __m512d b, __m512d c)
+        ///   VFNMADDPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> FusedMultiplyAddNegated(Vector512<double> a, Vector512<double> b, Vector512<double> c) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_fnmsub_ps (__m512 a, __m512 b, __m512 c)
+        ///   VFNMSUBPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> FusedMultiplySubtractNegated(Vector512<float> a, Vector512<float> b, Vector512<float> c) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_fnmsub_pd (__m512d a, __m512d b, __m512d c)
+        ///   VFNMSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> FusedMultiplySubtractNegated(Vector512<double> a, Vector512<double> b, Vector512<double> c) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m512i _mm512_inserti128_si512 (__m512i a, __m128i b, const int imm8)
         ///   VINSERTI32x4 zmm1 {k1}{z}, zmm2, xmm3/m128, imm8
         /// </summary>

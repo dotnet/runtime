@@ -7878,7 +7878,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 case HW_Category_SIMDScalar:
                 case HW_Category_Scalar:
                 {
-                    if ((intrinsicId >= NI_FMA_MultiplyAdd) && (intrinsicId <= NI_FMA_MultiplySubtractNegatedScalar))
+                    bool isFmaIntrinsic = (intrinsicId >= NI_FMA_MultiplyAdd) &&
+                                          (intrinsicId <= NI_FMA_MultiplySubtractNegatedScalar);
+
+                    if (!isFmaIntrinsic)
+                    {
+                        isFmaIntrinsic = (intrinsicId >= NI_AVX512F_FusedMultiplyAdd) &&
+                                         (intrinsicId <= NI_AVX512F_FusedMultiplySubtractNegated);
+                    }
+
+                    if (isFmaIntrinsic)
                     {
                         bool     supportsOp1RegOptional = false;
                         bool     supportsOp2RegOptional = false;
