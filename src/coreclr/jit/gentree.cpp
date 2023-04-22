@@ -23217,7 +23217,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 #if defined(TARGET_XARCH)
     uint8_t  control   = 0;
     bool     crossLane = false;
-    bool     needsZero = varTypeIsSmallInt(simdBaseType);
+    bool     needsZero = varTypeIsSmallInt(simdBaseType) && (simdSize != 64);
     uint64_t value     = 0;
     simd_t   vecCns    = {};
     simd_t   mskCns    = {};
@@ -23351,6 +23351,61 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             retNode = gtNewSimdHWIntrinsicNode(type, op1, cnsNode, NI_AVX2_Permute4x64, simdBaseJitType, simdSize);
         }
     }
+    else if (simdSize == 64)
+    {
+        if (elementSize == 4)
+        {
+            for (uint32_t i = 0; i < elementCount; i++)
+            {
+                vecCns.u32[i] = (uint8_t)(vecCns.u8[i * elementSize] / elementSize);
+            }
+
+            op2                        = gtNewVconNode(type);
+            op2->AsVecCon()->gtSimdVal = vecCns;
+
+            // swap the operands to match the encoding requirements
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512F_PermuteVar16x32, simdBaseJitType, simdSize);
+        }
+        else if (elementSize == 2)
+        {
+            for (uint32_t i = 0; i < elementCount; i++)
+            {
+                vecCns.u16[i] = (uint8_t)(vecCns.u8[i * elementSize] / elementSize);
+            }
+
+            op2                        = gtNewVconNode(type);
+            op2->AsVecCon()->gtSimdVal = vecCns;
+
+            // swap the operands to match the encoding requirements
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512BW_PermuteVar32x16, simdBaseJitType, simdSize);
+        }
+        else
+        {
+            assert(elementSize == 8);
+
+            for (uint32_t i = 0; i < elementCount; i++)
+            {
+                vecCns.u64[i] = (uint8_t)(vecCns.u8[i * elementSize] / elementSize);
+            }
+
+            op2                        = gtNewVconNode(type);
+            op2->AsVecCon()->gtSimdVal = vecCns;
+
+            // swap the operands to match the encoding requirements
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512F_Permute8x64, simdBaseJitType, simdSize);
+        }
+        assert(retNode != nullptr);
+
+        // TODO-XArch-AVX512: Switch to VPERMI2*
+        if (needsZero)
+        {
+            op2                        = gtNewVconNode(type);
+            op2->AsVecCon()->gtSimdVal = mskCns;
+            retNode                    = gtNewSimdBinOpNode(GT_AND, type, op2, retNode, simdBaseJitType, simdSize);
+        }
+
+        return retNode;
+    }
     else
     {
         if (needsZero && compOpportunisticallyDependsOn(InstructionSet_SSSE3))
@@ -23397,13 +23452,11 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
     if (needsZero)
     {
-        assert(!compIsaSupportedDebugOnly(InstructionSet_SSSE3));
+        assert((simdSize == 32) || !compIsaSupportedDebugOnly(InstructionSet_SSSE3));
 
-        op2                          = gtNewVconNode(type);
-        op2->AsVecCon()->gtSimd16Val = mskCns.v128[0];
-
-        GenTree* zero = gtNewZeroConNode(type);
-        retNode       = gtNewSimdCndSelNode(type, op2, retNode, zero, simdBaseJitType, simdSize);
+        op2                        = gtNewVconNode(type);
+        op2->AsVecCon()->gtSimdVal = mskCns;
+        retNode                    = gtNewSimdBinOpNode(GT_AND, type, op2, retNode, simdBaseJitType, simdSize);
     }
 
     return retNode;

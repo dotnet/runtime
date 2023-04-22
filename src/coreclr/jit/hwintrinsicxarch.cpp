@@ -2219,9 +2219,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Shuffle:
         case NI_Vector256_Shuffle:
+        case NI_Vector512_Shuffle:
         {
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
-            assert((simdSize == 16) || (simdSize == 32));
+            assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
 
             GenTree* indices = impStackTop(0).val;
 
@@ -2275,6 +2276,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         // TODO-XARCH-CQ: We should emulate cross-lane shuffling for byte/sbyte and short/ushort
                         break;
                     }
+                }
+            }
+            else if (simdSize == 64)
+            {
+                if (varTypeIsByte(simdBaseType))
+                {
+                    // TYP_BYTE, TYP_UBYTE need AVX512_VBMI.
+                    break;
                 }
             }
             else
