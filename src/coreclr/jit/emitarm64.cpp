@@ -6511,7 +6511,8 @@ void emitter::emitIns_SS_R_R_R_I(instruction ins,
                                  ssize_t     imm,
                                  int         varx1,
                                  int         varx2,
-                                 int         offs)
+                                 int         offs1,
+                                 int         offs2)
 {
     assert((ins == INS_stp) || (ins == INS_ldp));
     emitAttr  size  = EA_SIZE(attr);
@@ -6558,8 +6559,8 @@ void emitter::emitIns_SS_R_R_R_I(instruction ins,
     if (validVar1 && validVar2)
     {
         instrDescLclVarPair* idPair = emitNewInstrLclVarPair(attr, imm);
-        idPair->idAddr()->iiaLclVar.initLclVarAddr(varx1, offs);
-        idPair->iiaLclVar2.initLclVarAddr(varx2, offs);
+        idPair->idAddr()->iiaLclVar.initLclVarAddr(varx1, offs1);
+        idPair->iiaLclVar2.initLclVarAddr(varx2, offs2);
         idPair->idSetIsLclVar();
 
         id = idPair;
@@ -6569,12 +6570,12 @@ void emitter::emitIns_SS_R_R_R_I(instruction ins,
         id = emitNewInstrCns(attr, imm);
         if (validVar1)
         {
-            id->idAddr()->iiaLclVar.initLclVarAddr(varx1, offs);
+            id->idAddr()->iiaLclVar.initLclVarAddr(varx1, offs1);
             id->idSetIsLclVar();
         }
         if (validVar2)
         {
-            id->idAddr()->iiaLclVar.initLclVarAddr(varx2, offs);
+            id->idAddr()->iiaLclVar.initLclVarAddr(varx2, offs2);
             id->idSetIsLclVar();
         }
     }
@@ -16335,7 +16336,7 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
                                          emitAttr    size,
                                          insFormat   fmt,
                                          bool        isCurrLclVar,
-                                         int         currLclVarNum,
+                                         int         varx,
                                          int         offs)
 {
     RegisterOrder optimizationOrder = IsOptimizableLdrStrWithPair(ins, reg1, reg2, imm, size, fmt);
@@ -16354,13 +16355,20 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
     ssize_t  prevImmSize   = prevImm * size;
     ssize_t  newImmSize    = imm * size;
     bool     isLastLclVar  = emitLastIns->idIsLclVar();
+    int      currOffset    = -1;
     int      prevOffset    = -1;
     int      prevLclVarNum = -1;
+    int      currLclVarNum = -1;
 
     if (emitLastIns->idIsLclVar())
     {
         prevOffset    = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
         prevLclVarNum = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
+    }
+    if (isCurrLclVar)
+    {
+        currOffset    = offs;
+        currLclVarNum = varx;
     }
 
     switch (emitLastIns->idGCref())
@@ -16376,9 +16384,6 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
             break;
     }
 
-    bool isGcLclVarPair =
-        (isLastLclVar && (emitLastIns->idGCref() != GCT_NONE)) && (isCurrLclVar && EA_IS_GCREF_OR_BYREF(reg1Attr));
-
     // Remove the last instruction written.
     emitRemoveLastInstruction();
 
@@ -16393,73 +16398,13 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
 
     if (optimizationOrder == eRO_ascending)
     {
-        if (isGcLclVarPair)
-        {
-            //    - idGCref() = last instruction's GCtype
-            //    - idGCrefReg2() = current instruction's GCType
-            //    - lvaVarNum = last instruction's lclVar
-            //    - lvaVarNum2 = current instruction's lclVar
-            //    - lvaOffset = last instruction's offset
-            emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum,
-                                currLclVarNum, prevOffset);
-        }
-        else if (isLastLclVar)
-        {
-            //    - idGCref() = last instruction's GCtype
-            //    - idGCrefReg2() = GCT_NONE
-            //    - lvaVarNum = last instruction's lclVar
-            //    - lvaOffset = last instruction's offset
-            emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum, -1,
-                                prevOffset);
-        }
-        else if (isCurrLclVar)
-        {
-            //    - idGCref() = GCT_NONE
-            //    - idGCrefReg2() = current instruction's GCType
-            //    - lvaVarNum = current instruction's lclVar
-            //    - lvaOffset = last instruction's offset
-            emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, currLclVarNum, -1,
-                                offs);
-        }
-        else
-        {
-            emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, -1, -1, -1);
-        }
+        emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum,
+                           currLclVarNum, prevOffset, currOffset);
     }
     else
     {
-        if (isGcLclVarPair)
-        {
-            //    - idGCref() = current instruction's GCType
-            //    - idGCrefReg2() = last instruction's GCtype
-            //    - lvaVarNum = current instruction's lclVar
-            //    - lvaVarNum2 = last instruction's lclVar
-            //    - lvaOffset = current instruction's offset
-            emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, currLclVarNum,
-                                prevLclVarNum, offs);
-        }
-        else if (isLastLclVar)
-        {
-            //    - idGCref() = GCT_NONE
-            //    - idGCrefReg2() = last instruction's GCtype
-            //    - lvaVarNum = last instruction's lclVar
-            //    - lvaOffset = current instruction's offset
-            emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, prevLclVarNum, -1,
-                                prevOffset);
-        }
-        else if (isCurrLclVar)
-        {
-            //    - idGCref() = current instruction's GCType
-            //    - idGCrefReg2() = GCT_NONE
-            //    - lvaVarNum = current instruction's lclVar
-            //    - lvaOffset = current instruction's offset
-            emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, currLclVarNum, -1,
-                                offs);
-        }
-        else
-        {
-            emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, -1, -1, -1);
-        }
+        emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, currLclVarNum,
+                           prevLclVarNum, currOffset, prevOffset);
     }
 
     return true;
