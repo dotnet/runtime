@@ -37,6 +37,14 @@ public static unsafe class Test
     private static int B() => 2;
     private static void C() { }
 
+    private static int D() => 3;
+    [UnmanagedCallersOnly]
+    private static int UnmanagedDefault() => D();
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    private static int UnmanagedCdecl() => D();
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    private static int UnmanagedStdcall() => D();
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static delegate*<int> ExecuteCctor() => Ptr;
 
@@ -48,6 +56,9 @@ public static unsafe class Test
 
         AreSame(A(), Invoke(() => ((delegate*<int>)&A)()));
         AreSame(B(), Invoke(() => ((delegate*<int>)&B)()));
+        AreSame(D(), Invoke(() => ((delegate* unmanaged<int>)&UnmanagedDefault)()));
+        AreSame(D(), Invoke(() => ((delegate* unmanaged[Cdecl]<int>)&UnmanagedCdecl)()));
+        AreSame(D(), Invoke(() => ((delegate* unmanaged[Stdcall]<int>)&UnmanagedStdcall)()));
 
         AreSame(A(), Invoke(() => Ptr()));
 

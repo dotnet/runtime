@@ -3800,8 +3800,8 @@ GenTree* Compiler::impGetNodeFromLocal(GenTree* node)
         return nullptr;
     };
 
-    GenTree* valueNode = findValue(impStmtList);
-    BasicBlock* bb = fgFirstBB;
+    GenTree*    valueNode = findValue(impStmtList);
+    BasicBlock* bb        = fgFirstBB;
     while (valueNode == nullptr && bb != nullptr)
     {
         valueNode = findValue(bb->bbStmtList);

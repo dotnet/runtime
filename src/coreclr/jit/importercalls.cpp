@@ -108,10 +108,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     NewCallArg       extraArg;
 
     // run transformations when instrumenting to not pollute PGO data
-    bool optimizedOrInstrumented = opts.OptimizationEnabled() || opts.IsInstrumented();
-    CORINFO_METHOD_HANDLE replacementMethod = nullptr;
-    GenTree* newThis = nullptr;
-    SigTransform sigTransformation = SigTransform::LeaveIntact;
+    bool                  optimizedOrInstrumented = opts.OptimizationEnabled() || opts.IsInstrumented();
+    CORINFO_METHOD_HANDLE replacementMethod       = nullptr;
+    GenTree*              newThis                 = nullptr;
+    SigTransform          sigTransformation       = SigTransform::LeaveIntact;
 
     // handle special import cases
     if (opcode == CEE_CALLI)
@@ -159,15 +159,15 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         else
         {
             JITDUMP("impImportCall failed to import calli as call - call conv %u is not managed\n",
-                originalSig.getCallConv());
+                    originalSig.getCallConv());
         }
     }
 
     if (replacementMethod != nullptr)
     {
         JITDUMP("impImportCall trying to transform call - found target method %s\n",
-            eeGetMethodName(replacementMethod));
-        CORINFO_SIG_INFO methodSig;
+                eeGetMethodName(replacementMethod));
+        CORINFO_SIG_INFO     methodSig;
         CORINFO_CLASS_HANDLE targetClass = info.compCompHnd->getMethodClass(replacementMethod);
         info.compCompHnd->getMethodSig(replacementMethod, &methodSig, targetClass);
 
@@ -189,15 +189,14 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             }
             JITDUMP("impImportCall transforming call\n");
             pResolvedToken->hMethod = replacementMethod;
-            pResolvedToken->hClass = targetClass;
+            pResolvedToken->hClass  = targetClass;
 
-            callInfo->sig = methodSig;
-            callInfo->hMethod = replacementMethod;
+            callInfo->sig         = methodSig;
+            callInfo->hMethod     = replacementMethod;
             callInfo->methodFlags = replacementFlags;
-            callInfo->classFlags = info.compCompHnd->getClassAttribs(targetClass);
+            callInfo->classFlags  = info.compCompHnd->getClassAttribs(targetClass);
 
-            return impImportCall(CEE_CALL, pResolvedToken, nullptr, nullptr,
-                prefixFlags, callInfo, rawILOffset);
+            return impImportCall(CEE_CALL, pResolvedToken, nullptr, nullptr, prefixFlags, callInfo, rawILOffset);
         }
     }
 
@@ -1715,7 +1714,9 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
 //  Return Value:
 //    Whether it's safe to change the IR to call the target method
 //
-bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig, CORINFO_SIG_INFO* targetSig, SigTransform transformation)
+bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig,
+                                   CORINFO_SIG_INFO* targetSig,
+                                   SigTransform      transformation)
 {
     const SigTransform thisChangeMask = (SigTransform)(SigTransform::DeleteThis | SigTransform::ReplaceRefThis);
     assert((transformation & thisChangeMask) != thisChangeMask);
@@ -1740,8 +1741,8 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig, CORINFO_SIG_INFO
 
     if (sourceSig->retType != targetSig->retType)
     {
-        JITDUMP("impCanSubstituteSig returning false - return type %u != %u\n",
-            (unsigned)sourceSig->retType, (unsigned)targetSig->retType);
+        JITDUMP("impCanSubstituteSig returning false - return type %u != %u\n", (unsigned)sourceSig->retType,
+                (unsigned)targetSig->retType);
         return false;
     }
 
@@ -1753,7 +1754,7 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig, CORINFO_SIG_INFO
         if (!ClassLayout::AreCompatible(layoutRetA, layoutRetB))
         {
             JITDUMP("impCanSubstituteSig returning false - return type %u is incompatible with %u\n",
-                (unsigned)sourceSig->retType, (unsigned)targetSig->retType);
+                    (unsigned)sourceSig->retType, (unsigned)targetSig->retType);
             return false;
         }
     }
@@ -1762,7 +1763,7 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig, CORINFO_SIG_INFO
     CORINFO_ARG_LIST_HANDLE targetArg = targetSig->args;
 
     assert((transformation & (SigTransform::DeleteThis | SigTransform::ReplaceRefThis)) == 0 ||
-        eeGetArgType(sourceArg, sourceSig) == TYP_REF);
+           eeGetArgType(sourceArg, sourceSig) == TYP_REF);
 
     if ((transformation & SigTransform::DeleteThis) != 0)
     {
@@ -1775,16 +1776,15 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig, CORINFO_SIG_INFO
         return false;
     }
 
-    for (unsigned i = 0; i < targetSig->numArgs; i++,
-        sourceArg = info.compCompHnd->getArgNext(sourceArg),
-        targetArg = info.compCompHnd->getArgNext(targetArg))
+    for (unsigned i = 0; i < targetSig->numArgs;
+         i++, sourceArg = info.compCompHnd->getArgNext(sourceArg), targetArg = info.compCompHnd->getArgNext(targetArg))
     {
         var_types sourceType = eeGetArgType(sourceArg, sourceSig);
         var_types targetType = eeGetArgType(targetArg, targetSig);
         if (sourceType != targetType)
         {
-            JITDUMP("impCanSubstituteSig returning false - parameter %u type %s != %s\n",
-                i, varTypeName(sourceType), varTypeName(targetType));
+            JITDUMP("impCanSubstituteSig returning false - parameter %u type %s != %s\n", i, varTypeName(sourceType),
+                    varTypeName(targetType));
             return false;
         }
 
@@ -1800,8 +1800,8 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig, CORINFO_SIG_INFO
 
             if (!ClassLayout::AreCompatible(sourceLayout, targetLayout))
             {
-                JITDUMP("impCanSubstituteSig returning false - parameter %u type %s is inconmpatible with %s\n",
-                    i, varTypeName(sourceType), varTypeName(targetType));
+                JITDUMP("impCanSubstituteSig returning false - parameter %u type %s is inconmpatible with %s\n", i,
+                        varTypeName(sourceType), varTypeName(targetType));
                 return false;
             }
         }
