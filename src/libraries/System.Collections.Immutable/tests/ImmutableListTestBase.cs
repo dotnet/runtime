@@ -419,6 +419,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/85012", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void BinarySearchPartialSortedList()
         {
             ImmutableArray<int> reverseSorted = ImmutableArray.CreateRange(Enumerable.Range(1, 150).Select(n => n * 2).Reverse());

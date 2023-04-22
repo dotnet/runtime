@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import monoWasmThreads from "consts:monoWasmThreads";
 import { isThenable } from "./cancelable-promise";
 import cwraps from "./cwraps";
 import { assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
@@ -18,6 +19,8 @@ import { _zero_region } from "./memory";
 import { js_string_to_mono_string_root } from "./strings";
 import { mono_assert, GCHandle, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types";
 import { TypedArray } from "./types/emscripten";
+import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
+
 
 export function initialize_marshalers_to_cs(): void {
     if (js_to_cs_marshalers.size == 0) {
@@ -306,10 +309,17 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     const holder = new TaskCallbackHolder(value);
     setup_managed_proxy(holder, gc_handle);
 
+    if (monoWasmThreads)
+        addUnsettledPromise();
+
     value.then(data => {
+        if (monoWasmThreads)
+            settleUnsettledPromise();
         runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
         teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed, (holding promise instead would not work)
     }).catch(reason => {
+        if (monoWasmThreads)
+            settleUnsettledPromise();
         runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
         teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed
     });

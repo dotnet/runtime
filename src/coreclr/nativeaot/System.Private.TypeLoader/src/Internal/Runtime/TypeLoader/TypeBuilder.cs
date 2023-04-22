@@ -998,7 +998,13 @@ namespace Internal.Runtime.TypeLoader
             {
                 ParameterizedType typeAsParameterizedType = _typesThatNeedTypeHandles[i] as ParameterizedType;
                 if (typeAsParameterizedType == null)
+                {
+                    if (_typesThatNeedTypeHandles[i] is FunctionPointerType typeAsFunctionPointerType)
+                    {
+                        throw new NotImplementedException();
+                    }
                     continue;
+                }
 
                 Debug.Assert(!typeAsParameterizedType.RuntimeTypeHandle.IsNull());
                 Debug.Assert(!typeAsParameterizedType.ParameterType.RuntimeTypeHandle.IsNull());

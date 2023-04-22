@@ -941,8 +941,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 // We fold away the cast here, as it only exists to satisfy the
                 // type system. It is safe to do this here since the op1 type
                 // and the signature return type are both the same TYP_SIMD.
-
-                op1 = impSIMDPopStack(retType, /* expectAddr: */ false, sig->retTypeClass);
+                op1 = impSIMDPopStack();
                 SetOpLclRelatedToSIMDIntrinsic(op1);
                 assert(op1->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
 
@@ -2207,15 +2206,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     if (copyBlkDst != nullptr)
     {
         assert(copyBlkSrc != nullptr);
-
-        // At this point, we have a tree that we are going to store into a destination.
-        // TODO-1stClassStructs: This should be a simple store or assignment, and should not require
-        // GTF_ALL_EFFECT for the dest. This is currently emulating the previous behavior of
-        // block ops.
-
-        GenTree* dest = gtNewStructVal(typGetBlkLayout(simdSize), copyBlkDst);
-
-        dest->gtType = simdType;
+        GenTree* dest = gtNewLoadValueNode(simdType, copyBlkDst);
         dest->gtFlags |= GTF_GLOB_REF;
 
         GenTree* retNode = gtNewBlkOpNode(dest, copyBlkSrc);

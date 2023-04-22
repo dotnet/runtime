@@ -70,7 +70,7 @@ jobs:
       # Set output RID manually: musl isn't properly detected. Make sure to also convert linux to
       # lowercase for RID format. (Detection normally converts, but we're preventing it.)
       - name: OutputRidArg
-        value: /p:OutputRid=linux-musl-${{ parameters.archType }}
+        value: /p:OutputRID=linux-musl-${{ parameters.archType }}
       - name: _PortableBuild
         value: true
     - ${{ if eq(parameters.osGroup, 'tvos') }}:

@@ -32,14 +32,8 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates calling via reflection works, using Unsafe.ReadUnaligned
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates passing a static member works
-                test.RunClsVarScenario();
-
                 // Validates passing a local works, using Unsafe.ReadUnaligned
                 test.RunLclVarScenario_UnsafeRead();
-
-                // Validates passing the field of a local class works
-                test.RunClassLclFldScenario();
 
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
@@ -126,16 +120,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static {Op1BaseType} _data;
 
-        private static {Op1BaseType} _clsVar;
-
         private {Op1BaseType} _fld;
 
         private DataTable _dataTable;
-
-        static {TemplateName}UnaryOpTest__{TestName}()
-        {
-            _clsVar = {NextValueOp1};
-        }
 
         public {TemplateName}UnaryOpTest__{TestName}()
         {
@@ -176,18 +163,6 @@ namespace JIT.HardwareIntrinsics.Arm
             ValidateResult(_data, _dataTable.outArrayPtr);
         }
 
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-
-            var result = {Isa}.{Method}(
-                _clsVar
-            );
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_clsVar, _dataTable.outArrayPtr);
-        }
-
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
@@ -197,17 +172,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(data, _dataTable.outArrayPtr);
-        }
-
-        public void RunClassLclFldScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
-
-            var test = new {TemplateName}UnaryOpTest__{TestName}();
-            var result = {Isa}.{Method}(test._fld);
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld, _dataTable.outArrayPtr);
         }
 
         public void RunClassFldScenario()

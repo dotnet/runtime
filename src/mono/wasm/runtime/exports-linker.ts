@@ -11,6 +11,7 @@ import { mono_interp_tier_prepare_jiterpreter } from "./jiterpreter";
 import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue, mono_jiterp_do_jit_call_indirect } from "./jiterpreter-jit-call";
 import { mono_wasm_marshal_promise } from "./marshal-to-js";
+import { mono_wasm_eventloop_has_unsettled_interop_promises } from "./pthreads/shared/eventloop";
 import { mono_wasm_pthread_on_pthread_attached } from "./pthreads/worker";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_asm_loaded } from "./startup";
@@ -33,6 +34,8 @@ import { mono_wasm_change_case, mono_wasm_change_case_invariant, mono_wasm_compa
 const mono_wasm_threads_exports = !MonoWasmThreads ? undefined : {
     // mono-threads-wasm.c
     mono_wasm_pthread_on_pthread_attached,
+    // threads.c
+    mono_wasm_eventloop_has_unsettled_interop_promises,
     // diagnostics_server.c
     mono_wasm_diagnostic_server_on_server_thread_created,
     mono_wasm_diagnostic_server_on_runtime_server_init,

@@ -57,6 +57,8 @@ public class ComputeWasmPublishAssets : Task
 
     public bool EnableThreads { get; set; }
 
+    public bool IsWebCilEnabled { get; set; }
+
     [Output]
     public ITaskItem[] NewCandidates { get; set; }
 
@@ -369,6 +371,9 @@ public class ComputeWasmPublishAssets : Task
         {
             var asset = kvp.Value;
             var fileName = Path.GetFileName(asset.GetMetadata("RelativePath"));
+            if (IsWebCilEnabled)
+                fileName = Path.ChangeExtension(fileName, ".dll");
+
             if (resolvedAssembliesToPublish.TryGetValue(fileName, out var existing))
             {
                 // We found the assembly, so it'll have to be updated.
@@ -590,7 +595,7 @@ public class ComputeWasmPublishAssets : Task
             }
 
             var extension = candidate.GetMetadata("Extension");
-            if (string.Equals(extension, ".dll", StringComparison.Ordinal))
+            if (string.Equals(extension, ".dll", StringComparison.Ordinal) || string.Equals(extension, ".webcil", StringComparison.Ordinal))
             {
                 var culture = candidate.GetMetadata("Culture");
                 var inferredCulture = candidate.GetMetadata("DestinationSubDirectory").Replace("\\", "/").Trim('/');

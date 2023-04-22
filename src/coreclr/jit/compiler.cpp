@@ -10312,8 +10312,7 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
     assert(tree->OperIs(GT_FIELD, GT_IND, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
-    assert(fgAddrCouldBeNull(tree->gtGetOp1()));
-    tree->gtFlags |= GTF_EXCEPT;
+    tree->SetIndirExceptionFlags(this);
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
