@@ -1470,23 +1470,19 @@ bundled_assembly_match (const char *bundled_name, const char *name)
 }
 
 static MonoImage *
-open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, gboolean is_satellite)
+open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status)
 {
 	if (!bundles)
 		return NULL;
 
-	MonoImage *image = NULL;
-	char *name = is_satellite ? g_strdup (filename) : g_path_get_basename (filename);
-	for (int i = 0; !image && bundles [i]; ++i) {
-		if (bundled_assembly_match (bundles[i]->name, name)) {
+	for (int i = 0; bundles [i]; ++i) {
+		if (bundled_assembly_match (bundles[i]->name, filename)) {
 			// Since bundled images don't exist on disk, don't give them a legit filename
-			image = mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, FALSE, name, NULL);
-			break;
+			return mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, FALSE, filename, NULL);
 		}
 	}
 
-	g_free (name);
-	return image;
+	return NULL;
 }
 
 static MonoImage *
@@ -1496,18 +1492,16 @@ open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, 
 		return NULL;
 
 	MonoImage *image = NULL;
-	char *name = g_strdup (filename);
+	char *bundle_name = g_strconcat (culture, "/", filename, (const char *)NULL);
 
 	for (int i = 0; !image && satellite_bundles [i]; ++i) {
-		if (bundled_assembly_match (satellite_bundles[i]->name, name) && strcmp (satellite_bundles [i]->culture, culture) == 0) {
-			char *bundle_name = g_strconcat (culture, "/", name, (const char *)NULL);
+		if (bundled_assembly_match (satellite_bundles[i]->name, filename) && strcmp (satellite_bundles [i]->culture, culture) == 0) {
+			// Since bundled images don't exist on disk, don't give them a legit filename
 			image = mono_image_open_from_data_internal (alc, (char *)satellite_bundles [i]->data, satellite_bundles [i]->size, FALSE, status, FALSE, bundle_name, NULL);
-			g_free (bundle_name);
-			break;
 		}
 	}
 
-	g_free (name);
+	g_free (bundle_name);
 	return image;
 }
 
@@ -1530,12 +1524,16 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
 	MonoImage *image = NULL;
 	MONO_ENTER_GC_UNSAFE;
 	gboolean is_satellite = culture && culture [0] != 0;
-
-	if (is_satellite)
-		image = open_from_satellite_bundle (alc, filename, status, culture);
-	else
-		image = open_from_bundle_internal (alc, filename, status, FALSE);
-
+	const char *name;
+	if (is_satellite) {
+		name = g_strdup (filename);
+		image = open_from_satellite_bundle (alc, name, status, culture);
+	}
+	else {
+		name = g_path_get_basename (filename);
+		image = open_from_bundle_internal (alc, name, status);
+	}
+	g_free ((void *)name);
 	if (image) {
 		mono_image_addref (image);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly Loader loaded assembly from bundle: '%s'.", filename);
