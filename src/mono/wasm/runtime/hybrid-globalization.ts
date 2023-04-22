@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "../imports";
-import { mono_wasm_new_external_root } from "../roots";
-import {MonoString, MonoStringRef } from "../types";
-import { Int32Ptr } from "../types/emscripten";
-import { conv_string_root, js_string_to_mono_string_root, string_decoder } from "../strings";
-import { setU16 } from "../memory";
+import { Module } from "./imports";
+import { mono_wasm_new_external_root } from "./roots";
+import {MonoString, MonoStringRef } from "./types";
+import { Int32Ptr } from "./types/emscripten";
+import { conv_string_root, js_string_to_mono_string_root, string_decoder } from "./strings";
+import { setU16 } from "./memory";
 
 export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
     try{
@@ -51,7 +51,7 @@ function get_utf16_string(ptr: number, length: number): string{
     const view = new Uint16Array(Module.HEAPU16.buffer, ptr, length);
     let string = "";
     for (let i = 0; i < length; i++)
-        string += String.fromCharCode(view[i]);        
+        string += String.fromCharCode(view[i]);
     return string;
 }
 
@@ -77,11 +77,78 @@ export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: Mo
     }
 }
 
-export function pass_exception_details(ex: any, exceptionMessage: Int32Ptr){
+function pass_exception_details(ex: any, exceptionMessage: Int32Ptr){
     const exceptionJsString = ex.message + "\n" + ex.stack;
     const exceptionRoot = mono_wasm_new_external_root<MonoString>(<any>exceptionMessage);
     js_string_to_mono_string_root(exceptionJsString, exceptionRoot);
     exceptionRoot.release();
+}
+
+export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number): number{
+    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+    try{
+        const cultureName = conv_string_root(cultureRoot);
+        const prefix = get_clean_string(str2, str2Length);
+        // no need to look for an empty string
+        if (prefix.length == 0)
+            return 1; // true
+
+        const source = get_clean_string(str1, str1Length);
+        if (source.length < prefix.length)
+            return 0; //false
+        const sourceOfPrefixLength = source.slice(0, prefix.length);
+
+        const casePicker = (options & 0x1f);
+        const locale = cultureName ? cultureName : undefined;
+        const result = compare_strings(sourceOfPrefixLength, prefix, locale, casePicker);
+        if (result == -2)
+            throw new Error("$Invalid comparison option.");
+        return result === 0 ? 1 : 0; // equals ? true : false
+    }
+    catch (ex: any) {
+        pass_exception_details(ex, exceptionMessage);
+        return -1;
+    }
+    finally {
+        cultureRoot.release();
+    }
+}
+
+export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number): number{
+    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+    try{
+        const cultureName = conv_string_root(cultureRoot);
+        const suffix = get_clean_string(str2, str2Length);
+        if (suffix.length == 0)
+            return 1; // true
+
+        const source = get_clean_string(str1, str1Length);
+        const diff = source.length - suffix.length;
+        if (diff < 0)
+            return 0; //false
+        const sourceOfSuffixLength = source.slice(diff, source.length);
+
+        const casePicker = (options & 0x1f);
+        const locale = cultureName ? cultureName : undefined;
+        const result = compare_strings(sourceOfSuffixLength, suffix, locale, casePicker);
+        if (result == -2)
+            throw new Error("$Invalid comparison option.");
+        return result === 0 ? 1 : 0; // equals ? true : false
+    }
+    catch (ex: any) {
+        pass_exception_details(ex, exceptionMessage);
+        return -1;
+    }
+    finally {
+        cultureRoot.release();
+    }
+}
+
+function get_clean_string(strPtr: number, strLen: number)
+{
+    const str = string_decoder.decode(<any>strPtr, <any>(strPtr + 2*strLen));
+    const nStr = str.normalize();
+    return nStr.replace(/[\u200B-\u200D\uFEFF\0]/g, "");
 }
 
 export function compare_strings(string1: string, string2: string, locale: string | undefined, casePicker: number) : number{
