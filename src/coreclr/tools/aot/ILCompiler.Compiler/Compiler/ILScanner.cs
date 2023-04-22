@@ -710,13 +710,20 @@ namespace ILCompiler
                 if (threadStaticNodes.Count > 0)
                 {
                     threadStaticNodes.Sort(CompilerComparer.Instance);
-                    foreach (var threadStaticNode in threadStaticNodes)
+                    for (int i = 0; i < threadStaticNodes.Count; i++)
                     {
+                        ThreadStaticsNode threadStaticNode = threadStaticNodes[i];
                         MetadataType t = threadStaticNode.Type;
                         // REVIEW: how to filter these more precisely?
                         //       List<int> is ok, but List<object> is not.
                         if (t.HasInstantiation)
                             continue;
+
+#if DEBUG
+                        // do not inline storage for some types in debug - for test coverage
+                        if (i % 8 == 0)
+                            continue;
+#endif
 
                         types.Add(t);
 

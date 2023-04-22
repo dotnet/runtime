@@ -88,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis
                                 encoder.EmitCMP(ref initialized, 0);
                                 encoder.EmitJE(helper);
 
-                                // -1 for inlined storage
+                                // -1 (index of inlined storage)
                                 encoder.EmitMOV(encoder.TargetRegister.Arg0, -1);
                                 // unused
                                 encoder.EmitMOV(encoder.TargetRegister.Arg1, 0);

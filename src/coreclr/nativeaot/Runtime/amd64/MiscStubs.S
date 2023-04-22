@@ -45,7 +45,7 @@ LOCAL_LABEL(ProbeLoop):
         ret
 NESTED_END RhpStackProbe, _TEXT
 
-LEAF_ENTRY RhpGetThreadStaticBaseForType, _TEXT
+NESTED_ENTRY RhpGetThreadStaticBaseForType, _TEXT, NoHandler
         // On exit:
         //   rax - the thread static base for the given type
 
@@ -59,5 +59,5 @@ LEAF_ENTRY RhpGetThreadStaticBaseForType, _TEXT
 
         // return it
         ret
-LEAF_END RhpGetThreadStaticBaseForType, _TEXT
+NESTED_END RhpGetThreadStaticBaseForType, _TEXT
 
