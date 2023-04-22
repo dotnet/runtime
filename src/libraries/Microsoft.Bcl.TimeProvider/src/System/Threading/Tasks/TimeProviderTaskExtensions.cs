@@ -64,32 +64,34 @@ namespace System.Threading.Tasks
 
             DelayState state = new();
 
-            // To prevent a race condition where the timer may fire before being assigned to s.Timer,
-            // we initialize it with an InfiniteTimeSpan and then set it to the state variable, followed by calling Time.Change.
             state.Timer = timeProvider.CreateTimer(delayState =>
             {
-                DelayState s = (DelayState)delayState;
+                DelayState s = (DelayState)delayState!;
                 s.TrySetResult(true);
                 s.Registration.Dispose();
-                s.Timer.Dispose();
-            }, state, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
-
-            state.Timer.Change(delay, Timeout.InfiniteTimeSpan);
+                s?.Timer.Dispose();
+            }, state, delay, Timeout.InfiniteTimeSpan);
 
             state.Registration = cancellationToken.Register(delayState =>
             {
-                DelayState s = (DelayState)delayState;
+                DelayState s = (DelayState)delayState!;
                 s.TrySetCanceled(cancellationToken);
-                s.Timer.Dispose();
                 s.Registration.Dispose();
+                s?.Timer.Dispose();
             }, state);
 
-            // To prevent a race condition where the timer fires after we have attached the cancellation callback
-            // but before the registration is stored in state.Registration, we perform a subsequent check to ensure
-            // that the registration is not left dangling.
+            // There are race conditions where the timer fires after we have attached the cancellation callback but before the
+            // registration is stored in state.Registration, or where cancellation is requested prior to the registration being
+            // stored into state.Registration, or where the timer could fire after it's been createdbut before it's been stored
+            // in state.Timer. In such cases, the cancellation registration and/or the Timer might be stored into state after the
+            // callbacks and thus left undisposed.  So, we do a subsequent check here. If the task isn't completed by this point,
+            // then the callbacks won't have called TrySetResult (the callbacks invoke TrySetResult before disposing of the fields),
+            // in which case it will see both the timer and registration set and be able to Dispose them. If the task is completed
+            // by this point, then this is guaranteed to see s.Timer as non-null because it was deterministically set above.
             if (state.Task.IsCompleted)
             {
                 state.Registration.Dispose();
+                state.Timer.Dispose();
             }
 
             return state.Task;
@@ -149,8 +151,6 @@ namespace System.Threading.Tasks
 
             var state = new WaitAsyncState();
 
-            // To prevent a race condition where the timer may fire before being assigned to s.Timer,
-            // we initialize it with an InfiniteTimeSpan and then set it to the state variable, followed by calling Time.Change.
             state.Timer = timeProvider.CreateTimer(static s =>
             {
                 var state = (WaitAsyncState)s!;
@@ -160,8 +160,7 @@ namespace System.Threading.Tasks
                 state.Registration.Dispose();
                 state.Timer!.Dispose();
                 state.ContinuationCancellation.Cancel();
-            }, state, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
-            state.Timer.Change(timeout, Timeout.InfiniteTimeSpan);
+            }, state, timeout, Timeout.InfiniteTimeSpan);
 
             _ = task.ContinueWith(static (t, s) =>
             {
@@ -185,12 +184,11 @@ namespace System.Threading.Tasks
                 state.ContinuationCancellation.Cancel();
             }, state);
 
-            // To prevent a race condition where the timer fires after we have attached the cancellation callback
-            // but before the registration is stored in state.Registration, we perform a subsequent check to ensure
-            // that the registration is not left dangling.
+            // See explanation in Delay for this final check
             if (state.Task.IsCompleted)
             {
                 state.Registration.Dispose();
+                state.Timer.Dispose();
             }
 
             return state.Task;
