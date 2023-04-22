@@ -88,12 +88,12 @@ export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoS
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
         const cultureName = conv_string_root(cultureRoot);
-        const prefix = get_clean_string(str2, str2Length);
+        const prefix = decode_to_clean_string(str2, str2Length);
         // no need to look for an empty string
         if (prefix.length == 0)
             return 1; // true
 
-        const source = get_clean_string(str1, str1Length);
+        const source = decode_to_clean_string(str1, str1Length);
         if (source.length < prefix.length)
             return 0; //false
         const sourceOfPrefixLength = source.slice(0, prefix.length);
@@ -118,11 +118,11 @@ export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStr
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
         const cultureName = conv_string_root(cultureRoot);
-        const suffix = get_clean_string(str2, str2Length);
+        const suffix = decode_to_clean_string(str2, str2Length);
         if (suffix.length == 0)
             return 1; // true
 
-        const source = get_clean_string(str1, str1Length);
+        const source = decode_to_clean_string(str1, str1Length);
         const diff = source.length - suffix.length;
         if (diff < 0)
             return 0; //false
@@ -144,11 +144,77 @@ export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStr
     }
 }
 
-function get_clean_string(strPtr: number, strLen: number)
+function decode_to_clean_string(strPtr: number, strLen: number)
 {
     const str = string_decoder.decode(<any>strPtr, <any>(strPtr + 2*strLen));
+    return clean_string(str);
+}
+
+function clean_string(str: string)
+{
     const nStr = str.normalize();
     return nStr.replace(/[\u200B-\u200D\uFEFF\0]/g, "");
+}
+
+export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number): number{
+    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+    try{
+        const target = string_decoder.decode(<any>str1, <any>(str1 + 2*str1Length));
+        // no need to look for an empty string
+        if (clean_string(target).length == 0)
+            return 0;
+
+        const source = string_decoder.decode(<any>str2, <any>(str2 + 2*str2Length));
+        // no need to look in an empty string
+        if (clean_string(source).length == 0)
+            return 0;
+        const cultureName = conv_string_root(cultureRoot);
+        const locale = cultureName ? cultureName : undefined;
+        const casePicker = (options & 0x1f);
+
+        const segmenter = new Intl.Segmenter(locale, { granularity: "grapheme" });
+        let i = 0;
+        let stop = false;
+        let index = -1;
+        while (!stop)
+        {
+            const iteratorSrc = segmenter.segment(source.slice(i, str2Length - i))[Symbol.iterator]();
+            let srcNext = iteratorSrc.next();
+            const iteratorTrg = segmenter.segment(target)[Symbol.iterator](); // do we have to make a new one every time?
+            let trgNext = iteratorTrg.next();
+
+            if (srcNext.done)
+            {
+                stop = true;
+                break;
+            }
+            index = srcNext.value.index;
+            while (!trgNext.done && !srcNext.done)
+            {
+                if (compare_strings(srcNext.value.segment, trgNext.value.segment, locale, casePicker) !== 0)
+                {
+                    index = -1;
+                    break;
+                }
+                trgNext = iteratorTrg.next();
+                srcNext = iteratorSrc.next();
+            }
+            if (trgNext.done || srcNext.done)
+            {
+                stop = true;
+                break;
+            }
+            i++;
+        }
+        return index;
+    }
+    catch (ex: any) {
+        pass_exception_details(ex, exceptionMessage);
+        return -1;
+    }
+    finally {
+        cultureRoot.release();
+    }
 }
 
 export function compare_strings(string1: string, string2: string, locale: string | undefined, casePicker: number) : number{

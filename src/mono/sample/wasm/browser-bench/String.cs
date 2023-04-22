@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -28,6 +28,7 @@ namespace Sample
                 new CompareInfoEndsWithMeasurement(),
                 new StringStartsWithMeasurement(),
                 new StringEndsWithMeasurement(),
+                new StringIndexOfMeasurement(),
             };
         }
 
@@ -130,8 +131,9 @@ namespace Sample
 
         public abstract class StringsCompare : StringMeasurement
         {
-            protected string strDifferentSuffix;
-            protected string strDifferentPrefix;
+            protected string strAsciiSuffix;
+            protected string strAsciiPrefix;
+            protected string halfStrLenAsciiSuffix;
 
             public void InitializeStringsForComparison()
             {
@@ -139,10 +141,12 @@ namespace Sample
                 // worst case: strings may differ only with the last/first char
                 char originalLastChar = data[len-1];
                 data[len-1] = (char)random.Next(0x80);
-                strDifferentSuffix = new string(data);
+                strAsciiSuffix = new string(data);
+                int middleIdx = (int)(len/2);
+                halfStrLenAsciiSuffix = new string(new ArraySegment<char>(data, middleIdx, len - middleIdx));
                 data[len-1] = originalLastChar;
                 data[0] = (char)random.Next(0x80);
-                strDifferentPrefix = new string(data);
+                strAsciiPrefix = new string(data);
             }
             public override string Name => "Strings Compare Base";
         }
@@ -158,7 +162,7 @@ namespace Sample
                 return Task.CompletedTask;
             }
             public override string Name => "String Compare";
-            public override void RunStep() => string.Compare(str, strDifferentSuffix, cultureInfo, CompareOptions.None);
+            public override void RunStep() => string.Compare(str, strAsciiSuffix, cultureInfo, CompareOptions.None);
         }
 
         public class StringEqualsMeasurement : StringsCompare
@@ -169,7 +173,7 @@ namespace Sample
                 return Task.CompletedTask;
             }
             public override string Name => "String Equals";
-            public override void RunStep() => string.Equals(str, strDifferentSuffix, StringComparison.InvariantCulture);
+            public override void RunStep() => string.Equals(str, strAsciiSuffix, StringComparison.InvariantCulture);
         }
 
         public class CompareInfoCompareMeasurement : StringsCompare
@@ -183,7 +187,7 @@ namespace Sample
                 return Task.CompletedTask;
             }
             public override string Name => "CompareInfo Compare";
-            public override void RunStep() => compareInfo.Compare(str, strDifferentSuffix);
+            public override void RunStep() => compareInfo.Compare(str, strAsciiSuffix);
         }
 
         public class CompareInfoStartsWithMeasurement : StringsCompare
@@ -197,7 +201,7 @@ namespace Sample
                 return Task.CompletedTask;
             }
             public override string Name => "CompareInfo IsPrefix";
-            public override void RunStep() => compareInfo.IsPrefix(str, strDifferentSuffix);
+            public override void RunStep() => compareInfo.IsPrefix(str, strAsciiSuffix);
         }
 
         public class CompareInfoEndsWithMeasurement : StringsCompare
@@ -211,7 +215,7 @@ namespace Sample
                 return Task.CompletedTask;
             }
             public override string Name => "CompareInfo IsSuffix";
-            public override void RunStep() => compareInfo.IsSuffix(str, strDifferentPrefix);
+            public override void RunStep() => compareInfo.IsSuffix(str, strAsciiPrefix);
         }
 
         public class StringStartsWithMeasurement : StringsCompare
@@ -225,7 +229,7 @@ namespace Sample
                 return Task.CompletedTask;
             }
             public override string Name => "String StartsWith";
-            public override void RunStep() => str.StartsWith(strDifferentSuffix, false, cultureInfo);
+            public override void RunStep() => str.StartsWith(strAsciiSuffix, false, cultureInfo);
         }
 
         public class StringEndsWithMeasurement : StringsCompare
@@ -239,7 +243,21 @@ namespace Sample
                 return Task.CompletedTask;
             }
             public override string Name => "String EndsWith";
-            public override void RunStep() => str.EndsWith(strDifferentPrefix, false, cultureInfo);
+            public override void RunStep() => str.EndsWith(strAsciiPrefix, false, cultureInfo);
+        }
+
+        public class StringIndexOfMeasurement : StringsCompare
+        {
+            protected CompareInfo compareInfo;
+
+            public override Task BeforeBatch()
+            {
+                compareInfo = new CultureInfo("nb-NO").CompareInfo;
+                InitializeStringsForComparison();
+                return Task.CompletedTask;
+            }
+            public override string Name => "String IndexOf";
+            public override void RunStep() => compareInfo.IndexOf(str, halfStrLenAsciiSuffix, CompareOptions.None);
         }
     }
 }

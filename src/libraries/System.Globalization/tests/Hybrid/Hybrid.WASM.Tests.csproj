@@ -12,5 +12,6 @@
     <Compile Include="..\CompareInfo\CompareInfoTestsBase.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.IsPrefix.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.IsSuffix.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.IndexOf.cs" />
   </ItemGroup>
 </Project>
