@@ -104,7 +104,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     bool checkForSmallType  = false;
     bool bIntrinsicImported = false;
 
-    CORINFO_SIG_INFO originalSig;
+    CORINFO_SIG_INFO originalSig = {};
     NewCallArg       extraArg;
 
     // run transformations when instrumenting to not pollute PGO data
