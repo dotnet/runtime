@@ -19,8 +19,7 @@
 
     <ItemGroup>
       <_ExtraLibrarySources Include="$(_AotModuleTablePath)" />
-      <_ExtraLibrarySources Include="$(_ResourcesToBundleSourceFile)" />
-      <_ExtraLibrarySources Include="%(_ResourcesToBundleWithHashes.DestinationFile)" />
+      <_ExtraLibrarySources Include="@(BundledSources)" />
       <_ExtraLinkerArgs Include="@(_CommonLinkerArgs)" />
     </ItemGroup>
 
@@ -28,6 +27,7 @@
       Assemblies="@(_AssembliesToBundleInternal)"
       AssembliesLocation="$(AssembliesLocation)"
       BundlesResources="$(_BundlesResources)"
+      BundledPreallocatedSymbols="@(BundledPreallocatedSymbols)"
       ExtraLinkerArguments="@(_ExtraLinkerArgs)"
       ExtraSources="@(_ExtraLibrarySources)"
       IsSharedLibrary="$(_IsSharedLibrary)"
@@ -46,10 +46,16 @@
 
   <Target Name="_GenerateBundle"
           Condition="'$(BundlesResources)' != 'false'">
-
     <PropertyGroup>
-      <_ResourcesToBundleSourceFile>$(BundleDir)bundled_resources.c</_ResourcesToBundleSourceFile>
+      <BundledSourceFile>mono-bundled-source.c</BundledSourceFile>
+      <BundleOutputDirectory>$(BundleDir)</BundleOutputDirectory>
     </PropertyGroup>
+
+    <ItemGroup>
+      <BundledSources Include="$(BundleOutputDirectory)$(BundledSourceFile)" />
+      <BundledSources Include="$(BundleOutputDirectory)mono-bundled-source.h" />
+      <BundledSources Include="$(BundleOutputDirectory)mono-bundled-preallocated-source.c" />
+    </ItemGroup>
 
     <ItemGroup>
       <_ResourcesToBundle Remove="@(_ResourcesToBundle)" />
@@ -63,15 +69,18 @@
 
     <ItemGroup>
       <_ResourcesToBundleWithHashes Update="@(_ResourcesToBundleWithHashes)">
-        <DestinationFile>$(BundleDir)%(_ResourcesToBundleWithHashes.Filename)%(_ResourcesToBundleWithHashes.Extension).$([System.String]::Copy(%(_ResourcesToBundleWithHashes.FileHash)).Substring(0, 8)).c</DestinationFile>
+        <DestinationFile>$(BundleOutputDirectory)%(_ResourcesToBundleWithHashes.Filename)%(_ResourcesToBundleWithHashes.Extension).$([System.String]::Copy(%(_ResourcesToBundleWithHashes.FileHash)).Substring(0, 8)).c</DestinationFile>
       </_ResourcesToBundleWithHashes>
     </ItemGroup>
 
+    <Delete Files="$(BundledSourceFile)"/>
+
     <EmitBundleSourceFiles
       FilesToBundle="@(_ResourcesToBundleWithHashes)"
-      BundleName="resources"
-      BundleFile="$(_ResourcesToBundleSourceFile)"
-      />
+      CombinedResourceSource="$(BundledSourceFile)"
+      OutputDirectory="$(BundleOutputDirectory)">
+      <Output TaskParameter="PreallocatedSymbols" ItemName="BundledPreallocatedSymbols" />
+    </EmitBundleSourceFiles>
   </Target>
 
 </Project>
