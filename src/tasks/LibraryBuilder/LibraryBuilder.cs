@@ -90,6 +90,11 @@ public class LibraryBuilderTask : AppBuilderTask
     /// </summary>
     public bool BundlesResources { get; set; }
 
+    /// <summary>
+    /// The symbols of preallocated structs being bundled
+    /// </summary>
+    public ITaskItem[] BundledPreallocatedSymbols { get; set; } = Array.Empty<ITaskItem>();
+
     public bool StripDebugSymbols { get; set; }
 
     /// <summary>
@@ -152,6 +157,12 @@ public class LibraryBuilderTask : AppBuilderTask
         {
             WriteAutoInitializationFromTemplate();
             extraSources.AppendLine("    autoinit.c");
+        }
+
+        if (BundlesResources)
+        {
+            GenerateBundledResourcesLoader();
+            extraSources.AppendLine("    preallocated-resources.c");
         }
 
         WriteCMakeFileFromTemplate(aotSources.ToString(), aotObjects.ToString(), extraSources.ToString(), linkerArgs.ToString());
@@ -295,6 +306,62 @@ public class LibraryBuilderTask : AppBuilderTask
         File.WriteAllText(Path.Combine(OutputDirectory, "preloaded-assemblies.c"),
             Utils.GetEmbeddedResource("preloaded-assemblies.c")
                 .Replace("%ASSEMBLIES_PRELOADER%", string.Join("\n    ", assemblyPreloaders)));
+    }
+
+    private void GenerateBundledResourcesLoader()
+    {
+        var preallocatedResources = new StringBuilder();
+        var preallocatedAssemblies = new StringBuilder("MonoBundledResource *bundledAssemblyResources[] = { ");
+        var preallocatedSatelliteAssemblies = new StringBuilder("MonoBundledResource *bundledSatelliteAssemblyResources[] = { ");
+        var preallocatedData = new StringBuilder("MonoBundledResource *bundledDataResources[] = { ");
+        int assembliesCount = 0;
+        int satelliteAssembliesCount = 0;
+        int dataCount = 0;
+        foreach (ITaskItem bundledPreallocatedSymbol in BundledPreallocatedSymbols)
+        {
+            preallocatedResources.AppendLine($"extern const {bundledPreallocatedSymbol.GetMetadata("ResourceType")} {bundledPreallocatedSymbol.ItemSpec};");
+
+            switch (bundledPreallocatedSymbol.GetMetadata("ResourceType")) {
+            case "MonoBundledAssemblyResource": {
+                preallocatedAssemblies.Append($"(MonoBundledResource *)&{bundledPreallocatedSymbol.ItemSpec}, ");
+                assembliesCount += 1;
+                break;
+            }
+            case "MonoBundledSatelliteAssemblyResource": {
+                preallocatedSatelliteAssemblies.Append($"(MonoBundledResource *)&{bundledPreallocatedSymbol.ItemSpec}, ");
+                satelliteAssembliesCount += 1;
+                break;
+            }
+            case "MonoBundledDataResource":
+            default: {
+                preallocatedData.Append($"(MonoBundledResource *)&{bundledPreallocatedSymbol.ItemSpec}, ");
+                dataCount += 1;
+                break;
+            }
+            }
+        }
+
+        var addPreallocatedResources = new StringBuilder();
+        if (assembliesCount != 0) {
+            preallocatedAssemblies.AppendLine("};");
+            preallocatedResources.AppendLine(preallocatedAssemblies.ToString());
+            addPreallocatedResources.AppendLine($"    mono_add_bundled_resource (bundledAssemblyResources, {assembliesCount});");
+        }
+        if (satelliteAssembliesCount != 0) {
+            preallocatedSatelliteAssemblies.AppendLine("};");
+            preallocatedResources.AppendLine(preallocatedSatelliteAssemblies.ToString());
+            addPreallocatedResources.AppendLine($"    mono_add_bundled_resource (bundledSatelliteAssemblyResources, {satelliteAssembliesCount});");
+        }
+        if (dataCount != 0) {
+            preallocatedData.AppendLine("};");
+            preallocatedResources.AppendLine(preallocatedData.ToString());
+            addPreallocatedResources.AppendLine($"    mono_add_bundled_resource (bundledDataResources, {dataCount});");
+        }
+
+        File.WriteAllText(Path.Combine(OutputDirectory, "preallocated-resources.c"),
+            Utils.GetEmbeddedResource("preallocated-resources.c")
+                .Replace("%PreallocatedResources%", preallocatedResources.ToString())
+                .Replace("%AddPreallocatedResources%", addPreallocatedResources.ToString()));
     }
 
     private void WriteCMakeFileFromTemplate(string aotSources, string aotObjects, string extraSources, string linkerArgs)
