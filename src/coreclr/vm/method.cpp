@@ -2962,6 +2962,33 @@ Precode* MethodDesc::GetOrCreatePrecode()
     return Precode::GetPrecodeFromEntryPoint(*pSlot);
 }
 
+bool MethodDescChunk::DetermineIsEligibleForTieredCompilation()
+{
+#ifdef FEATURE_TIERED_COMPILATION
+#ifndef FEATURE_CODE_VERSIONING
+    #error Tiered compilation requires code versioning
+#endif
+    return 
+        // Policy
+        g_pConfig->TieredCompilation() &&
+
+        // Functional requirement
+        CodeVersionManager::IsMethodSupported(this) &&
+
+        // Policy - If QuickJit is disabled and the module does not have any pregenerated code, the method would effectively not
+        // be tiered currently, so make the method ineligible for tiering to avoid some unnecessary overhead
+        (g_pConfig->TieredCompilation_QuickJit() || GetMethodTable()->GetModule()->IsReadyToRun()) &&
+
+        // Policy - Tiered compilation is not disabled by the profiler
+        !CORProfilerDisableTieredCompilation() &&
+
+        // Policy - Generating optimized code is not disabled
+        !GetFirstMethodDesc()->IsJitOptimizationDisabledForAllMethodsInChunk();
+#else
+    return false;
+#endif
+}
+
 bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
 {
     WRAPPER_NO_CONTRACT;
@@ -2971,12 +2998,13 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
     #error Tiered compilation requires code versioning
 #endif
 
+    // This function should only be called if the chunk has already been checked. This is done
+    // to reduce the amount of flags checked for each MethodDesc
+    _ASSERTE(GetMethodDescChunk()->DetermineIsEligibleForTieredCompilation());
+
     // Keep in-sync with MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
     // to ensure native slots are available where needed.
     if (
-        // Policy
-        g_pConfig->TieredCompilation() &&
-
         // Functional requirement - The NativeCodeSlot is required to hold the code pointer for the default code version because
         // the method's entry point slot will point to a precode or to the current code entry point
         HasNativeCodeSlot() &&
@@ -2984,18 +3012,8 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Functional requirement - These methods have no IL that could be optimized
         !IsWrapperStub() &&
 
-        // Functional requirement
-        CodeVersionManager::IsMethodSupported(this) &&
-
-        // Policy - If QuickJit is disabled and the module does not have any pregenerated code, the method would effectively not
-        // be tiered currently, so make the method ineligible for tiering to avoid some unnecessary overhead
-        (g_pConfig->TieredCompilation_QuickJit() || GetModule()->IsReadyToRun()) &&
-
         // Policy - Generating optimized code is not disabled
-        !IsJitOptimizationDisabled() &&
-
-        // Policy - Tiered compilation is not disabled by the profiler
-        !CORProfilerDisableTieredCompilation())
+        !IsJitOptimizationDisabledForSpecificMethod())
     {
         m_wFlags3AndTokenRemainder |= enum_flag3_IsEligibleForTieredCompilation;
         _ASSERTE(IsVersionable());
@@ -3012,13 +3030,25 @@ bool MethodDesc::IsJitOptimizationDisabled()
 {
     WRAPPER_NO_CONTRACT;
 
+    return IsJitOptimizationDisabledForAllMethodsInChunk() ||
+        IsJitOptimizationDisabledForSpecificMethod();
+}
+
+bool MethodDesc::IsJitOptimizationDisabledForSpecificMethod()
+{
+    return (!IsNoMetadata() && IsMiNoOptimization(GetImplAttrs()));
+}
+
+bool MethodDesc::IsJitOptimizationDisabledForAllMethodsInChunk()
+{
+    WRAPPER_NO_CONTRACT;
+
     return
         g_pConfig->JitMinOpts() ||
 #ifdef _DEBUG
         g_pConfig->GenDebuggableCode() ||
 #endif
-        CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits()) ||
-        (!IsNoMetadata() && IsMiNoOptimization(GetImplAttrs()));
+        CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits());
 }
 
 #ifndef DACCESS_COMPILE

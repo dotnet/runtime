@@ -608,7 +608,7 @@ public:
     static void OnAppDomainExit(AppDomain* pAppDomain);
 #endif
 
-    static bool IsMethodSupported(PTR_MethodDesc pMethodDesc);
+    static bool IsMethodSupported(MethodDescChunk* pMethodDescChunk);
 
 #ifndef DACCESS_COMPILE
     static bool InitialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion()

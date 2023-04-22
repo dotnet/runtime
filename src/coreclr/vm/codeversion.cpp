@@ -2089,10 +2089,11 @@ void CodeVersionManager::OnAppDomainExit(AppDomain * pAppDomain)
 // get the final determination of versioning support for a given method.
 //
 //static
-bool CodeVersionManager::IsMethodSupported(PTR_MethodDesc pMethodDesc)
+bool CodeVersionManager::IsMethodSupported(MethodDescChunk* pMethodDescChunk)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(pMethodDesc != NULL);
+    _ASSERTE(pMethodDescChunk != NULL);
+    MethodDesc* pMethodDesc = pMethodDescChunk->GetFirstMethodDesc();
 
     return
         // CodeVersionManager data structures don't properly handle the lifetime semantics of dynamic code at this point

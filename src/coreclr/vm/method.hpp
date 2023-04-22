@@ -1109,7 +1109,7 @@ public:
             !IsWrapperStub() &&
 
             // Functional requirement
-            CodeVersionManager::IsMethodSupported(PTR_MethodDesc(this));
+            CodeVersionManager::IsMethodSupported(this->GetMethodDescChunk());
 #else // FEATURE_REJIT
         return false;
 #endif
@@ -1133,6 +1133,8 @@ public:
     bool DetermineAndSetIsEligibleForTieredCompilation();
 
     bool IsJitOptimizationDisabled();
+    bool IsJitOptimizationDisabledForAllMethodsInChunk();
+    bool IsJitOptimizationDisabledForSpecificMethod();
 
 private:
     // This function is not intended to be called in most places, and is named as such to discourage calling it accidentally
@@ -1663,6 +1665,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE((m_wFlags & mdcClassification) == 0);
+        _ASSERTE(classification != mcDynamic || (GetMethodDescChunkIndex() == 0)); // Dynamic methods can only exist in MethodDescChunks which have a single MethodDesc
         m_wFlags |= classification;
     }
 
@@ -2140,6 +2143,8 @@ public:
                                         BOOL fNativeCodeSlot,
                                         MethodTable *initialMT,
                                         class AllocMemTracker *pamTracker);
+
+    bool DetermineIsEligibleForTieredCompilation();
 
     TADDR GetTemporaryEntryPoints()
     {

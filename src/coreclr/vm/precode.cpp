@@ -403,9 +403,10 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
 #endif
     {
         MethodDesc *pMD = pChunk->GetFirstMethodDesc();
+        bool chunkContainsEligibleMethods = pChunk->DetermineIsEligibleForTieredCompilation();
         for (int i = 0; i < count; ++i)
         {
-            if (pMD->DetermineAndSetIsEligibleForTieredCompilation())
+            if (chunkContainsEligibleMethods && pMD->DetermineAndSetIsEligibleForTieredCompilation())
             {
                 _ASSERTE(pMD->IsEligibleForTieredCompilation());
                 _ASSERTE(!pMD->IsVersionableWithPrecode() || pMD->RequiresStableEntryPoint());
