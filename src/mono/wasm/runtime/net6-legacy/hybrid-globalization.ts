@@ -5,7 +5,7 @@ import { Module } from "../imports";
 import { mono_wasm_new_external_root } from "../roots";
 import {MonoString, MonoStringRef } from "../types";
 import { Int32Ptr } from "../types/emscripten";
-import { conv_string_root, js_string_to_mono_string_root } from "../strings";
+import { conv_string_root, js_string_to_mono_string_root, string_decoder } from "../strings";
 import { setU16, setU32 } from "../memory";
 
 export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
@@ -91,13 +91,13 @@ export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStri
         const ignoreSymbols = (options & 0x4) == 0x4;
         if (ignoreSymbols)
             throw new Error("$Invalid comparison option.");
-        const value = get_utf16_string(str1, str1Length); // searched value in source string
+        const value = string_decoder.decode(<any>str1, <any>(str1 + 2*str1Length));
         // no need to look for an empty string
         const result = "".localeCompare(value, undefined);
         if (result === 0)
             return fromBeginning ? 0 : str2Length;
 
-        const source = get_utf16_string(str2, str2Length); // source string
+        const source = string_decoder.decode(<any>str2, <any>(str2 + 2*str2Length));
         const cultureName = conv_string_root(cultureRoot);
         const locale = cultureName ? cultureName : undefined;
         const graphemesSource = segment_string_locale_sensitive(source, locale);
@@ -123,8 +123,7 @@ export function segment_string_locale_sensitive(string: string, locale: string |
     return Array.from(segmenter.segment(string));
 }
 
-export function get_index_of(graphemesSource: Intl.SegmentData[], graphemesValue: Intl.SegmentData[], locale: string | undefined, casePicker: number, matchLengthPointer: number, srcOriginalLen: number){
-
+function get_index_of(graphemesSource: Intl.SegmentData[], graphemesValue: Intl.SegmentData[], locale: string | undefined, casePicker: number, matchLengthPointer: number, srcOriginalLen: number){
     const lenDifference = graphemesSource.length - graphemesValue.length;
     for (let i = 0; i <= lenDifference; i++)
     {
@@ -154,7 +153,7 @@ export function get_index_of(graphemesSource: Intl.SegmentData[], graphemesValue
     return -1;
 }
 
-export function get_last_index_of(graphemesSource: Intl.SegmentData[], graphemesValue: Intl.SegmentData[], locale: string | undefined, casePicker: number, matchLengthPointer: number, srcOriginalLen: number){
+function get_last_index_of(graphemesSource: Intl.SegmentData[], graphemesValue: Intl.SegmentData[], locale: string | undefined, casePicker: number, matchLengthPointer: number, srcOriginalLen: number){
 
     for (let i = graphemesSource.length - 1; i >= graphemesValue.length - 1; i--)
     {
