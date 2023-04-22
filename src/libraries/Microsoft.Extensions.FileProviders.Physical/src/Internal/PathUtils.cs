@@ -11,18 +11,18 @@ namespace Microsoft.Extensions.FileProviders.Physical.Internal
 {
     internal static class PathUtils
     {
-        private static readonly char[] _invalidFileNameCharsArray = Path.GetInvalidFileNameChars()
+        private static char[] GetInvalidFileNameChars() => Path.GetInvalidFileNameChars()
             .Where(c => c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar).ToArray();
 
-        private static readonly char[] _invalidFilterCharsArray = _invalidFileNameCharsArray
+        private static char[] GetInvalidFilterChars() => GetInvalidFileNameChars()
             .Where(c => c != '*' && c != '|' && c != '?').ToArray();
 
 #if NET8_0_OR_GREATER
-        private static readonly IndexOfAnyValues<char> _invalidFileNameChars = IndexOfAnyValues.Create(_invalidFileNameCharsArray);
-        private static readonly IndexOfAnyValues<char> _invalidFilterChars = IndexOfAnyValues.Create(_invalidFilterCharsArray);
+        private static readonly IndexOfAnyValues<char> _invalidFileNameChars = IndexOfAnyValues.Create(GetInvalidFileNameChars());
+        private static readonly IndexOfAnyValues<char> _invalidFilterChars = IndexOfAnyValues.Create(GetInvalidFilterChars());
 #else
-        private static char[] _invalidFileNameChars => _invalidFileNameCharsArray;
-        private static char[] _invalidFilterChars => _invalidFilterCharsArray;
+        private static readonly char[] _invalidFileNameChars = GetInvalidFileNameChars();
+        private static readonly char[] _invalidFilterChars = GetInvalidFilterChars();
 #endif
 
         private static readonly char[] _pathSeparators = new[]
