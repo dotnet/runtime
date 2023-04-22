@@ -8538,19 +8538,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 #endif
 
-                op1 = gtNewIndir(lclTyp, op1);
-
-                if (prefixFlags & PREFIX_VOLATILE)
-                {
-                    op1->gtFlags |= GTF_ORDER_SIDEEFF; // Prevent this from being reordered
-                    op1->gtFlags |= GTF_IND_VOLATILE;
-                }
-
-                if ((prefixFlags & PREFIX_UNALIGNED) && !varTypeIsByte(lclTyp))
-                {
-                    op1->gtFlags |= GTF_IND_UNALIGNED;
-                }
-
+                op1 = gtNewIndir(lclTyp, op1, impPrefixFlagsToIndirFlags(prefixFlags));
                 op1 = gtNewAssignNode(op1, op2);
                 goto SPILL_APPEND;
 
@@ -8601,23 +8589,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 assertImp(genActualType(op1->gtType) == TYP_I_IMPL || op1->gtType == TYP_BYREF);
 
-                op1 = gtNewIndir(lclTyp, op1);
-
-                if (prefixFlags & PREFIX_VOLATILE)
-                {
-                    assert(op1->OperGet() == GT_IND);
-                    op1->gtFlags |= GTF_ORDER_SIDEEFF; // Prevent this from being reordered
-                    op1->gtFlags |= GTF_IND_VOLATILE;
-                }
-
-                if ((prefixFlags & PREFIX_UNALIGNED) && !varTypeIsByte(lclTyp))
-                {
-                    assert(op1->OperGet() == GT_IND);
-                    op1->gtFlags |= GTF_IND_UNALIGNED;
-                }
-
+                op1 = gtNewIndir(lclTyp, op1, impPrefixFlagsToIndirFlags(prefixFlags));
                 impPushOnStack(op1, tiRetVal);
-
                 break;
 
             case CEE_UNALIGNED:
