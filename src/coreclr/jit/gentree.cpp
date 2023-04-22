@@ -19324,7 +19324,12 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
 
     if (simdBaseType == TYP_LONG)
     {
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+        if (simdSize == 64)
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+            intrinsic = NI_AVX512F_Abs;
+        }
+        else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
         {
             intrinsic = NI_AVX512F_VL_Abs;
         }
@@ -19333,6 +19338,20 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
         intrinsic = NI_AVX2_Abs;
+    }
+    else if (simdSize == 64)
+    {
+        if (simdBaseType == TYP_INT)
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+            intrinsic = NI_AVX512F_Abs;
+        }
+        else
+        {
+            assert(varTypeIsSmall(simdBaseType));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+            intrinsic = NI_AVX512BW_Abs;
+        }
     }
     else if (compOpportunisticallyDependsOn(InstructionSet_SSSE3))
     {
@@ -20333,6 +20352,11 @@ GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, CorInfoType s
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
         intrinsic = NI_AVX_Ceiling;
+    }
+    else if (simdSize == 64)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+        intrinsic = NI_AVX512F_Ceiling;
     }
     else
     {
@@ -21900,6 +21924,11 @@ GenTree* Compiler::gtNewSimdFloorNode(var_types type, GenTree* op1, CorInfoType 
     {
         intrinsic = NI_AVX_Floor;
     }
+    else if (simdSize == 64)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+        intrinsic = NI_AVX512F_Floor;
+    }
     else
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
@@ -22274,6 +22303,19 @@ GenTree* Compiler::gtNewSimdMaxNode(
             }
         }
     }
+    else if (simdSize == 64)
+    {
+        if (varTypeIsSmall(simdBaseType))
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+            intrinsic = NI_AVX512BW_Max;
+        }
+        else
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+            intrinsic = NI_AVX512F_Max;
+        }
+    }
     else
     {
         switch (simdBaseType)
@@ -22466,6 +22508,19 @@ GenTree* Compiler::gtNewSimdMinNode(
             {
                 intrinsic = NI_AVX512F_VL_Min;
             }
+        }
+    }
+    else if (simdSize == 64)
+    {
+        if (varTypeIsSmall(simdBaseType))
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+            intrinsic = NI_AVX512BW_Min;
+        }
+        else
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+            intrinsic = NI_AVX512F_Min;
         }
     }
     else
@@ -23418,6 +23473,11 @@ GenTree* Compiler::gtNewSimdSqrtNode(var_types type, GenTree* op1, CorInfoType s
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
         intrinsic = NI_AVX_Sqrt;
     }
+    else if (simdSize == 64)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+        intrinsic = NI_AVX512F_Sqrt;
+    }
     else if (simdBaseType == TYP_FLOAT)
     {
         intrinsic = NI_SSE_Sqrt;
@@ -23757,6 +23817,10 @@ GenTree* Compiler::gtNewSimdUnOpNode(
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                 assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+            }
+            else if (simdSize == 64)
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
             }
             op2 = gtNewZeroConNode(type);
 

@@ -612,6 +612,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     {
         case NI_Vector128_Abs:
         case NI_Vector256_Abs:
+        case NI_Vector512_Abs:
         {
             assert(sig->numArgs == 1);
 
@@ -960,11 +961,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Ceiling:
         case NI_Vector256_Ceiling:
+        case NI_Vector512_Ceiling:
         {
             assert(sig->numArgs == 1);
             assert(varTypeIsFloating(simdBaseType));
 
-            if ((simdSize != 32) && !compExactlyDependsOn(InstructionSet_SSE41))
+            if ((simdSize < 32) && !compExactlyDependsOn(InstructionSet_SSE41))
             {
                 // Ceiling is only supported for floating-point types on SSE4.1 or later
                 break;
@@ -1568,13 +1570,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Floor:
         case NI_Vector256_Floor:
+        case NI_Vector512_Floor:
         {
             assert(sig->numArgs == 1);
             assert(varTypeIsFloating(simdBaseType));
 
-            if ((simdSize != 32) && !compExactlyDependsOn(InstructionSet_SSE41))
+            if ((simdSize < 32) && !compExactlyDependsOn(InstructionSet_SSE41))
             {
-                // Ceiling is only supported for floating-point types on SSE4.1 or later
+                // Floor is only supported for floating-point types on SSE4.1 or later
                 break;
             }
 
@@ -1935,6 +1938,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Max:
         case NI_Vector256_Max:
+        case NI_Vector512_Max:
         {
             assert(sig->numArgs == 2);
 
@@ -1950,6 +1954,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Min:
         case NI_Vector256_Min:
+        case NI_Vector512_Min:
         {
             assert(sig->numArgs == 2);
 
@@ -2036,8 +2041,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Negate:
         case NI_Vector256_Negate:
+        case NI_Vector512_Negate:
         case NI_Vector128_op_UnaryNegation:
         case NI_Vector256_op_UnaryNegation:
+        case NI_Vector512_op_UnaryNegation:
         {
             assert(sig->numArgs == 1);
 
@@ -2098,6 +2105,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_op_UnaryPlus:
         case NI_Vector256_op_UnaryPlus:
+        case NI_Vector512_op_UnaryPlus:
         {
             assert(sig->numArgs == 1);
             retNode = impSIMDPopStack();
@@ -2292,6 +2300,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Sqrt:
         case NI_Vector256_Sqrt:
+        case NI_Vector512_Sqrt:
         {
             assert(sig->numArgs == 1);
 
