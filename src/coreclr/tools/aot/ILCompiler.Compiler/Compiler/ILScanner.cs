@@ -701,23 +701,36 @@ namespace ILCompiler
                     }
                 }
 
+                // TODO: VS need to handle no threadstatics?
+
                 threadStaticNodes.Sort(CompilerComparer.Instance);
 
-                int lastOffset = 0;
+                int ptrSize = threadStaticNodes[0].Type.Context.Target.PointerSize;
                 List<MetadataType> types = new List<MetadataType>();
                 Dictionary<MetadataType, int> offsets = new Dictionary<MetadataType, int>();
+                int nextOffset = 0;
 
-                foreach(var threadStaticNode in threadStaticNodes)
+                foreach (var threadStaticNode in threadStaticNodes)
                 {
                     MetadataType t = threadStaticNode.Type;
-                    lastOffset = lastOffset.AlignUp(t.ThreadGcStaticFieldAlignment.AsInt);
-                    offsets.Add(t, lastOffset);
-                    lastOffset += t.ThreadGcStaticFieldSize.AsInt;
+                    types.Add(t);
+
+                    // base is aligned to a pointer size.
+                    // N.B. for ARM32, we would need to deal with > PointerSize alignments as well.
+                    //      GCStaticEEType does not currently set RequiresAlign8Flag anyways
+                    nextOffset = nextOffset.AlignUp(ptrSize);
+                    offsets.Add(t, nextOffset);
+                    nextOffset += t.ThreadGcStaticFieldSize.AsInt;
+
+                    // TODO: VS ThreadGcStaticFieldSize includes 1 ptr for MT, we could squeeze more space.
+                    //       subtract that from ThreadGcStaticFieldSize. The total should be + ptr then .
                 }
 
                 _types = types;
                 _offsets = offsets;
-                _size = lastOffset;
+
+                // TODO: VS at least minobj size
+                _size = nextOffset;
             }
         }
 

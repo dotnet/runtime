@@ -129,11 +129,11 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Computes the GC pointer map of the thread static region of the type.
         /// </summary>
-        public static GCPointerMap FromThreadStaticLayout(MetadataType type, int baseOffset = 0)
+        public static GCPointerMap FromThreadStaticLayout(MetadataType type)
         {
             GCPointerMapBuilder builder = new GCPointerMapBuilder(type.ThreadGcStaticFieldSize.AsInt, type.Context.Target.PointerSize);
 
-            MapThreadStaticsForType(builder, type, baseOffset);
+            MapThreadStaticsForType(builder, type, baseOffset: 0);
 
             Debug.Assert(builder.ToGCMap().Size * type.Context.Target.PointerSize >= type.ThreadGcStaticFieldSize.AsInt);
             return builder.ToGCMap();

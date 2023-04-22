@@ -2141,7 +2141,7 @@ namespace Internal.JitInterface
                     {
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
-                        fieldOffset += (uint)_compilation.NodeFactory.ThreadStaticBaseOffset((MetadataType)field.OwningType);
+                        fieldOffset += _compilation.NodeFactory.ThreadStaticBaseOffset((MetadataType)field.OwningType);
                     }
                     else if (!_compilation.HasLazyStaticConstructor(field.OwningType))
                     {

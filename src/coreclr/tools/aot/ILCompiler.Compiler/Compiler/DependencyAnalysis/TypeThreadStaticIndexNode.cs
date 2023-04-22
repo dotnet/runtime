@@ -70,6 +70,11 @@ namespace ILCompiler.DependencyAnalysis
                     _inlinedThreadStatics;
 
                 typeTlsIndex = ((ThreadStaticsNode)node).IndexFromBeginningOfArray;
+
+                if (_type == null)
+                {
+                    typeTlsIndex = -1;
+                }
             }
 
             objData.EmitPointerReloc(factory.TypeManagerIndirection);

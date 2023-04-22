@@ -129,6 +129,11 @@ namespace ILCompiler.DependencyAnalysis
                         case FieldTableFlags.NonGCStatic:
                             {
                                 uint fieldOffset = (uint)field.Offset.AsInt;
+                                if (field.IsThreadStatic && field.OwningType is MetadataType mt)
+                                {
+                                    fieldOffset += factory.ThreadStaticBaseOffset(mt);
+                                }
+
                                 if (field.OwningType.HasInstantiation)
                                 {
                                     vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(fieldOffset));
@@ -141,7 +146,6 @@ namespace ILCompiler.DependencyAnalysis
                                     if (field.IsThreadStatic)
                                     {
                                         staticsNode = factory.TypeThreadStaticIndex(metadataType);
-                                        fieldOffset += factory.ThreadStaticBaseOffset(metadataType);
                                     }
                                     else if (field.HasGCStaticBase)
                                     {

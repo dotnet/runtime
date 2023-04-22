@@ -209,19 +209,19 @@ namespace ILCompiler.DependencyAnalysis
             });
 
             _threadStatics = new NodeCache<MetadataType, ISymbolDefinitionNode>(CreateThreadStaticsNode);
-            TypeThreadStaticIndexNode inlinedNodeIndex = null;
 
+            TypeThreadStaticIndexNode inlinedThreadStatiscIndexNode = null;
             if (_inlinedThreadStatics.IsComputed())
             {
-                var inlinedStaticsNode = new ThreadStaticsNode(_inlinedThreadStatics, this);
-                inlinedNodeIndex = new TypeThreadStaticIndexNode(inlinedStaticsNode);
+                _inlinedThreadStatiscNode = new ThreadStaticsNode(_inlinedThreadStatics, this);
+                inlinedThreadStatiscIndexNode = new TypeThreadStaticIndexNode(_inlinedThreadStatiscNode);
             }
 
             _typeThreadStaticIndices = new NodeCache<MetadataType, TypeThreadStaticIndexNode>(type =>
             {
-                if (inlinedNodeIndex != null)
+                if (inlinedThreadStatiscIndexNode != null)
                 {
-                    return inlinedNodeIndex;
+                    return inlinedThreadStatiscIndexNode;
                 }
 
                 return new TypeThreadStaticIndexNode(type);
@@ -661,6 +661,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<MetadataType, ISymbolDefinitionNode> _threadStatics;
+        private ThreadStaticsNode _inlinedThreadStatiscNode;
 
         public ISymbolDefinitionNode TypeThreadStaticsSymbol(MetadataType type)
         {
@@ -861,9 +862,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public uint ThreadStaticBaseOffset(MetadataType type)
         {
-            return _inlinedThreadStatics.IsComputed() ?
-                (uint)_inlinedThreadStatics.GetOffsets()[type] :
-                0;
+            if (_inlinedThreadStatics.IsComputed() &&
+                _inlinedThreadStatics.GetOffsets().TryGetValue(type, out var offset))
+            {
+                return (uint)offset;
+            }
+
+            return 0;
         }
 
         private sealed class MethodEntrypointHashtable : LockFreeReaderHashtable<MethodDesc, IMethodNode>
@@ -1285,13 +1290,10 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(InterfaceDispatchCellSection, "Interface dispatch cell section is always generated");
             graph.AddRoot(ModuleInitializerList, "Module initializer list is always generated");
 
-            // TODO: VS do we need to root tls?
-
-            //if (_inlinedThreadStatics.IsComputed())
-            //{
-            //    ThreadStaticsNode inlinedThreadStaticNode = new ThreadStaticsNode(_inlinedThreadStatics, this);
-            //    graph.AddRoot(inlinedThreadStaticNode, "Inlined threadstatics are used if present");
-            //}
+            if (_inlinedThreadStatics.IsComputed())
+            {
+                graph.AddRoot(_inlinedThreadStatiscNode, "Inlined threadstatics are used if present");
+            }
 
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);
