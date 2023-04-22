@@ -219,7 +219,8 @@ namespace ILCompiler.DependencyAnalysis
 
             _typeThreadStaticIndices = new NodeCache<MetadataType, TypeThreadStaticIndexNode>(type =>
             {
-                if (inlinedThreadStatiscIndexNode != null)
+                if (inlinedThreadStatiscIndexNode != null &&
+                _inlinedThreadStatics.GetOffsets().ContainsKey(type))
                 {
                     return inlinedThreadStatiscIndexNode;
                 }

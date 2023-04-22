@@ -713,6 +713,11 @@ namespace ILCompiler
                 foreach (var threadStaticNode in threadStaticNodes)
                 {
                     MetadataType t = threadStaticNode.Type;
+                    // REVIEW: how to filter these more precisely?
+                    //       List<int> is ok, but List<object> is not.
+                    if (t.HasInstantiation)
+                        continue;
+
                     types.Add(t);
 
                     // base is aligned to a pointer size.
