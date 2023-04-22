@@ -44,7 +44,7 @@ namespace System.Reflection.Emit
         internal static AssemblyBuilderImpl DefinePersistedAssembly(AssemblyName name, Assembly coreAssembly, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
                 => new AssemblyBuilderImpl(name, coreAssembly, assemblyAttributes);
 
-        private static void WritePEImage(Stream peStream, MetadataBuilder metadataBuilder, BlobBuilder ilBuilder)
+        private void WritePEImage(Stream peStream, BlobBuilder ilBuilder)
         {
             // Create executable with the managed metadata from the specified MetadataBuilder.
             var peHeaderBuilder = new PEHeaderBuilder(
@@ -53,7 +53,7 @@ namespace System.Reflection.Emit
 
             var peBuilder = new ManagedPEBuilder(
                 peHeaderBuilder,
-                new MetadataRootBuilder(metadataBuilder),
+                new MetadataRootBuilder(_metadataBuilder),
                 ilBuilder);
 
             // Write executable into the specified stream.
@@ -92,7 +92,7 @@ namespace System.Reflection.Emit
             _module.AppendMetadata();
 
             var ilBuilder = new BlobBuilder();
-            WritePEImage(stream, _metadataBuilder, ilBuilder);
+            WritePEImage(stream, ilBuilder);
             _previouslySaved = true;
         }
 

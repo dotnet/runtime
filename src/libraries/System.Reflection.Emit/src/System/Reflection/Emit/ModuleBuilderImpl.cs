@@ -21,10 +21,10 @@ namespace System.Reflection.Emit
         private int _nextTypeDefRowId = 1;
         private int _nextMethodDefRowId = 1;
         private int _nextFieldDefRowId = 1;
-        private bool _coreTypesFullPopulated;
+        private bool _coreTypesFullyPopulated;
         private Type?[]? _coreTypes;
         private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
-                                                        typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string), typeof(nint), typeof(nuint), typeof(TypedReference) };
+                                                       typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string), typeof(nint), typeof(nuint), typeof(TypedReference) };
 
         internal ModuleBuilderImpl(string name, Assembly coreAssembly, MetadataBuilder builder)
         {
@@ -42,7 +42,7 @@ namespace System.Reflection.Emit
                 if (_coreAssembly == typeof(object).Assembly)
                 {
                     _coreTypes = s_coreTypes;
-                    _coreTypesFullPopulated = true;
+                    _coreTypesFullyPopulated = true;
                 }
                 else
                 {
@@ -63,7 +63,7 @@ namespace System.Reflection.Emit
                 if (_coreAssembly == typeof(object).Assembly)
                 {
                     _coreTypes = s_coreTypes;
-                    _coreTypesFullPopulated = true;
+                    _coreTypesFullyPopulated = true;
                 }
                 else
                 {
@@ -71,7 +71,7 @@ namespace System.Reflection.Emit
                 }
             }
 
-            if (!_coreTypesFullPopulated)
+            if (!_coreTypesFullyPopulated)
             {
                 for (int i = 0; i < _coreTypes.Length; i++)
                 {
@@ -80,7 +80,7 @@ namespace System.Reflection.Emit
                         _coreTypes[i] = _coreAssembly.GetType(s_coreTypes[i].FullName!, throwOnError: false)!;
                     }
                 }
-                _coreTypesFullPopulated = true;
+                _coreTypesFullyPopulated = true;
             }
 
             for (int i = 0; i < _coreTypes.Length; i++)
@@ -122,29 +122,61 @@ namespace System.Reflection.Emit
                     parent = GetTypeHandle(typeBuilder.BaseType);
                 }
 
-                TypeDefinitionHandle typeDefinitionHandle = MetadataHelper.AddTypeDefinition(_metadataBuilder, typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
+                TypeDefinitionHandle typeDefinitionHandle = AddTypeDefinition(typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
                 Debug.Assert(typeBuilder._handle.Equals(typeDefinitionHandle));
 
                 // Add each method definition to metadata table.
                 foreach (MethodBuilderImpl method in typeBuilder._methodDefStore)
                 {
-                    MetadataHelper.AddMethodDefinition(_metadataBuilder, method, method.GetMethodSignatureBlob());
+                    AddMethodDefinition(method, method.GetMethodSignatureBlob());
                     _nextMethodDefRowId++;
                 }
 
                 foreach (FieldBuilderImpl field in typeBuilder._fieldDefStore)
                 {
-                    MetadataHelper.AddFieldDefinition(_metadataBuilder, field, MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this));
+                    AddFieldDefinition(field, MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this));
                     _nextFieldDefRowId++;
                 }
             }
         }
 
+        private FieldDefinitionHandle AddFieldDefinition(FieldBuilderImpl field, BlobBuilder fieldSignature) =>
+            _metadataBuilder.AddFieldDefinition(
+                attributes: field.Attributes,
+                name: _metadataBuilder.GetOrAddString(field.Name),
+                signature: _metadataBuilder.GetOrAddBlob(fieldSignature));
+
+        private TypeDefinitionHandle AddTypeDefinition(TypeBuilderImpl type, EntityHandle parent, int methodToken, int fieldToken) =>
+            _metadataBuilder.AddTypeDefinition(
+                attributes: type.Attributes,
+                @namespace: (type.Namespace == null) ? default : _metadataBuilder.GetOrAddString(type.Namespace),
+                name: _metadataBuilder.GetOrAddString(type.Name),
+                baseType: parent,
+                fieldList: MetadataTokens.FieldDefinitionHandle(fieldToken),
+                methodList: MetadataTokens.MethodDefinitionHandle(methodToken));
+
+        private MethodDefinitionHandle AddMethodDefinition(MethodBuilderImpl method, BlobBuilder methodSignature) =>
+            _metadataBuilder.AddMethodDefinition(
+                attributes: method.Attributes,
+                implAttributes: MethodImplAttributes.IL,
+                name: _metadataBuilder.GetOrAddString(method.Name),
+                signature: _metadataBuilder.GetOrAddBlob(methodSignature),
+                bodyOffset: -1, // No body supported yet
+                parameterList: MetadataTokens.ParameterHandle(1)
+                );
+
+        private TypeReferenceHandle AddTypeReference(Type type, AssemblyReferenceHandle parent) =>
+            _metadataBuilder.AddTypeReference(
+                resolutionScope: parent,
+                @namespace: (type.Namespace == null) ? default : _metadataBuilder.GetOrAddString(type.Namespace),
+                name: _metadataBuilder.GetOrAddString(type.Name)
+        );
+
         private TypeReferenceHandle GetTypeReference(Type type)
         {
             if (!_typeReferences.TryGetValue(type, out var parentHandle))
             {
-                parentHandle = MetadataHelper.AddTypeReference(_metadataBuilder, type, GetAssemblyReference(type.Assembly));
+                parentHandle = AddTypeReference(type, GetAssemblyReference(type.Assembly));
                 _typeReferences.Add(type, parentHandle);
             }
 
@@ -155,12 +187,23 @@ namespace System.Reflection.Emit
         {
             if (!_assemblyReferences.TryGetValue(assembly, out var handle))
             {
-                handle = MetadataHelper.AddAssemblyReference(_metadataBuilder, assembly);
+                AssemblyName aName = assembly.GetName();
+                handle = AddAssemblyReference(aName.Name!, aName.Version, aName.CultureName, aName.GetPublicKeyToken(), aName.Flags, aName.ContentType);
                 _assemblyReferences.Add(assembly, handle);
             }
 
             return handle;
         }
+
+        private AssemblyReferenceHandle AddAssemblyReference(string name, Version? version,
+            string? culture, byte[]? publicKeyToken, AssemblyNameFlags flags, AssemblyContentType contentType) =>
+            _metadataBuilder.AddAssemblyReference(
+                name: _metadataBuilder.GetOrAddString(name),
+                version: version ?? new Version(0, 0, 0, 0),
+                culture: (culture == null) ? default : _metadataBuilder.GetOrAddString(value: culture),
+                publicKeyOrToken: (publicKeyToken == null) ? default : _metadataBuilder.GetOrAddBlob(publicKeyToken), // reference has token, not full public key
+                flags: (AssemblyFlags)((int)contentType << 9) | ((flags & AssemblyNameFlags.Retargetable) != 0 ? AssemblyFlags.Retargetable : 0),
+                hashValue: default); // .file directive assemblies not supported, no need to handle this value.
 
         internal EntityHandle GetTypeHandle(Type type)
         {
