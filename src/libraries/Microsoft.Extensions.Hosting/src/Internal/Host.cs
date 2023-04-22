@@ -70,15 +70,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             if (_options.ServicesStartConcurrently)
             {
-                Task tasks = Task.WhenAll(_hostedServices.Select(async service =>
-                {
-                    await service.StartAsync(combinedCancellationToken).ConfigureAwait(false);
-
-                    if (service is BackgroundService backgroundService)
-                    {
-                        _ = TryExecuteBackgroundServiceAsync(backgroundService);
-                    }
-                }));
+                Task tasks = Task.WhenAll(_hostedServices.Select(service => Task.Run(() => StartAndTryToExecuteAsync(service, combinedCancellationToken))));
 
                 try
                 {
@@ -96,12 +88,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                     try
                     {
                         // Fire IHostedService.Start
-                        await hostedService.StartAsync(combinedCancellationToken).ConfigureAwait(false);
-
-                        if (hostedService is BackgroundService backgroundService)
-                        {
-                            _ = TryExecuteBackgroundServiceAsync(backgroundService);
-                        }
+                        await StartAndTryToExecuteAsync(hostedService, combinedCancellationToken).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
@@ -132,6 +119,16 @@ namespace Microsoft.Extensions.Hosting.Internal
             _applicationLifetime.NotifyStarted();
 
             _logger.Started();
+        }
+
+        private async Task StartAndTryToExecuteAsync(IHostedService service, CancellationToken combinedCancellationToken)
+        {
+            await service.StartAsync(combinedCancellationToken).ConfigureAwait(false);
+
+            if (service is BackgroundService backgroundService)
+            {
+                _ = TryExecuteBackgroundServiceAsync(backgroundService);
+            }
         }
 
         private async Task TryExecuteBackgroundServiceAsync(BackgroundService backgroundService)
@@ -185,7 +182,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                     if (_options.ServicesStopConcurrently)
                     {
-                        Task tasks = Task.WhenAll(hostedServices.Select(async service => await service.StopAsync(token).ConfigureAwait(false)));
+                        Task tasks = Task.WhenAll(hostedServices.Select(service => Task.Run(() => service.StopAsync(token))));
 
                         try
                         {

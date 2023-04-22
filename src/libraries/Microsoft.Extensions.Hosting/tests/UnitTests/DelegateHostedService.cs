@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.Hosting.Unit.Tests;
 
-internal class DelegateHostedService : IHostedService, IDisposable
+internal class DelegateHostedService : IHostedService, IDisposable, IEquatable<DelegateHostedService>
 {
     private readonly Action _started;
     private readonly Action _stopping;
@@ -19,6 +19,8 @@ internal class DelegateHostedService : IHostedService, IDisposable
         _stopping = stopping;
         _disposing = disposing;
     }
+
+    public int? Identifier { get; set; }
 
     public Task StartAsync(CancellationToken token)
     {
@@ -37,4 +39,8 @@ internal class DelegateHostedService : IHostedService, IDisposable
 
     public DateTimeOffset StartDate { get; private set; }
     public DateTimeOffset StopDate { get; private set; }
+
+    public bool Equals(DelegateHostedService other) => this == other;
+
+    public override string ToString() => $"DelegateHostedService: Id={Identifier}, StartDate={StartDate}, StopDate={StopDate}";
 }
