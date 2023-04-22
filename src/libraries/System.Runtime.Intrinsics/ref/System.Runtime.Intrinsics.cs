@@ -4455,14 +4455,19 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<ushort> ShiftLeftLogical(System.Runtime.Intrinsics.Vector512<ushort> value, System.Runtime.Intrinsics.Vector128<ushort> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> ShiftLeftLogical128BitLane(System.Runtime.Intrinsics.Vector512<byte> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte numBytes) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<sbyte> ShiftLeftLogical128BitLane(System.Runtime.Intrinsics.Vector512<sbyte> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte numBytes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<short> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector512<short> value, System.Runtime.Intrinsics.Vector512<ushort> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector512<ushort> value, System.Runtime.Intrinsics.Vector512<ushort> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector512<short> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector512<short> value, System.Runtime.Intrinsics.Vector128<short> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<short> ShiftRightArithmeticVariable(System.Runtime.Intrinsics.Vector512<short> value, System.Runtime.Intrinsics.Vector512<ushort> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<short> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<short> value, System.Runtime.Intrinsics.Vector128<short> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ushort> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<ushort> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ushort> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<ushort> value, System.Runtime.Intrinsics.Vector128<ushort> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> ShiftRightLogical128BitLane(System.Runtime.Intrinsics.Vector512<byte> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte numBytes) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<sbyte> ShiftRightLogical128BitLane(System.Runtime.Intrinsics.Vector512<sbyte> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte numBytes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<short> ShiftRightLogicalVariable(System.Runtime.Intrinsics.Vector512<short> value, System.Runtime.Intrinsics.Vector512<ushort> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> ShiftRightLogicalVariable(System.Runtime.Intrinsics.Vector512<ushort> value, System.Runtime.Intrinsics.Vector512<ushort> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<sbyte> Shuffle(System.Runtime.Intrinsics.Vector512<sbyte> value, System.Runtime.Intrinsics.Vector512<sbyte> mask) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> Shuffle(System.Runtime.Intrinsics.Vector512<byte> value, System.Runtime.Intrinsics.Vector512<byte> mask) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> ShuffleHigh(System.Runtime.Intrinsics.Vector512<short> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
@@ -4494,6 +4499,16 @@ namespace System.Runtime.Intrinsics.X86
         {
             internal VL() { }
             public static new bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<short> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector128<short> value, System.Runtime.Intrinsics.Vector128<ushort> count) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector128<ushort> value, System.Runtime.Intrinsics.Vector128<ushort> count) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<short> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector256<short> value, System.Runtime.Intrinsics.Vector256<ushort> count) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ushort> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector256<ushort> value, System.Runtime.Intrinsics.Vector256<ushort> count) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> ShiftRightArithmeticVariable(System.Runtime.Intrinsics.Vector128<short> value, System.Runtime.Intrinsics.Vector128<ushort> count) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<short> ShiftRightArithmeticVariable(System.Runtime.Intrinsics.Vector256<short> value, System.Runtime.Intrinsics.Vector256<ushort> count) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> ShiftRightLogicalVariable(System.Runtime.Intrinsics.Vector128<short> value, System.Runtime.Intrinsics.Vector128<ushort> count) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ShiftRightLogicalVariable(System.Runtime.Intrinsics.Vector128<ushort> value, System.Runtime.Intrinsics.Vector128<ushort> count) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<short> ShiftRightLogicalVariable(System.Runtime.Intrinsics.Vector256<short> value, System.Runtime.Intrinsics.Vector256<ushort> count) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ushort> ShiftRightLogicalVariable(System.Runtime.Intrinsics.Vector256<ushort> value, System.Runtime.Intrinsics.Vector256<ushort> count) { throw null; }
         }
         public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx512F.X64
         {
@@ -4750,10 +4765,16 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<uint> ShiftLeftLogical(System.Runtime.Intrinsics.Vector512<uint> value, System.Runtime.Intrinsics.Vector128<uint> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> ShiftLeftLogical(System.Runtime.Intrinsics.Vector512<ulong> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> ShiftLeftLogical(System.Runtime.Intrinsics.Vector512<ulong> value, System.Runtime.Intrinsics.Vector128<ulong> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<int> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector512<int> value, System.Runtime.Intrinsics.Vector512<uint> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector512<long> value, System.Runtime.Intrinsics.Vector512<ulong> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<uint> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector512<uint> value, System.Runtime.Intrinsics.Vector512<uint> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ulong> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector512<ulong> value, System.Runtime.Intrinsics.Vector512<ulong> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector512<int> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector512<int> value, System.Runtime.Intrinsics.Vector128<int> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector512<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector512<long> value, System.Runtime.Intrinsics.Vector128<long> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<int> ShiftRightArithmeticVariable(System.Runtime.Intrinsics.Vector512<int> value, System.Runtime.Intrinsics.Vector512<uint> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> ShiftRightArithmeticVariable(System.Runtime.Intrinsics.Vector512<long> value, System.Runtime.Intrinsics.Vector512<ulong> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<int> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<int> value, System.Runtime.Intrinsics.Vector128<int> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte count) { throw null; }
@@ -4762,6 +4783,10 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<uint> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<uint> value, System.Runtime.Intrinsics.Vector128<uint> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<ulong> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<ulong> value, System.Runtime.Intrinsics.Vector128<ulong> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<int> ShiftRightLogicalVariable(System.Runtime.Intrinsics.Vector512<int> value, System.Runtime.Intrinsics.Vector512<uint> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> ShiftRightLogicalVariable(System.Runtime.Intrinsics.Vector512<long> value, System.Runtime.Intrinsics.Vector512<ulong> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<uint> ShiftRightLogicalVariable(System.Runtime.Intrinsics.Vector512<uint> value, System.Runtime.Intrinsics.Vector512<uint> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ulong> ShiftRightLogicalVariable(System.Runtime.Intrinsics.Vector512<ulong> value, System.Runtime.Intrinsics.Vector512<ulong> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Shuffle(System.Runtime.Intrinsics.Vector512<double> value, System.Runtime.Intrinsics.Vector512<double> right, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> Shuffle(System.Runtime.Intrinsics.Vector512<int> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> Shuffle(System.Runtime.Intrinsics.Vector512<float> value, System.Runtime.Intrinsics.Vector512<float> right, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
@@ -4842,6 +4867,8 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector128<long> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector128<long> value, System.Runtime.Intrinsics.Vector128<long> count) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<long> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector256<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte count) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<long> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector256<long> value, System.Runtime.Intrinsics.Vector128<long> count) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<long> ShiftRightArithmeticVariable(System.Runtime.Intrinsics.Vector128<long> value, System.Runtime.Intrinsics.Vector128<ulong> count) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<long> ShiftRightArithmeticVariable(System.Runtime.Intrinsics.Vector256<long> value, System.Runtime.Intrinsics.Vector256<ulong> count) { throw null; }
         }
         public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx2.X64
         {

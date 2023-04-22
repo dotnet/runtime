@@ -21,6 +21,59 @@ namespace System.Runtime.Intrinsics.X86
             internal VL() { }
 
             public static new bool IsSupported { get => IsSupported; }
+
+            /// <summary>
+            /// __m128i _mm_sllv_epi16 (__m128i a, __m128i count)
+            ///   VPSLLVW xmm1 {k1}{z}, xmm2, xmm3/m128
+            /// </summary>
+            public static Vector128<short> ShiftLeftLogicalVariable(Vector128<short> value, Vector128<ushort> count) => ShiftLeftLogicalVariable(value, count);
+            /// <summary>
+            /// __m128i _mm_sllv_epi16 (__m128i a, __m128i count)
+            ///   VPSLLVW xmm1 {k1}{z}, xmm2, xmm3/m128
+            /// </summary>
+            public static Vector128<ushort> ShiftLeftLogicalVariable(Vector128<ushort> value, Vector128<ushort> count) => ShiftLeftLogicalVariable(value, count);
+            /// <summary>
+            /// __m256i _mm256_sllv_epi16 (__m256i a, __m256i count)
+            ///   VPSLLVW ymm1 {k1}{z}, ymm2, ymm3/m256
+            /// </summary>
+            public static Vector256<short> ShiftLeftLogicalVariable(Vector256<short> value, Vector256<ushort> count) => ShiftLeftLogicalVariable(value, count);
+            /// <summary>
+            /// __m256i _mm256_sllv_epi16 (__m256i a, __m256i count)
+            ///   VPSLLVW ymm1 {k1}{z}, ymm2, ymm3/m256
+            /// </summary>
+            public static Vector256<ushort> ShiftLeftLogicalVariable(Vector256<ushort> value, Vector256<ushort> count) => ShiftLeftLogicalVariable(value, count);
+
+            /// <summary>
+            /// __m128i _mm_srav_epi16 (__m128i a, __m128i count)
+            ///   VPSRAVW xmm1 {k1}{z}, xmm2, xmm3/m128
+            /// </summary>
+            public static Vector128<short> ShiftRightArithmeticVariable(Vector128<short> value, Vector128<ushort> count) => ShiftRightArithmeticVariable(value, count);
+            /// <summary>
+            /// __m256i _mm256_srav_epi16 (__m256i a, __m256i count)
+            ///   VPSRAVW ymm1 {k1}{z}, ymm2, ymm3/m256
+            /// </summary>
+            public static Vector256<short> ShiftRightArithmeticVariable(Vector256<short> value, Vector256<ushort> count) => ShiftRightArithmeticVariable(value, count);
+
+            /// <summary>
+            /// __m128i _mm_srlv_epi16 (__m128i a, __m128i count)
+            ///   VPSRLVW xmm1 {k1}{z}, xmm2, xmm3/m128
+            /// </summary>
+            public static Vector128<short> ShiftRightLogicalVariable(Vector128<short> value, Vector128<ushort> count) => ShiftRightLogicalVariable(value, count);
+            /// <summary>
+            /// __m128i _mm_srlv_epi16 (__m128i a, __m128i count)
+            ///   VPSRLVW xmm1 {k1}{z}, xmm2, xmm3/m128
+            /// </summary>
+            public static Vector128<ushort> ShiftRightLogicalVariable(Vector128<ushort> value, Vector128<ushort> count) => ShiftRightLogicalVariable(value, count);
+            /// <summary>
+            /// __m256i _mm256_srlv_epi16 (__m256i a, __m256i count)
+            ///   VPSRLVW ymm1 {k1}{z}, ymm2, ymm3/m256
+            /// </summary>
+            public static Vector256<short> ShiftRightLogicalVariable(Vector256<short> value, Vector256<ushort> count) => ShiftRightLogicalVariable(value, count);
+            /// <summary>
+            /// __m256i _mm256_srlv_epi16 (__m256i a, __m256i count)
+            ///   VPSRLVW ymm1 {k1}{z}, ymm2, ymm3/m256
+            /// </summary>
+            public static Vector256<ushort> ShiftRightLogicalVariable(Vector256<ushort> value, Vector256<ushort> count) => ShiftRightLogicalVariable(value, count);
         }
 
         [Intrinsic]
@@ -306,6 +359,17 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<byte> ShiftLeftLogical128BitLane(Vector512<byte> value, [ConstantExpected] byte numBytes) => ShiftLeftLogical128BitLane(value, numBytes);
 
         /// <summary>
+        /// __m512i _mm512_sllv_epi16 (__m512i a, __m512i count)
+        ///   VPSLLVW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<short> ShiftLeftLogicalVariable(Vector512<short> value, Vector512<ushort> count) => ShiftLeftLogicalVariable(value, count);
+        /// <summary>
+        /// __m512i _mm512_sllv_epi16 (__m512i a, __m512i count)
+        ///   VPSLLVW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> ShiftLeftLogicalVariable(Vector512<ushort> value, Vector512<ushort> count) => ShiftLeftLogicalVariable(value, count);
+
+        /// <summary>
         /// _mm512_sra_epi16 (__m512i a, __m128i count)
         ///   VPSRAW zmm1 {k1}{z}, zmm2, xmm3/m128
         /// </summary>
@@ -316,6 +380,12 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPSRAW zmm1 {k1}{z}, zmm2, imm8
         /// </summary>
         public static Vector512<short> ShiftRightArithmetic(Vector512<short> value, [ConstantExpected] byte count) => ShiftRightArithmetic(value, count);
+
+        /// <summary>
+        /// __m512i _mm512_srav_epi16 (__m512i a, __m512i count)
+        ///   VPSRAVW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<short> ShiftRightArithmeticVariable(Vector512<short> value, Vector512<ushort> count) => ShiftRightArithmeticVariable(value, count);
 
         /// <summary>
         /// __m512i _mm512_srl_epi16 (__m512i a, __m128i count)
@@ -349,6 +419,17 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPSRLDQ zmm1, zmm2/m128, imm8
         /// </summary>
         public static Vector512<byte> ShiftRightLogical128BitLane(Vector512<byte> value, [ConstantExpected] byte numBytes) => ShiftRightLogical128BitLane(value, numBytes);
+
+        /// <summary>
+        /// __m512i _mm512_srlv_epi16 (__m512i a, __m512i count)
+        ///   VPSRLVW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<short> ShiftRightLogicalVariable(Vector512<short> value, Vector512<ushort> count) => ShiftRightLogicalVariable(value, count);
+        /// <summary>
+        /// __m512i _mm512_srlv_epi16 (__m512i a, __m512i count)
+        ///   VPSRLVW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> ShiftRightLogicalVariable(Vector512<ushort> value, Vector512<ushort> count) => ShiftRightLogicalVariable(value, count);
 
         /// <summary>
         /// __m512i _mm512_shuffle_epi8 (__m512i a, __m512i b)
