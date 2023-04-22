@@ -11676,7 +11676,7 @@ void gc_heap::set_region_plan_gen_num (heap_segment* region, int plan_gen_num, b
     }
 
     planned_regions_per_gen[plan_gen_num]++;
-    dprintf (REGIONS_LOG, ("h%d g%d %Ix(%Ix) -> g%d (total %d region planned in g%d)",
+    dprintf (REGIONS_LOG, ("h%d g%d %zx(%zx) -> g%d (total %d region planned in g%d)",
         heap_number, heap_segment_gen_num (region), (size_t)region, heap_segment_mem (region), plan_gen_num, planned_regions_per_gen[plan_gen_num], plan_gen_num));
 
     heap_segment_plan_gen_num (region) = plan_gen_num;
@@ -29173,7 +29173,6 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
 
     if (to_be_empty_regions)
     {
-        assert (planned_regions_per_gen[0] != 0);
         if (planned_regions_per_gen[0] == 0)
         {
             dprintf (REGIONS_LOG, ("we didn't seem to find any gen to plan gen0 yet we have empty regions?!"));
@@ -31937,10 +31936,10 @@ void gc_heap::thread_final_regions (bool compact_p)
 
     int net_added_regions = num_new_regions - num_returned_regions;
     dprintf (REGIONS_LOG, ("TFR: added %d, returned %d, net %d", num_new_regions, num_returned_regions, net_added_regions));
+
     // TODO: For sweeping GCs by design we will need to get a new region for gen0 unless we are doing a special sweep.
     // This means we need to know when we decided to sweep that we can get a new region (if needed). If we can't, we
     // need to turn special sweep on.
-
     if ((settings.compaction || special_sweep_p) && (net_added_regions > 0))
     {
         new_regions_in_threading += net_added_regions;

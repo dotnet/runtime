@@ -3398,15 +3398,15 @@ private:
     PER_HEAP_FIELD_SINGLE_GC int sip_maxgen_regions_per_gen[max_generation + 1];
     PER_HEAP_FIELD_SINGLE_GC heap_segment* reserved_free_regions_sip[max_generation];
 
+    // Used to keep track of the total regions in each condemned generation. For SIP regions we need
+    // to know if we've made all regions in a condemned gen into a max_generation region; if so we
+    // would want to revert our decision so we leave at least one region in that generation. Otherwise
+    // this is used in dprintf's.
     PER_HEAP_FIELD_SINGLE_GC int regions_per_gen[max_generation + 1];
 
     // Used to keep track of how many regions we have planned to see if any generation
     // doens't have a region yet and act accordingly.
     PER_HEAP_FIELD_SINGLE_GC int planned_regions_per_gen[max_generation + 1];
-
-    PER_HEAP_FIELD_SINGLE_GC int new_gen0_regions_in_plns;
-    PER_HEAP_FIELD_SINGLE_GC int new_regions_in_prr;
-    PER_HEAP_FIELD_SINGLE_GC int new_regions_in_threading;
 
     // After plan we calculate this as the planned end gen0 space;
     // but if we end up sweeping, we recalculate it at the end of
@@ -3790,6 +3790,13 @@ private:
 #endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS
+    // Used to keep track of the new regions we get in process_last_np_surv_region (plns)
+    PER_HEAP_FIELD_DIAG_ONLY int new_gen0_regions_in_plns;
+    // Used to keep track of the new regions we get in process_remaining_regions (prr)
+    PER_HEAP_FIELD_DIAG_ONLY int new_regions_in_prr;
+    // Used to keep track of the new regions we get in thread_final_regions
+    PER_HEAP_FIELD_DIAG_ONLY int new_regions_in_threading;
+
 #ifdef STRESS_REGIONS
     // TODO: could consider dynamically grow this.
     // Right now the way it works -
