@@ -3830,6 +3830,15 @@ protected:
     bool impCanPInvokeInlineCallSite(BasicBlock* block);
     void impCheckForPInvokeCall(
         GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block);
+
+    enum SigTransform
+    {
+        LeaveIntact    = 0,
+        DeleteThis     = 1 << 0,
+        ReplaceRefThis = 1 << 1,
+    };
+
+    bool impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig, CORINFO_SIG_INFO* targetSig, SigTransform transformation);
     GenTreeCall* impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di = DebugInfo());
     void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig);
 
@@ -3858,6 +3867,7 @@ protected:
 
     GenTree* impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
+    GenTree* impGetNodeFromLocal(GenTree* node);
     GenTree* impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE ownerCls);
     GenTree* impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueType);
 

@@ -104,13 +104,16 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     bool checkForSmallType  = false;
     bool bIntrinsicImported = false;
 
-    CORINFO_SIG_INFO calliSig;
+    CORINFO_SIG_INFO originalSig;
     NewCallArg       extraArg;
 
-    /*-------------------------------------------------------------------------
-     * First create the call node
-     */
+    // run transformations when instrumenting to not pollute PGO data
+    bool optimizedOrInstrumented = opts.OptimizationEnabled() || opts.IsInstrumented();
+    CORINFO_METHOD_HANDLE replacementMethod = nullptr;
+    GenTree* newThis = nullptr;
+    SigTransform sigTransformation = SigTransform::LeaveIntact;
 
+    // handle special import cases
     if (opcode == CEE_CALLI)
     {
         if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
@@ -125,25 +128,102 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
 
         /* Get the call site sig */
-        eeGetSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, &calliSig);
+        eeGetSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, &originalSig);
 
-        callRetTyp = JITtype2varType(calliSig.retType);
+        if (!optimizedOrInstrumented)
+        {
+            // ignore
+        }
+        else if (originalSig.getCallConv() == CORINFO_CALLCONV_DEFAULT)
+        {
+            JITDUMP("\n\nimpImportCall trying to import calli as call\n");
+            GenTree* fptr = impStackTop().val;
+            if (fptr->OperIs(GT_LCL_VAR))
+            {
+                JITDUMP("impImportCall trying to import calli as call - trying to substitute LCL_VAR\n");
+                GenTree* lclValue = impGetNodeFromLocal(fptr);
+                if (lclValue != nullptr)
+                {
+                    fptr = lclValue;
+                }
+            }
+            if (fptr->OperIs(GT_FTN_ADDR))
+            {
+                replacementMethod = fptr->AsFptrVal()->gtFptrMethod;
+            }
+            else
+            {
+                JITDUMP("impImportCall failed to import calli as call - address node not found\n");
+            }
+        }
+        else
+        {
+            JITDUMP("impImportCall failed to import calli as call - call conv %u is not managed\n",
+                originalSig.getCallConv());
+        }
+    }
 
-        call = impImportIndirectCall(&calliSig, di);
+    if (replacementMethod != nullptr)
+    {
+        JITDUMP("impImportCall trying to transform call - found target method %s\n",
+            eeGetMethodName(replacementMethod));
+        CORINFO_SIG_INFO methodSig;
+        CORINFO_CLASS_HANDLE targetClass = info.compCompHnd->getMethodClass(replacementMethod);
+        info.compCompHnd->getMethodSig(replacementMethod, &methodSig, targetClass);
+
+        unsigned replacementFlags = info.compCompHnd->getMethodAttribs(replacementMethod);
+
+        if ((replacementFlags & CORINFO_FLG_PINVOKE) != 0)
+        {
+            JITDUMP("impImportCall aborting transformation - found PInvoke\n");
+        }
+        else if (impCanSubstituteSig(&originalSig, &methodSig, sigTransformation))
+        {
+            impPopStack();
+            if (newThis != nullptr)
+            {
+                assert(sigTransformation == SigTransform::ReplaceRefThis);
+                CORINFO_CLASS_HANDLE thisCls = NO_CLASS_HANDLE;
+                info.compCompHnd->getArgType(&methodSig, methodSig.args, &thisCls);
+                impPushOnStack(newThis, typeInfo(TI_REF, thisCls));
+            }
+            JITDUMP("impImportCall transforming call\n");
+            pResolvedToken->hMethod = replacementMethod;
+            pResolvedToken->hClass = targetClass;
+
+            callInfo->sig = methodSig;
+            callInfo->hMethod = replacementMethod;
+            callInfo->methodFlags = replacementFlags;
+            callInfo->classFlags = info.compCompHnd->getClassAttribs(targetClass);
+
+            return impImportCall(CEE_CALL, pResolvedToken, nullptr, nullptr,
+                prefixFlags, callInfo, rawILOffset);
+        }
+    }
+
+    /*-------------------------------------------------------------------------
+     * First create the call node
+     */
+
+    if (opcode == CEE_CALLI)
+    {
+        callRetTyp = JITtype2varType(originalSig.retType);
+
+        call = impImportIndirectCall(&originalSig, di);
 
         // We don't know the target method, so we have to infer the flags, or
         // assume the worst-case.
-        mflags = (calliSig.callConv & CORINFO_CALLCONV_HASTHIS) ? 0 : CORINFO_FLG_STATIC;
+        mflags = (originalSig.callConv & CORINFO_CALLCONV_HASTHIS) ? 0 : CORINFO_FLG_STATIC;
 
 #ifdef DEBUG
         if (verbose)
         {
-            unsigned structSize = (callRetTyp == TYP_STRUCT) ? eeTryGetClassSize(calliSig.retTypeSigClass) : 0;
+            unsigned structSize = (callRetTyp == TYP_STRUCT) ? eeTryGetClassSize(originalSig.retTypeSigClass) : 0;
             printf("\nIn Compiler::impImportCall: opcode is %s, kind=%d, callRetType is %s, structSize is %u\n",
                    opcodeNames[opcode], callInfo->kind, varTypeName(callRetTyp), structSize);
         }
 #endif
-        sig = &calliSig;
+        sig = &originalSig;
     }
     else // (opcode != CEE_CALLI)
     {
@@ -1620,6 +1700,114 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     }
     return call;
 #endif // FEATURE_MULTIREG_RET
+}
+
+//-----------------------------------------------------------------------------------
+//  impCanSubstituteSig: Checks whether it's safe to replace a call with another one.
+//  This DOES NOT check if the calls are actually compatible, it only checks if their trees are.
+//  Use ONLY when code will call the method with target sig anyway.
+//
+//  Arguments:
+//    sourceSig      - original call signature
+//    targetSig      - new call signature
+//    transformation - transformations performed on the original signature
+//
+//  Return Value:
+//    Whether it's safe to change the IR to call the target method
+//
+bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig, CORINFO_SIG_INFO* targetSig, SigTransform transformation)
+{
+    const SigTransform thisChangeMask = (SigTransform)(SigTransform::DeleteThis | SigTransform::ReplaceRefThis);
+    assert((transformation & thisChangeMask) != thisChangeMask);
+
+    if (sourceSig->getCallConv() != targetSig->getCallConv())
+    {
+        JITDUMP("impCanSubstituteSig returning false - call conv %u != %u\n", sourceSig->callConv, targetSig->callConv);
+        return false;
+    }
+
+    unsigned sourceArgCount = sourceSig->numArgs;
+    if ((transformation & SigTransform::DeleteThis) != 0)
+    {
+        sourceArgCount--;
+    }
+
+    if (sourceArgCount != targetSig->numArgs)
+    {
+        JITDUMP("impCanSubstituteSig returning false - args count %u != %u\n", sourceArgCount, targetSig->numArgs);
+        return false;
+    }
+
+    if (sourceSig->retType != targetSig->retType)
+    {
+        JITDUMP("impCanSubstituteSig returning false - return type %u != %u\n",
+            (unsigned)sourceSig->retType, (unsigned)targetSig->retType);
+        return false;
+    }
+
+    if (sourceSig->retType == CORINFO_TYPE_VALUECLASS || sourceSig->retType == CORINFO_TYPE_REFANY)
+    {
+        ClassLayout* layoutRetA = typGetObjLayout(sourceSig->retTypeClass);
+        ClassLayout* layoutRetB = typGetObjLayout(targetSig->retTypeClass);
+
+        if (!ClassLayout::AreCompatible(layoutRetA, layoutRetB))
+        {
+            JITDUMP("impCanSubstituteSig returning false - return type %u is incompatible with %u\n",
+                (unsigned)sourceSig->retType, (unsigned)targetSig->retType);
+            return false;
+        }
+    }
+
+    CORINFO_ARG_LIST_HANDLE sourceArg = sourceSig->args;
+    CORINFO_ARG_LIST_HANDLE targetArg = targetSig->args;
+
+    assert((transformation & (SigTransform::DeleteThis | SigTransform::ReplaceRefThis)) == 0 ||
+        eeGetArgType(sourceArg, sourceSig) == TYP_REF);
+
+    if ((transformation & SigTransform::DeleteThis) != 0)
+    {
+        sourceArg = info.compCompHnd->getArgNext(sourceArg);
+    }
+
+    if ((transformation & SigTransform::ReplaceRefThis) != 0 && eeGetArgType(targetArg, targetSig) != TYP_REF)
+    {
+        JITDUMP("impCanSubstituteSig returning false - this is not TYP_REF\n");
+        return false;
+    }
+
+    for (unsigned i = 0; i < targetSig->numArgs; i++,
+        sourceArg = info.compCompHnd->getArgNext(sourceArg),
+        targetArg = info.compCompHnd->getArgNext(targetArg))
+    {
+        var_types sourceType = eeGetArgType(sourceArg, sourceSig);
+        var_types targetType = eeGetArgType(targetArg, targetSig);
+        if (sourceType != targetType)
+        {
+            JITDUMP("impCanSubstituteSig returning false - parameter %u type %s != %s\n",
+                i, varTypeName(sourceType), varTypeName(targetType));
+            return false;
+        }
+
+        if (varTypeIsStruct(sourceType) && varTypeIsStruct(targetType))
+        {
+            CORINFO_CLASS_HANDLE sourceClassHnd = NO_CLASS_HANDLE;
+            CORINFO_CLASS_HANDLE targetClassHnd = NO_CLASS_HANDLE;
+            info.compCompHnd->getArgType(sourceSig, sourceArg, &sourceClassHnd);
+            info.compCompHnd->getArgType(targetSig, targetArg, &targetClassHnd);
+
+            ClassLayout* sourceLayout = typGetObjLayout(sourceClassHnd);
+            ClassLayout* targetLayout = typGetObjLayout(targetClassHnd);
+
+            if (!ClassLayout::AreCompatible(sourceLayout, targetLayout))
+            {
+                JITDUMP("impCanSubstituteSig returning false - parameter %u type %s is inconmpatible with %s\n",
+                    i, varTypeName(sourceType), varTypeName(targetType));
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di)

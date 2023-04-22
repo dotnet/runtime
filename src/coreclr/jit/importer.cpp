@@ -3765,6 +3765,65 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 }
 
 //------------------------------------------------------------------------
+// impGetNodeFromLocal: Tries to return the node that's assigned
+// to the provided local.
+//
+// Arguments:
+//    node - GT_LCL_VAR whose value is searched for
+//
+// Return Value:
+//    The tree representing the node assigned to the variable when possible,
+//    nullptr otherwise.
+//
+GenTree* Compiler::impGetNodeFromLocal(GenTree* node)
+{
+    assert(node != nullptr);
+    assert(node->OperIs(GT_LCL_VAR));
+
+    unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
+
+    if (lvaTable[lclNum].lvSingleDef == 0)
+    {
+        return nullptr;
+    }
+
+    auto findValue = [&](Statement* stmtList) -> GenTree* {
+        for (Statement* stmt : StatementList(stmtList))
+        {
+            GenTree* root = stmt->GetRootNode();
+            if (root->OperIs(GT_ASG) && root->AsOp()->gtOp1->OperIs(GT_LCL_VAR) &&
+                root->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() == lclNum)
+            {
+                return root->AsOp()->gtOp2;
+            }
+        }
+        return nullptr;
+    };
+
+    GenTree* valueNode = findValue(impStmtList);
+    BasicBlock* bb = fgFirstBB;
+    while (valueNode == nullptr && bb != nullptr)
+    {
+        valueNode = findValue(bb->bbStmtList);
+        if (valueNode == nullptr && bb->NumSucc(this) == 1)
+        {
+            bb = bb->GetSucc(0, this);
+        }
+        else
+        {
+            bb = nullptr;
+        }
+    }
+
+    if (valueNode != nullptr && valueNode->OperIs(GT_LCL_VAR))
+    {
+        return impGetNodeFromLocal(valueNode);
+    }
+
+    return valueNode;
+}
+
+//------------------------------------------------------------------------
 // impImportStaticReadOnlyField: Tries to import 'static readonly' field
 //    as a constant if the host type is statically initialized.
 //
