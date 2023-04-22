@@ -73,14 +73,14 @@ namespace System.Linq
         }
 
         private static T SumSignedIntegersVectorized<T>(ReadOnlySpan<T> span)
-            where T : struct, IBinaryInteger<T>, ISignedNumber<T>
+            where T : struct, IBinaryInteger<T>, ISignedNumber<T>, IMinMaxValue<T>
         {
             Debug.Assert(span.Length >= Vector<T>.Count * 4);
             Debug.Assert(Vector<T>.Count > 2);
             Debug.Assert(Vector.IsHardwareAccelerated);
 
             ref T ptr = ref MemoryMarshal.GetReference(span);
-            int length = span.Length;
+            nuint length = (nuint)span.Length;
 
             // Overflow testing for vectors is based on setting the sign bit of the overflowTracking
             // vector for an element if the following are all true:
@@ -89,36 +89,50 @@ namespace System.Linq
             //   - The sign bit of the sum is not the same as the sign bit of the previous accumulator.
             //     This indicates that the new sum wrapped around to the opposite sign.
             //
+            // This is done by:
+            //   overflowTracking |= (result ^ input1) & (result ^ input2);
+            //
+            // The general premise here is that we're doing signof(result) ^ signof(input1). This will produce
+            // a sign-bit of 1 if they differ and 0 if they are the same. We do the same with
+            // signof(result) ^ signof(input2), then combine both results together with a logical &.
+            //
+            // Thus, if we had a sign swap compared to both inputs, then signof(input1) == signof(input2) and
+            // we must have overflowed.
+            //
             // By bitwise or-ing the overflowTracking vector for each step we can save cycles by testing
             // the sign bits less often. If any iteration has the sign bit set in any element it indicates
             // there was an overflow.
             //
             // Note: The overflow checking in this algorithm is only correct for signed integers.
             // If support is ever added for unsigned integers then the overflow check should be:
-            //   overflowTracking |= (accumulator & data) | Vector.AndNot(accumulator | data, sum);
+            //   overflowTracking |= (input1 & input2) | Vector.AndNot(input1 | input2, result);
 
             Vector<T> accumulator = Vector<T>.Zero;
 
-            // Build a test vector with only the sign bit set in each element. JIT will fold this into a constant.
-            Vector<T> overflowTestVector = new(T.RotateRight(T.MultiplicativeIdentity, 1));
+            // Build a test vector with only the sign bit set in each element.
+            Vector<T> overflowTestVector = new(T.MinValue);
 
-            // Unroll the loop to sum 4 vectors per iteration
+            // Unroll the loop to sum 4 vectors per iteration. This reduces range check
+            // and overflow check frequency, allows us to eliminate move operations swapping
+            // accumulators, and may have pipelining benefits.
+            nuint index = 0;
+            nuint limit = length - (nuint)Vector<T>.Count * 4;
             do
             {
                 // Switch accumulators with each step to avoid an additional move operation
-                Vector<T> data = Vector.LoadUnsafe(ref ptr);
+                Vector<T> data = Vector.LoadUnsafe(ref ptr, index);
                 Vector<T> accumulator2 = accumulator + data;
                 Vector<T> overflowTracking = (accumulator2 ^ accumulator) & (accumulator2 ^ data);
 
-                data = Vector.LoadUnsafe(ref ptr, (nuint)Vector<T>.Count);
+                data = Vector.LoadUnsafe(ref ptr, index + (nuint)Vector<T>.Count);
                 accumulator = accumulator2 + data;
                 overflowTracking |= (accumulator ^ accumulator2) & (accumulator ^ data);
 
-                data = Vector.LoadUnsafe(ref ptr, (nuint)Vector<T>.Count * 2);
+                data = Vector.LoadUnsafe(ref ptr, index + (nuint)Vector<T>.Count * 2);
                 accumulator2 = accumulator + data;
                 overflowTracking |= (accumulator2 ^ accumulator) & (accumulator2 ^ data);
 
-                data = Vector.LoadUnsafe(ref ptr, (nuint)Vector<T>.Count * 3);
+                data = Vector.LoadUnsafe(ref ptr, index + (nuint)Vector<T>.Count * 3);
                 accumulator = accumulator2 + data;
                 overflowTracking |= (accumulator ^ accumulator2) & (accumulator ^ data);
 
@@ -127,25 +141,24 @@ namespace System.Linq
                     ThrowHelper.ThrowOverflowException();
                 }
 
-                ptr = ref Unsafe.Add(ref ptr, Vector<T>.Count * 4);
-                length -= Vector<T>.Count * 4;
-            } while (length >= Vector<T>.Count * 4);
+                index += (nuint)Vector<T>.Count * 4;
+            } while (index < limit);
 
             // Process remaining vectors, if any, without unrolling
-            if (length >= Vector<T>.Count)
+            limit = length - (nuint)Vector<T>.Count;
+            if (index < limit)
             {
                 Vector<T> overflowTracking = Vector<T>.Zero;
 
                 do
                 {
-                    Vector<T> data = Vector.LoadUnsafe(ref ptr);
+                    Vector<T> data = Vector.LoadUnsafe(ref ptr, index);
                     Vector<T> accumulator2 = accumulator + data;
                     overflowTracking |= (accumulator2 ^ accumulator) & (accumulator2 ^ data);
                     accumulator = accumulator2;
 
-                    ptr = ref Unsafe.Add(ref ptr, Vector<T>.Count);
-                    length -= Vector<T>.Count;
-                } while (length >= Vector<T>.Count);
+                    index += (nuint)Vector<T>.Count;
+                } while (index < limit);
 
                 if ((overflowTracking & overflowTestVector) != Vector<T>.Zero)
                 {
@@ -162,9 +175,11 @@ namespace System.Linq
             }
 
             // Add any remaining elements
-            for (int i = 0; i < length; i++)
+            while (index < length)
             {
-                checked { result += Unsafe.Add(ref ptr, i); }
+                checked { result += Unsafe.Add(ref ptr, index); }
+
+                index++;
             }
 
             return result;
