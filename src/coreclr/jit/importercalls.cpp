@@ -158,7 +158,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
         else
         {
-            JITDUMP("impImportCall failed to import calli as call - call conv %u is not managed\n",
+            JITDUMP("\n\nimpImportCall failed to import calli as call - call conv %u is not managed\n",
                     originalSig.getCallConv());
         }
     }
