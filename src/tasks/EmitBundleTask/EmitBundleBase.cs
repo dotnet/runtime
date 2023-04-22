@@ -239,10 +239,6 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         {
             return "MONO_BUNDLED_ASSEMBLY";
         }
-        if (destinationFileName.EndsWith(".pdb"))
-        {
-            return "MONO_BUNDLED_PDB";
-        }
         return "MONO_BUNDLED_DATA";
     }
 

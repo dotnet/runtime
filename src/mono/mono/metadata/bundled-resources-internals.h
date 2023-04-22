@@ -5,31 +5,58 @@
 #ifndef __MONO_METADATA_BUNDLED_RESOURCES_INTERNALS_H__
 #define __MONO_METADATA_BUNDLED_RESOURCES_INTERNALS_H__
 
+#include "loader-internals.h"
+
+#include <mono/metadata/assembly.h>
+#include <mono/metadata/mono-private-unstable.h>
+
 typedef enum {
 	MONO_BUNDLED_DATA,
 	MONO_BUNDLED_ASSEMBLY,
 	MONO_BUNDLED_SATELLITE_ASSEMBLY,
-	MONO_BUNDLED_SYMFILE,
 	MONO_BUNDLED_RESOURCE_COUNT,
 } MonoBundledResourceType;
 
-typedef struct MonoBundledResource {
-	const char *culture; // Satellite assemblies
+typedef struct _MonoBundledResource {
+	MonoBundledResourceType type;
+	void (*free_bundled_resource_func)(void *);
+} MonoBundledResource;
+
+typedef struct _MonoBundledData {
+	char *name;
 	const unsigned char *data;
 	unsigned int size;
-	MonoBundledResourceType type;
-} MonoBundledResource;
+} MonoBundledData;
+
+typedef struct _MonoBundledDataResource {
+	MonoBundledResource resource;
+	MonoBundledData data;
+} MonoBundledDataResource;
+
+typedef struct _MonoBundledSymfile {
+	const unsigned char *data;
+	unsigned int size;
+} MonoBundledSymfile;
+
+typedef struct _MonoBundledAssemblyResource {
+	MonoBundledResource resource;
+	MonoBundledAssembly assembly;
+    MonoBundledSymfile symfile;
+} MonoBundledAssemblyResource;
+
+typedef struct _MonoBundledSatelliteAssemblyResource {
+	MonoBundledResource resource;
+	MonoBundledSatelliteAssembly satellite_assembly;
+    MonoBundledSymfile symfile;
+} MonoBundledSatelliteAssemblyResource;
 
 void
 mono_free_bundled_resources (void);
 
 void
-mono_add_bundled_resource (const char *name, const char *culture, const unsigned char *data, unsigned int size, MonoBundledResourceType type);
+mono_add_bundled_resource (MonoBundledResource **resources_to_bundle, uint32_t len);
 
-void
-mono_get_bundled_resource_data (const char *name, const unsigned char **out_data, unsigned int *out_size);
-
-void
-mono_register_bundled_resources (void);
+MonoBundledResource *
+mono_get_bundled_resource_data (const char *name);
 
 #endif /* __MONO_METADATA_BUNDLED_RESOURCES_INTERNALS_H__ */
