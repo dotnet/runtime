@@ -1825,7 +1825,6 @@ GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
 
             // TODO-CQ: Try to create an addressing mode
             GenTreeIndir* srcBlk = comp->gtNewIndir(TYP_STRUCT, srcAddr);
-            srcBlk->gtFlags |= GTF_GLOB_REF;
             srcBlk->SetContained();
 
             GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)

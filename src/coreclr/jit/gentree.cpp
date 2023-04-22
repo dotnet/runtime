@@ -7184,13 +7184,6 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
     }
 
     GenTree* indNode = gtNewIndir(indType, addrNode, indirFlags);
-    if (!isInvariant)
-    {
-        // GLOB_REF needs to be set for indirections returning values from mutable
-        // locations, so that e. g. args sorting does not reorder them with calls.
-        indNode->gtFlags |= GTF_GLOB_REF;
-    }
-
     return indNode;
 }
 
@@ -7838,18 +7831,7 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
         }
     }
 
-    GenTree* node;
-    if (type == TYP_STRUCT)
-    {
-        node = gtNewBlkIndir(layout, addr, indirFlags);
-    }
-    else
-    {
-        node = gtNewIndir(type, addr, indirFlags);
-        node->gtFlags |= GTF_GLOB_REF;
-    }
-
-    return node;
+    return (type == TYP_STRUCT) ? gtNewBlkIndir(layout, addr, indirFlags) : gtNewIndir(type, addr, indirFlags);
 }
 
 //------------------------------------------------------------------------
@@ -7902,6 +7884,11 @@ GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags in
     GenTreeIndir* indir = new (this, GT_IND) GenTreeIndir(GT_IND, typ, addr, nullptr);
     indir->gtFlags |= indirFlags;
     indir->SetIndirExceptionFlags(this);
+
+    if ((indirFlags & GTF_IND_INVARIANT) == 0)
+    {
+        indir->gtFlags |= GTF_GLOB_REF;
+    }
 
     if ((indirFlags & GTF_IND_VOLATILE) != 0)
     {
@@ -16019,15 +16006,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
         {
             ClassLayout* layout;
             lclTyp = TypeHandleToVarType(pFieldInfo->fieldType, structType, &layout);
-            if (lclTyp == TYP_STRUCT)
-            {
-                result = gtNewBlkIndir(layout, result);
-            }
-            else
-            {
-                result = gtNewIndir(lclTyp, result);
-                result->gtFlags |= GTF_GLOB_REF;
-            }
+            result = (lclTyp == TYP_STRUCT) ? gtNewBlkIndir(layout, result) : gtNewIndir(lclTyp, result);
         }
         else if (access & CORINFO_ACCESS_SET)
         {
@@ -16038,7 +16017,6 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
             else
             {
                 result = gtNewIndir(lclTyp, result);
-                result->gtFlags |= GTF_GLOB_REF;
                 result = gtNewAssignNode(result, assg);
             }
         }
