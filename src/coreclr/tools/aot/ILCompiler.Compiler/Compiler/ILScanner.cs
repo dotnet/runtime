@@ -254,7 +254,7 @@ namespace ILCompiler
 
         public InlinedThreadStatics GetInlinedThreadStatics()
         {
-            return new ScannedInlinedThreadStatics(MarkedNodes);
+            return new ScannedInlinedThreadStatics(_factory, MarkedNodes);
         }
 
         private sealed class ScannedVTableProvider : VTableSliceProvider
@@ -690,7 +690,7 @@ namespace ILCompiler
             internal override Dictionary<MetadataType, int> GetOffsets() => _offsets;
             internal override int GetSize() => _size;
 
-            public ScannedInlinedThreadStatics(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
+            public ScannedInlinedThreadStatics(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
                 List<ThreadStaticsNode> threadStaticNodes = new List<ThreadStaticsNode>();
                 foreach (var markedNode in markedNodes)
@@ -701,41 +701,43 @@ namespace ILCompiler
                     }
                 }
 
-                // TODO: VS need to handle no threadstatics?
+                // skip MT pointer
+                int nextDataOffset = factory.Target.PointerSize;
 
-                threadStaticNodes.Sort(CompilerComparer.Instance);
-
-                int ptrSize = threadStaticNodes[0].Type.Context.Target.PointerSize;
                 List<MetadataType> types = new List<MetadataType>();
                 Dictionary<MetadataType, int> offsets = new Dictionary<MetadataType, int>();
-                int nextOffset = 0;
 
-                foreach (var threadStaticNode in threadStaticNodes)
+                if (threadStaticNodes.Count > 0)
                 {
-                    MetadataType t = threadStaticNode.Type;
-                    // REVIEW: how to filter these more precisely?
-                    //       List<int> is ok, but List<object> is not.
-                    if (t.HasInstantiation)
-                        continue;
+                    threadStaticNodes.Sort(CompilerComparer.Instance);
+                    foreach (var threadStaticNode in threadStaticNodes)
+                    {
+                        MetadataType t = threadStaticNode.Type;
+                        // REVIEW: how to filter these more precisely?
+                        //       List<int> is ok, but List<object> is not.
+                        if (t.HasInstantiation)
+                            continue;
 
-                    types.Add(t);
+                        types.Add(t);
 
-                    // base is aligned to a pointer size.
-                    // N.B. for ARM32, we would need to deal with > PointerSize alignments as well.
-                    //      GCStaticEEType does not currently set RequiresAlign8Flag anyways
-                    nextOffset = nextOffset.AlignUp(ptrSize);
-                    offsets.Add(t, nextOffset);
-                    nextOffset += t.ThreadGcStaticFieldSize.AsInt;
+                        // base is aligned to a pointer size.
+                        // N.B. for ARM32, we would need to deal with > PointerSize alignments as well.
+                        //      GCStaticEEType does not currently set RequiresAlign8Flag anyways
+                        nextDataOffset = nextDataOffset.AlignUp(factory.Target.PointerSize);
 
-                    // TODO: VS ThreadGcStaticFieldSize includes 1 ptr for MT, we could squeeze more space.
-                    //       subtract that from ThreadGcStaticFieldSize. The total should be + ptr then .
+                        // reported offset is from the MT pointer, adjust for that
+                        offsets.Add(t, nextDataOffset - factory.Target.PointerSize);
+
+                        // ThreadGcStaticFieldSize includes MT pointer, we will not need space for it
+                        int dataSize = t.ThreadGcStaticFieldSize.AsInt - factory.Target.PointerSize;
+                        nextDataOffset += dataSize;
+                    }
                 }
 
                 _types = types;
                 _offsets = offsets;
-
-                // TODO: VS at least minobj size
-                _size = nextOffset;
+                // the size is at least MIN_OBJECT_SIZE
+                _size = Math.Max(nextDataOffset, factory.Target.PointerSize * 3);
             }
         }
 
