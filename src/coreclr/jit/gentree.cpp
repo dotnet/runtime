@@ -7805,6 +7805,70 @@ GenTreeField* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HANDLE 
 }
 
 //------------------------------------------------------------------------
+// gtInitializeIndirNode: Initialize an indirection node.
+//
+// Sets side effect flags based on the passed-in indirection flags.
+//
+// Arguments:
+//    indir      - The indirection node
+//    indirFlags - The indirection flags
+//
+void Compiler::gtInitializeIndirNode(GenTreeIndir* indir, GenTreeFlags indirFlags)
+{
+    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
+    indir->gtFlags |= indirFlags;
+    indir->SetIndirExceptionFlags(this);
+
+    if ((indirFlags & GTF_IND_INVARIANT) == 0)
+    {
+        indir->gtFlags |= GTF_GLOB_REF;
+    }
+    if ((indirFlags & GTF_IND_VOLATILE) != 0)
+    {
+        indir->gtFlags |= GTF_ORDER_SIDEEFF;
+    }
+}
+
+//------------------------------------------------------------------------
+// gtNewBlkIndir: Create a struct indirection node.
+//
+// Arguments:
+//    layout     - The struct layout
+//    addr       - Address of the indirection
+//    indirFlags - Indirection flags
+//
+// Return Value:
+//    The created GT_BLK node.
+//
+GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
+{
+    assert(layout->GetType() == TYP_STRUCT);
+    GenTreeBlk* blkNode = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, addr, layout);
+    gtInitializeIndirNode(blkNode, indirFlags);
+
+    return blkNode;
+}
+
+//------------------------------------------------------------------------------
+// gtNewIndir : Create an indirection node.
+//
+// Arguments:
+//    typ        - Type of the node
+//    addr       - Address of the indirection
+//    indirFlags - Indirection flags
+//
+// Return Value:
+//    The created GT_IND node.
+//
+GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags)
+{
+    GenTreeIndir* indir = new (this, GT_IND) GenTreeIndir(GT_IND, typ, addr, nullptr);
+    gtInitializeIndirNode(indir, indirFlags);
+
+    return indir;
+}
+
+//------------------------------------------------------------------------
 // gtNewLoadValueNode: Return a node that represents a loaded value.
 //
 // Arguments:
@@ -7832,70 +7896,6 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
     }
 
     return (type == TYP_STRUCT) ? gtNewBlkIndir(layout, addr, indirFlags) : gtNewIndir(type, addr, indirFlags);
-}
-
-//------------------------------------------------------------------------
-// gtNewBlkIndir: Create a struct indirection node.
-//
-// Arguments:
-//    layout     - The struct layout
-//    addr       - Address of the indirection
-//    indirFlags - Indirection flags
-//
-// Return Value:
-//    The created GT_BLK node.
-//
-GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
-{
-    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
-
-    GenTreeBlk* blkNode = new (this, GT_BLK) GenTreeBlk(GT_BLK, layout->GetType(), addr, layout);
-    blkNode->gtFlags |= indirFlags;
-    blkNode->SetIndirExceptionFlags(this);
-
-    if ((indirFlags & GTF_IND_INVARIANT) == 0)
-    {
-        blkNode->gtFlags |= GTF_GLOB_REF;
-    }
-
-    if ((indirFlags & GTF_IND_VOLATILE) != 0)
-    {
-        blkNode->gtFlags |= GTF_ORDER_SIDEEFF;
-    }
-
-    return blkNode;
-}
-
-//------------------------------------------------------------------------------
-// gtNewIndir : Create an indirection node.
-//
-// Arguments:
-//    typ        - Type of the node
-//    addr       - Address of the indirection
-//    indirFlags - Indirection flags
-//
-// Return Value:
-//    The created GT_IND node.
-//
-GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags)
-{
-    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
-
-    GenTreeIndir* indir = new (this, GT_IND) GenTreeIndir(GT_IND, typ, addr, nullptr);
-    indir->gtFlags |= indirFlags;
-    indir->SetIndirExceptionFlags(this);
-
-    if ((indirFlags & GTF_IND_INVARIANT) == 0)
-    {
-        indir->gtFlags |= GTF_GLOB_REF;
-    }
-
-    if ((indirFlags & GTF_IND_VOLATILE) != 0)
-    {
-        indir->gtFlags |= GTF_ORDER_SIDEEFF;
-    }
-
-    return indir;
 }
 
 /*****************************************************************************
