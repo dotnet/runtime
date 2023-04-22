@@ -45,37 +45,19 @@ LOCAL_LABEL(ProbeLoop):
         ret
 NESTED_END RhpStackProbe, _TEXT
 
-NESTED_ENTRY RhpGetThreadStaticBaseForType, _TEXT, NoHandler
-        // On entry:
-        //   rdi - type index
+LEAF_ENTRY RhpGetThreadStaticBaseForType, _TEXT
         // On exit:
         //   rax - the thread static base for the given type
 
-        push_nonvol_reg rbx
-
-        mov     rbx, rdi               // Save type index
-
         // rax = GetThread()
         INLINE_GETTHREAD
+
         // get per-thread storage
         mov     rax, [rax + OFFSETOF__Thread__m_pInlineThreadLocalStatics]
         test    rax, rax
-        jz      LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
-
-        // get the actual per-type storage
-        mov     rax, [rax + rbx * 8 + 0x10]
+        jz      C_FUNC(RhpGetInlinedThreadStaticBaseSlow)
 
         // return it
-        .cfi_remember_state
-        pop_nonvol_reg rbx
         ret
-
-        .cfi_restore_state
-        .cfi_def_cfa_offset 16  // workaround cfi_restore_state bug
-LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath):
-        mov         rdi, rbx    // restore type index
-
-        pop_nonvol_reg rbx
-        jmp C_FUNC(RhpGetInlinedThreadStaticBaseSlow)
-NESTED_END RhpGetThreadStaticBaseForType, _TEXT
+LEAF_END RhpGetThreadStaticBaseForType, _TEXT
 

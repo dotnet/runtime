@@ -53,7 +53,6 @@ LEAF_ENTRY RhpGetThreadStaticBaseForType, _TEXT
 
         ;; return it
         ret
-
 LEAF_END RhpGetThreadStaticBaseForType, _TEXT
 
 end
