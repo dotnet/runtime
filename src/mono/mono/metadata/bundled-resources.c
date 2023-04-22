@@ -24,6 +24,9 @@ mono_free_bundled_resources (void)
 {
 	g_hash_table_destroy (bundled_resources);
 	bundled_resources = NULL;
+
+	mono_hash_contains_bundled_assemblies (FALSE);
+	mono_hash_contains_bundled_satellite_assemblies (FALSE);
 }
 
 //---------------------------------------------------------------------------------------
@@ -51,17 +54,21 @@ mono_add_bundled_resource (MonoBundledResource **resources_to_bundle, uint32_t l
 	if (!bundled_resources)
 		bundled_resources = g_hash_table_new (g_str_hash, g_str_equal);
 
+	gboolean assemblyAdded, satelliteAssemblyAdded;
+
 	for (int i = 0; i < len; ++i) {
 		MonoBundledResource *resource_to_bundle = (MonoBundledResource *)resources_to_bundle[i];
 		switch (resource_to_bundle->type) {
 		case MONO_BUNDLED_ASSEMBLY: {
 			MonoBundledAssemblyResource *assembly = (MonoBundledAssemblyResource *)resource_to_bundle;
 			g_hash_table_insert (bundled_resources, (gpointer) assembly->assembly.name, assembly);
+			assemblyAdded = TRUE;
 			break;
 		}
 		case MONO_BUNDLED_SATELLITE_ASSEMBLY: {
 			MonoBundledSatelliteAssemblyResource *satellite_assembly = (MonoBundledSatelliteAssemblyResource *)resource_to_bundle;
 			g_hash_table_insert (bundled_resources, (gpointer) satellite_assembly->satellite_assembly.name, satellite_assembly);
+			satelliteAssemblyAdded = TRUE;
 			break;
 		}
 		case MONO_BUNDLED_DATA:
@@ -72,6 +79,12 @@ mono_add_bundled_resource (MonoBundledResource **resources_to_bundle, uint32_t l
 		}
 		}
 	}
+
+	if (assemblyAdded)
+		mono_hash_contains_bundled_assemblies (assemblyAdded);
+
+	if (satelliteAssemblyAdded)
+		mono_hash_contains_bundled_satellite_assemblies (satelliteAssemblyAdded);
 }
 
 //---------------------------------------------------------------------------------------

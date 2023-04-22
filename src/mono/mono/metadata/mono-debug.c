@@ -1121,11 +1121,9 @@ open_symfile_from_bundle (MonoImage *image)
 {
 	BundledSymfile *bsymfile;
 
-	const unsigned char *data;
-	unsigned int data_len;
-	mono_get_bundled_resource_data (image->module_name, &data, &data_len);
-	if (data)
-		return mono_debug_open_image (image, data, data_len);
+	MonoBundledAssemblyResource *assembly = (MonoBundledAssemblyResource *)mono_get_bundled_resource_data (image->module_name);
+	if (assembly && assembly->symfile.data)
+		return mono_debug_open_image (image, assembly->symfile.data, assembly->symfile.size);
 
 #ifdef ENABLE_WEBCIL
 	int len = strlen (image->module_name);
@@ -1134,11 +1132,11 @@ open_symfile_from_bundle (MonoImage *image)
 	if (module_name_dll_suffix && !g_strcasecmp (".webcil", &image->module_name [len - 7])) {
 		memcpy (module_name_dll_suffix + len - 7, ".dll", 4);
 		*(module_name_dll_suffix + len - 3) = '\0';
-		mono_get_bundled_resource_data (module_name_dll_suffix, &data, &data_len);
+		assembly = (MonoBundledAssemblyResource *)mono_get_bundled_resource_data (module_name_dll_suffix);
 	}
 	g_free (module_name_dll_suffix);
-	if (data)
-		return mono_debug_open_image (image, data, data_len);
+	if (assembly && assembly->symfile)
+		return mono_debug_open_image (image, assembly->symfile.data, assembly->symfile.size);
 #endif
 
 	for (bsymfile = bundled_symfiles; bsymfile; bsymfile = bsymfile->next) {
