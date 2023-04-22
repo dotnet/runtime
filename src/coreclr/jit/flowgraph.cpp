@@ -2901,6 +2901,19 @@ PhaseStatus Compiler::fgRationalizeAssignments()
 
     compAssignmentRationalized = true;
 
+#ifdef DEBUG
+    if (JitConfig.JitStressMorphStores())
+    {
+        for (BasicBlock* block : Blocks())
+        {
+            for (Statement* stmt : block->Statements())
+            {
+                fgMorphBlockStmt(block, stmt DEBUGARG("fgRationalizeAssignments"));
+            }
+        }
+    }
+#endif // DEBUG
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
