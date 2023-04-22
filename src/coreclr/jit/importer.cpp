@@ -1873,16 +1873,16 @@ bool Compiler::impSpillStackEntry(unsigned level,
         {
             CORINFO_CLASS_HANDLE stkHnd = verCurrentState.esStack[level].seTypeInfo.GetClassHandle();
             lvaSetClass(tnum, tree, stkHnd);
-        }
 
-        // If we're assigning a GT_RET_EXPR, note the temp over on the call,
-        // so the inliner can use it in case it needs a return spill temp.
-        if (tree->OperGet() == GT_RET_EXPR)
-        {
-            JITDUMP("\n*** see V%02u = GT_RET_EXPR, noting temp\n", tnum);
-            GenTree*             call = tree->AsRetExpr()->gtInlineCandidate;
-            InlineCandidateInfo* ici  = call->AsCall()->gtInlineCandidateInfo;
-            ici->preexistingSpillTemp = tnum;
+            // If we're assigning a GT_RET_EXPR, note the temp over on the call,
+            // so the inliner can use it in case it needs a return spill temp.
+            if (tree->OperGet() == GT_RET_EXPR)
+            {
+                JITDUMP("\n*** see V%02u = GT_RET_EXPR, noting temp\n", tnum);
+                GenTree*             call = tree->AsRetExpr()->gtInlineCandidate;
+                InlineCandidateInfo* ici  = call->AsCall()->gtInlineCandidateInfo;
+                ici->preexistingSpillTemp = tnum;
+            }
         }
     }
 
