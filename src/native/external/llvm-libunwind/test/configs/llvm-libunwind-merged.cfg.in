@@ -1,14 +1,12 @@
 #
-# Configuration file for running the libunwind tests against the static library.
+# Configuration file for running the libunwind tests against a libc++ shared library
+# into which the unwinder was merged.
 #
 
 lit_config.load_config(config, '@CMAKE_CURRENT_BINARY_DIR@/cmake-bridge.cfg')
 
 compile_flags = []
 link_flags = []
-
-if @LIBUNWIND_ENABLE_THREADS@:
-    link_flags.append('-lpthread')
 
 if @LIBUNWIND_ENABLE_CET@:
     compile_flags.append('-fcf-protection=full')
@@ -27,7 +25,7 @@ config.substitutions.append(('%{compile_flags}',
     '-nostdinc++ -I %{{include}} {}'.format(' '.join(compile_flags))
 ))
 config.substitutions.append(('%{link_flags}',
-    '%{{lib}}/libunwind.a -ldl {}'.format(' '.join(link_flags))
+    '-L %{{lib}} -Wl,-rpath,%{{lib}} -lc++ -ldl {}'.format(' '.join(link_flags))
 ))
 config.substitutions.append(('%{exec}',
     '%{executor} --execdir %T -- '
