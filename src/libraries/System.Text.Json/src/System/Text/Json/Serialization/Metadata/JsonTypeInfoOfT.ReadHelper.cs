@@ -78,15 +78,17 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        // Creating a queue JsonTypeInfo from within the DeserializeAsyncEnumerable method
-        // triggers polymorphic recursion warnings from the AOT compiler so we instead
-        // have the callers do it for us externally (cf. https://github.com/dotnet/runtime/issues/84922)
-        internal JsonTypeInfo<Queue<T>>? AsyncEnumerableQueueTypeInfo;
+        /// <summary>
+        /// Creating a queue JsonTypeInfo from within the DeserializeAsyncEnumerable method
+        /// triggers generic recursion warnings from the AOT compiler so we instead
+        /// have the caller do it for us externally (cf. https://github.com/dotnet/runtime/issues/85184)
+        /// </summary>
+        internal JsonTypeInfo<Queue<T>>? _asyncEnumerableQueueTypeInfo;
 
         internal async IAsyncEnumerable<T> DeserializeAsyncEnumerable(Stream utf8Json, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            Debug.Assert(AsyncEnumerableQueueTypeInfo?.IsConfigured == true, "must be populated before calling the method.");
-            JsonTypeInfo<Queue<T>> queueTypeInfo = AsyncEnumerableQueueTypeInfo;
+            Debug.Assert(_asyncEnumerableQueueTypeInfo?.IsConfigured == true, "must be populated before calling the method.");
+            JsonTypeInfo<Queue<T>> queueTypeInfo = _asyncEnumerableQueueTypeInfo;
             JsonSerializerOptions options = queueTypeInfo.Options;
             var bufferState = new ReadBufferState(options.DefaultBufferSize);
             ReadStack readStack = default;

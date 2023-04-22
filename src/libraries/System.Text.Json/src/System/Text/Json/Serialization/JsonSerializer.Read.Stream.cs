@@ -467,7 +467,7 @@ namespace System.Text.Json
         private static IAsyncEnumerable<T> DeserializeAsyncEnumerableCore<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken)
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);
-            jsonTypeInfo.AsyncEnumerableQueueTypeInfo ??= CreateQueueTypeInfo(jsonTypeInfo);
+            jsonTypeInfo._asyncEnumerableQueueTypeInfo ??= CreateQueueTypeInfo(jsonTypeInfo);
             return jsonTypeInfo.DeserializeAsyncEnumerable(utf8Json, cancellationToken);
 
             static JsonTypeInfo<Queue<T>> CreateQueueTypeInfo(JsonTypeInfo<T> jsonTypeInfo)
