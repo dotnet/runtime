@@ -527,7 +527,7 @@ void Compiler::gsParamsToShadows()
         }
 
         GenTree* src = gtNewLclvNode(lclNum, varDsc->TypeGet());
-        src->gtFlags |= GTF_DONT_CSE; // TODO-ASG-Cleanup: delete.
+        src->gtFlags |= GTF_DONT_CSE;
         GenTree* store = gtNewStoreLclVarNode(shadowVarNum, src);
 
         fgEnsureFirstBBisScratch();
@@ -563,7 +563,7 @@ void Compiler::gsParamsToShadows()
                 }
 
                 GenTree* src = gtNewLclVarNode(shadowVarNum);
-                src->gtFlags |= GTF_DONT_CSE; // TODO-ASG-Cleanup: delete.
+                src->gtFlags |= GTF_DONT_CSE;
                 GenTree* store = gtNewStoreLclVarNode(lclNum, src);
 
                 (void)fgNewStmtNearEnd(block, fgMorphTree(store));
