@@ -14154,6 +14154,14 @@ namespace System.Text
 {
     public static class Ascii
     {
+        public static bool Equals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) { throw null; }
+        public static bool Equals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<char> right) { throw null; }
+        public static bool Equals(System.ReadOnlySpan<char> left, System.ReadOnlySpan<byte> right) { throw null; }
+        public static bool Equals(System.ReadOnlySpan<char> left, System.ReadOnlySpan<char> right) { throw null; }
+        public static bool EqualsIgnoreCase(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) { throw null; }
+        public static bool EqualsIgnoreCase(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<char> right) { throw null; }
+        public static bool EqualsIgnoreCase(System.ReadOnlySpan<char> left, System.ReadOnlySpan<byte> right) { throw null; }
+        public static bool EqualsIgnoreCase(System.ReadOnlySpan<char> left, System.ReadOnlySpan<char> right) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<byte> value) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<char> value) { throw null; }
         public static bool IsValid(byte value) { throw null; }

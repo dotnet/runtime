@@ -1068,6 +1068,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SystemException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.CaseConversion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.Equality.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.Transcoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.Trimming.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.Utility.cs" />
