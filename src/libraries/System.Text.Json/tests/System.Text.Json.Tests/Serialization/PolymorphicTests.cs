@@ -519,6 +519,36 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(Expected, json);
         }
 
+        [Fact]
+        public async Task CustomResolverWithFailingAncestorType_DoesNotSurfaceException()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        static typeInfo =>
+                        {
+                            if (typeInfo.Type == typeof(MyThing) ||
+                                typeInfo.Type == typeof(IList))
+                            {
+                                throw new InvalidOperationException("some latent custom resolution bug");
+                            }
+                        }
+                    }
+                }
+            };
+
+            object value = new MyDerivedThing { Number = 42 };
+            string json = await Serializer.SerializeWrapper(value, options);
+            Assert.Equal("""{"Number":42}""", json);
+
+            value = new int[] { 1, 2, 3 };
+            json = await Serializer.SerializeWrapper(value, options);
+            Assert.Equal("[1,2,3]", json);
+        }
+
         class MyClass
         {
             public string Value { get; set; }
@@ -533,6 +563,10 @@ namespace System.Text.Json.Serialization.Tests
         class MyThing : IThing
         {
             public int Number { get; set; }
+        }
+
+        class MyDerivedThing : MyThing
+        {
         }
 
         class MyThingCollection : List<IThing> { }

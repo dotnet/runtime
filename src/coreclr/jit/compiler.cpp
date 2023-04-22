@@ -26,14 +26,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 extern ICorJitHost* g_jitHost;
 
-#if defined(DEBUG)
-// Column settings for DOTNET_JitDumpIR.  We could(should) make these programmable.
-#define COLUMN_OPCODE 30
-#define COLUMN_OPERANDS (COLUMN_OPCODE + 25)
-#define COLUMN_KINDS 110
-#define COLUMN_FLAGS (COLUMN_KINDS + 32)
-#endif
-
 unsigned Compiler::jitTotalMethodCompiled = 0;
 
 #if defined(DEBUG)
@@ -5044,6 +5036,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Partially inline static initializations
     DoPhase(this, PHASE_EXPAND_STATIC_INIT, &Compiler::fgExpandStaticInit);
 
+    if (TargetOS::IsWindows)
+    {
+        // Currently this is only applicable for Windows
+        DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
+    }
+
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
@@ -9940,13 +9938,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             }
             break;
 
-            case GT_STORE_OBJ:
-                if (tree->AsBlk()->GetLayout()->HasGCPtr())
-                {
-                    chars += printf("[BLK_HASGCPTR]");
-                }
-                FALLTHROUGH;
-
             case GT_BLK:
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:
@@ -10321,8 +10312,7 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
     assert(tree->OperIs(GT_FIELD, GT_IND, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
-    assert(fgAddrCouldBeNull(tree->gtGetOp1()));
-    tree->gtFlags |= GTF_EXCEPT;
+    tree->SetIndirExceptionFlags(this);
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
