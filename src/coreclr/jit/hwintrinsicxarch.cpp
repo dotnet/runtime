@@ -52,6 +52,10 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX512F_X64;
         case InstructionSet_AVX512F_VL:
             return InstructionSet_AVX512F_VL_X64;
+        case InstructionSet_AVX512_VBMI:
+            return InstructionSet_AVX512_VBMI_X64;
+        case InstructionSet_AVX512_VBMI_VL:
+            return InstructionSet_AVX512_VBMI_VL_X64;
         case InstructionSet_AVXVNNI:
             return InstructionSet_AVXVNNI_X64;
         case InstructionSet_AES:
@@ -95,6 +99,8 @@ static CORINFO_InstructionSet VLVersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX512DQ_VL;
         case InstructionSet_AVX512F:
             return InstructionSet_AVX512F_VL;
+        case InstructionSet_AVX512_VBMI:
+            return InstructionSet_AVX512_VBMI_VL;
         default:
             return InstructionSet_NONE;
     }
@@ -447,6 +453,10 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX512DQ_VL:
         case InstructionSet_AVX512DQ_VL_X64:
         case InstructionSet_AVX512DQ_X64:
+        case InstructionSet_AVX512_VBMI:
+        case InstructionSet_AVX512_VBMI_VL:
+        case InstructionSet_AVX512_VBMI_VL_X64:
+        case InstructionSet_AVX512_VBMI_X64:
         case InstructionSet_AVXVNNI:
         case InstructionSet_AVXVNNI_X64:
         case InstructionSet_BMI1:
