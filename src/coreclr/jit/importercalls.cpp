@@ -1718,24 +1718,29 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig,
                                    CORINFO_SIG_INFO* targetSig,
                                    SigTransform      transformation)
 {
-    const SigTransform thisChangeMask = (SigTransform)(SigTransform::DeleteThis | SigTransform::ReplaceRefThis);
-    assert((transformation & thisChangeMask) != thisChangeMask);
-
     if (sourceSig->getCallConv() != targetSig->getCallConv())
     {
         JITDUMP("impCanSubstituteSig returning false - call conv %u != %u\n", sourceSig->callConv, targetSig->callConv);
         return false;
     }
 
-    unsigned sourceArgCount = sourceSig->numArgs;
+    if (sourceSig->hasExplicitThis() || targetSig->hasExplicitThis())
+    {
+        JITDUMP("impCanSubstituteSig returning false - explicit this\n");
+        return false;
+    }
+
+    unsigned sourceArgCount = sourceSig->totalILArgs();
     if ((transformation & SigTransform::DeleteThis) != 0)
     {
+        assert((transformation & SigTransform::ReplaceRefThis) == 0);
+        assert(sourceSig->HasThis());
         sourceArgCount--;
     }
 
-    if (sourceArgCount != targetSig->numArgs)
+    if (sourceArgCount != targetSig->totalILArgs())
     {
-        JITDUMP("impCanSubstituteSig returning false - args count %u != %u\n", sourceArgCount, targetSig->numArgs);
+        JITDUMP("impCanSubstituteSig returning false - args count %u != %u\n", sourceArgCount, targetSig->totalILArgs());
         return false;
     }
 
@@ -1761,20 +1766,6 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig,
 
     CORINFO_ARG_LIST_HANDLE sourceArg = sourceSig->args;
     CORINFO_ARG_LIST_HANDLE targetArg = targetSig->args;
-
-    assert((transformation & (SigTransform::DeleteThis | SigTransform::ReplaceRefThis)) == 0 ||
-           eeGetArgType(sourceArg, sourceSig) == TYP_REF);
-
-    if ((transformation & SigTransform::DeleteThis) != 0)
-    {
-        sourceArg = info.compCompHnd->getArgNext(sourceArg);
-    }
-
-    if ((transformation & SigTransform::ReplaceRefThis) != 0 && eeGetArgType(targetArg, targetSig) != TYP_REF)
-    {
-        JITDUMP("impCanSubstituteSig returning false - this is not TYP_REF\n");
-        return false;
-    }
 
     for (unsigned i = 0; i < targetSig->numArgs;
          i++, sourceArg = info.compCompHnd->getArgNext(sourceArg), targetArg = info.compCompHnd->getArgNext(targetArg))
