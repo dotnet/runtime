@@ -2315,7 +2315,7 @@ namespace Internal.JitInterface
             {
                 // Only support reading the string data
                 int strDataOffset = _compilation.TypeSystemContext.Target.PointerSize + sizeof(int); // 12 on 64bit
-                if (valueOffset >= strDataOffset && (long)frozenStr.Data.Length * 2 >= bufferSize)
+                if (valueOffset >= strDataOffset && (long)frozenStr.Data.Length * 2 >= (valueOffset - strDataOffset) + bufferSize)
                 {
                     int offset = valueOffset - strDataOffset;
                     fixed (char* pStr = frozenStr.Data)
