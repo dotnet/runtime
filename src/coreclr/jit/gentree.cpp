@@ -4131,7 +4131,7 @@ void Compiler::gtPrepareCost(GenTree* tree)
 
 bool Compiler::gtIsLikelyRegVar(GenTree* tree)
 {
-    if (tree->gtOper != GT_LCL_VAR)
+    if (!tree->OperIsScalarLocal())
     {
         return false;
     }
@@ -7767,6 +7767,23 @@ GenTreeLclVar* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL
     // assert(lnum < lvaCount);
 
     return node;
+}
+
+GenTreeLclVar* Compiler::gtNewLclVarNode(unsigned lclNum, var_types type)
+{
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+    if (type == TYP_UNDEF)
+    {
+        type = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc);
+    }
+
+    GenTreeLclVar* lclVar = gtNewLclvNode(lclNum, type);
+    if (varDsc->IsAddressExposed())
+    {
+        lclVar->gtFlags |= GTF_GLOB_REF;
+    }
+
+    return lclVar;
 }
 
 GenTreeLclVar* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs))
