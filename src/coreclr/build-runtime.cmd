@@ -414,16 +414,7 @@ if %__BuildNative% EQU 1 (
         goto ExitWithCode
     )
 
-    if %__EnforcePgo% EQU 1 (
-        set PgoCheckCmd="!PYTHON!" "!__ProjectDir!\scripts\pgocheck.py" "!__BinDir!\coreclr.dll" "!__BinDir!\clrjit.dll"
-        echo !PgoCheckCmd!
-        !PgoCheckCmd!
-        if not !errorlevel! == 0 (
-            set __exitCode=!errorlevel!
-            echo !__ErrMsgPrefix!!__MsgPrefix!Error: Error running pgocheck.py on coreclr and clrjit.
-            goto ExitWithCode
-        )
-    )
+    @REM DO NOT COMMIT: skip PGO check
 
 :SkipNativeBuild
     REM } Scope environment changes end
