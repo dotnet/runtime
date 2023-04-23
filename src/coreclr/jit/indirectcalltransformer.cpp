@@ -612,8 +612,7 @@ private:
                         compiler->gtNewIconNode((ssize_t)compiler->eeGetEEInfo()->offsetOfDelegateFirstTarget,
                                                 TYP_I_IMPL);
                     GenTree* tarTree = compiler->gtNewOperNode(GT_ADD, TYP_BYREF, thisTree, offset);
-                    tarTree          = compiler->gtNewIndir(TYP_I_IMPL, tarTree);
-                    tarTree->gtFlags |= GTF_IND_INVARIANT;
+                    tarTree          = compiler->gtNewIndir(TYP_I_IMPL, tarTree, GTF_IND_INVARIANT);
 
                     CORINFO_METHOD_HANDLE methHnd = guardedInfo->guardedMethodHandle;
                     CORINFO_CONST_LOOKUP  lookup;
@@ -1157,9 +1156,7 @@ private:
                 case IAT_PVALUE:
                 {
                     GenTree* tree = CreateFunctionTargetAddr(methHnd, lookup);
-                    tree          = compiler->gtNewIndir(TYP_I_IMPL, tree);
-                    tree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
-                    tree->gtFlags &= ~GTF_EXCEPT;
+                    tree          = compiler->gtNewIndir(TYP_I_IMPL, tree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
                     return tree;
                 }
                 case IAT_PPVALUE:
@@ -1171,10 +1168,8 @@ private:
                 {
                     GenTree* addr = CreateFunctionTargetAddr(methHnd, lookup);
                     GenTree* tree = CreateFunctionTargetAddr(methHnd, lookup);
-                    tree          = compiler->gtNewIndir(TYP_I_IMPL, tree);
-                    tree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
-                    tree->gtFlags &= ~GTF_EXCEPT;
-                    tree = compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, tree, addr);
+                    tree          = compiler->gtNewIndir(TYP_I_IMPL, tree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+                    tree          = compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, tree, addr);
                     return tree;
                 }
                 default:

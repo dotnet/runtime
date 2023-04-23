@@ -2206,9 +2206,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     if (copyBlkDst != nullptr)
     {
         assert(copyBlkSrc != nullptr);
-        GenTree* dest = gtNewLoadValueNode(simdType, copyBlkDst);
-        dest->gtFlags |= GTF_GLOB_REF;
-
+        GenTree* dest    = gtNewLoadValueNode(simdType, copyBlkDst);
         GenTree* retNode = gtNewBlkOpNode(dest, copyBlkSrc);
 
         return retNode;
