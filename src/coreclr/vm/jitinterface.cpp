@@ -11981,7 +11981,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
     return result;
 }
 
-bool CEEInfo::readObject(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, int bufferSize, int valueOffset)
+bool CEEInfo::getObjectData(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, int bufferSize, int valueOffset)
 {
     CONTRACTL {
         THROWS;

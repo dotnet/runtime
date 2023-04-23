@@ -3776,10 +3776,10 @@ bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, u
     return (bool)value.A;
 }
 
-void MethodContext::recReadObject(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset, bool result)
+void MethodContext::recGetObjectData(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset, bool result)
 {
-    if (ReadObject == nullptr)
-        ReadObject = new LightWeightMap<DLDD, DD>();
+    if (GetObjectData == nullptr)
+        GetObjectData = new LightWeightMap<DLDD, DD>();
 
     DLDD key;
     ZeroMemory(&key, sizeof(key));
@@ -3789,21 +3789,21 @@ void MethodContext::recReadObject(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, in
 
     DWORD tmpBuf = (DWORD)-1;
     if (buffer != nullptr && result)
-        tmpBuf = (DWORD)ReadObject->AddBuffer((uint8_t*)buffer, (uint32_t)bufferSize);
+        tmpBuf = (DWORD)GetObjectData->AddBuffer((uint8_t*)buffer, (uint32_t)bufferSize);
 
     DD value;
     value.A = (DWORD)result;
     value.B = (DWORD)tmpBuf;
 
-    ReadObject->Add(key, value);
-    DEBUG_REC(dmpReadObject(key, value));
+    GetObjectData->Add(key, value);
+    DEBUG_REC(dmpGetObjectData(key, value));
 }
-void MethodContext::dmpReadObject(DLDD key, DD value)
+void MethodContext::dmpGetObjectData(DLDD key, DD value)
 {
-    printf("ReadObject key fld-%016" PRIX64 " bufSize-%u, valOffset-%u result-%u", key.A, key.B, key.C, value.A);
-    ReadObject->Unlock();
+    printf("GetObjectData key fld-%016" PRIX64 " bufSize-%u, valOffset-%u result-%u", key.A, key.B, key.C, value.A);
+    GetObjectData->Unlock();
 }
-bool MethodContext::repReadObject(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset)
+bool MethodContext::repGetObjectData(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset)
 {
     DLDD key;
     ZeroMemory(&key, sizeof(key));
@@ -3811,12 +3811,12 @@ bool MethodContext::repReadObject(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, in
     key.B = (DWORD)bufferSize;
     key.C = (DWORD)valueOffset;
 
-    DD value = LookupByKeyOrMiss(ReadObject, key, ": key %016" PRIX64 "", key.A);
+    DD value = LookupByKeyOrMiss(GetObjectData, key, ": key %016" PRIX64 "", key.A);
 
-    DEBUG_REP(dmpReadObject(key, value));
+    DEBUG_REP(dmpGetObjectData(key, value));
     if (buffer != nullptr && (bool)value.A)
     {
-        uint8_t* srcBuffer = (uint8_t*)ReadObject->GetBuffer(value.B);
+        uint8_t* srcBuffer = (uint8_t*)GetObjectData->GetBuffer(value.B);
         Assert(srcBuffer != nullptr);
         memcpy(buffer, srcBuffer, bufferSize);
     }

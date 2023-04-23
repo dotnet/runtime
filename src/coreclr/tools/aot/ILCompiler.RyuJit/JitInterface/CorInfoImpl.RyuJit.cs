@@ -2303,7 +2303,7 @@ namespace Internal.JitInterface
             return false;
         }
 
-        private bool readObject(CORINFO_OBJECT_STRUCT_* objPtr, byte* buffer, int bufferSize, int valueOffset)
+        private bool getObjectData(CORINFO_OBJECT_STRUCT_* objPtr, byte* buffer, int bufferSize, int valueOffset)
         {
             Debug.Assert(objPtr != null);
             Debug.Assert(buffer != null);

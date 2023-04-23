@@ -3028,7 +3028,7 @@ namespace Internal.JitInterface
             return false;
         }
 
-        private bool readObject(CORINFO_OBJECT_STRUCT_* obj, byte* buffer, int bufferSize, int valueOffset)
+        private bool getObjectData(CORINFO_OBJECT_STRUCT_* obj, byte* buffer, int bufferSize, int valueOffset)
         {
             throw new NotSupportedException();
         }

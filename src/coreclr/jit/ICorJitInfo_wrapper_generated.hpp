@@ -1535,15 +1535,15 @@ bool WrapICorJitInfo::getReadonlyStaticFieldValue(
     return temp;
 }
 
-bool WrapICorJitInfo::readObject(
+bool WrapICorJitInfo::getObjectData(
           CORINFO_OBJECT_HANDLE obj,
           uint8_t* buffer,
           int bufferSize,
           int valueOffset)
 {
-    API_ENTER(readObject);
-    bool temp = wrapHnd->readObject(obj, buffer, bufferSize, valueOffset);
-    API_LEAVE(readObject);
+    API_ENTER(getObjectData);
+    bool temp = wrapHnd->getObjectData(obj, buffer, bufferSize, valueOffset);
+    API_LEAVE(getObjectData);
     return temp;
 }
 

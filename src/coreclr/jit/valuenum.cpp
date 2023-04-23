@@ -10283,17 +10283,12 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
     // where CNS_INT has field sequence corresponding to field's offset
     if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsCnsIntOrI() && !tree->gtGetOp2()->IsIconHandle())
     {
-        GenTree* addr = tree->gtGetOp1();
-        if (addr->IsIconHandle(GTF_ICON_STATIC_HDL) ||
-            (addr->isIndir() && addr->gtGetOp1()->IsIconHandle(GTF_ICON_STATIC_ADDR_PTR)))
+        GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
+        if ((cns2->gtFieldSeq != nullptr) && (cns2->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStatic))
         {
-            GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
-            if (cns2->gtFieldSeq != nullptr)
-            {
-                *byteOffset = cns2->IconValue() - cns2->gtFieldSeq->GetOffset();
-                *pFseq      = cns2->gtFieldSeq;
-                return true;
-            }
+            *byteOffset = cns2->IconValue() - cns2->gtFieldSeq->GetOffset();
+            *pFseq      = cns2->gtFieldSeq;
+            return true;
         }
     }
 
@@ -10451,7 +10446,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         if ((size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
-            if (info.compCompHnd->readObject(obj, buffer, size, (int)byteOffset))
+            if (info.compCompHnd->getObjectData(obj, buffer, size, (int)byteOffset))
             {
                 ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
                 assert(!vnStore->IsVNObjHandle(vn));

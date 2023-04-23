@@ -643,7 +643,7 @@ bool getReadonlyStaticFieldValue(
           int valueOffset,
           bool ignoreMovableObjects) override;
 
-bool readObject(
+bool getObjectData(
           CORINFO_OBJECT_HANDLE obj,
           uint8_t* buffer,
           int bufferSize,

@@ -167,7 +167,7 @@ struct JitInterfaceCallbacks
     bool (* isRIDClassDomainID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     unsigned (* getClassDomainID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, void** ppIndirection);
     bool (* getReadonlyStaticFieldValue)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
-    bool (* readObject)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset);
+    bool (* getObjectData)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset);
     CORINFO_CLASS_HANDLE (* getStaticFieldCurrentClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
     CORINFO_VARARGS_HANDLE (* getVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig, void** ppIndirection);
     bool (* canGetVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig);
@@ -1716,14 +1716,14 @@ public:
     return temp;
 }
 
-    virtual bool readObject(
+    virtual bool getObjectData(
           CORINFO_OBJECT_HANDLE obj,
           uint8_t* buffer,
           int bufferSize,
           int valueOffset)
 {
     CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->readObject(_thisHandle, &pException, obj, buffer, bufferSize, valueOffset);
+    bool temp = _callbacks->getObjectData(_thisHandle, &pException, obj, buffer, bufferSize, valueOffset);
     if (pException != nullptr) throw pException;
     return temp;
 }

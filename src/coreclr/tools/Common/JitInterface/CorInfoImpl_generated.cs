@@ -2323,7 +2323,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.readObject(obj, buffer, bufferSize, valueOffset) ? (byte)1 : (byte)0;
+                return _this.getObjectData(obj, buffer, bufferSize, valueOffset) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {

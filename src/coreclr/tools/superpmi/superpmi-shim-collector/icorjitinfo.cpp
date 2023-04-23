@@ -1751,10 +1751,10 @@ bool interceptor_ICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, u
     return result;
 }
 
-bool interceptor_ICJI::readObject(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset)
+bool interceptor_ICJI::getObjectData(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset)
 {
-    mc->cr->AddCall("readObject");
-    bool result = original_ICorJitInfo->readObject(obj, buffer, bufferSize, valueOffset);
+    mc->cr->AddCall("getObjectData");
+    bool result = original_ICorJitInfo->getObjectData(obj, buffer, bufferSize, valueOffset);
     mc->recReadObject(obj, buffer, bufferSize, valueOffset, result);
     return result;
 }

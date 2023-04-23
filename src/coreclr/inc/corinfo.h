@@ -3244,7 +3244,7 @@ public:
                     bool                    ignoreMovableObjects = true
                     ) = 0;
 
-    virtual bool readObject(
+    virtual bool getObjectData(
                     CORINFO_OBJECT_HANDLE   obj,
                     uint8_t*                buffer,
                     int                     bufferSize,
