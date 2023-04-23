@@ -4,7 +4,7 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-NESTED_ENTRY RhpGetThreadStaticBaseForType, _TEXT, NoHandler
+NESTED_ENTRY RhpGetInlinedThreadStaticBase, _TEXT, NoHandler
         // On exit:
         //   x0 - the thread static base for the given type
 
@@ -16,7 +16,7 @@ NESTED_ENTRY RhpGetThreadStaticBaseForType, _TEXT, NoHandler
 #endif
 
         // get per-thread storage
-        ldr     x0, [x1, #OFFSETOF__Thread__m_pInlineThreadLocalStatics]
+        ldr     x0, [x1, #OFFSETOF__Thread__m_pInlinedThreadLocalStatics]
         cbnz    x0, HaveValue
         b       C_FUNC(RhpGetInlinedThreadStaticBaseSlow)
 
@@ -24,4 +24,4 @@ HaveValue:
         // return it
         ret
 
-NESTED_END RhpGetThreadStaticBaseForType, _TEXT
+NESTED_END RhpGetInlinedThreadStaticBase, _TEXT

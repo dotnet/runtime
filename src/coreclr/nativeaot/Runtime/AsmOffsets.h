@@ -59,7 +59,7 @@ ASM_OFFSET(   48,    80, Thread, m_pExInfoStackHead)
 ASM_OFFSET(   4c,    88, Thread, m_threadAbortException)
 
 ASM_OFFSET(   50,    90, Thread, m_pThreadLocalStatics)
-ASM_OFFSET(   54,    98, Thread, m_pInlineThreadLocalStatics)
+ASM_OFFSET(   54,    98, Thread, m_pInlinedThreadLocalStatics)
 
 ASM_SIZEOF(   14,    20, EHEnum)
 

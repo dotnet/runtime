@@ -285,7 +285,7 @@ void Thread::Construct()
     // Everything else should be initialized to 0 via the static initialization of tls_CurrentThread.
 
     ASSERT(m_pThreadLocalStatics == NULL);
-    ASSERT(m_pInlineThreadLocalStatics == NULL);
+    ASSERT(m_pInlinedThreadLocalStatics == NULL);
 
     ASSERT(m_pGCFrameRegistrations == NULL);
 
@@ -1270,9 +1270,9 @@ Object** Thread::GetThreadStaticStorage()
     return &m_pThreadLocalStatics;
 }
 
-Object** Thread::GetInlineThreadStaticStorage()
+Object** Thread::GetInlinedThreadStaticStorage()
 {
-    return &m_pInlineThreadLocalStatics;
+    return &m_pInlinedThreadLocalStatics;
 }
 
 COOP_PINVOKE_HELPER(Object**, RhGetThreadStaticStorage, ())
@@ -1281,10 +1281,10 @@ COOP_PINVOKE_HELPER(Object**, RhGetThreadStaticStorage, ())
     return pCurrentThread->GetThreadStaticStorage();
 }
 
-COOP_PINVOKE_HELPER(Object**, RhGetInlineThreadStaticStorage, ())
+COOP_PINVOKE_HELPER(Object**, RhGetInlinedThreadStaticStorage, ())
 {
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
-    return pCurrentThread->GetInlineThreadStaticStorage();
+    return pCurrentThread->GetInlinedThreadStaticStorage();
 }
 
 // This is function is used to quickly query a value that can uniquely identify a thread

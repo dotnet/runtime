@@ -26,7 +26,7 @@ namespace Internal.Runtime
             if (typeTlsIndex >= 0)
                 return GetUninlinedThreadStaticBaseForType(pModuleData, typeTlsIndex);
 
-            ref object threadStorage = ref RuntimeImports.RhGetInlineThreadStaticStorage();
+            ref object threadStorage = ref RuntimeImports.RhGetInlinedThreadStaticStorage();
             if (threadStorage != null)
                 return threadStorage;
 
@@ -39,7 +39,7 @@ namespace Internal.Runtime
             TypeManagerHandle typeManager = RuntimeImports.RhGetSingleTypeManager();
             // Get the array that holds thread statics for the current thread, if none present
             // allocate a new one big enough to hold the current module data
-            ref object threadStorage = ref RuntimeImports.RhGetInlineThreadStaticStorage();
+            ref object threadStorage = ref RuntimeImports.RhGetInlinedThreadStaticStorage();
             Debug.Assert(threadStorage == null);
 
             // Allocate an object that will represent a memory block for all thread static fields of the type

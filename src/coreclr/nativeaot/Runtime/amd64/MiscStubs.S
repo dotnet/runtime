@@ -45,7 +45,7 @@ LOCAL_LABEL(ProbeLoop):
         ret
 NESTED_END RhpStackProbe, _TEXT
 
-NESTED_ENTRY RhpGetThreadStaticBaseForType, _TEXT, NoHandler
+NESTED_ENTRY RhpGetInlinedThreadStaticBase, _TEXT, NoHandler
         // On exit:
         //   rax - the thread static base for the given type
 
@@ -53,11 +53,11 @@ NESTED_ENTRY RhpGetThreadStaticBaseForType, _TEXT, NoHandler
         INLINE_GETTHREAD
 
         // get per-thread storage
-        mov     rax, [rax + OFFSETOF__Thread__m_pInlineThreadLocalStatics]
+        mov     rax, [rax + OFFSETOF__Thread__m_pInlinedThreadLocalStatics]
         test    rax, rax
         jz      C_FUNC(RhpGetInlinedThreadStaticBaseSlow)
 
         // return it
         ret
-NESTED_END RhpGetThreadStaticBaseForType, _TEXT
+NESTED_END RhpGetInlinedThreadStaticBase, _TEXT
 

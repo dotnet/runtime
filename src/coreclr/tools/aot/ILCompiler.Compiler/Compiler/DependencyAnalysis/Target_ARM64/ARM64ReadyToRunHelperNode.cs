@@ -74,7 +74,7 @@ namespace ILCompiler.DependencyAnalysis
                         ISortableSymbolNode index = factory.TypeThreadStaticIndex(target);
                         if (index is TypeThreadStaticIndexNode ti && ti.Type == null)
                         {
-                            ISymbolNode helper = factory.ExternSymbol("RhpGetThreadStaticBaseForType");
+                            ISymbolNode helper = factory.ExternSymbol("RhpGetInlinedThreadStaticBase");
 
                             if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                             {
