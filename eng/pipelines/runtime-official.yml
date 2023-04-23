@@ -51,7 +51,7 @@ extends:
       - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
         - template: /eng/common/templates/job/source-index-stage1.yml
           parameters:
-            sourceIndexBuildCommand: build.cmd -subset libs.sfx+libs.oob -binarylog -os linux -ci
+            sourceIndexBuildCommand: build.cmd -subset libs.native+libs.sfx+libs.oob -binarylog -os linux -ci
 
       #
       # Build CoreCLR
