@@ -88,10 +88,10 @@ namespace ILCompiler.DependencyAnalysis
                                 encoder.EmitCMP(ref initialized, 0);
                                 encoder.EmitJE(helper);
 
-                                // -1 (index of inlined storage)
-                                encoder.EmitMOV(encoder.TargetRegister.Arg0, -1);
-                                // unused
-                                encoder.EmitMOV(encoder.TargetRegister.Arg1, 0);
+                                // First arg: unused address of the TypeManager
+                                encoder.EmitMOV(encoder.TargetRegister.Arg0, 0);
+                                // Second arg: -1 (index of inlined storage)
+                                encoder.EmitMOV(encoder.TargetRegister.Arg1, -1);
                                 encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
                             }
                         }
@@ -99,15 +99,15 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             encoder.EmitLEAQ(encoder.TargetRegister.Arg2, index);
 
-                            // First arg: index of the type in the ThreadStatic section of the modules
-                            AddrMode loadFromArg2AndDelta = new AddrMode(encoder.TargetRegister.Arg2, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
-                            encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadFromArg2AndDelta);
-
-                            // Second arg: address of the TypeManager slot that provides the helper with
+                            // First arg: address of the TypeManager slot that provides the helper with
                             // information about module index and the type manager instance (which is used
                             // for initialization on first access).
                             AddrMode loadFromArg2 = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
-                            encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromArg2);
+                            encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadFromArg2);
+
+                            // Second arg: index of the type in the ThreadStatic section of the modules
+                            AddrMode loadFromArg2AndDelta = new AddrMode(encoder.TargetRegister.Arg2, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
+                            encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromArg2AndDelta);
 
                             ISymbolNode helper = factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType);
                             if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))

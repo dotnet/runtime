@@ -73,12 +73,13 @@ namespace ILCompiler.DependencyAnalysis
                         MetadataType target = (MetadataType)Target;
                         encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeThreadStaticIndex(target));
 
-                        // First arg: index of the type in the ThreadStatic section of the modules
-                        encoder.EmitLD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
+                        // First arg: address of the TypeManager slot that provides the helper with
+                        // information about module index and the type manager instance (which is used
+                        // for initialization on first access).
+                        encoder.EmitLD(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2, 0);
 
-                        // Second arg: address of the TypeManager slot that provides the helper with
-                        // information about module index and the type manager instance.
-                        encoder.EmitLD(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2, 0);
+                        // Second arg: index of the type in the ThreadStatic section of the modules
+                        encoder.EmitLD(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
 
                         if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                         {

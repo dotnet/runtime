@@ -21,7 +21,7 @@ namespace Internal.Runtime
         /// This method is called from a ReadyToRun helper to get base address of thread
         /// static storage for the given type.
         /// </summary>
-        internal static unsafe object GetThreadStaticBaseForType(int typeTlsIndex, TypeManagerSlot* pModuleData)
+        internal static unsafe object GetThreadStaticBaseForType(TypeManagerSlot* pModuleData, int typeTlsIndex)
         {
             if (typeTlsIndex >= 0)
                 return GetUninlinedThreadStaticBaseForType(pModuleData, typeTlsIndex);

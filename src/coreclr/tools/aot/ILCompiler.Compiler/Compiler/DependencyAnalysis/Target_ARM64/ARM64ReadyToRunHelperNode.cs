@@ -89,10 +89,10 @@ namespace ILCompiler.DependencyAnalysis
                                 encoder.EmitCMP(encoder.TargetRegister.Arg3, 0);
                                 encoder.EmitJE(helper);
 
-                                // ~0 (index of inlined storage)
-                                encoder.EmitMVN(encoder.TargetRegister.Arg0, 0);
-                                // unused
-                                encoder.EmitMOV(encoder.TargetRegister.Arg1, (ushort)0);
+                                // First arg: unused address of the TypeManager
+                                encoder.EmitMOV(encoder.TargetRegister.Arg0, (ushort)0);
+                                // Second arg: ~0 (index of inlined storage)
+                                encoder.EmitMVN(encoder.TargetRegister.Arg1, 0);
                                 encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
                             }
                         }
@@ -100,13 +100,13 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, index);
 
-                            // First arg: index of the type in the ThreadStatic section of the modules
-                            encoder.EmitLDR(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
-
-                            // Second arg: address of the TypeManager slot that provides the helper with
+                            // First arg: address of the TypeManager slot that provides the helper with
                             // information about module index and the type manager instance (which is used
                             // for initialization on first access).
-                            encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2);
+                            encoder.EmitLDR(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2);
+
+                            // Second arg: index of the type in the ThreadStatic section of the modules
+                            encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
 
                             ISymbolNode helper = factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType);
                             if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))

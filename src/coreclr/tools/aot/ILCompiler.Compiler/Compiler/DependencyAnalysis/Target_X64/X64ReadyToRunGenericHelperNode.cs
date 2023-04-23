@@ -172,14 +172,15 @@ namespace ILCompiler.DependencyAnalysis
                             helperEntrypoint = factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType);
                         }
 
-                        // First arg: index of the type in the ThreadStatic section of the modules
-                        AddrMode loadFromArg1AndDelta = new AddrMode(encoder.TargetRegister.Arg1, null, factory.Target.PointerSize, 0, AddrModeSize.Int64);
-                        encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadFromArg1AndDelta);
-
-                        // Second arg: address of the TypeManager slot that provides the helper with
-                        // information about module index and the type manager instance (which is used for initialization on first access).
+                        // First arg: address of the TypeManager slot that provides the helper with
+                        // information about module index and the type manager instance (which is used
+                        // for initialization on first access).
                         AddrMode loadFromArg1 = new AddrMode(encoder.TargetRegister.Arg1, null, 0, 0, AddrModeSize.Int64);
-                        encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromArg1);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadFromArg1);
+
+                        // Second arg: index of the type in the ThreadStatic section of the modules
+                        AddrMode loadFromArg1AndDelta = new AddrMode(encoder.TargetRegister.Arg1, null, factory.Target.PointerSize, 0, AddrModeSize.Int64);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromArg1AndDelta);
 
                         encoder.EmitJMP(helperEntrypoint);
                     }
