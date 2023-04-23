@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -65,15 +66,20 @@ namespace ILCompiler.DependencyAnalysis
             int typeTlsIndex = 0;
             if (!relocsOnly)
             {
-                ISymbolDefinitionNode node = _type != null ?
-                    factory.TypeThreadStaticsSymbol(_type) :
-                    _inlinedThreadStatics;
-
-                typeTlsIndex = ((ThreadStaticsNode)node).IndexFromBeginningOfArray;
-
-                if (_type == null)
+                if (_type != null)
                 {
+                    ISymbolDefinitionNode node = factory.TypeThreadStaticsSymbol(_type);
+                    typeTlsIndex = ((ThreadStaticsNode)node).IndexFromBeginningOfArray;
+                }
+                else
+                {
+                    // we use -1 to specify the index of inlined threadstatics,
+                    // which are stored separately from uninlined ones.
                     typeTlsIndex = -1;
+
+                    // the type of the storage block for inlined threadstatics, if present,
+                    // is serialized as the item #0 among other storage block types.
+                    Debug.Assert(_inlinedThreadStatics.IndexFromBeginningOfArray == 0);
                 }
             }
 

@@ -168,6 +168,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
+            // force the type of the storage block for inlined threadstatics to be "less"
+            // than other storage blocks, - to ensure it is serialized as the item #0
+            if (_type == null)
+            {
+                // there should only be at most one inlined storage type.
+                Debug.Assert(other != null);
+                return -1;
+            }
+
             return comparer.Compare(_type, ((ThreadStaticsNode)other)._type);
         }
     }
