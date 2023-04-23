@@ -2727,12 +2727,12 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         // encountered major issues. This is perhaps too drastic. Consider
         // at least keeping the class profile data, or perhaps enable full synthesis.
         //
-        // If profile incorporation hit fixable problems, run synthesis in repair mode.
+        // If profile incorporation hit fixable problems, run synthesis in blend mode.
         //
         if (fgPgoHaveWeights && !dataIsGood)
         {
-            JITDUMP("\nIncorporated count data had inconsistencies; repairing profile...\n");
-            ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
+            JITDUMP("\nIncorporated count data had inconsistencies; blending profile...\n");
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::BlendLikelihoods);
         }
     }
 
