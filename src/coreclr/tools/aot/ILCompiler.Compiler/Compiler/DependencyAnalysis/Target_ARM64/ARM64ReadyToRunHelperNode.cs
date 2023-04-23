@@ -89,8 +89,8 @@ namespace ILCompiler.DependencyAnalysis
                                 encoder.EmitCMP(encoder.TargetRegister.Arg3, 0);
                                 encoder.EmitJE(helper);
 
-                                // -1 (index of inlined storage)
-                                encoder.EmitMVN(encoder.TargetRegister.Arg0, 1);
+                                // ~0 (index of inlined storage)
+                                encoder.EmitMVN(encoder.TargetRegister.Arg0, 0);
                                 // unused
                                 encoder.EmitMOV(encoder.TargetRegister.Arg1, (ushort)0);
                                 encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
