@@ -35,7 +35,7 @@ bool emitter::IsSSEOrAVXInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// IsKInstruction: Does this instruction require K register.
+// IsKInstruction: Does this instruction require K register?
 //
 // Arguments:
 //    ins - The instruction to check.
@@ -72,7 +72,7 @@ bool emitter::IsAVXOnlyInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// IsAvx512OnlyInstruction: Is this an Avx512 instruction.
+// IsAvx512OnlyInstruction: Is this an Avx512 instruction?
 //
 // Arguments:
 //    ins - The instruction to check.
@@ -157,6 +157,7 @@ regNumber emitter::getSseShiftRegNumber(instruction ins)
 
         case INS_psrad:
         case INS_psraw:
+        case INS_vpsraq:
         {
             return (regNumber)4;
         }
@@ -11241,7 +11242,7 @@ void emitter::emitDispIns(
 
         case IF_RWR_RRD_RRD:
         {
-            assert(IsVexEncodableInstruction(ins));
+            assert(IsVexOrEvexEncodableInstruction(ins));
             assert(IsThreeOperandAVXInstruction(ins));
             regNumber reg2 = id->idReg2();
             regNumber reg3 = id->idReg3();
@@ -17916,15 +17917,20 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pminsw:
         case INS_pminud:
         case INS_pminsd:
+        case INS_vpminuq:
+        case INS_vpminsq:
         case INS_pmaxub:
         case INS_pmaxsb:
         case INS_pmaxuw:
         case INS_pmaxsw:
         case INS_pmaxsd:
         case INS_pmaxud:
+        case INS_vpmaxsq:
+        case INS_vpmaxuq:
         case INS_pabsb:
         case INS_pabsw:
         case INS_pabsd:
+        case INS_vpabsq:
         case INS_psignb:
         case INS_psignw:
         case INS_psignd:
@@ -17949,6 +17955,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_psrlq:
         case INS_psrad:
         case INS_psraw:
+        case INS_vpsraq:
             if (insFmt == IF_RWR_CNS)
             {
                 result.insLatency    = PERFSCORE_LATENCY_1C;
@@ -18059,8 +18066,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_psadbw:
         case INS_vpermps:
         case INS_vpermpd:
+        case INS_vpermpd_reg:
         case INS_vpermd:
         case INS_vpermq:
+        case INS_vpermq_reg:
         case INS_vperm2i128:
         case INS_vperm2f128:
         case INS_vextractf128:
@@ -18077,6 +18086,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vinserti32x8:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_3C;
+            break;
+
+        case INS_vpermw:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency += PERFSCORE_LATENCY_6C;
             break;
 
         case INS_pextrb:
@@ -18191,6 +18205,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pmulld:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_10C;
+            break;
+
+        case INS_vpmullq:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_15C;
             break;
 
         case INS_vpbroadcastb:

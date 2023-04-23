@@ -5,6 +5,7 @@ import { mono_assert } from "./types";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
 import { Module, runtimeHelpers } from "./imports";
 import { WasmOpcode } from "./jiterpreter-opcodes";
+import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 
 export const maxFailures = 2,
@@ -1481,10 +1482,8 @@ export function append_memset_dest (builder: WasmBuilder, value: number, count: 
 
 export function try_append_memmove_fast (
     builder: WasmBuilder, destLocalOffset: number, srcLocalOffset: number,
-    count: number, addressesOnStack: boolean
+    count: number, addressesOnStack: boolean, destLocal?: string, srcLocal?: string
 ) {
-    let destLocal = "math_lhs32", srcLocal = "math_rhs32";
-
     if (count <= 0) {
         if (addressesOnStack) {
             builder.appendU8(WasmOpcode.drop);
@@ -1497,10 +1496,14 @@ export function try_append_memmove_fast (
         return false;
 
     if (addressesOnStack) {
+        destLocal = destLocal || "math_lhs32";
+        srcLocal = srcLocal || "math_rhs32";
         builder.local(srcLocal, WasmOpcode.set_local);
         builder.local(destLocal, WasmOpcode.set_local);
-    } else {
+    } else if (!destLocal || !srcLocal) {
         destLocal = srcLocal = "pLocals";
+    } else {
+        // the addresses were already stored in the local args
     }
 
     let destOffset = addressesOnStack ? 0 : destLocalOffset,
@@ -1620,6 +1623,15 @@ export function getRawCwrap (name: string): Function {
     return result;
 }
 
+const opcodeTableCache : { [opcode: number] : number } = {};
+
+export function getOpcodeTableValue (opcode: MintOpcode) {
+    let result = opcodeTableCache[opcode];
+    if (typeof (result) !== "number")
+        result = opcodeTableCache[opcode] = cwraps.mono_jiterp_get_opcode_value_table_entry(<any>opcode);
+    return result;
+}
+
 export function importDef (name: string, fn: Function): [string, string, Function] {
     return [name, name, fn];
 }
@@ -1651,7 +1663,7 @@ export type JiterpreterOptions = {
     // Unwrap gsharedvt wrappers when compiling jitcalls if possible
     directJitCalls: boolean;
     eliminateNullChecks: boolean;
-    minimumTraceLength: number;
+    minimumTraceValue: number;
     minimumTraceHitCount: number;
     monitoringPeriod: number;
     monitoringShortDistance: number;
@@ -1682,7 +1694,7 @@ const optionNames : { [jsName: string] : string } = {
     "eliminateNullChecks": "jiterpreter-eliminate-null-checks",
     "noExitBackwardBranches": "jiterpreter-backward-branches-enabled",
     "directJitCalls": "jiterpreter-direct-jit-calls",
-    "minimumTraceLength": "jiterpreter-minimum-trace-length",
+    "minimumTraceValue": "jiterpreter-minimum-trace-value",
     "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",
     "monitoringPeriod": "jiterpreter-trace-monitoring-period",
     "monitoringShortDistance": "jiterpreter-trace-monitoring-short-distance",

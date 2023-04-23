@@ -47,7 +47,7 @@ namespace System.Reflection.Emit
         }
 
         internal BlobBuilder GetMethodSignatureBlob() =>
-            MetadataSignatureHelper.MethodSignatureEncoder(_module, _parameterTypes, ReturnType, IsStatic);
+            MetadataSignatureHelper.MethodSignatureEncoder(_module, _parameterTypes, ReturnType, !IsStatic);
 
         protected override bool InitLocalsCore { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names) => throw new NotImplementedException();
@@ -196,7 +196,8 @@ namespace System.Reflection.Emit
                 switch (name)
                 {
                     case "PreserveSig":
-                        preserveSig = (bool)value; break;
+                        preserveSig = (bool)value;
+                        break;
                     case "CallingConvention":
                         importAttributes |= (CallingConvention)value switch
                         {

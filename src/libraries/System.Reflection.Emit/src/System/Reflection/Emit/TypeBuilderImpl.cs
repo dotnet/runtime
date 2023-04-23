@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Emit
 {
@@ -13,6 +15,7 @@ namespace System.Reflection.Emit
         private readonly ModuleBuilderImpl _module;
         private readonly string _name;
         private readonly string? _namespace;
+        internal readonly TypeDefinitionHandle _handle;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _typeParent;
         private TypeAttributes _attributes;
@@ -24,7 +27,8 @@ namespace System.Reflection.Emit
         internal List<CustomAttributeWrapper>? _customAttributes;
 
         internal TypeBuilderImpl(string fullName, TypeAttributes typeAttributes,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, ModuleBuilderImpl module, PackingSize packingSize, int typeSize)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, ModuleBuilderImpl module,
+            TypeDefinitionHandle handle, PackingSize packingSize, int typeSize)
         {
             _name = fullName;
             _module = module;
@@ -32,6 +36,7 @@ namespace System.Reflection.Emit
             _packingSize = packingSize;
             _typeSize = typeSize;
             SetParent(parent);
+            _handle = handle;
 
             // Extract namespace from fullName
             int idx = _name.LastIndexOf('.');
@@ -202,10 +207,10 @@ namespace System.Reflection.Emit
         public override string? Namespace => _namespace;
         public override Assembly Assembly => _module.Assembly;
         public override Module Module => _module;
-        public override Type UnderlyingSystemType => throw new NotSupportedException();
+        public override Type UnderlyingSystemType => this;
         public override Guid GUID => throw new NotSupportedException();
         public override Type? BaseType => _typeParent;
-
+        public override int MetadataToken => MetadataTokens.GetToken(_handle);
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
             object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) => throw new NotSupportedException();

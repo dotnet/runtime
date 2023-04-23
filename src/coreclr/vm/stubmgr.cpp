@@ -1434,6 +1434,10 @@ BOOL RangeSectionStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     case STUB_CODE_BLOCK_VIRTUAL_METHOD_THUNK:
     case STUB_CODE_BLOCK_EXTERNAL_METHOD_THUNK:
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
+    case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
+    case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
+    case STUB_CODE_BLOCK_VSD_LOOKUP_STUB:
+    case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
         return TRUE;
     default:
         break;
@@ -1464,6 +1468,12 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 
     case STUB_CODE_BLOCK_STUBLINK:
         return StubLinkStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
+
+    case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
+    case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
+    case STUB_CODE_BLOCK_VSD_LOOKUP_STUB:
+    case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
+        return VirtualCallStubManagerManager::GlobalManager()->DoTraceStub(stubStartAddress, trace);
 
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
 #ifdef DACCESS_COMPILE
@@ -1528,6 +1538,18 @@ LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
 
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
         return W("MethodCallThunk");
+
+    case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
+        return W("VSD_DispatchStub");
+
+    case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
+        return W("VSD_ResolveStub");
+
+    case STUB_CODE_BLOCK_VSD_LOOKUP_STUB:
+        return W("VSD_LookupStub");
+
+    case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
+        return W("VSD_VTableStub");
 
     default:
         break;
@@ -1830,7 +1852,7 @@ static BOOL IsVarargPInvokeStub(PCODE stubStartAddress)
     if (stubStartAddress == GetEEFuncEntryPoint(VarargPInvokeStub))
         return TRUE;
 
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     if (stubStartAddress == GetEEFuncEntryPoint(VarargPInvokeStub_RetBuffArg))
         return TRUE;
 #endif
@@ -2458,9 +2480,6 @@ VirtualCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p VirtualCallStubManager\n", dac_cast<TADDR>(this)));
-    GetLookupRangeList()->EnumMemoryRegions(flags);
-    GetResolveRangeList()->EnumMemoryRegions(flags);
-    GetDispatchRangeList()->EnumMemoryRegions(flags);
     GetCacheEntryRangeList()->EnumMemoryRegions(flags);
 }
 

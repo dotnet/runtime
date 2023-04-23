@@ -54,7 +54,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void MethodFieldWithCustomAttributes()
         {
-            Type[] types = new Type[] { typeof(IMultipleMethod), typeof(IOneMethod), typeof(StructWithField) };
+            Type[] types = new Type[] { typeof(IMultipleMethod), typeof(IOneMethod), typeof(StructWithFields) };
 
             using (TempFile file = TempFile.Create())
             {
@@ -166,7 +166,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                Type type = typeof(StructWithField);
+                Type type = typeof(StructWithFields);
                 List<CustomAttributeBuilder> typeAttributes = new() { new CustomAttributeBuilder(typeof(SerializableAttribute).GetConstructor(Type.EmptyTypes), new object[] { }),
                                                               new CustomAttributeBuilder(typeof(StructLayoutAttribute).GetConstructor(new Type[] { typeof(LayoutKind) }), new object[] { LayoutKind.Explicit },
                                                                     typeof(StructLayoutAttribute).GetFields() , new object[]{32, 64, CharSet.Unicode}),
@@ -272,7 +272,7 @@ namespace System.Reflection.Emit.Tests
                 DefineMethodsAndSetAttributes(methodAttributes.ToList(), tb, type.GetMethods());
 
                 saveMethod.Invoke(ab, new object[] { file.Path });
-
+                Console.WriteLine(file.Path);
                 Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
                 Type testType = assemblyFromDisk.Modules.First().GetTypes()[0];
                 IList<CustomAttributeData> attributesFromDisk = testType.GetCustomAttributesData();
@@ -302,9 +302,10 @@ namespace System.Reflection.Emit.Tests
 
                     Assert.True((method.Attributes & MethodAttributes.HasSecurity) != 0); // SuppressUnmanagedCodeSecurityAttribute
                     Assert.True((method.Attributes & MethodAttributes.SpecialName) != 0); // SpecialNameAttribute
-                    Assert.True((method.GetMethodImplementationFlags() & MethodImplAttributes.NoInlining) != 0); // MethodImplAttribute
-                    Assert.True((method.GetMethodImplementationFlags() & MethodImplAttributes.AggressiveOptimization) != 0); // MethodImplAttribute
-                    Assert.True((method.GetMethodImplementationFlags() & MethodImplAttributes.PreserveSig) != 0); // PreserveSigAttribute
+                    MethodImplAttributes methodImpl = method.GetMethodImplementationFlags();
+                    Assert.True((methodImpl & MethodImplAttributes.NoInlining) != 0); // MethodImplAttribute
+                    Assert.True((methodImpl & MethodImplAttributes.AggressiveOptimization) != 0); // MethodImplAttribute
+                    Assert.True((methodImpl & MethodImplAttributes.PreserveSig) != 0); // PreserveSigAttribute
                     Assert.Equal(methodAttributes.Length-2, methodAttributesFromDisk.Count);
 
                     for (int i = 0; i < methodAttributesFromDisk.Count; i++)
