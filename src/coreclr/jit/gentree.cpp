@@ -2680,6 +2680,20 @@ AGAIN:
             // these should be included in the comparison.
             switch (oper)
             {
+                case GT_STORE_LCL_FLD:
+                    if ((op1->AsLclFld()->GetLclOffs() != op2->AsLclFld()->GetLclOffs()) ||
+                        (op1->AsLclFld()->GetLayout() != op2->AsLclFld()->GetLayout()))
+                    {
+                        return false;
+                    }
+                    FALLTHROUGH;
+                case GT_STORE_LCL_VAR:
+                    if (op1->AsLclVarCommon()->GetLclNum() != op2->AsLclVarCommon()->GetLclNum())
+                    {
+                        return false;
+                    }
+                    break;
+
                 case GT_ARR_LENGTH:
                     if (op1->AsArrLen()->ArrLenOffset() != op2->AsArrLen()->ArrLenOffset())
                     {
@@ -2757,6 +2771,20 @@ AGAIN:
             // these should be included in the hash code.
             switch (oper)
             {
+                case GT_STORE_BLK:
+                    if (op1->AsBlk()->GetLayout() != op2->AsBlk()->GetLayout())
+                    {
+                        return false;
+                    }
+                    FALLTHROUGH;
+
+                case GT_STOREIND:
+                    if ((op1->gtFlags & GTF_IND_FLAGS) != (op2->gtFlags & GTF_IND_FLAGS))
+                    {
+                        return false;
+                    }
+                    break;
+
                 case GT_INTRINSIC:
                     if (op1->AsIntrinsic()->gtIntrinsicName != op2->AsIntrinsic()->gtIntrinsicName)
                     {
@@ -3191,6 +3219,17 @@ AGAIN:
             // these should be included in the hash code.
             switch (oper)
             {
+                case GT_STORE_LCL_VAR:
+                    hash = genTreeHashAdd(hash, tree->AsLclVar()->GetLclNum());
+                    break;
+                case GT_STORE_LCL_FLD:
+                    hash = genTreeHashAdd(hash, tree->AsLclFld()->GetLclNum());
+                    hash = genTreeHashAdd(hash, tree->AsLclFld()->GetLclOffs());
+                    hash = genTreeHashAdd(hash, tree->AsLclFld()->GetLayout());
+                    break;
+                case GT_STOREIND:
+                    hash = genTreeHashAdd(hash, tree->AsStoreInd()->GetRMWStatus());
+                    break;
                 case GT_ARR_LENGTH:
                     hash += tree->AsArrLen()->ArrLenOffset();
                     break;
@@ -8714,6 +8753,17 @@ GenTree* Compiler::gtCloneExpr(
 
         switch (oper)
         {
+            case GT_STORE_LCL_VAR:
+                copy = new (this, GT_STORE_LCL_VAR)
+                    GenTreeLclVar(tree->TypeGet(), tree->AsLclVar()->GetLclNum(), tree->AsLclVar()->Data());
+                break;
+
+            case GT_STORE_LCL_FLD:
+                copy = new (this, GT_STORE_LCL_FLD)
+                    GenTreeLclFld(tree->TypeGet(), tree->AsLclFld()->GetLclNum(), tree->AsLclFld()->GetLclOffs(),
+                                  tree->AsLclFld()->Data(), tree->AsLclFld()->GetLayout());
+                break;
+
             /* These nodes sometimes get bashed to "fat" ones */
 
             case GT_MUL:
@@ -8783,6 +8833,18 @@ GenTree* Compiler::gtCloneExpr(
                     GenTreeRuntimeLookup(asRuntimeLookup->gtHnd, asRuntimeLookup->gtHndType, asRuntimeLookup->gtOp1);
             }
             break;
+
+            case GT_STOREIND:
+                copy = new (this, GT_STOREIND)
+                    GenTreeStoreInd(tree->TypeGet(), tree->AsIndir()->Addr(), tree->AsIndir()->Data());
+                copy->AsStoreInd()->SetRMWStatus(tree->AsStoreInd()->GetRMWStatus());
+                break;
+
+            case GT_STORE_BLK:
+                copy = new (this, GT_STORE_BLK)
+                    GenTreeBlk(GT_STORE_BLK, tree->TypeGet(), tree->AsBlk()->Addr(), tree->AsBlk()->Data(),
+                               tree->AsBlk()->GetLayout());
+                break;
 
             case GT_ARR_ADDR:
                 copy = new (this, GT_ARR_ADDR)
@@ -10150,7 +10212,7 @@ bool GenTree::Precedes(GenTree* other)
 //
 void GenTree::SetIndirExceptionFlags(Compiler* comp)
 {
-    assert(OperIsIndirOrArrMetaData() && OperIsUnary());
+    assert(OperIsIndirOrArrMetaData() && OperIsSimple());
 
     if (OperMayThrow(comp))
     {
@@ -10163,6 +10225,10 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
     gtFlags |= GTF_IND_NONFAULTING;
     gtFlags &= ~GTF_EXCEPT;
     gtFlags |= addr->gtFlags & GTF_EXCEPT;
+    if (OperIsBinary())
+    {
+        gtFlags |= gtGetOp2()->gtFlags & GTF_EXCEPT;
+    }
 }
 
 #ifdef DEBUG
@@ -13219,8 +13285,6 @@ GenTree* Compiler::gtFoldExprConditional(GenTree* tree)
         DISPTREE(tree);
 
         assert(cond->TypeIs(TYP_INT));
-        assert((tree->gtFlags & GTF_SIDE_EFFECT & ~GTF_ASG) == 0);
-        assert((tree->gtFlags & GTF_ORDER_SIDEEFF) == 0);
 
         GenTree* replacement = nullptr;
         if (cond->IsIntegralConst(0))
@@ -14619,17 +14683,10 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
         return tree;
     }
 
-    if (tree->OperIs(GT_NOP, GT_ALLOCOBJ, GT_RUNTIMELOOKUP))
+    if (tree->OperIs(GT_NOP, GT_ALLOCOBJ, GT_RUNTIMELOOKUP) || tree->OperIsStore() || tree->OperIsHWIntrinsic())
     {
         return tree;
     }
-
-#ifdef FEATURE_HW_INTRINSICS
-    if (tree->OperIs(GT_HWINTRINSIC))
-    {
-        return tree;
-    }
-#endif
 
     if (tree->OperIsUnary())
     {
