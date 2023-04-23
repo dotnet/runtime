@@ -12004,7 +12004,6 @@ bool CEEInfo::readObject(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, int buff
     if (bufferSize + valueOffset <= (int)objRef->GetSize())
     {
         Object* obj = OBJECTREFToObject(objRef);
-        assert(GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj));
         memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);
         result = true;
     }

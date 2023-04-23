@@ -10277,26 +10277,17 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
     }
     ssize_t val = 0;
 
-    // Special case for NativeAOT: ADD(ICON_STATIC, CNS_INT) where CNS_INT has field sequence corresponding to field's
-    // offset
-    if (tree->OperIs(GT_ADD) && tree->gtGetOp1()->IsIconHandle(GTF_ICON_STATIC_HDL) && tree->gtGetOp2()->IsCnsIntOrI())
+    // Special cases for NativeAOT:
+    //   ADD(ICON_STATIC, CNS_INT)                // nonGC-static base
+    //   ADD(IND(ICON_STATIC_ADDR_PTR), CNS_INT)  // GC-static base
+    // where CNS_INT has field sequence corresponding to field's offset
+    if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsCnsIntOrI() && !tree->gtGetOp2()->IsIconHandle())
     {
-        GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
-        if (cns2->gtFieldSeq != nullptr)
+        GenTree* addr = tree->gtGetOp1();
+        if (addr->IsIconHandle(GTF_ICON_STATIC_HDL) ||
+            (addr->isIndir() && addr->gtGetOp1()->IsIconHandle(GTF_ICON_STATIC_ADDR_PTR)))
         {
-            *byteOffset = cns2->IconValue() - cns2->gtFieldSeq->GetOffset();
-            *pFseq      = cns2->gtFieldSeq;
-            return true;
-        }
-    }
-
-    // Another special case for NativeAOT: ADD(IND(ICON_STATIC_ADDR_PTR), CNS_INT) where CNS_INT has field sequence
-    if (tree->OperIs(GT_ADD) && tree->gtGetOp1()->isIndir() && tree->gtGetOp2()->IsCnsIntOrI())
-    {
-        GenTreeIndir* indir = tree->gtGetOp1()->AsIndir();
-        if (indir->TypeIs(TYP_I_IMPL) && indir->Addr()->TypeIs(TYP_I_IMPL) &&
-            indir->Addr()->IsIconHandle(GTF_ICON_STATIC_ADDR_PTR))
-        {
+            assert(addr->TypeIs(TYP_I_IMPL));
             GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
             if (cns2->gtFieldSeq != nullptr)
             {
@@ -10378,10 +10369,21 @@ static bool GetObjectHandleAndOffset(ValueNumStore*         vnStore,
     VNFuncApp funcApp;
     if (vnStore->GetVNFunc(treeVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD))
     {
+        // [objHandle + offset]
         if (vnStore->IsVNObjHandle(funcApp.m_args[0]) && vnStore->IsVNConstant(funcApp.m_args[1]))
         {
             *pObj       = vnStore->ConstantObjHandle(funcApp.m_args[0]);
             *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[1]);
+            return true;
+        }
+
+        // [offset + objHandle]
+        // TODO: Introduce a general helper to accumulate offsets for
+        // shapes such as (((X + CNS1) + CNS2) + CNS3) etc.
+        if (vnStore->IsVNObjHandle(funcApp.m_args[1]) && vnStore->IsVNConstant(funcApp.m_args[0]))
+        {
+            *pObj       = vnStore->ConstantObjHandle(funcApp.m_args[1]);
+            *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[0]);
             return true;
         }
     }
@@ -10430,7 +10432,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
-            if (info.compCompHnd->getReadonlyStaticFieldValue(fieldHandle, (uint8_t*)&buffer, size, (int)byteOffset))
+            if (info.compCompHnd->getReadonlyStaticFieldValue(fieldHandle, buffer, size, (int)byteOffset))
             {
                 ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
                 if (vnStore->IsVNObjHandle(vn))
@@ -10447,18 +10449,15 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     {
         // See if we can fold IND(ADD(FrozenObj, CNS)) to a constant
         assert(obj != nullptr);
-        if (info.compCompHnd->isObjectImmutable(obj))
+        if ((size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
-            if ((size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
+            uint8_t buffer[maxElementSize] = {0};
+            if (info.compCompHnd->readObject(obj, buffer, size, (int)byteOffset))
             {
-                uint8_t buffer[maxElementSize] = {0};
-                if (info.compCompHnd->readObject(obj, (uint8_t*)&buffer, size, (int)byteOffset))
-                {
-                    ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
-                    assert(!vnStore->IsVNObjHandle(vn));
-                    tree->gtVNPair.SetBoth(vn);
-                    return true;
-                }
+                ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
+                assert(!vnStore->IsVNObjHandle(vn));
+                tree->gtVNPair.SetBoth(vn);
+                return true;
             }
         }
     }
