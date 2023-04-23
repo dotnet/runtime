@@ -1548,10 +1548,7 @@ public:
 
         // Note we don't need accurate counts when the values are large.
         //
-        if (varDsc->lvRefCnt(RCS_EARLY) < USHRT_MAX)
-        {
-            varDsc->incLvRefCnt(1, RCS_EARLY);
-        }
+        varDsc->incLvRefCntSaturating(1, RCS_EARLY);
 
         if (!m_compiler->lvaIsImplicitByRefLocal(lclNum))
         {

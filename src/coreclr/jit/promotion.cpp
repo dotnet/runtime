@@ -143,6 +143,9 @@ struct Replacement
     // Is the replacement local (given by LclNum) fresher than the value in the struct local?
     bool NeedsWriteBack = true;
     // Is the value in the struct local fresher than the replacement local?
+    // Note that the invariant is that this is always false at the entrance to
+    // a basic block, i.e. all predecessors would have read the replacement
+    // back before transferring control if necessary.
     bool NeedsReadBack = false;
     // Arbitrary flag bit used e.g. by decomposition. Assumed to be false.
     bool Handled = false;
@@ -920,6 +923,7 @@ public:
                 }
 
                 // For unhandled replacements, mark that they will require a read back before their next access.
+                // Conversely, the replacements we handled above are now up to date and should not be read back.
                 // We also keep the invariant that Replacement::Handled == false, so reset it here as well.
 
                 for (Replacement* rep = dstFirstRep; rep < dstEndRep; rep++)
@@ -1059,6 +1063,8 @@ public:
 
             if (addr->OperIsLocal() && (addr->AsLclVarCommon()->GetLclNum() != dst->GetLclNum()))
             {
+                // We will introduce more uses of the address local, so it is
+                // no longer dying here.
                 addr->gtFlags &= ~GTF_VAR_DEATH;
             }
             else if (addr->IsInvariant())
@@ -1189,15 +1195,12 @@ public:
     void IncrementRefCount(unsigned lclNum)
     {
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-        if (varDsc->lvRefCnt(RCS_EARLY) < USHRT_MAX)
-        {
-            varDsc->incLvRefCnt(1, RCS_EARLY);
-        }
+        varDsc->incLvRefCntSaturating(1, RCS_EARLY);
     }
 
     //------------------------------------------------------------------------
     // EliminateCommasInBlockOp:
-    //   Ensure that the source of a block op does is not a comma by extracting side effects.
+    //   Ensure that the sources of a block op are not commas by extracting side effects.
     //
     // Parameters:
     //   asg    - The block op
@@ -1609,9 +1612,6 @@ public:
     //   lcl          - The struct local
     //   offs         - The starting offset of the range in the struct local that needs to be read back from.
     //   size         - The size of the range
-    //   conservative - Whether this is a potentially conservative read back
-    //                  that we can handle more efficiently in the future (only used for
-    //                  logging purposes)
     //
     void MarkForReadBack(unsigned lcl, unsigned offs, unsigned size)
     {
