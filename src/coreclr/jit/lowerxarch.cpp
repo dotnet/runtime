@@ -1041,6 +1041,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         case NI_Vector128_ConditionalSelect:
         case NI_Vector256_ConditionalSelect:
+        case NI_Vector512_ConditionalSelect:
         {
             return LowerHWIntrinsicCndSel(node);
         }
@@ -1188,16 +1189,28 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
         case NI_Vector128_op_Equality:
         case NI_Vector256_op_Equality:
-        case NI_Vector512_op_Equality:
         {
             return LowerHWIntrinsicCmpOp(node, GT_EQ);
         }
 
         case NI_Vector128_op_Inequality:
         case NI_Vector256_op_Inequality:
-        case NI_Vector512_op_Inequality:
         {
             return LowerHWIntrinsicCmpOp(node, GT_NE);
+        }
+
+        case NI_Vector512_GreaterThanAll:
+        case NI_Vector512_GreaterThanAny:
+        case NI_Vector512_GreaterThanOrEqualAll:
+        case NI_Vector512_GreaterThanOrEqualAny:
+        case NI_Vector512_LessThanAll:
+        case NI_Vector512_LessThanAny:
+        case NI_Vector512_LessThanOrEqualAll:
+        case NI_Vector512_LessThanOrEqualAny:
+        case NI_Vector512_op_Equality:
+        case NI_Vector512_op_Inequality:
+        {
+            return LowerHWIntrinsicCmpOpWithKReg(node);
         }
 
         case NI_Vector128_ToScalar:
@@ -1649,8 +1662,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     var_types      simdType        = Compiler::getSIMDTypeForSize(simdSize);
 
     assert((intrinsicId == NI_Vector128_op_Equality) || (intrinsicId == NI_Vector128_op_Inequality) ||
-           (intrinsicId == NI_Vector256_op_Equality) || (intrinsicId == NI_Vector256_op_Inequality) ||
-           (intrinsicId == NI_Vector512_op_Equality) || (intrinsicId == NI_Vector512_op_Inequality));
+           (intrinsicId == NI_Vector256_op_Equality) || (intrinsicId == NI_Vector256_op_Inequality));
 
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(simdBaseType));
@@ -1663,23 +1675,8 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     //          /--*  op1  simd
     //   node = *  HWINTRINSIC   simd   T op_Equality
 
-    GenTree* op1 = node->Op(1);
-    GenTree* op2 = node->Op(2);
-
-    if (simdSize == 64)
-    {
-        GenTree* cmp = comp->gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_AVX512F_CompareEqualSpecial,
-                                                      simdBaseJitType, simdSize);
-        BlockRange().InsertBefore(node, cmp);
-        LowerNode(cmp);
-
-        node->ResetHWIntrinsicId(NI_AVX512F_KORTEST, cmp);
-        GenCondition cmpCnd = (cmpOp == GT_EQ) ? GenCondition::C : GenCondition::NC;
-        LowerHWIntrinsicCC(node, NI_AVX512F_KORTEST, cmpCnd);
-
-        return node->gtNext;
-    }
-
+    GenTree*     op1    = node->Op(1);
+    GenTree*     op2    = node->Op(2);
     GenCondition cmpCnd = (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE;
 
     if (!varTypeIsFloating(simdBaseType) && op2->IsVectorZero() &&
@@ -1883,6 +1880,80 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 }
 
 //----------------------------------------------------------------------------------------------
+// Lowering::LowerHWIntrinsicCmpOpWithKReg: Lowers a Vector512 comparison intrinsic
+//
+//  Arguments:
+//     node  - The hardware intrinsic node.
+//
+GenTree* Lowering::LowerHWIntrinsicCmpOpWithKReg(GenTreeHWIntrinsic* node)
+{
+    NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
+    CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
+    var_types      simdBaseType    = node->GetSimdBaseType();
+    unsigned       simdSize        = node->GetSimdSize();
+    var_types      simdType        = Compiler::getSIMDTypeForSize(simdSize);
+
+    assert((intrinsicId == NI_Vector512_GreaterThanAll) || (intrinsicId == NI_Vector512_GreaterThanOrEqualAll) ||
+           (intrinsicId == NI_Vector512_LessThanAll) || (intrinsicId == NI_Vector512_LessThanOrEqualAll) ||
+           (intrinsicId == NI_Vector512_op_Equality) || (intrinsicId == NI_Vector512_op_Inequality));
+
+    assert(varTypeIsSIMD(simdType));
+    assert(varTypeIsArithmetic(simdBaseType));
+    assert(simdSize == 64);
+    assert(node->gtType == TYP_BOOL);
+
+    NamedIntrinsic newIntrinsicId = NI_Illegal;
+    switch (intrinsicId)
+    {
+        case NI_Vector512_GreaterThanAll:
+        {
+            newIntrinsicId = NI_AVX512F_CompareGreaterThanSpecial;
+            break;
+        }
+        case NI_Vector512_GreaterThanOrEqualAll:
+        {
+            newIntrinsicId = NI_AVX512F_CompareGreaterThanOrEqualSpecial;
+            break;
+        }
+        case NI_Vector512_LessThanAll:
+        {
+            newIntrinsicId = NI_AVX512F_CompareLessThanSpecial;
+            break;
+        }
+        case NI_Vector512_LessThanOrEqualAll:
+        {
+            newIntrinsicId = NI_AVX512F_CompareLessThanOrEqualSpecial;
+            break;
+        }
+        case NI_Vector512_op_Equality:
+        case NI_Vector512_op_Inequality:
+        {
+            newIntrinsicId = NI_AVX512F_CompareEqualSpecial;
+            break;
+        }
+
+        default:
+        {
+            assert(false);
+            break;
+        }
+    }
+
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
+
+    GenTree* cmp = comp->gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, newIntrinsicId, simdBaseJitType, simdSize);
+    BlockRange().InsertBefore(node, cmp);
+    LowerNode(cmp);
+
+    node->ResetHWIntrinsicId(NI_AVX512F_KORTEST, cmp);
+    GenCondition cmpCnd = (intrinsicId != NI_Vector512_op_Inequality) ? GenCondition::C : GenCondition::NC;
+    LowerHWIntrinsicCC(node, NI_AVX512F_KORTEST, cmpCnd);
+
+    return node->gtNext;
+}
+
+//----------------------------------------------------------------------------------------------
 // Lowering::LowerHWIntrinsicCndSel: Lowers a Vector128 or Vector256 Conditional Select call
 //
 //  Arguments:
@@ -1912,6 +1983,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
     // we can optimize the entire conditional select to
     // a single BlendVariable instruction (if supported by the architecture)
 
+    // TODO-XARCH-AVX512 Use VPBLENDM* and take input directly from K registers if cond is from MoveMaskToVectorSpecial.
     // First, determine if the condition is a per-element mask
     if (op1->OperIsHWIntrinsic() && HWIntrinsicInfo::ReturnsPerElementMask(op1->AsHWIntrinsic()->GetHWIntrinsicId()))
     {

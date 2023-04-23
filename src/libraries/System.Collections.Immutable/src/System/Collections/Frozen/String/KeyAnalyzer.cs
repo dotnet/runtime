@@ -137,10 +137,11 @@ namespace System.Collections.Frozen
             results = new(allAscii, ignoreCase, 0, 0, 0, 0);
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/28230:
-        // Replace this once Ascii.IsValid exists.
         internal static unsafe bool IsAllAscii(ReadOnlySpan<char> s)
         {
+#if NET8_0_OR_GREATER
+            return System.Text.Ascii.IsValid(s);
+#else
             fixed (char* src = s)
             {
                 uint* ptrUInt32 = (uint*)src;
@@ -172,6 +173,7 @@ namespace System.Collections.Frozen
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static bool AllCharsInUInt32AreAscii(uint value) => (value & ~0x007F_007Fu) == 0;
+#endif
         }
 
         private static double GetUniquenessFactor(HashSet<string> set, ReadOnlySpan<string> uniqueStrings)

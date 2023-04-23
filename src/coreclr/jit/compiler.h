@@ -3858,7 +3858,8 @@ protected:
     GenTree* impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         CORINFO_ACCESS_FLAGS    access,
                                         CORINFO_FIELD_INFO*     pFieldInfo,
-                                        var_types               lclTyp);
+                                        var_types               lclTyp,
+                                        /* OUT */ bool*         pIsHoistable = nullptr);
 
     static void impBashVarAddrsToI(GenTree* tree1, GenTree* tree2 = nullptr);
 
@@ -5864,7 +5865,8 @@ private:
     // small; hence the other fields of MorphAddrContext.
     struct MorphAddrContext
     {
-        size_t m_totalOffset = 0; // Sum of offsets between the top-level indirection and here (current context).
+        size_t m_totalOffset = 0;     // Sum of offsets between the top-level indirection and here (current context).
+        bool   m_used        = false; // Whether this context was used to elide a null check.
     };
 
 #ifdef FEATURE_SIMD
@@ -8620,9 +8622,7 @@ private:
         return getBaseJitTypeAndSizeOfSIMDType(typeHnd, nullptr);
     }
 
-    // Pops and returns GenTree node from importers type stack.
-    // Normalizes TYP_STRUCT value in case of GT_CALL, GT_RET_EXPR and arg nodes.
-    GenTree* impSIMDPopStack(var_types type, bool expectAddr = false, CORINFO_CLASS_HANDLE structType = nullptr);
+    GenTree* impSIMDPopStack();
 
     void setLclRelatedToSIMDIntrinsic(GenTree* tree);
     bool areFieldsContiguous(GenTree* op1, GenTree* op2);

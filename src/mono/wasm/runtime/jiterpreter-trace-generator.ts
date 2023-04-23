@@ -144,6 +144,12 @@ function is_backward_branch_target (
     return false;
 }
 
+const knownConstantValues = new Map<number, number>();
+
+function get_known_constant_value (localOffset: number) : number | undefined {
+    return knownConstantValues.get(localOffset);
+}
+
 export function generateWasmBody (
     frame: NativePointer, traceName: string, ip: MintOpcodePtr,
     startOfBody: MintOpcodePtr, endOfBody: MintOpcodePtr,
@@ -282,49 +288,74 @@ export function generateWasmBody (
                 break;
             }
             case MintOpcode.MINT_CPBLK: {
-                // size (FIXME: uint32 not int32)
-                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
-                builder.local("math_rhs32", WasmOpcode.tee_local);
-                // if size is 0 then don't do anything
-                builder.block(WasmValtype.void, WasmOpcode.if_); // if #1
+                const sizeOffset = getArgU16(ip, 3),
+                    srcOffset = getArgU16(ip, 2),
+                    destOffset = getArgU16(ip, 1),
+                    constantSize = get_known_constant_value(sizeOffset);
 
-                // stash dest then check for null
-                append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
-                builder.local("temp_ptr", WasmOpcode.tee_local);
-                builder.appendU8(WasmOpcode.i32_eqz);
-                // stash src then check for null
-                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
-                builder.local("math_lhs32", WasmOpcode.tee_local);
-                builder.appendU8(WasmOpcode.i32_eqz);
+                if (constantSize !== 0) {
+                    if (typeof (constantSize) !== "number") {
+                        // size (FIXME: uint32 not int32)
+                        append_ldloc(builder, sizeOffset, WasmOpcode.i32_load);
+                        builder.local("math_rhs32", WasmOpcode.tee_local);
+                        // if size is 0 then don't do anything
+                        builder.block(WasmValtype.void, WasmOpcode.if_); // if size
+                    }
 
-                // now we memmove if both dest and src are valid. The stack currently has
-                //  the eqz result for each pointer so we can stash a bailout inside of an if
-                builder.appendU8(WasmOpcode.i32_or);
-                builder.block(WasmValtype.void, WasmOpcode.if_); // if #2
-                append_bailout(builder, ip, BailoutReason.NullCheck);
-                builder.endBlock(); // if #2
+                    // stash dest then check for null
+                    append_ldloc(builder, destOffset, WasmOpcode.i32_load);
+                    builder.local("temp_ptr", WasmOpcode.tee_local);
+                    builder.appendU8(WasmOpcode.i32_eqz);
+                    // stash src then check for null
+                    append_ldloc(builder, srcOffset, WasmOpcode.i32_load);
+                    builder.local("math_lhs32", WasmOpcode.tee_local);
+                    builder.appendU8(WasmOpcode.i32_eqz);
 
-                // We passed the null check so now prepare the stack
-                builder.local("temp_ptr");
-                builder.local("math_lhs32");
-                builder.local("math_rhs32");
-                // wasm memmove with stack layout dest, src, count
-                builder.appendU8(WasmOpcode.PREFIX_sat);
-                builder.appendU8(10);
-                builder.appendU8(0);
-                builder.appendU8(0);
-                builder.endBlock(); // if #1
+                    // now we memmove if both dest and src are valid. The stack currently has
+                    //  the eqz result for each pointer so we can stash a bailout inside of an if
+                    builder.appendU8(WasmOpcode.i32_or);
+                    builder.block(WasmValtype.void, WasmOpcode.if_); // if null
+                    append_bailout(builder, ip, BailoutReason.NullCheck);
+                    builder.endBlock(); // if null
+
+                    if (
+                        (typeof (constantSize) !== "number") ||
+                        !try_append_memmove_fast(builder, 0, 0, constantSize, false, "temp_ptr", "math_lhs32")
+                    ) {
+                        // We passed the null check so now prepare the stack
+                        builder.local("temp_ptr");
+                        builder.local("math_lhs32");
+                        builder.local("math_rhs32");
+                        // wasm memmove with stack layout dest, src, count
+                        builder.appendU8(WasmOpcode.PREFIX_sat);
+                        builder.appendU8(10);
+                        builder.appendU8(0);
+                        builder.appendU8(0);
+                    }
+
+                    if (typeof (constantSize) !== "number")
+                        builder.endBlock(); // if size
+                }
                 break;
             }
             case MintOpcode.MINT_INITBLK: {
+                const sizeOffset = getArgU16(ip, 3),
+                    valueOffset = getArgU16(ip, 2),
+                    destOffset = getArgU16(ip, 1);
+                    /*
+                    constantSize = get_known_constant_value(sizeOffset),
+                    constantValue = get_known_constant_value(valueOffset);
+                    */
+
+                // TODO: Handle constant size initblks. Not sure if they matter though
                 // FIXME: This will cause an erroneous bailout if dest and size are both 0
                 //  but that really shouldn't ever happen, and it will only cause a slowdown
                 // dest
-                append_ldloc_cknull(builder, getArgU16(ip, 1), ip, true);
+                append_ldloc_cknull(builder, destOffset, ip, true);
                 // value
-                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                append_ldloc(builder, valueOffset, WasmOpcode.i32_load);
                 // size (FIXME: uint32 not int32)
-                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
+                append_ldloc(builder, sizeOffset, WasmOpcode.i32_load);
                 // spec: pop n, pop val, pop d, fill from d[0] to d[n] with value val
                 builder.appendU8(WasmOpcode.PREFIX_sat);
                 builder.appendU8(11);
@@ -1192,6 +1223,8 @@ export function generateWasmBody (
                 ) {
                     if (!emit_ldc(builder, ip, opcode))
                         ip = abort;
+                    else
+                        skipDregInvalidation = true;
                 } else if (
                     (opcode >= MintOpcode.MINT_MOV_I4_I1) &&
                     (opcode <= MintOpcode.MINT_MOV_8_4)
@@ -1274,7 +1307,7 @@ export function generateWasmBody (
         }
 
         if (ip) {
-            if (!skipDregInvalidation && builder.allowNullCheckOptimization) {
+            if (!skipDregInvalidation) {
                 // Invalidate cached values for all the instruction's destination registers.
                 // This should have already happened, but it's possible there are opcodes where
                 //  our invalidation is incorrect so it's best to do this for safety reasons
@@ -1352,12 +1385,14 @@ let cknullOffset = -1;
 function eraseInferredState () {
     cknullOffset = -1;
     notNullSince.clear();
+    knownConstantValues.clear();
 }
 
 function invalidate_local (offset: number) {
     if (cknullOffset === offset)
         cknullOffset = -1;
     notNullSince.delete(offset);
+    knownConstantValues.delete(offset);
 }
 
 function invalidate_local_range (start: number, bytes: number) {
@@ -1502,21 +1537,25 @@ const ldcTable : { [opcode: number]: [WasmOpcode, number] } = {
 
 function emit_ldc (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) : boolean {
     let storeType = WasmOpcode.i32_store;
+    let value : number | undefined;
 
     const tableEntry = ldcTable[opcode];
     if (tableEntry) {
         builder.local("pLocals");
         builder.appendU8(tableEntry[0]);
-        builder.appendLeb(tableEntry[1]);
+        value = tableEntry[1];
+        builder.appendLeb(value);
     } else {
         switch (opcode) {
             case MintOpcode.MINT_LDC_I4_S:
                 builder.local("pLocals");
-                builder.i32_const(getArgI16(ip, 2));
+                value = getArgI16(ip, 2);
+                builder.i32_const(value);
                 break;
             case MintOpcode.MINT_LDC_I4:
                 builder.local("pLocals");
-                builder.i32_const(getArgI32(ip, 2));
+                value = getArgI32(ip, 2);
+                builder.i32_const(value);
                 break;
             case MintOpcode.MINT_LDC_I8_0:
                 builder.local("pLocals");
@@ -1559,6 +1598,11 @@ function emit_ldc (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) 
     const localOffset = getArgU16(ip, 1);
     builder.appendMemarg(localOffset, 2);
     invalidate_local(localOffset);
+
+    if (typeof (value) === "number")
+        knownConstantValues.set(localOffset, value);
+    else
+        knownConstantValues.delete(localOffset);
 
     return true;
 }
