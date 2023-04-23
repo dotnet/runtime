@@ -27,21 +27,16 @@ namespace Internal.Runtime
                 return GetUninlinedThreadStaticBaseForType(pModuleData, typeTlsIndex);
 
             ref object threadStorage = ref RuntimeImports.RhGetInlineThreadStaticStorage();
-            if (threadStorage == null)
-                return GetInlinedThreadStaticBase(pModuleData->TypeManager);
+            if (threadStorage != null)
+                return threadStorage;
 
-            return threadStorage;
+            return GetInlinedThreadStaticBaseSlow();
         }
 
         [RuntimeExport("RhpGetInlinedThreadStaticBaseSlow")]
         internal static unsafe object GetInlinedThreadStaticBaseSlow()
         {
             TypeManagerHandle typeManager = RuntimeImports.RhGetSingleTypeManager();
-            return GetInlinedThreadStaticBase(typeManager);
-        }
-
-        private static unsafe object GetInlinedThreadStaticBase(TypeManagerHandle typeManager)
-        {
             // Get the array that holds thread statics for the current thread, if none present
             // allocate a new one big enough to hold the current module data
             ref object threadStorage = ref RuntimeImports.RhGetInlineThreadStaticStorage();
