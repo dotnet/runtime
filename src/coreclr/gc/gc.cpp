@@ -46118,8 +46118,16 @@ unsigned int GCHeap::WhichGeneration (Object* object)
 #ifdef FEATURE_BASICFREEZE
     if (!((o < g_gc_highest_address) && (o >= g_gc_lowest_address)))
     {
-        return max_generation;
+        return INT32_MAX;
     }
+#ifndef USE_REGIONS
+    if (GCHeap::IsInFrozenSegment (object))
+    {
+        // in case if the object belongs to an in-range frozen segment
+        // For regions those are never in-range.
+        return INT32_MAX;
+    }
+#endif
 #endif //FEATURE_BASICFREEZE
     gc_heap* hp = gc_heap::heap_of (o);
     unsigned int g = hp->object_gennum (o);
@@ -48971,6 +48979,9 @@ CFinalize::UpdatePromotedGenerations (int gen, BOOL gen_0_empty_p)
                 int new_gen = g_theGCHeap->WhichGeneration (*po);
                 if (new_gen != i)
                 {
+                    // We never promote objects to a non-GC heap
+                    assert (new_gen <= max_generation);
+
                     dprintf (3, ("Moving object %p->%p from gen %d to gen %d", po, *po, i, new_gen));
 
                     if (new_gen > i)
