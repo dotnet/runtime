@@ -59,15 +59,12 @@ namespace Internal.Runtime
             if (threadStorage != null && threadStorage.Length > moduleIndex)
             {
                 object[] moduleStorage = threadStorage[moduleIndex];
-                if (moduleStorage != null)
+                if (moduleStorage != null && moduleStorage.Length > typeTlsIndex)
                 {
-                    if (moduleStorage.Length > typeTlsIndex)
+                    object threadStaticBase = moduleStorage[typeTlsIndex];
+                    if (threadStaticBase != null)
                     {
-                        object threadStaticBase = moduleStorage[typeTlsIndex];
-                        if (threadStaticBase != null)
-                        {
-                            return threadStaticBase;
-                        }
+                        return threadStaticBase;
                     }
                 }
             }
@@ -102,7 +99,7 @@ namespace Internal.Runtime
             }
             else if (typeTlsIndex >= moduleStorage.Length)
             {
-                // storeIndex could have a big range, we do not want to reallocate every time we see +1 index
+                // typeTlsIndex could have a big range, we do not want to reallocate every time we see +1 index
                 // so we double up from previous size to guarantee a worst case linear complexity
                 int newSize = Math.Max(typeTlsIndex + 1, moduleStorage.Length * 2);
                 Array.Resize(ref moduleStorage, newSize);

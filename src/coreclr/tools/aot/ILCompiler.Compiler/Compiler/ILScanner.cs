@@ -727,10 +727,10 @@ namespace ILCompiler
 
                         types.Add(t);
 
-                        // base is aligned to a pointer size.
-                        // N.B. for ARM32, we would need to deal with > PointerSize alignments as well.
-                        //      GCStaticEEType does not currently set RequiresAlign8Flag anyways
-                        nextDataOffset = nextDataOffset.AlignUp(factory.Target.PointerSize);
+                        // N.B. for ARM32, we would need to deal with > PointerSize alignments.
+                        //      GCStaticEEType does not currently set RequiresAlign8Flag
+                        Debug.Assert(t.ThreadGcStaticFieldAlignment.AsInt <= factory.Target.PointerSize);
+                        nextDataOffset = nextDataOffset.AlignUp(t.ThreadGcStaticFieldAlignment.AsInt);
 
                         // reported offset is from the MT pointer, adjust for that
                         offsets.Add(t, nextDataOffset - factory.Target.PointerSize);

@@ -141,9 +141,9 @@ namespace ILCompiler.DependencyAnalysis
                 // bases in the type info hashtable. The type symbol node does such accounting.
                 return new CombinedDependencyListEntry[]
                 {
-                new CombinedDependencyListEntry(factory.NecessaryTypeSymbol(_type),
-                    factory.NativeLayout.TemplateTypeLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific)),
-                    "Keeping track of template-constructable type static bases"),
+                    new CombinedDependencyListEntry(factory.NecessaryTypeSymbol(_type),
+                        factory.NativeLayout.TemplateTypeLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                        "Keeping track of template-constructable type static bases"),
                 };
             }
             else

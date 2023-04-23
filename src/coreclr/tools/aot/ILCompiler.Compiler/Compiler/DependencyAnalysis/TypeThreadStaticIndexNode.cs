@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
 
             return new DependencyList
             {
-                    new DependencyListEntry(node, "Thread static storage")
+                new DependencyListEntry(node, "Thread static storage")
             };
         }
 
