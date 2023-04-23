@@ -4357,6 +4357,12 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
 
     bool IsUnsigned = (cond & GenCondition::Unsigned) != 0;
 
+    if (tree->gtFlags & GTF_JCMP_EQ)
+    {
+        GenCondition condReverse(static_cast<GenCondition::Code>(cond));
+        cond = GenCondition::Reverse(condReverse).GetCode();
+    }
+
     emitAttr  cmpSize = EA_ATTR(genTypeSize(op1Type));
     regNumber regOp1  = op1->GetRegNum();
 
