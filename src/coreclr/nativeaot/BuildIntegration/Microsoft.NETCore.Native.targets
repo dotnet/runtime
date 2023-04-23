@@ -16,6 +16,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <!-- Set defaults for unspecified properties -->
   <PropertyGroup>
+    <StripSymbols Condition="'$(StripSymbols)' == '' and '$(_targetOS)' != 'win'">true</StripSymbols>
     <NativeLib Condition="'$(OutputType)' == 'Library' and '$(NativeLib)' == '' and '$(IlcMultiModule)' != 'true'">Shared</NativeLib>
     <NativeIntermediateOutputPath Condition="'$(NativeIntermediateOutputPath)' == ''">$(IntermediateOutputPath)native\</NativeIntermediateOutputPath>
     <NativeOutputPath Condition="'$(NativeOutputPath)' == ''">$(OutputPath)native\</NativeOutputPath>
