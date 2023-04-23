@@ -3727,10 +3727,10 @@ CORINFO_METHOD_HANDLE MethodContext::repEmbedMethodHandle(CORINFO_METHOD_HANDLE 
     return (CORINFO_METHOD_HANDLE)value.B;
 }
 
-void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects, bool result)
+void MethodContext::recGetStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects, bool result)
 {
-    if (GetReadonlyStaticFieldValue == nullptr)
-        GetReadonlyStaticFieldValue = new LightWeightMap<DLDDD, DD>();
+    if (GetStaticFieldContent == nullptr)
+        GetStaticFieldContent = new LightWeightMap<DLDDD, DD>();
 
     DLDDD key;
     ZeroMemory(&key, sizeof(key));
@@ -3741,21 +3741,21 @@ void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, u
 
     DWORD tmpBuf = (DWORD)-1;
     if (buffer != nullptr && result)
-        tmpBuf = (DWORD)GetReadonlyStaticFieldValue->AddBuffer((uint8_t*)buffer, (uint32_t)bufferSize);
+        tmpBuf = (DWORD)GetStaticFieldContent->AddBuffer((uint8_t*)buffer, (uint32_t)bufferSize);
 
     DD value;
     value.A = (DWORD)result;
     value.B = (DWORD)tmpBuf;
 
-    GetReadonlyStaticFieldValue->Add(key, value);
-    DEBUG_REC(dmpGetReadonlyStaticFieldValue(key, value));
+    GetStaticFieldContent->Add(key, value);
+    DEBUG_REC(dmpGetStaticFieldContent(key, value));
 }
-void MethodContext::dmpGetReadonlyStaticFieldValue(DLDDD key, DD value)
+void MethodContext::dmpGetStaticFieldContent(DLDDD key, DD value)
 {
-    printf("GetReadonlyStaticFieldValue key fld-%016" PRIX64 " bufSize-%u, ignoremovable-%u, valOffset-%u result-%u", key.A, key.B, key.C, key.D, value.A);
-    GetReadonlyStaticFieldValue->Unlock();
+    printf("GetStaticFieldContent key fld-%016" PRIX64 " bufSize-%u, ignoremovable-%u, valOffset-%u result-%u", key.A, key.B, key.C, key.D, value.A);
+    GetStaticFieldContent->Unlock();
 }
-bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
+bool MethodContext::repGetStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
     DLDDD key;
     ZeroMemory(&key, sizeof(key));
@@ -3764,22 +3764,22 @@ bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, u
     key.C = (DWORD)ignoreMovableObjects;
     key.D = (DWORD)valueOffset;
 
-    DD value = LookupByKeyOrMiss(GetReadonlyStaticFieldValue, key, ": key %016" PRIX64 "", key.A);
+    DD value = LookupByKeyOrMiss(GetStaticFieldContent, key, ": key %016" PRIX64 "", key.A);
 
-    DEBUG_REP(dmpGetReadonlyStaticFieldValue(key, value));
+    DEBUG_REP(dmpGetStaticFieldContent(key, value));
     if (buffer != nullptr && (bool)value.A)
     {
-        uint8_t* srcBuffer = (uint8_t*)GetReadonlyStaticFieldValue->GetBuffer(value.B);
+        uint8_t* srcBuffer = (uint8_t*)GetStaticFieldContent->GetBuffer(value.B);
         Assert(srcBuffer != nullptr);
         memcpy(buffer, srcBuffer, bufferSize);
     }
     return (bool)value.A;
 }
 
-void MethodContext::recGetObjectData(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset, bool result)
+void MethodContext::recGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset, bool result)
 {
-    if (GetObjectData == nullptr)
-        GetObjectData = new LightWeightMap<DLDD, DD>();
+    if (GetObjectContent == nullptr)
+        GetObjectContent = new LightWeightMap<DLDD, DD>();
 
     DLDD key;
     ZeroMemory(&key, sizeof(key));
@@ -3789,21 +3789,21 @@ void MethodContext::recGetObjectData(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer,
 
     DWORD tmpBuf = (DWORD)-1;
     if (buffer != nullptr && result)
-        tmpBuf = (DWORD)GetObjectData->AddBuffer((uint8_t*)buffer, (uint32_t)bufferSize);
+        tmpBuf = (DWORD)GetObjectContent->AddBuffer((uint8_t*)buffer, (uint32_t)bufferSize);
 
     DD value;
     value.A = (DWORD)result;
     value.B = (DWORD)tmpBuf;
 
-    GetObjectData->Add(key, value);
-    DEBUG_REC(dmpGetObjectData(key, value));
+    GetObjectContent->Add(key, value);
+    DEBUG_REC(dmpGetObjectContent(key, value));
 }
-void MethodContext::dmpGetObjectData(DLDD key, DD value)
+void MethodContext::dmpGetObjectContent(DLDD key, DD value)
 {
-    printf("GetObjectData key fld-%016" PRIX64 " bufSize-%u, valOffset-%u result-%u", key.A, key.B, key.C, value.A);
-    GetObjectData->Unlock();
+    printf("GetObjectContent key fld-%016" PRIX64 " bufSize-%u, valOffset-%u result-%u", key.A, key.B, key.C, value.A);
+    GetObjectContent->Unlock();
 }
-bool MethodContext::repGetObjectData(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset)
+bool MethodContext::repGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset)
 {
     DLDD key;
     ZeroMemory(&key, sizeof(key));
@@ -3811,12 +3811,12 @@ bool MethodContext::repGetObjectData(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer,
     key.B = (DWORD)bufferSize;
     key.C = (DWORD)valueOffset;
 
-    DD value = LookupByKeyOrMiss(GetObjectData, key, ": key %016" PRIX64 "", key.A);
+    DD value = LookupByKeyOrMiss(GetObjectContent, key, ": key %016" PRIX64 "", key.A);
 
-    DEBUG_REP(dmpGetObjectData(key, value));
+    DEBUG_REP(dmpGetObjectContent(key, value));
     if (buffer != nullptr && (bool)value.A)
     {
-        uint8_t* srcBuffer = (uint8_t*)GetObjectData->GetBuffer(value.B);
+        uint8_t* srcBuffer = (uint8_t*)GetObjectContent->GetBuffer(value.B);
         Assert(srcBuffer != nullptr);
         memcpy(buffer, srcBuffer, bufferSize);
     }

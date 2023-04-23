@@ -11843,7 +11843,7 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     return result;
 }
 
-bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
+bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
     CONTRACTL {
         THROWS;
@@ -11981,7 +11981,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
     return result;
 }
 
-bool CEEInfo::getObjectData(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, int bufferSize, int valueOffset)
+bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, int bufferSize, int valueOffset)
 {
     CONTRACTL {
         THROWS;
@@ -12001,7 +12001,9 @@ bool CEEInfo::getObjectData(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, int b
     GCX_COOP();
     OBJECTREF objRef = getObjectFromJitHandle(handle);
     _ASSERTE(objRef != NULL);
-    if (bufferSize + valueOffset <= (int)objRef->GetSize())
+
+    // TODO: support types containing GC pointers
+    if (!objRef->GetMethodTable()->ContainsPointers() && bufferSize + valueOffset <= (int)objRef->GetSize())
     {
         Object* obj = OBJECTREFToObject(objRef);
         memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);

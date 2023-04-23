@@ -2415,7 +2415,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                         if (field != NULL)
                         {
                             uint8_t buffer[TARGET_POINTER_SIZE] = {0};
-                            if (m_pComp->info.compCompHnd->getReadonlyStaticFieldValue(field, buffer,
+                            if (m_pComp->info.compCompHnd->getStaticFieldContent(field, buffer,
                                                                                        TARGET_POINTER_SIZE, 0, false))
                             {
                                 // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
@@ -10426,7 +10426,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
-            if (info.compCompHnd->getReadonlyStaticFieldValue(fieldHandle, buffer, size, (int)byteOffset))
+            if (info.compCompHnd->getStaticFieldContent(fieldHandle, buffer, size, (int)byteOffset))
             {
                 ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
                 if (vnStore->IsVNObjHandle(vn))
@@ -10446,7 +10446,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         if ((size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
-            if (info.compCompHnd->getObjectData(obj, buffer, size, (int)byteOffset))
+            if (info.compCompHnd->getObjectContent(obj, buffer, size, (int)byteOffset))
             {
                 ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
                 assert(!vnStore->IsVNObjHandle(vn));

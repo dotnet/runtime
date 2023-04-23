@@ -3224,7 +3224,7 @@ public:
                     ) = 0;
 
     //------------------------------------------------------------------------------
-    // getReadonlyStaticFieldValue: returns true and the actual field's value if the given
+    // getStaticFieldContent: returns true and the actual field's value if the given
     //    field represents a statically initialized readonly field of any type.
     //
     // Arguments:
@@ -3236,7 +3236,7 @@ public:
     // Return Value:
     //    Returns true if field's constant value was available and successfully copied to buffer
     //
-    virtual bool getReadonlyStaticFieldValue(
+    virtual bool getStaticFieldContent(
                     CORINFO_FIELD_HANDLE    field,
                     uint8_t                *buffer,
                     int                     bufferSize,
@@ -3244,7 +3244,7 @@ public:
                     bool                    ignoreMovableObjects = true
                     ) = 0;
 
-    virtual bool getObjectData(
+    virtual bool getObjectContent(
                     CORINFO_OBJECT_HANDLE   obj,
                     uint8_t*                buffer,
                     int                     bufferSize,
