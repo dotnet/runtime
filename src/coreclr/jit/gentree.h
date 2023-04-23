@@ -1692,6 +1692,9 @@ public:
         return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
     }
 
+    bool OperIsStoreLclVar(unsigned* pLclNum);
+    bool OperIsStoreLcl(unsigned* pLclNum);
+
 #ifdef DEBUG
     static const GenTreeDebugOperKind gtDebugOperKindTable[];
 
@@ -8839,6 +8842,40 @@ inline bool GenTree::OperIsInitBlkOp()
 inline bool GenTree::OperIsCopyBlkOp()
 {
     return OperIsBlkOp() && !OperIsInitBlkOp();
+}
+
+inline bool GenTree::OperIsStoreLclVar(unsigned* pLclNum) // TODO-ASG: delete.
+{
+    if (OperIs(GT_STORE_LCL_VAR))
+    {
+        *pLclNum = AsLclVar()->GetLclNum();
+        return true;
+    }
+    if (OperIs(GT_ASG) && gtGetOp1()->OperIs(GT_LCL_VAR))
+    {
+        *pLclNum = gtGetOp1()->AsLclVar()->GetLclNum();
+        return true;
+    }
+
+    *pLclNum = BAD_VAR_NUM;
+    return false;
+}
+
+inline bool GenTree::OperIsStoreLcl(unsigned* pLclNum) // TODO-ASG: delete.
+{
+    if (OperIsLocalStore())
+    {
+        *pLclNum = AsLclVarCommon()->GetLclNum();
+        return true;
+    }
+    if (OperIs(GT_ASG) && gtGetOp1()->OperIsLocal())
+    {
+        *pLclNum = gtGetOp1()->AsLclVarCommon()->GetLclNum();
+        return true;
+    }
+
+    *pLclNum = BAD_VAR_NUM;
+    return false;
 }
 
 //------------------------------------------------------------------------
