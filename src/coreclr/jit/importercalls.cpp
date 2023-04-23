@@ -1734,7 +1734,7 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig,
     if ((transformation & SigTransform::DeleteThis) != 0)
     {
         assert((transformation & SigTransform::ReplaceRefThis) == 0);
-        assert(sourceSig->HasThis());
+        assert(sourceSig->hasThis());
         sourceArgCount--;
     }
 
