@@ -76,6 +76,22 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<ulong> Min(Vector256<ulong> left, Vector256<ulong> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// __m256i _mm256_permute4x64_epi64 (__m256i a, __m256i b)
+            ///   VPERMQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<long> PermuteVar4x64(Vector256<long> value, Vector256<long> control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_permute4x64_pd (__m256d a, __m256i b)
+            ///   VPERMQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<ulong> PermuteVar4x64(Vector256<ulong> value, Vector256<ulong> control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256d _mm256_permute4x64_pd (__m256d a, __m256i b)
+            ///   VPERMPD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> PermuteVar4x64(Vector256<double> value, Vector256<long> control) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// __m128i _mm_sra_epi64 (__m128i a, __m128i count)
             ///   VPSRAQ xmm1 {k1}{z}, xmm2, xmm3/m128
             /// </summary>
@@ -1022,6 +1038,78 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPORQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
         /// </summary>
         public static Vector512<ulong> Or(Vector512<ulong> left, Vector512<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512d _mm512_permute_pd (__m512d a, int imm8)
+        ///   VPERMILPD zmm1 {k1}{z}, zmm2/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<double> Permute2x64(Vector512<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_permute_ps (__m512 a, int imm8)
+        ///   VPERMILPS zmm1 {k1}{z}, zmm2/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<float> Permute4x32(Vector512<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_permute4x64_epi64 (__m512i a, const int imm8)
+        ///   VPERMQ zmm1 {k1}{z}, zmm2/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<long> Permute4x64(Vector512<long> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_permute4x64_epi64 (__m512i a, const int imm8)
+        ///   VPERMQ zmm1 {k1}{z}, zmm2/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<ulong> Permute4x64(Vector512<ulong> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_permute4x64_pd (__m512d a, const int imm8)
+        ///   VPERMPD zmm1 {k1}{z}, zmm2/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<double> Permute4x64(Vector512<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512d _mm512_permutevar_pd (__m512d a, __m512i b)
+        ///   VPERMILPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> PermuteVar2x64(Vector512<double> left, Vector512<long> control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_permutevar_ps (__m512 a, __m512i b)
+        ///   VPERMILPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> PermuteVar4x32(Vector512<float> left, Vector512<int> control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_permutevar8x64_epi64 (__m512i a, __m512i b)
+        ///   VPERMQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> PermuteVar8x64(Vector512<long> value, Vector512<long> control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_permutevar8x64_epi64 (__m512i a, __m512i b)
+        ///   VPERMQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> PermuteVar8x64(Vector512<ulong> value, Vector512<ulong> control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_permutevar8x64_pd (__m512d a, __m512i b)
+        ///   VPERMPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> PermuteVar8x64(Vector512<double> value, Vector512<long> control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_permutevar16x32_epi32 (__m512i a, __m512i b)
+        ///   VPERMD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> PermuteVar16x32(Vector512<int> left, Vector512<int> control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_permutevar16x32_epi32 (__m512i a, __m512i b)
+        ///   VPERMD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> PermuteVar16x32(Vector512<uint> left, Vector512<uint> control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_permutevar16x32_ps (__m512 a, __m512i b)
+        ///   VPERMPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> PermuteVar16x32(Vector512<float> left, Vector512<int> control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m512i _mm512_sll_epi32 (__m512i a, __m128i count)

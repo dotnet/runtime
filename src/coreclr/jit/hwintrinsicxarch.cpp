@@ -2882,6 +2882,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_AVX2_PermuteVar8x32:
+        case NI_AVX512BW_PermuteVar32x16:
+        case NI_AVX512BW_VL_PermuteVar8x16:
+        case NI_AVX512BW_VL_PermuteVar16x16:
+        case NI_AVX512F_PermuteVar8x64:
+        case NI_AVX512F_PermuteVar16x32:
+        case NI_AVX512F_VL_PermuteVar4x64:
         {
             simdBaseJitType = getBaseJitTypeOfSIMDType(sig->retTypeSigClass);
 
@@ -2889,11 +2895,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             // swap the two operands
-            GenTree* indexVector  = impSIMDPopStack();
-            GenTree* sourceVector = impSIMDPopStack();
+            GenTree* idxVector  = impSIMDPopStack();
+            GenTree* srcVector = impSIMDPopStack();
 
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD32, indexVector, sourceVector, NI_AVX2_PermuteVar8x32,
-                                               simdBaseJitType, 32);
+            retNode = gtNewSimdHWIntrinsicNode(retType, idxVector, srcVector, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
