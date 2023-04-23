@@ -1191,7 +1191,7 @@ enum mcPackets
     Packet_GetThreadLocalFieldInfo = 207,
     Packet_GetThreadLocalStaticBlocksInfo = 208,
     Packet_GetRISCV64PassStructInRegisterFlags = 209,
-    Packet_ReadObject = 210,
+    Packet_GetObjectData = 210,
 };
 
 void SetDebugDumpVariables();

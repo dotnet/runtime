@@ -1755,7 +1755,7 @@ bool interceptor_ICJI::getObjectData(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer,
 {
     mc->cr->AddCall("getObjectData");
     bool result = original_ICorJitInfo->getObjectData(obj, buffer, bufferSize, valueOffset);
-    mc->recReadObject(obj, buffer, bufferSize, valueOffset, result);
+    mc->recGetObjectData(obj, buffer, bufferSize, valueOffset, result);
     return result;
 }
 

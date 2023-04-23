@@ -1524,7 +1524,7 @@ bool MyICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* bu
 bool MyICJI::getObjectData(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset)
 {
     jitInstance->mc->cr->AddCall("getObjectData");
-    return jitInstance->mc->repReadObject(obj, buffer, bufferSize, valueOffset);
+    return jitInstance->mc->repGetObjectData(obj, buffer, bufferSize, valueOffset);
 }
 
 // return the class handle for the current value of a static field
