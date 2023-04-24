@@ -472,7 +472,7 @@ namespace System.Runtime.InteropServices
             {
                 if (_comWrappers != null)
                 {
-                    _comWrappers.RemoveRCWFromCache(_externalComObject);
+                    _comWrappers.RemoveRCWFromCache(_externalComObject, _proxyHandle);
                     _comWrappers = null;
                 }
 
@@ -810,11 +810,17 @@ namespace System.Runtime.InteropServices
         }
 #pragma warning restore IDE0060
 
-        private void RemoveRCWFromCache(IntPtr comPointer)
+        private void RemoveRCWFromCache(IntPtr comPointer, GCHandle expectedValue)
         {
             using (LockHolder.Hold(_lock))
             {
-                _rcwCache.Remove(comPointer);
+                // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
+                // in the time between the GC cleared the contents of the GC handle but before the
+                // NativeObjectWrapper finializer ran.
+                if (_rcwCache.TryGetValue(comPointer, out GCHandle cachedValue) && expectedValue.Equals(cachedValue))
+                {
+                    _rcwCache.Remove(comPointer);
+                }
             }
         }
 
