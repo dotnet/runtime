@@ -2271,7 +2271,6 @@ gpointer          mono_create_jump_trampoline (MonoMethod *method,
 gpointer mono_create_jit_trampoline (MonoMethod *method, MonoError *error);
 gpointer          mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token);
 gpointer          mono_create_delegate_trampoline (MonoClass *klass);
-gpointer		  mono_add_delegate_trampolines (MonoMethod *method, gpointer compiled_method, gboolean need_unbox);
 MonoDelegateTrampInfo* mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboolean is_virtual);
 gpointer          mono_create_rgctx_lazy_fetch_trampoline (guint32 offset);
 gpointer          mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr);

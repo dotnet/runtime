@@ -1468,11 +1468,6 @@ mono_create_delegate_trampoline (MonoClass *klass)
 	return mono_create_delegate_trampoline_info (klass, NULL, FALSE)->invoke_impl;
 }
 
-gpointer mono_add_delegate_trampolines (MonoMethod *method, gpointer compiled_method, gboolean need_unbox)
-{
-	return mini_add_method_trampoline (method, compiled_method, mono_method_needs_static_rgctx_invoke (method, TRUE), need_unbox);
-}
-
 gpointer
 mono_create_rgctx_lazy_fetch_trampoline (guint32 offset)
 {

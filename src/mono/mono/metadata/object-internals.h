@@ -699,7 +699,6 @@ typedef struct {
 	void (*interp_jit_info_foreach)(InterpJitInfoFunc func, gpointer user_data);
 	gboolean (*interp_sufficient_stack)(gsize size);
 	void (*init_class) (MonoClass *klass);
-	gpointer (*add_delegate_trampolines) (MonoMethod *method, gpointer compiled_method, gboolean need_unbox);
 	MonoArray *(*get_trace) (MonoException *exc, gint32 skip, MonoBoolean need_file_info);
 	MonoBoolean (*get_frame_info) (gint32 skip, MonoMethod **out_method,
 								   MonoDebugSourceLocation **out_location,
