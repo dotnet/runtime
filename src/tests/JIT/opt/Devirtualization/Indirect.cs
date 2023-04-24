@@ -136,10 +136,19 @@ public static unsafe class Test
             return ptr();
         }
 
-        AreSame(A(), Invoke(() => ConditionalAddressAssign(false)));
-        AreSame(B(), Invoke(() => ConditionalAddressAssign(true)));
-        AreSame(A(), Invoke(a => ConditionalAddressAssign(a), false));
-        AreSame(B(), Invoke(a => ConditionalAddressAssign(a), true));
+        AreSame(2, IndirectIL.StaticClass());
+        AreSame(1, IndirectIL.InstanceClass());
+        AreSame(1, IndirectIL.InstanceExplicitClass());
+        AreSame(4, IndirectIL.StaticClassParam());
+        AreSame(3, IndirectIL.InstanceClassParam());
+        AreSame(3, IndirectIL.InstanceExplicitClassParam());
+
+        AreSame(2, IndirectIL.StaticStruct());
+        AreSame(1, IndirectIL.InstanceStruct());
+        AreSame(1, IndirectIL.InstanceExplicitStruct());
+        AreSame(4, IndirectIL.StaticStructParam());
+        AreSame(3, IndirectIL.InstanceStructParam());
+        AreSame(3, IndirectIL.InstanceExplicitStructParam());
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

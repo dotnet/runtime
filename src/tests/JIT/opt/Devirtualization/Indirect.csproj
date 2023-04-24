@@ -6,6 +6,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Indirect.cs" />
+    <ProjectReference Include="IndirectIL.ilproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
 </Project>

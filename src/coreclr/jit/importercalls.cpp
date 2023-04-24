@@ -112,7 +112,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     CORINFO_METHOD_HANDLE replacementMethod       = nullptr;
     GenTree*              newThis                 = nullptr;
     var_types oldThis = TYP_UNDEF;
-    var_types newThis = TYP_UNDEF;
+    var_types targetThis = TYP_UNDEF;
 
     // handle special import cases
     if (opcode == CEE_CALLI)
@@ -178,13 +178,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         {
             JITDUMP("impImportCall aborting transformation - found PInvoke\n");
         }
-        else if (impCanSubstituteSig(&originalSig, &methodSig, oldThis, newThis))
+        else if (impCanSubstituteSig(&originalSig, &methodSig, oldThis, targetThis))
         {
             impPopStack();
             if (newThis != nullptr)
             {
                 assert(oldThis == TYP_REF);
-                assert(newThis == TYP_REF);
+                assert(targetThis == TYP_REF);
                 CORINFO_CLASS_HANDLE thisCls = NO_CLASS_HANDLE;
                 info.compCompHnd->getArgType(&methodSig, methodSig.args, &thisCls);
                 impPushOnStack(newThis, typeInfo(TI_REF, thisCls));
@@ -1794,8 +1794,8 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig,
         assert(targetThis == TYP_REF || targetThis == TYP_BYREF || targetThis == TYP_I_IMPL);
         if (sourceThis != targetThis)
         {
-            JITDUMP("impCanSubstituteSig returning false - this type %s != %s\n", i, varTypeName(sourceType),
-                    varTypeName(targetType));
+            JITDUMP("impCanSubstituteSig returning false - this type %s != %s\n", varTypeName(sourceThis),
+                    varTypeName(targetThis));
             return false;
         }
     }
