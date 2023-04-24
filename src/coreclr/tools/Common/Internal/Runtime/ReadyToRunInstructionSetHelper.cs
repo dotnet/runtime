@@ -110,6 +110,10 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_AVX512DQ_X64: return ReadyToRunInstructionSet.Avx512DQ;
                             case InstructionSet.X64_AVX512DQ_VL: return ReadyToRunInstructionSet.Avx512DQ_VL;
                             case InstructionSet.X64_AVX512DQ_VL_X64: return ReadyToRunInstructionSet.Avx512DQ_VL;
+                            case InstructionSet.X64_AVX512VBMI: return ReadyToRunInstructionSet.Avx512Vbmi;
+                            case InstructionSet.X64_AVX512VBMI_X64: return ReadyToRunInstructionSet.Avx512Vbmi;
+                            case InstructionSet.X64_AVX512VBMI_VL: return ReadyToRunInstructionSet.Avx512Vbmi_VL;
+                            case InstructionSet.X64_AVX512VBMI_VL_X64: return ReadyToRunInstructionSet.Avx512Vbmi_VL;
 
                             default: throw new Exception("Unknown instruction set");
                         }
@@ -176,6 +180,10 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_AVX512DQ_X64: return null;
                             case InstructionSet.X86_AVX512DQ_VL: return ReadyToRunInstructionSet.Avx512DQ_VL;
                             case InstructionSet.X86_AVX512DQ_VL_X64: return null;
+                            case InstructionSet.X86_AVX512VBMI: return ReadyToRunInstructionSet.Avx512Vbmi;
+                            case InstructionSet.X86_AVX512VBMI_X64: return null;
+                            case InstructionSet.X86_AVX512VBMI_VL: return ReadyToRunInstructionSet.Avx512Vbmi_VL;
+                            case InstructionSet.X86_AVX512VBMI_VL_X64: return null;
 
                             default: throw new Exception("Unknown instruction set");
                         }
