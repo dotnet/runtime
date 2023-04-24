@@ -1760,4 +1760,3 @@ StackEntry* BasicBlock::bbStackOnEntry() const
     assert(bbEntryState);
     return bbEntryState->esStack;
 }
-
