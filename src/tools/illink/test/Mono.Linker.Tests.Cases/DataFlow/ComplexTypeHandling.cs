@@ -13,6 +13,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[ExpectedNoWarnings]
 	[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Applying DAM PublicMethods on an array will mark Array.CreateInstance which has RDC on it")]
+	[KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
 	public class ComplexTypeHandling
 	{
 		public static void Main ()
@@ -154,7 +155,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		[ExpectedWarning ("IL2032")] // https://github.com/dotnet/runtime/issues/82447
+		[ExpectedWarning ("IL2032", ProducedBy = Tool.NativeAot)] // https://github.com/dotnet/runtime/issues/82447
 		static void TestArrayCreateInstanceByName ()
 		{
 			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.DataFlow.ComplexTypeHandling+ArrayCreateInstanceByNameElement[]");
