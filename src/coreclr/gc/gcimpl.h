@@ -150,7 +150,8 @@ public:
     //Unregister an object for finalization
     void    SetFinalizationRun (Object* obj);
 
-    //returns the generation number of an object (not valid during relocation)
+    // returns the generation number of an object (not valid during relocation) or
+    // INT32_MAX if the object belongs to a non-GC heap.
     unsigned WhichGeneration (Object* object);
     // returns TRUE is the object is ephemeral
     bool IsEphemeral (Object* object);
@@ -324,6 +325,8 @@ public:
     virtual void Shutdown();
 
     static void ReportGenerationBounds();
+
+    virtual int RefreshMemoryLimit();
 };
 
 #endif  // GCIMPL_H_

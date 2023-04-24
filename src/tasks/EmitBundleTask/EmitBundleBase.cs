@@ -96,6 +96,8 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             return (registeredName, symbolName, symfileSymbolName);
         }).ToList();
 
+        Log.LogMessage(MessageImportance.Low, $"Bundling {files.Count} files for {BundleRegistrationFunctionName}");
+
         // Generate source file(s) containing each resource's byte data and size
         if (remainingDestinationFilesToBundle.Length > 0)
         {

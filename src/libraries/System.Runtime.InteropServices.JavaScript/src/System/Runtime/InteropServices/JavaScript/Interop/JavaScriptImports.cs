@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-#if ENABLE_LEGACY_JS_INTEROP
+#if !DISABLE_LEGACY_JS_INTEROP
         #region legacy
 
         public static object GetGlobalObject(string? str = null)

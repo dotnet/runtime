@@ -51,7 +51,7 @@ extends:
       - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
         - template: /eng/common/templates/job/source-index-stage1.yml
           parameters:
-            sourceIndexBuildCommand: build.cmd -subset libs.sfx+libs.oob -binarylog -os linux -ci
+            sourceIndexBuildCommand: build.cmd -subset libs.sfx+libs.oob -binarylog -os linux -ci /p:SkipLibrariesNativeRuntimePackages=true
 
       #
       # Build CoreCLR
@@ -97,6 +97,31 @@ extends:
             - windows_x64
             - windows_arm
             - windows_arm64
+
+      #
+      # Build NativeAOT runtime packs
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - maccatalyst_x64
+          - maccatalyst_arm64
+          - tvossimulator_x64
+          - tvossimulator_arm64
+          - tvos_arm64
+          - iossimulator_x64
+          - iossimulator_arm64
+          - ios_arm64
+          jobParameters:
+            buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs -c $(_BuildConfig) /p:BuildNativeAOTRuntimePack=true
+            nameSuffix: AllSubsets_NativeAOT
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            extraStepsParameters:
+              name: NativeAOTRuntimePacks
+
       #
       # Build Mono runtime packs
       #
@@ -493,6 +518,7 @@ extends:
             - Build_android_x86_release_AllSubsets_Mono
             - Build_android_x64_release_AllSubsets_Mono
             - Build_browser_wasm_Linux_release_AllSubsets_Mono
+            - Build_wasi_wasm_linux_release_AllSubsets_Mono
             - Build_ios_arm64_release_AllSubsets_Mono
             - Build_iossimulator_x64_release_AllSubsets_Mono
             - Build_iossimulator_arm64_release_AllSubsets_Mono
