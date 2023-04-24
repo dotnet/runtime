@@ -1060,7 +1060,7 @@ namespace System.Net.Security
                         _remoteCertificate,
                         _sslAuthenticationOptions.CheckCertName,
                         _sslAuthenticationOptions.IsServer,
-                        _sslAuthenticationOptions.TargetHost);
+                        TargetHostNameHelper.NormalizeHostName(_sslAuthenticationOptions.TargetHost));
                 }
 
                 if (remoteCertValidationCallback != null)
