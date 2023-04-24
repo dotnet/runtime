@@ -12,10 +12,10 @@ namespace System.Reflection.Emit
     {
         private readonly TypeBuilderImpl _typeBuilder;
         private readonly string _fieldName;
-        internal int _offset;
-        private FieldAttributes _attributes;
         private readonly Type _fieldType;
+        private FieldAttributes _attributes;
 
+        internal int _offset;
         internal List<CustomAttributeWrapper>? _customAttributes;
 
         internal FieldBuilderImpl(TypeBuilderImpl typeBuilder, string fieldName, Type type, FieldAttributes attributes)
@@ -30,36 +30,28 @@ namespace System.Reflection.Emit
         protected override void SetConstantCore(object? defaultValue) => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
-            if (!IsPseudoAttribute(con.ReflectedType!.FullName!, binaryAttribute))
-            {
-                _customAttributes ??= new List<CustomAttributeWrapper>();
-                _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
-            }
-        }
-
-        private bool IsPseudoAttribute(string attributeName, ReadOnlySpan<byte> binaryAttribute)
-        {
-            switch (attributeName)
+            // Handle pseudo custom attributes
+            switch (con.ReflectedType!.FullName)
             {
                 case "System.Runtime.InteropServices.FieldOffsetAttribute":
                    Debug.Assert(binaryAttribute.Length >= 6);
-                    _offset = BinaryPrimitives.ReadInt32LittleEndian(binaryAttribute.Slice(2));
-                    break;
+                _offset = BinaryPrimitives.ReadInt32LittleEndian(binaryAttribute.Slice(2));
+                return;
                 case "System.NonSerializedAttribute":
 #pragma warning disable SYSLIB0050 // 'FieldAttributes.NotSerialized' is obsolete: 'Formatter-based serialization is obsolete and should not be used'.
                     _attributes |= FieldAttributes.NotSerialized;
 #pragma warning restore SYSLIB0050
-                    break;
+                return;
                 case "System.Runtime.CompilerServices.SpecialNameAttribute":
                     _attributes |= FieldAttributes.SpecialName;
-                    break;
+                return;
                 case "System.Runtime.InteropServices.MarshalAsAttribute":
                     _attributes |= FieldAttributes.HasFieldMarshal;
-                    return false;
-                default: return false;
+                break;
             }
 
-            return true;
+            _customAttributes ??= new List<CustomAttributeWrapper>();
+            _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
         }
 
         protected override void SetOffsetCore(int iOffset)

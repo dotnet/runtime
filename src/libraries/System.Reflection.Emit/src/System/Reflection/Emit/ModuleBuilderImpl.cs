@@ -160,7 +160,7 @@ namespace System.Reflection.Emit
 
         private ModuleReferenceHandle GetModuleReference(string moduleName)
         {
-            _moduleReferences ??= new();
+            _moduleReferences ??= new Dictionary<string, ModuleReferenceHandle>();
 
             if (!_moduleReferences.TryGetValue(moduleName, out var handle))
             {

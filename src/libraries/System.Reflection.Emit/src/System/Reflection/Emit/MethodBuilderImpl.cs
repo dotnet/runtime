@@ -15,13 +15,13 @@ namespace System.Reflection.Emit
         private readonly Type _returnType;
         private readonly Type[]? _parameterTypes;
         private readonly ModuleBuilderImpl _module;
-        private MethodAttributes _attributes;
-        private MethodImplAttributes _methodImplFlags;
         private readonly string _name;
         private readonly CallingConventions _callingConventions;
         private readonly TypeBuilderImpl _declaringType;
-        internal DllImportData? _dllImportData;
+        private MethodAttributes _attributes;
+        private MethodImplAttributes _methodImplFlags;
 
+        internal DllImportData? _dllImportData;
         internal List<CustomAttributeWrapper>? _customAttributes;
 
         internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
@@ -55,44 +55,36 @@ namespace System.Reflection.Emit
         protected override ILGenerator GetILGeneratorCore(int size) => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
-            if (!IsPseudoCustomAttribute(con.ReflectedType!.FullName!, con, binaryAttribute))
-            {
-                _customAttributes ??= new List<CustomAttributeWrapper>();
-                _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
-            }
-        }
-
-        private bool IsPseudoCustomAttribute(string attributeName, ConstructorInfo con, ReadOnlySpan<byte> data)
-        {
-            switch (attributeName)
+            // Handle pseudo custom attributes
+            switch (con.ReflectedType!.FullName)
             {
                 case "System.Runtime.CompilerServices.MethodImplAttribute":
-                    int implValue = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(2));
+                    int implValue = BinaryPrimitives.ReadUInt16LittleEndian(binaryAttribute.Slice(2));
                     _methodImplFlags |= (MethodImplAttributes)implValue;
-                    break;
+                    return;
                 case "System.Runtime.InteropServices.DllImportAttribute":
                     {
-                        _dllImportData = DllImportData.CreateDllImportData(CustomAttributeInfo.DecodeCustomAttribute(con, data), out var preserveSig);
+                        _dllImportData = DllImportData.CreateDllImportData(CustomAttributeInfo.DecodeCustomAttribute(con, binaryAttribute), out var preserveSig);
                         _attributes |= MethodAttributes.PinvokeImpl;
                         if (preserveSig)
                         {
                             _methodImplFlags |= MethodImplAttributes.PreserveSig;
                         }
                     }
-                    break;
+                    return;
                 case "System.Runtime.InteropServices.PreserveSigAttribute":
                     _methodImplFlags |= MethodImplAttributes.PreserveSig;
-                    break;
+                    return;
                 case "System.Runtime.CompilerServices.SpecialNameAttribute":
                     _attributes |= MethodAttributes.SpecialName;
-                    break;
+                    return;
                 case "System.Security.SuppressUnmanagedCodeSecurityAttribute":
                     _attributes |= MethodAttributes.HasSecurity;
-                    return false;
-                default: return false;
+                    break;
             }
 
-            return true;
+            _customAttributes ??= new List<CustomAttributeWrapper>();
+            _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
         }
 
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
@@ -163,20 +155,11 @@ namespace System.Reflection.Emit
             _flags = flags;
         }
 
-        public string ModuleName
-        {
-            get { return _moduleName; }
-        }
+        public string ModuleName => _moduleName;
 
-        public string? EntryPoint
-        {
-            get { return _entryPoint; }
-        }
+        public string? EntryPoint => _entryPoint;
 
-        public MethodImportAttributes Flags
-        {
-            get { return _flags; }
-        }
+        public MethodImportAttributes Flags => _flags;
 
         internal static DllImportData CreateDllImportData(CustomAttributeInfo attr, out bool preserveSig)
         {

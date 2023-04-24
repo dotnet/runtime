@@ -15,13 +15,13 @@ namespace System.Reflection.Emit
         private readonly ModuleBuilderImpl _module;
         private readonly string _name;
         private readonly string? _namespace;
-        internal readonly TypeDefinitionHandle _handle;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _typeParent;
         private TypeAttributes _attributes;
         private PackingSize _packingSize;
         private int _typeSize;
 
+        internal readonly TypeDefinitionHandle _handle;
         internal readonly List<MethodBuilderImpl> _methodDefinitions = new();
         internal readonly List<FieldBuilderImpl> _fieldDefinitions = new();
         internal List<CustomAttributeWrapper>? _customAttributes;
@@ -81,40 +81,33 @@ namespace System.Reflection.Emit
         protected override bool IsCreatedCore() => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
-            if (!IsPseudoCustomAttribute(con.ReflectedType!.FullName!, con, binaryAttribute))
-            {
-                _customAttributes ??= new List<CustomAttributeWrapper>();
-                _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
-            }
-        }
-
-        private bool IsPseudoCustomAttribute(string attributeName, ConstructorInfo con, ReadOnlySpan<byte> data)
-        {
-            switch (attributeName)
+            // Handle pseudo custom attributes
+            switch (con.ReflectedType!.FullName)
             {
                 case "System.Runtime.InteropServices.StructLayoutAttribute":
-                    ParseStructLayoutAttribute(con, data);
-                    break;
+                    ParseStructLayoutAttribute(con, binaryAttribute);
+                    return;
                 case "System.Runtime.CompilerServices.SpecialNameAttribute":
                     _attributes |= TypeAttributes.SpecialName;
-                    break;
+                    return;
                 case "System.SerializableAttribute":
 #pragma warning disable SYSLIB0050 // 'TypeAttributes.Serializable' is obsolete: 'Formatter-based serialization is obsolete and should not be used'.
                     _attributes |= TypeAttributes.Serializable;
 #pragma warning restore SYSLIB0050
-                    break;
+                    return;
                 case "System.Runtime.InteropServices.ComImportAttribute":
                     _attributes |= TypeAttributes.Import;
-                    break;
+                    return;
                 case "System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeImportAttribute":
                     _attributes |= TypeAttributes.WindowsRuntime;
-                    break;
+                    return;
                 case "System.Security.SuppressUnmanagedCodeSecurityAttribute": // It says has no effect in .NET Core, maybe remove?
                     _attributes |= TypeAttributes.HasSecurity;
-                    return false;
-                default: return false;
+                    break;
             }
-            return true;
+
+            _customAttributes ??= new List<CustomAttributeWrapper>();
+            _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
         }
 
         private void ParseStructLayoutAttribute(ConstructorInfo con, ReadOnlySpan<byte> data)
