@@ -98,7 +98,7 @@ jobs:
       displayName: Publish SuperPMI logs
       inputs:
         targetPath: $(SpmiLogsLocation)
-        artifactName: 'SuperPMI_Logs_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
+        artifactName: 'SuperPMI_Logs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
       condition: always()
       continueOnError: true
 
@@ -106,6 +106,6 @@ jobs:
       displayName: Publish SuperPMI build logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'SuperPMI_BuildLogs_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
+        artifactName: 'SuperPMI_BuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
       condition: always()
       continueOnError: true

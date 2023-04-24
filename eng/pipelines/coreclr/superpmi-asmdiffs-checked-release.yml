@@ -22,6 +22,7 @@ extends:
           platforms:
           - windows_x64
           - windows_x86
+          - windows_arm64
           jobParameters:
             uploadAs: 'pipelineArtifacts'
 
@@ -32,6 +33,7 @@ extends:
           platforms:
           - windows_x64
           - windows_x86
+          - windows_arm64
           jobParameters:
             uploadAs: 'pipelineArtifacts'
 
@@ -42,5 +44,6 @@ extends:
           platforms:
           - windows_x64
           - windows_x86
+          - windows_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
