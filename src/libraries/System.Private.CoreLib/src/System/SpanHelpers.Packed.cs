@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
@@ -120,7 +120,7 @@ namespace System
                         {
                             Vector256<short> source0 = Vector256.LoadUnsafe(ref currentSearchSpace);
                             Vector256<short> source1 = Vector256.LoadUnsafe(ref currentSearchSpace, (nuint)Vector256<short>.Count);
-                            Vector256<byte> packedSource = Avx2.PackUnsignedSaturate(source0, source1).AsByte();
+                            Vector256<byte> packedSource = PackSources(source0, source1);
                             Vector256<byte> result = Vector256.Equals(packedValue, packedSource);
 
                             if (result != Vector256<byte>.Zero)
@@ -144,7 +144,7 @@ namespace System
 
                         Vector256<short> source0 = Vector256.LoadUnsafe(ref firstVector);
                         Vector256<short> source1 = Vector256.LoadUnsafe(ref oneVectorAwayFromEnd);
-                        Vector256<byte> packedSource = Avx2.PackUnsignedSaturate(source0, source1).AsByte();
+                        Vector256<byte> packedSource = PackSources(source0, source1);
                         Vector256<byte> result = Vector256.Equals(packedValue, packedSource);
 
                         if (result != Vector256<byte>.Zero)
@@ -257,7 +257,7 @@ namespace System
                         {
                             Vector256<short> source0 = Vector256.LoadUnsafe(ref currentSearchSpace);
                             Vector256<short> source1 = Vector256.LoadUnsafe(ref currentSearchSpace, (nuint)Vector256<short>.Count);
-                            Vector256<byte> packedSource = Avx2.PackUnsignedSaturate(source0, source1).AsByte();
+                            Vector256<byte> packedSource = PackSources(source0, source1);
                             Vector256<byte> result = Vector256.Equals(packedValue, packedSource);
                             result = NegateIfNeeded<TNegator>(result);
 
@@ -282,7 +282,7 @@ namespace System
 
                         Vector256<short> source0 = Vector256.LoadUnsafe(ref firstVector);
                         Vector256<short> source1 = Vector256.LoadUnsafe(ref oneVectorAwayFromEnd);
-                        Vector256<byte> packedSource = Avx2.PackUnsignedSaturate(source0, source1).AsByte();
+                        Vector256<byte> packedSource = PackSources(source0, source1);
                         Vector256<byte> result = Vector256.Equals(packedValue, packedSource);
                         result = NegateIfNeeded<TNegator>(result);
 
@@ -406,7 +406,7 @@ namespace System
                         {
                             Vector256<short> source0 = Vector256.LoadUnsafe(ref currentSearchSpace);
                             Vector256<short> source1 = Vector256.LoadUnsafe(ref currentSearchSpace, (nuint)Vector256<short>.Count);
-                            Vector256<byte> packedSource = Avx2.PackUnsignedSaturate(source0, source1).AsByte();
+                            Vector256<byte> packedSource = PackSources(source0, source1);
                             Vector256<byte> result = Vector256.Equals(packedValue0, packedSource) | Vector256.Equals(packedValue1, packedSource);
                             result = NegateIfNeeded<TNegator>(result);
 
@@ -431,7 +431,7 @@ namespace System
 
                         Vector256<short> source0 = Vector256.LoadUnsafe(ref firstVector);
                         Vector256<short> source1 = Vector256.LoadUnsafe(ref oneVectorAwayFromEnd);
-                        Vector256<byte> packedSource = Avx2.PackUnsignedSaturate(source0, source1).AsByte();
+                        Vector256<byte> packedSource = PackSources(source0, source1);
                         Vector256<byte> result = Vector256.Equals(packedValue0, packedSource) | Vector256.Equals(packedValue1, packedSource);
                         result = NegateIfNeeded<TNegator>(result);
 
@@ -558,7 +558,7 @@ namespace System
                         {
                             Vector256<short> source0 = Vector256.LoadUnsafe(ref currentSearchSpace);
                             Vector256<short> source1 = Vector256.LoadUnsafe(ref currentSearchSpace, (nuint)Vector256<short>.Count);
-                            Vector256<byte> packedSource = Avx2.PackUnsignedSaturate(source0, source1).AsByte();
+                            Vector256<byte> packedSource = PackSources(source0, source1);
                             Vector256<byte> result = Vector256.Equals(packedValue0, packedSource) | Vector256.Equals(packedValue1, packedSource) | Vector256.Equals(packedValue2, packedSource);
                             result = NegateIfNeeded<TNegator>(result);
 
@@ -583,7 +583,7 @@ namespace System
 
                         Vector256<short> source0 = Vector256.LoadUnsafe(ref firstVector);
                         Vector256<short> source1 = Vector256.LoadUnsafe(ref oneVectorAwayFromEnd);
-                        Vector256<byte> packedSource = Avx2.PackUnsignedSaturate(source0, source1).AsByte();
+                        Vector256<byte> packedSource = PackSources(source0, source1);
                         Vector256<byte> result = Vector256.Equals(packedValue0, packedSource) | Vector256.Equals(packedValue1, packedSource) | Vector256.Equals(packedValue2, packedSource);
                         result = NegateIfNeeded<TNegator>(result);
 
@@ -692,7 +692,7 @@ namespace System
                         {
                             Vector256<short> source0 = Vector256.LoadUnsafe(ref currentSearchSpace);
                             Vector256<short> source1 = Vector256.LoadUnsafe(ref currentSearchSpace, (nuint)Vector256<short>.Count);
-                            Vector256<byte> packedSource = Avx2.PackUnsignedSaturate(source0, source1).AsByte();
+                            Vector256<byte> packedSource = PackSources(source0, source1);
                             Vector256<byte> result = Vector256.LessThanOrEqual(packedSource - lowVector, rangeVector);
                             result = NegateIfNeeded<TNegator>(result);
 
@@ -717,7 +717,7 @@ namespace System
 
                         Vector256<short> source0 = Vector256.LoadUnsafe(ref firstVector);
                         Vector256<short> source1 = Vector256.LoadUnsafe(ref oneVectorAwayFromEnd);
-                        Vector256<byte> packedSource = Avx2.PackUnsignedSaturate(source0, source1).AsByte();
+                        Vector256<byte> packedSource = PackSources(source0, source1);
                         Vector256<byte> result = Vector256.LessThanOrEqual(packedSource - lowVector, rangeVector);
                         result = NegateIfNeeded<TNegator>(result);
 
@@ -784,11 +784,16 @@ namespace System
             return -1;
         }
 
-        // Note: Avx2.PackUnsignedSaturate can't be extracted into a helper function that assumes
-        // Avx2 support, because this would violate rules for System.Private.CoreLib intrinsics use.
-        // With R2R and tiered compilation, it is possible for the helper to be prejitted without Avx2 support,
-        // but called from a rejitted caller that goes down the Avx2 path.
-        // Sse2 is always supported in crossgen, so can be extracted to a helper.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<byte> PackSources(Vector256<short> source0, Vector256<short> source1)
+        {
+            Debug.Assert(Avx2.IsSupported);
+            // Pack two vectors of characters into bytes. While the type is Vector256<short>, these are really UInt16 characters.
+            // X86: Downcast every character using saturation.
+            // - Values <= 32767 result in min(value, 255).
+            // - Values  > 32767 result in 0. Because of this we can't accept needles that contain 0.
+            return Avx2.PackUnsignedSaturate(source0, source1).AsByte();
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<byte> PackSources(Vector128<short> source0, Vector128<short> source1)
