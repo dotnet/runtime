@@ -27,7 +27,6 @@
       Assemblies="@(_AssembliesToBundleInternal)"
       AssembliesLocation="$(AssembliesLocation)"
       BundlesResources="$(_BundlesResources)"
-      BundledPreallocatedSymbols="@(BundledPreallocatedSymbols)"
       ExtraLinkerArguments="@(_ExtraLinkerArgs)"
       ExtraSources="@(_ExtraLibrarySources)"
       IsSharedLibrary="$(_IsSharedLibrary)"

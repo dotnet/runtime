@@ -6,6 +6,6 @@
 %PreallocatedResources%
 
 void
-mono_register_resources_bundle (void) {
+%BundleRegistrationFunctionName% (void) {
 %AddPreallocatedResources%
 }
