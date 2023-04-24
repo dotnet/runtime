@@ -106,10 +106,10 @@ BOOL ProfilerObjectEnum::Init()
     GCX_COOP();
 
     FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
-    CrstHolder ch(foh->GetCrst());
+    CrstHolder ch(&foh->m_Crst);
 
-    unsigned segmentsCount = 0;
-    FrozenObjectSegment** segments = foh->GetSegments(&segmentsCount);
+    const unsigned segmentsCount = foh->m_FrozenSegments.GetCount();
+    FrozenObjectSegment** segments = foh->m_FrozenSegments.GetElements();
     if (segments != nullptr)
     {
         for (unsigned segmentIdx = 0; segmentIdx < segmentsCount; segmentIdx++)

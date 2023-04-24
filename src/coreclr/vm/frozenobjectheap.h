@@ -28,19 +28,13 @@ class FrozenObjectHeapManager
 public:
     FrozenObjectHeapManager();
     Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize, bool publish = true);
-    FrozenObjectSegment** GetSegments(unsigned* count)
-    {
-        *count = m_FrozenSegments.GetCount();
-        return m_FrozenSegments.GetElements();
-    }
-    Crst *GetCrst()
-    {
-        return &m_Crst;
-    }
+
 private:
     Crst m_Crst;
     SArray<FrozenObjectSegment*> m_FrozenSegments;
     FrozenObjectSegment* m_CurrentSegment;
+
+    friend class ProfilerObjectEnum;
 };
 
 class FrozenObjectSegment
@@ -48,14 +42,15 @@ class FrozenObjectSegment
 public:
     FrozenObjectSegment(size_t sizeHint);
     Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize);
-    Object* GetFirstObject() const;
-    Object* GetNextObject(Object* obj) const;
     size_t GetSize() const
     {
         return m_Size;
     }
 
 private:
+    Object* GetFirstObject() const;
+    Object* GetNextObject(Object* obj) const;
+
     // Start of the reserved memory, the first object starts at "m_pStart + sizeof(ObjHeader)" (its pMT)
     uint8_t* m_pStart;
 
@@ -75,6 +70,8 @@ private:
 
     segment_handle m_SegmentHandle;
     INDEBUG(size_t m_ObjectsCount);
+
+    friend class ProfilerObjectEnum;
 };
 
 #endif // _FROZENOBJECTHEAP_H
