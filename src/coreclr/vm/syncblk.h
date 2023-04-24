@@ -1345,17 +1345,6 @@ class SyncBlockCache
     SPTR_DECL(SyncBlockCache, s_pSyncBlockCache);
     static SyncBlockCache*& GetSyncBlockCache();
 
-    void *operator new(size_t size, void *pInPlace)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return pInPlace;
-    }
-
-    void operator delete(void *p)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
     // Note: No constructors/destructors - global instance
     void Init();
     void Destroy();

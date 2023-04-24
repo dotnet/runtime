@@ -464,7 +464,11 @@ void SyncBlockCache::Init()
 {
     CONTRACTL
     {
-        WRAPPER_NO_CONTRACT;
+        CONSTRUCTOR_CHECK;
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -494,7 +498,10 @@ void SyncBlockCache::Destroy()
 {
     CONTRACTL
     {
-        WRAPPER_NO_CONTRACT;
+        DESTRUCTOR_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
