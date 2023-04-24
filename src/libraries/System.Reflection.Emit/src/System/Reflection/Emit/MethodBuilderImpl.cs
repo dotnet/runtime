@@ -218,9 +218,6 @@ namespace System.Reflection.Emit
 
         public override MethodInfo GetGenericMethodDefinition() => !IsGenericMethod ? throw new InvalidOperationException() : this;
 
-        public override int GetHashCode()
-            => throw new NotImplementedException();
-
         public override MethodImplAttributes GetMethodImplementationFlags()
             => _methodImplFlags;
 

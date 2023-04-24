@@ -78,8 +78,43 @@ namespace System.Reflection.Emit
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2083:DynamicallyAccessedMembers", Justification = "Not sure how to handle")]
         [return: DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))]
         protected override TypeInfo CreateTypeInfoCore() => this;
-        protected override ConstructorBuilder DefineConstructorCore(MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers) => throw new NotImplementedException();
-        protected override ConstructorBuilder DefineDefaultConstructorCore(MethodAttributes attributes) => throw new NotImplementedException();
+
+        protected override ConstructorBuilder DefineConstructorCore(MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
+        {
+            if ((_attributes & TypeAttributes.Interface) == TypeAttributes.Interface && (attributes & MethodAttributes.Static) != MethodAttributes.Static)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ConstructorNotAllowedOnInterface);
+            }
+
+            string name;
+
+            if ((attributes & MethodAttributes.Static) == 0)
+            {
+                name = ConstructorInfo.ConstructorName;
+            }
+            else
+            {
+                name = ConstructorInfo.TypeConstructorName;
+            }
+
+            attributes |= MethodAttributes.SpecialName;
+            ConstructorBuilder constBuilder = new ConstructorBuilderImpl(name, attributes, callingConvention, parameterTypes, _module, this);
+            return constBuilder;
+        }
+
+        protected override ConstructorBuilder DefineDefaultConstructorCore(MethodAttributes attributes)
+        {
+            if ((_attributes & TypeAttributes.Interface) == TypeAttributes.Interface)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ConstructorNotAllowedOnInterface);
+            }
+            // Get the parent class's default constructor and add it to the IL
+            //ConstructorInfo? con = _typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
+            ConstructorBuilderImpl constBuilder = (ConstructorBuilderImpl)DefineConstructorCore(attributes, CallingConventions.Standard, null, null, null);
+            constBuilder._isDefaultConstructor = true;
+            return constBuilder;
+        }
+
         protected override EventBuilder DefineEventCore(string name, EventAttributes attributes, Type eventtype) => throw new NotImplementedException();
 
         protected override FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
