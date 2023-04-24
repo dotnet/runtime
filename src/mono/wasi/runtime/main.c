@@ -16,6 +16,9 @@ int main(int argc, char * argv[]) {
 	// This is supplied from the MSBuild itemgroup @(WasiAfterRuntimeLoaded)
 	WASI_AFTER_RUNTIME_LOADED_CALLS
 #endif
+#ifndef WASM_SINGLE_FILE
+	mono_set_assemblies_path("managed");
+#endif
 	mono_wasm_load_runtime("", 0);
 
 	const char* assembly_name = dotnet_wasi_getentrypointassemblyname();
