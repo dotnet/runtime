@@ -6,6 +6,10 @@ namespace System.Threading.Tasks
     /// <summary>
     /// Provide extensions methods for <see cref="Task"/> operations with <see cref="TimeProvider"/>.
     /// </summary>
+    /// <remarks>
+    /// The Microsoft.Bcl.TimeProvider library interfaces are intended solely for use in building against pre-.NET 8 surface area.
+    /// If your code is being built against .NET 8 or higher, then this library should not be utilized.
+    /// </remarks>
     public static class TimeProviderTaskExtensions
     {
 #if !NET8_0_OR_GREATER
@@ -216,5 +220,57 @@ namespace System.Threading.Tasks
             return task.Result;
         }
 #endif // NET8_0_OR_GREATER
+
+        /// <summary>Initializes a new instance of the <see cref="CancellationTokenSource"/> class that will be canceled after the specified <see cref="TimeSpan"/>. </summary>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret the <paramref name="delay"/>. </param>
+        /// <param name="delay">The time interval to wait before canceling this <see cref="CancellationTokenSource"/>. </param>
+        /// <exception cref="ArgumentOutOfRangeException"> The <paramref name="delay"/> is negative and not equal to <see cref="Timeout.InfiniteTimeSpan" /> or greater than maximum allowed timer duration.</exception>
+        /// <returns><see cref="CancellationTokenSource"/> that will be canceled after the specified <paramref name="delay"/>.</returns>
+        /// <remarks>
+        /// <para>
+        /// The countdown for the delay starts during the call to the constructor. When the delay expires,
+        /// the constructed <see cref="CancellationTokenSource"/> is canceled if it has
+        /// not been canceled already.
+        /// </para>
+        /// <para>
+        /// If running on .NET versions earlier than .NET 8.0, there is a constraint when invoking <see cref="CancellationTokenSource.CancelAfter(TimeSpan)"/> on the resultant object.
+        /// This action will not terminate the initial timer indicated by <paramref name="delay"/>. However, this restriction does not apply on .NET 8.0 and later versions.
+        /// </para>
+        /// </remarks>
+        public static CancellationTokenSource CreateCancellationTokenSource(this TimeProvider timeProvider, TimeSpan delay)
+        {
+#if NET8_0_OR_GREATER
+            return new CancellationTokenSource(delay, timeProvider);
+#else
+            if (timeProvider is null)
+            {
+                throw new ArgumentNullException(nameof(timeProvider));
+            }
+
+            if (delay != Timeout.InfiniteTimeSpan && delay < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(delay));
+            }
+
+            if (timeProvider == TimeProvider.System)
+            {
+                return new CancellationTokenSource(delay);
+            }
+
+            var cts = new CancellationTokenSource();
+
+            ITimer timer = timeProvider.CreateTimer(s =>
+            {
+                try
+                {
+                    ((CancellationTokenSource)s).Cancel();
+                }
+                catch (ObjectDisposedException) { }
+            }, cts, delay, Timeout.InfiniteTimeSpan);
+
+            cts.Token.Register(t => ((ITimer)t).Dispose(), timer);
+            return cts;
+#endif // NET8_0_OR_GREATER
+        }
     }
 }

@@ -5913,7 +5913,7 @@ mono_class_get_method_from_name_checked (MonoClass *klass, const char *name,
 
 	mono_class_init_internal (klass);
 
-	if (mono_class_is_ginst (klass) && !m_class_get_methods (klass)) {
+	if (mono_class_is_ginst (klass) && (!m_class_get_methods (klass) || m_class_get_image (klass)->has_updates)) {
 		res = mono_class_get_method_from_name_checked (mono_class_get_generic_class (klass)->container_class, name, param_count, flags, error);
 
 		if (res)

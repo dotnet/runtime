@@ -7184,13 +7184,6 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
     }
 
     GenTree* indNode = gtNewIndir(indType, addrNode, indirFlags);
-    if (!isInvariant)
-    {
-        // GLOB_REF needs to be set for indirections returning values from mutable
-        // locations, so that e. g. args sorting does not reorder them with calls.
-        indNode->gtFlags |= GTF_GLOB_REF;
-    }
-
     return indNode;
 }
 
@@ -7812,6 +7805,70 @@ GenTreeField* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HANDLE 
 }
 
 //------------------------------------------------------------------------
+// gtInitializeIndirNode: Initialize an indirection node.
+//
+// Sets side effect flags based on the passed-in indirection flags.
+//
+// Arguments:
+//    indir      - The indirection node
+//    indirFlags - The indirection flags
+//
+void Compiler::gtInitializeIndirNode(GenTreeIndir* indir, GenTreeFlags indirFlags)
+{
+    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
+    indir->gtFlags |= indirFlags;
+    indir->SetIndirExceptionFlags(this);
+
+    if ((indirFlags & GTF_IND_INVARIANT) == 0)
+    {
+        indir->gtFlags |= GTF_GLOB_REF;
+    }
+    if ((indirFlags & GTF_IND_VOLATILE) != 0)
+    {
+        indir->gtFlags |= GTF_ORDER_SIDEEFF;
+    }
+}
+
+//------------------------------------------------------------------------
+// gtNewBlkIndir: Create a struct indirection node.
+//
+// Arguments:
+//    layout     - The struct layout
+//    addr       - Address of the indirection
+//    indirFlags - Indirection flags
+//
+// Return Value:
+//    The created GT_BLK node.
+//
+GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
+{
+    assert(layout->GetType() == TYP_STRUCT);
+    GenTreeBlk* blkNode = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, addr, layout);
+    gtInitializeIndirNode(blkNode, indirFlags);
+
+    return blkNode;
+}
+
+//------------------------------------------------------------------------------
+// gtNewIndir : Create an indirection node.
+//
+// Arguments:
+//    typ        - Type of the node
+//    addr       - Address of the indirection
+//    indirFlags - Indirection flags
+//
+// Return Value:
+//    The created GT_IND node.
+//
+GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags)
+{
+    GenTreeIndir* indir = new (this, GT_IND) GenTreeIndir(GT_IND, typ, addr, nullptr);
+    gtInitializeIndirNode(indir, indirFlags);
+
+    return indir;
+}
+
+//------------------------------------------------------------------------
 // gtNewLoadValueNode: Return a node that represents a loaded value.
 //
 // Arguments:
@@ -7838,77 +7895,7 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
         }
     }
 
-    GenTree* node;
-    if (type == TYP_STRUCT)
-    {
-        node = gtNewBlkIndir(layout, addr, indirFlags);
-    }
-    else
-    {
-        node = gtNewIndir(type, addr, indirFlags);
-        node->gtFlags |= GTF_GLOB_REF;
-    }
-
-    return node;
-}
-
-//------------------------------------------------------------------------
-// gtNewBlkIndir: Create a struct indirection node.
-//
-// Arguments:
-//    layout     - The struct layout
-//    addr       - Address of the indirection
-//    indirFlags - Indirection flags
-//
-// Return Value:
-//    The created GT_BLK node.
-//
-GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
-{
-    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
-
-    GenTreeBlk* blkNode = new (this, GT_BLK) GenTreeBlk(GT_BLK, layout->GetType(), addr, layout);
-    blkNode->gtFlags |= indirFlags;
-    blkNode->SetIndirExceptionFlags(this);
-
-    if ((indirFlags & GTF_IND_INVARIANT) == 0)
-    {
-        blkNode->gtFlags |= GTF_GLOB_REF;
-    }
-
-    if ((indirFlags & GTF_IND_VOLATILE) != 0)
-    {
-        blkNode->gtFlags |= GTF_ORDER_SIDEEFF;
-    }
-
-    return blkNode;
-}
-
-//------------------------------------------------------------------------------
-// gtNewIndir : Create an indirection node.
-//
-// Arguments:
-//    typ        - Type of the node
-//    addr       - Address of the indirection
-//    indirFlags - Indirection flags
-//
-// Return Value:
-//    The created GT_IND node.
-//
-GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags)
-{
-    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
-
-    GenTreeIndir* indir = new (this, GT_IND) GenTreeIndir(GT_IND, typ, addr, nullptr);
-    indir->gtFlags |= indirFlags;
-    indir->SetIndirExceptionFlags(this);
-
-    if ((indirFlags & GTF_IND_VOLATILE) != 0)
-    {
-        indir->gtFlags |= GTF_ORDER_SIDEEFF;
-    }
-
-    return indir;
+    return (type == TYP_STRUCT) ? gtNewBlkIndir(layout, addr, indirFlags) : gtNewIndir(type, addr, indirFlags);
 }
 
 /*****************************************************************************
@@ -16019,15 +16006,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
         {
             ClassLayout* layout;
             lclTyp = TypeHandleToVarType(pFieldInfo->fieldType, structType, &layout);
-            if (lclTyp == TYP_STRUCT)
-            {
-                result = gtNewBlkIndir(layout, result);
-            }
-            else
-            {
-                result = gtNewIndir(lclTyp, result);
-                result->gtFlags |= GTF_GLOB_REF;
-            }
+            result = (lclTyp == TYP_STRUCT) ? gtNewBlkIndir(layout, result) : gtNewIndir(lclTyp, result);
         }
         else if (access & CORINFO_ACCESS_SET)
         {
@@ -16038,7 +16017,6 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
             else
             {
                 result = gtNewIndir(lclTyp, result);
-                result->gtFlags |= GTF_GLOB_REF;
                 result = gtNewAssignNode(result, assg);
             }
         }
@@ -19073,6 +19051,8 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX512BW_ConvertToVector128SByte:
         case NI_AVX512BW_ConvertToVector256Byte:
         case NI_AVX512BW_ConvertToVector256SByte:
+        case NI_AVX512DQ_ExtractVector128:
+        case NI_AVX512DQ_ExtractVector256:
         {
             // These HWIntrinsic operations are contained as part of a store
             return true;
@@ -19118,6 +19098,12 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
     {
         // TODO-XArch-Cleanup: Move this switch block to be table driven.
 
+        case NI_AVX512F_FusedMultiplyAdd:
+        case NI_AVX512F_FusedMultiplyAddNegated:
+        case NI_AVX512F_FusedMultiplyAddSubtract:
+        case NI_AVX512F_FusedMultiplySubtract:
+        case NI_AVX512F_FusedMultiplySubtractAdd:
+        case NI_AVX512F_FusedMultiplySubtractNegated:
         case NI_SSE42_Crc32:
         case NI_SSE42_X64_Crc32:
         case NI_FMA_MultiplyAdd:
@@ -23392,7 +23378,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             op2->AsVecCon()->gtSimdVal = vecCns;
 
             // swap the operands to match the encoding requirements
-            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512F_Permute8x64, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512F_PermuteVar8x64, simdBaseJitType, simdSize);
         }
         assert(retNode != nullptr);
 
@@ -25741,8 +25727,16 @@ bool GenTreeLclVar::IsNeverNegative(Compiler* comp) const
 //
 unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3)
 {
+#if defined(DEBUG)
     // only FMA intrinsic node should call into this function
-    assert(HWIntrinsicInfo::lookupIsa(gtHWIntrinsicId) == InstructionSet_FMA);
+    if (HWIntrinsicInfo::lookupIsa(gtHWIntrinsicId) != InstructionSet_FMA)
+    {
+        assert((gtHWIntrinsicId >= NI_AVX512F_FusedMultiplyAdd) &&
+               (gtHWIntrinsicId <= NI_AVX512F_FusedMultiplySubtractNegated));
+        assert((NI_AVX512F_FusedMultiplySubtractNegated - NI_AVX512F_FusedMultiplyAdd) == 6);
+    }
+#endif // DEBUG
+
     if (use != nullptr && use->OperIs(GT_STORE_LCL_VAR))
     {
         // For store_lcl_var, check if any op is overwritten
