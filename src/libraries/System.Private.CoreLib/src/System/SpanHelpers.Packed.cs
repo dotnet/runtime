@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
@@ -263,10 +263,7 @@ namespace System
 
                             if (result != Vector256<byte>.Zero)
                             {
-                                uint notEqualsElements = Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte().ExtractMostSignificantBits();
-
-                                int index = BitOperations.TrailingZeroCount(notEqualsElements);
-                                return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref currentSearchSpace) / sizeof(short));
+                                return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, result);
                             }
 
                             currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 2 * Vector256<short>.Count);
@@ -291,16 +288,7 @@ namespace System
 
                         if (result != Vector256<byte>.Zero)
                         {
-                            uint notEqualsElements = Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte().ExtractMostSignificantBits();
-
-                            int offsetInVector = BitOperations.TrailingZeroCount(notEqualsElements);
-                            if (offsetInVector >= Vector256<short>.Count)
-                            {
-                                // We matched within the second vector
-                                firstVector = ref oneVectorAwayFromEnd;
-                                offsetInVector -= Vector256<short>.Count;
-                            }
-                            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref firstVector) / sizeof(short));
+                            return ComputeFirstIndexOverlapped(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, result);
                         }
                     }
                 }
@@ -424,10 +412,7 @@ namespace System
 
                             if (result != Vector256<byte>.Zero)
                             {
-                                uint notEqualsElements = Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte().ExtractMostSignificantBits();
-
-                                int index = BitOperations.TrailingZeroCount(notEqualsElements);
-                                return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref currentSearchSpace) / sizeof(short));
+                                return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, result);
                             }
 
                             currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 2 * Vector256<short>.Count);
@@ -452,16 +437,7 @@ namespace System
 
                         if (result != Vector256<byte>.Zero)
                         {
-                            uint notEqualsElements = Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte().ExtractMostSignificantBits();
-
-                            int offsetInVector = BitOperations.TrailingZeroCount(notEqualsElements);
-                            if (offsetInVector >= Vector256<short>.Count)
-                            {
-                                // We matched within the second vector
-                                firstVector = ref oneVectorAwayFromEnd;
-                                offsetInVector -= Vector256<short>.Count;
-                            }
-                            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref firstVector) / sizeof(short));
+                            return ComputeFirstIndexOverlapped(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, result);
                         }
                     }
                 }
@@ -588,10 +564,7 @@ namespace System
 
                             if (result != Vector256<byte>.Zero)
                             {
-                                uint notEqualsElements = Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte().ExtractMostSignificantBits();
-
-                                int index = BitOperations.TrailingZeroCount(notEqualsElements);
-                                return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref currentSearchSpace) / sizeof(short));
+                                return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, result);
                             }
 
                             currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 2 * Vector256<short>.Count);
@@ -616,16 +589,7 @@ namespace System
 
                         if (result != Vector256<byte>.Zero)
                         {
-                            uint notEqualsElements = Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte().ExtractMostSignificantBits();
-
-                            int offsetInVector = BitOperations.TrailingZeroCount(notEqualsElements);
-                            if (offsetInVector >= Vector256<short>.Count)
-                            {
-                                // We matched within the second vector
-                                firstVector = ref oneVectorAwayFromEnd;
-                                offsetInVector -= Vector256<short>.Count;
-                            }
-                            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref firstVector) / sizeof(short));
+                            return ComputeFirstIndexOverlapped(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, result);
                         }
                     }
                 }
@@ -734,10 +698,7 @@ namespace System
 
                             if (result != Vector256<byte>.Zero)
                             {
-                                uint notEqualsElements = Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte().ExtractMostSignificantBits();
-
-                                int index = BitOperations.TrailingZeroCount(notEqualsElements);
-                                return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref currentSearchSpace) / sizeof(short));
+                                return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, result);
                             }
 
                             currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 2 * Vector256<short>.Count);
@@ -762,16 +723,7 @@ namespace System
 
                         if (result != Vector256<byte>.Zero)
                         {
-                            uint notEqualsElements = Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte().ExtractMostSignificantBits();
-
-                            int offsetInVector = BitOperations.TrailingZeroCount(notEqualsElements);
-                            if (offsetInVector >= Vector256<short>.Count)
-                            {
-                                // We matched within the second vector
-                                firstVector = ref oneVectorAwayFromEnd;
-                                offsetInVector -= Vector256<short>.Count;
-                            }
-                            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref firstVector) / sizeof(short));
+                            return ComputeFirstIndexOverlapped(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, result);
                         }
                     }
                 }
@@ -868,6 +820,14 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int ComputeFirstIndex(ref short searchSpace, ref short current, Vector256<byte> equals)
+        {
+            uint notEqualsElements = FixUpPackedVector256Result(equals).ExtractMostSignificantBits();
+            int index = BitOperations.TrailingZeroCount(notEqualsElements);
+            return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(short));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeFirstIndexOverlapped(ref short searchSpace, ref short current0, ref short current1, Vector128<byte> equals)
         {
             uint notEqualsElements = equals.ExtractMostSignificantBits();
@@ -879,6 +839,31 @@ namespace System
                 offsetInVector -= Vector128<short>.Count;
             }
             return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(short));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int ComputeFirstIndexOverlapped(ref short searchSpace, ref short current0, ref short current1, Vector256<byte> equals)
+        {
+            uint notEqualsElements = FixUpPackedVector256Result(equals).ExtractMostSignificantBits();
+            int offsetInVector = BitOperations.TrailingZeroCount(notEqualsElements);
+            if (offsetInVector >= Vector256<short>.Count)
+            {
+                // We matched within the second vector
+                current0 = ref current1;
+                offsetInVector -= Vector256<short>.Count;
+            }
+            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(short));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<byte> FixUpPackedVector256Result(Vector256<byte> result)
+        {
+            Debug.Assert(Avx2.IsSupported);
+            // Avx2.PackUnsignedSaturate(Vector256.Create((short)1), Vector256.Create((short)2)) will result in
+            // 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2
+            // We want to swap the X and Y bits
+            // 1, 1, 1, 1, 1, 1, 1, 1, X, X, X, X, X, X, X, X, Y, Y, Y, Y, Y, Y, Y, Y, 2, 2, 2, 2, 2, 2, 2, 2
+            return Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte();
         }
     }
 }
