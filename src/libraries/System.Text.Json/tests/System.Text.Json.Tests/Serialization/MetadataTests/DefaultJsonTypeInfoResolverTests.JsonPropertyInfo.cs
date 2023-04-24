@@ -1796,6 +1796,17 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(typeResolved);
         }
 
+        [Theory]
+        [InlineData((JsonObjectCreationHandling)(-1))]
+        [InlineData((JsonObjectCreationHandling)2)]
+        [InlineData((JsonObjectCreationHandling)int.MaxValue)]
+        public static void ObjectCreationHandling_SetInvalidValue_ThrowsArgumentOutOfRangeException(JsonObjectCreationHandling handling)
+        {
+            JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(typeof(Poco), new());
+            JsonPropertyInfo propertyInfo = jsonTypeInfo.CreateJsonPropertyInfo(typeof(List<int>), "List");
+            Assert.Throws<ArgumentOutOfRangeException>(() => propertyInfo.ObjectCreationHandling = handling);
+        }
+
         private class TestClassWithJsonCreationHandlingOnProperty
         {
             [JsonPropertyOrder(0)]

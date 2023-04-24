@@ -191,6 +191,14 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
+                if (value != null)
+                {
+                    if (!JsonSerializer.IsValidCreationHandlingValue(value.Value))
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(value));
+                    }
+                }
+
                 _objectCreationHandling = value;
             }
         }
