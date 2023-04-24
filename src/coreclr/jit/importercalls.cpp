@@ -172,6 +172,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         CORINFO_CLASS_HANDLE targetClass = info.compCompHnd->getMethodClass(replacementMethod);
         info.compCompHnd->getMethodSig(replacementMethod, &methodSig, targetClass);
 
+        if (methodSig.hasThisNonExplicit() && targetThis == TYP_UNDEF)
+        {
+            targetThis = eeIsValueClass(targetClass) ? TYP_BYREF : TYP_REF;
+        }
+
         unsigned replacementFlags = info.compCompHnd->getMethodAttribs(replacementMethod);
 
         if ((replacementFlags & CORINFO_FLG_PINVOKE) != 0)

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RestorePackages>true</RestorePackages>
