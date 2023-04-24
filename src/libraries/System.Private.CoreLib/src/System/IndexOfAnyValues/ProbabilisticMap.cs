@@ -167,7 +167,7 @@ namespace System.Buffers
             // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
             Vector128<byte> highNibble = Sse2.IsSupported
                 ? (values.AsInt32() >>> VectorizedIndexShift).AsByte() & Vector128.Create((byte)15)
-                : AdvSimd.ShiftRightLogical(values, VectorizedIndexShift);
+                : values >>> VectorizedIndexShift;
 
             Vector128<byte> bitPositions = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201).AsByte(), highNibble);
 
