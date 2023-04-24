@@ -1866,6 +1866,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
             emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 6);
             break;
         }
+
         case NI_AVX512F_CompareLessThanOrEqualSpecial:
         {
             GenTree* op2     = node->Op(2);
@@ -1895,6 +1896,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
             emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 1);
             break;
         }
+
         case NI_AVX512F_MoveMaskToVectorSpecial:
         {
             op1Reg = op1->GetRegNum();
@@ -1921,7 +1923,21 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_AVX512F_ConvertToUInt32:
+        case NI_AVX512F_ConvertToUInt32WithTruncation:
+        case NI_AVX512F_X64_ConvertToUInt64:
+        case NI_AVX512F_X64_ConvertToUInt64WithTruncation:
+        {
+            assert(baseType == TYP_DOUBLE || baseType == TYP_FLOAT);
+            emitAttr attr = emitTypeSize(targetType);
+
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+            genHWIntrinsic_R_RM(node, ins, attr, targetReg, node->Op(1));
+            break;
+        }
+
         case NI_AVX512F_ConvertToVector256Int32:
+        case NI_AVX512F_ConvertToVector256UInt32:
         {
             if (varTypeIsFloating(baseType))
             {
@@ -1938,7 +1954,6 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AVX512F_ConvertToVector128UInt32:
         case NI_AVX512F_ConvertToVector256Int16:
         case NI_AVX512F_ConvertToVector256UInt16:
-        case NI_AVX512F_ConvertToVector256UInt32:
         case NI_AVX512BW_ConvertToVector128Byte:
         case NI_AVX512BW_ConvertToVector128SByte:
         case NI_AVX512BW_ConvertToVector256Byte:
@@ -1951,6 +1966,15 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
 
             op1Reg = op1->GetRegNum();
             emit->emitIns_R_R(ins, attr, op1Reg, targetReg);
+            break;
+        }
+
+        case NI_AVX512F_X64_ConvertScalarToVector128Double:
+        case NI_AVX512F_X64_ConvertScalarToVector128Single:
+        {
+            assert(baseType == TYP_ULONG);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+            genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE);
             break;
         }
 

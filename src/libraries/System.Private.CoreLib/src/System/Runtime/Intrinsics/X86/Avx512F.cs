@@ -34,6 +34,68 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<ulong> Abs(Vector256<long> value) => Abs(value);
 
             /// <summary>
+            /// __m128d _mm_cvtepu32_pd (__m128i a)
+            ///   VCVTUDQ2PD xmm1 {k1}{z}, xmm2/m64/m32bcst
+            /// </summary>
+            public static Vector128<double> ConvertToVector128Double(Vector128<uint> value) => ConvertToVector128Double(value);
+            /// <summary>
+            /// __m128 _mm_cvtepu32_ps (__m128i a)
+            ///   VCVTUDQ2PS xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> ConvertToVector128Single(Vector128<uint> value) => ConvertToVector128Single(value);
+            /// <summary>
+            /// __m128i _mm_cvtps_epu32 (__m128 a)
+            ///   VCVTPS2UDQ xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<uint> ConvertToVector128UInt32(Vector128<float> value) => ConvertToVector128UInt32(value);
+            /// <summary>
+            /// __m128i _mm_cvtpd_epu32 (__m128d a)
+            ///   VCVTPD2UDQ xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<uint> ConvertToVector128UInt32(Vector128<double> value) => ConvertToVector128UInt32(value);
+            /// <summary>
+            /// __m128i _mm256_cvtpd_epu32 (__m256d a)
+            ///   VCVTPD2UDQ xmm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector128<uint> ConvertToVector128UInt32(Vector256<double> value) => ConvertToVector128UInt32(value);
+            /// <summary>
+            /// __m128i _mm_cvttps_epu32 (__m128 a)
+            ///   VCVTTPS2UDQ xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<uint> ConvertToVector128UInt32WithTruncation(Vector128<float> value) => ConvertToVector128UInt32WithTruncation(value);
+            /// <summary>
+            /// __m128i _mm_cvttpd_epu32 (__m128d a)
+            ///   VCVTTPD2UDQ xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<uint> ConvertToVector128UInt32WithTruncation(Vector128<double> value) => ConvertToVector128UInt32WithTruncation(value);
+            /// <summary>
+            /// __m128i _mm256_cvttpd_epu32 (__m256d a)
+            ///   VCVTTPD2UDQ xmm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector128<uint> ConvertToVector128UInt32WithTruncation(Vector256<double> value) => ConvertToVector128UInt32WithTruncation(value);
+
+            /// <summary>
+            /// __m256d _mm512_cvtepu32_pd (__m128i a)
+            ///   VCVTUDQ2PD ymm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector256<double> ConvertToVector256Double(Vector128<uint> value) => ConvertToVector256Double(value);
+            /// <summary>
+            /// __m256 _mm256_cvtepu32_ps (__m256i a)
+            ///   VCVTUDQ2PS ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> ConvertToVector256Single(Vector256<uint> value) => ConvertToVector256Single(value);
+            /// <summary>
+            /// __m256i _mm256_cvtps_epu32 (__m256 a)
+            ///   VCVTPS2UDQ ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<uint> ConvertToVector256UInt32(Vector256<float> value) => ConvertToVector256UInt32(value);
+            /// <summary>
+            /// __m256i _mm256_cvttps_epu32 (__m256 a)
+            ///   VCVTTPS2UDQ ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<uint> ConvertToVector256UInt32WithTruncation(Vector256<float> value) => ConvertToVector256UInt32WithTruncation(value);
+
+            /// <summary>
             /// __m128i _mm_max_epi64 (__m128i a, __m128i b)
             ///   VPMAXSQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
             /// </summary>
@@ -131,6 +193,45 @@ namespace System.Runtime.Intrinsics.X86
             internal X64() { }
 
             public static new bool IsSupported { get => IsSupported; }
+
+            /// <summary>
+            /// __m128 _mm_cvtsi64_ss (__m128 a, __int64 b)
+            ///   VCVTUSI2SS xmm1, xmm2, r/m64
+            /// This intrinsic is only available on 64-bit processes
+            /// </summary>
+            public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, ulong value) => ConvertScalarToVector128Single(upper, value);
+            /// <summary>
+            /// __m128d _mm_cvtsi64_sd (__m128d a, __int64 b)
+            ///   VCVTUSI2SD xmm1, xmm2, r/m64
+            /// This intrinsic is only available on 64-bit processes
+            /// </summary>
+            public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, ulong value) => ConvertScalarToVector128Double(upper, value);
+
+            /// <summary>
+            /// unsigned __int64 _mm_cvtss_u64 (__m128 a)
+            ///   VCVTSS2USI r64, xmm1/m32{er}
+            /// This intrinsic is only available on 64-bit processes
+            /// </summary>
+            public static ulong ConvertToUInt64(Vector128<float> value) => ConvertToUInt64(value);
+            /// <summary>
+            /// unsigned __int64 _mm_cvtsd_u64 (__m128d a)
+            ///   VCVTSD2USI r64, xmm1/m64{er}
+            /// This intrinsic is only available on 64-bit processes
+            /// </summary>
+            public static ulong ConvertToUInt64(Vector128<double> value) => ConvertToUInt64(value);
+
+            /// <summary>
+            /// unsigned __int64 _mm_cvttss_u64 (__m128 a)
+            ///   VCVTTSS2USI r64, xmm1/m32{er}
+            /// This intrinsic is only available on 64-bit processes
+            /// </summary>
+            public static ulong ConvertToUInt64WithTruncation(Vector128<float> value) => ConvertToUInt64WithTruncation(value);
+            /// <summary>
+            /// unsigned __int64 _mm_cvttsd_u64 (__m128d a)
+            ///   VCVTTSD2USI r64, xmm1/m64{er}
+            /// This intrinsic is only available on 64-bit processes
+            /// </summary>
+            public static ulong ConvertToUInt64WithTruncation(Vector128<double> value) => ConvertToUInt64WithTruncation(value);
         }
 
         /// <summary>
@@ -321,22 +422,63 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector512<double> BroadcastVector256ToVector512(double* address) => BroadcastVector256ToVector512(address);
 
         /// <summary>
+        /// __m128 _mm_cvtsi32_ss (__m128 a, int b)
+        ///   VCVTUSI2SS xmm1, xmm2, r/m32
+        /// </summary>
+        public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, uint value) => ConvertScalarToVector128Single(upper, value);
+        /// <summary>
+        /// __m128d _mm_cvtsi32_sd (__m128d a, int b)
+        ///   VCVTUSI2SD xmm1, xmm2, r/m32
+        /// </summary>
+        public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, uint value) => ConvertScalarToVector128Double(upper, value);
+
+        /// <summary>
+        /// unsigned int _mm_cvtss_u32 (__m128 a)
+        ///   VCVTSS2USI r32, xmm1/m32{er}
+        /// </summary>
+        public static uint ConvertToUInt32(Vector128<float> value) => ConvertToUInt32(value);
+        /// <summary>
+        /// unsigned int _mm_cvtsd_u32 (__m128d a)
+        ///   VCVTSD2USI r32, xmm1/m64{er}
+        /// </summary>
+        public static uint ConvertToUInt32(Vector128<double> value) => ConvertToUInt32(value);
+        /// <summary>
+        /// unsigned int _mm_cvttss_u32 (__m128 a)
+        ///   VCVTTSS2USI r32, xmm1/m32{er}
+        /// </summary>
+        public static uint ConvertToUInt32WithTruncation(Vector128<float> value) => ConvertToUInt32WithTruncation(value);
+        /// <summary>
+        /// unsigned int _mm_cvttsd_u32 (__m128d a)
+        ///   VCVTTSD2USI r32, xmm1/m64{er}
+        /// </summary>
+        public static uint ConvertToUInt32WithTruncation(Vector128<double> value) => ConvertToUInt32WithTruncation(value);
+
+        /// <summary>
         /// __m256i _mm512_cvtpd_epi32 (__m512d a)
         ///   VCVTPD2DQ ymm1 {k1}{z}, zmm2/m512/m64bcst{er}
         /// </summary>
         public static Vector256<int> ConvertToVector256Int32(Vector512<double> value) => ConvertToVector256Int32(value);
+        /// <summary>
+        /// __m256i _mm512_cvttpd_epi32 (__m512d a)
+        ///   VCVTTPD2DQ ymm1 {k1}{z}, zmm2/m512/m64bcst{sae}
+        /// </summary>
+        public static Vector256<int> ConvertToVector256Int32WithTruncation(Vector512<double> value) => ConvertToVector256Int32WithTruncation(value);
         /// <summary>
         /// __m256 _mm512_cvtpd_ps (__m512d a)
         ///   VCVTPD2PS ymm1,         zmm2/m512
         ///   VCVTPD2PS ymm1 {k1}{z}, zmm2/m512/m64bcst{er}
         /// </summary>
         public static Vector256<float> ConvertToVector256Single(Vector512<double> value) => ConvertToVector256Single(value);
-
         /// <summary>
-        /// __m256i _mm512_cvttpd_epi32 (__m512d a)
-        ///   VCVTTPD2DQ ymm1 {k1}{z}, zmm2/m512/m64bcst{sae}
+        /// __m256i _mm512_cvtpd_epu32 (__m512d a)
+        ///   VCVTPD2UDQ ymm1 {k1}{z}, zmm2/m512/m64bcst{er}
         /// </summary>
-        public static Vector256<int> ConvertToVector256Int32WithTruncation(Vector512<double> value) => ConvertToVector256Int32WithTruncation(value);
+        public static Vector256<uint> ConvertToVector256UInt32(Vector512<double> value) => ConvertToVector256UInt32(value);
+        /// <summary>
+        /// __m256i _mm512_cvttpd_epu32 (__m512d a)
+        ///   VCVTTPD2UDQ ymm1 {k1}{z}, zmm2/m512/m64bcst{er}
+        /// </summary>
+        public static Vector256<uint> ConvertToVector256UInt32WithTruncation(Vector512<double> value) => ConvertToVector256UInt32WithTruncation(value);
 
         /// <summary>
         /// __m512d _mm512_cvtepi32_pd (__m256i a)
@@ -348,6 +490,11 @@ namespace System.Runtime.Intrinsics.X86
         ///   VCVTPS2PD zmm1 {k1}{z}, ymm2/m256/m32bcst{sae}
         /// </summary>
         public static Vector512<double> ConvertToVector512Double(Vector256<float> value) => ConvertToVector512Double(value);
+        /// <summary>
+        /// __m512d _mm512_cvtepu32_pd (__m256i a)
+        ///   VCVTUDQ2PD zmm1 {k1}{z}, ymm2/m256/m32bcst
+        /// </summary>
+        public static Vector512<double> ConvertToVector512Double(Vector256<uint> value) => ConvertToVector512Double(value);
         /// <summary>
         /// __m512i _mm512_cvtepi8_epi32 (__m128i a)
         ///   VPMOVSXBD zmm1 {k1}{z}, xmm2/m128
@@ -373,6 +520,11 @@ namespace System.Runtime.Intrinsics.X86
         ///   VCVTPS2DQ zmm1 {k1}{z}, zmm2/m512/m32bcst{er}
         /// </summary>
         public static Vector512<int> ConvertToVector512Int32(Vector512<float> value) => ConvertToVector512Int32(value);
+        /// <summary>
+        /// __m512i _mm512_cvttps_epi32 (__m512 a)
+        ///   VCVTTPS2DQ zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}
+        /// </summary>
+        public static Vector512<int> ConvertToVector512Int32WithTruncation(Vector512<float> value) => ConvertToVector512Int32WithTruncation(value);
         /// <summary>
         /// __m512i _mm512_cvtepi8_epi64 (__m128i a)
         ///   VPMOVSXBQ zmm1 {k1}{z}, xmm2/m64
@@ -409,6 +561,11 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<float> ConvertToVector512Single(Vector512<int> value) => ConvertToVector512Single(value);
         /// <summary>
+        /// __m512 _mm512_cvtepu32_ps (__m512i a)
+        ///   VCVTUDQ2PS zmm1 {k1}{z}, zmm2/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<float> ConvertToVector512Single(Vector512<uint> value) => ConvertToVector512Single(value);
+        /// <summary>
         /// __m512i _mm512_cvtepi8_epi32 (__m128i a)
         ///   VPMOVSXBD zmm1 {k1}{z}, xmm2/m128
         /// </summary>
@@ -428,6 +585,16 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPMOVZXWD zmm1 {k1}{z}, ymm2/m256
         /// </summary>
         public static Vector512<uint> ConvertToVector512UInt32(Vector256<ushort> value) => ConvertToVector512UInt32(value);
+        /// <summary>
+        /// __m512i _mm512_cvtps_epu32 (__m512 a)
+        ///   VCVTPS2UDQ zmm1 {k1}{z}, zmm2/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<uint> ConvertToVector512UInt32(Vector512<float> value) => ConvertToVector512UInt32(value);
+        /// <summary>
+        /// __m512i _mm512_cvttps_epu32 (__m512 a)
+        ///   VCVTTPS2UDQ zmm1 {k1}{z}, zmm2/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<uint> ConvertToVector512UInt32WithTruncation(Vector512<float> value) => ConvertToVector512UInt32WithTruncation(value);
         /// <summary>
         /// __m512i _mm512_cvtepi8_epi64 (__m128i a)
         ///   VPMOVSXBQ zmm1 {k1}{z}, xmm2/m64
@@ -458,12 +625,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPMOVZXDQ zmm1 {k1}{z}, ymm2/m256
         /// </summary>
         public static Vector512<ulong> ConvertToVector512UInt64(Vector256<uint> value) => ConvertToVector512UInt64(value);
-
-        /// <summary>
-        /// __m512i _mm512_cvttps_epi32 (__m512 a)
-        ///   VCVTTPS2DQ zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}
-        /// </summary>
-        public static Vector512<int> ConvertToVector512Int32WithTruncation(Vector512<float> value) => ConvertToVector512Int32WithTruncation(value);
 
         /// <summary>
         /// __m512 _mm512_div_ps (__m512 a, __m512 b)

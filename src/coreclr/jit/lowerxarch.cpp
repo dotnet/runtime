@@ -5848,6 +5848,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                 }
 
                 case NI_AVX512F_ConvertToVector256Int32:
+                case NI_AVX512F_ConvertToVector256UInt32:
                 {
                     if (varTypeIsFloating(simdBaseType))
                     {
@@ -5862,7 +5863,6 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                 case NI_AVX512F_ConvertToVector128UInt32:
                 case NI_AVX512F_ConvertToVector256Int16:
                 case NI_AVX512F_ConvertToVector256UInt16:
-                case NI_AVX512F_ConvertToVector256UInt32:
                 case NI_AVX512BW_ConvertToVector128Byte:
                 case NI_AVX512BW_ConvertToVector128SByte:
                 case NI_AVX512BW_ConvertToVector256Byte:
@@ -7130,6 +7130,10 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_SSE2_X64_ConvertScalarToVector128Double:
                 case NI_SSE2_X64_ConvertScalarToVector128Int64:
                 case NI_SSE2_X64_ConvertScalarToVector128UInt64:
+                case NI_AVX512F_ConvertScalarToVector128Double:
+                case NI_AVX512F_ConvertScalarToVector128Single:
+                case NI_AVX512F_X64_ConvertScalarToVector128Double:
+                case NI_AVX512F_X64_ConvertScalarToVector128Single:
                 {
                     if (!varTypeIsIntegral(childNode->TypeGet()))
                     {
@@ -7504,6 +7508,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
 
                     case NI_AVX512F_ConvertToVector256Int32:
+                    case NI_AVX512F_ConvertToVector256UInt32:
                     {
                         if (varTypeIsFloating(simdBaseType))
                         {
@@ -7520,7 +7525,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     case NI_AVX512F_ConvertToVector128UInt32:
                     case NI_AVX512F_ConvertToVector256Int16:
                     case NI_AVX512F_ConvertToVector256UInt16:
-                    case NI_AVX512F_ConvertToVector256UInt32:
                     case NI_AVX512BW_ConvertToVector128Byte:
                     case NI_AVX512BW_ConvertToVector128SByte:
                     case NI_AVX512BW_ConvertToVector256Byte:
