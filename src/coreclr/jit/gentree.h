@@ -1204,6 +1204,11 @@ public:
         return OperIsInitVal(OperGet());
     }
 
+    bool IsInitVal() const
+    {
+        return IsIntegralConst(0) || OperIsInitVal();
+    }
+
     bool IsConstInitVal() const
     {
         return (gtOper == GT_CNS_INT) || (OperIsInitVal() && (gtGetOp1()->gtOper == GT_CNS_INT));
@@ -1597,6 +1602,8 @@ public:
 
     // Helper function to return the address of an indir or array meta-data node.
     GenTree* GetIndirOrArrMetaDataAddr();
+
+    bool IndirMayFault(Compiler* compiler);
 
     bool OperIsImplicitIndir() const;
 
@@ -5555,6 +5562,8 @@ struct GenTreeCall final : public GenTree
     }
 
     bool IsHelperCall(Compiler* compiler, unsigned helper) const;
+
+    CorInfoHelpFunc GetHelperNum() const;
 
     bool AreArgsComplete() const;
 

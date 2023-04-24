@@ -508,7 +508,9 @@ namespace System.Text.RegularExpressions.Tests
 
             public new bool IsBoundary(int index, int startpos, int endpos) => base.IsBoundary(index, startpos, endpos);
 
+#pragma warning disable SYSLIB0052 // Type or member is obsolete
             public static new bool CharInSet(char ch, string set, string category) => RegexRunner.CharInSet(ch, set, category);
+#pragma warning restore SYSLIB0052 // Type or member is obsolete
 
             protected override bool FindFirstChar() => throw new NotImplementedException();
             protected override void Go() => throw new NotImplementedException();

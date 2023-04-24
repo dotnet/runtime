@@ -81,7 +81,7 @@ namespace System.Runtime.InteropServices
             public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class
             {
                 ManagedObjectWrapper* comInstance = ToManagedObjectWrapper(dispatchPtr);
-                return Unsafe.As<T>(RuntimeImports.RhHandleGet(comInstance->Target));
+                return Unsafe.As<T>(comInstance->Holder.WrappedObject);
             }
 
             internal static unsafe ManagedObjectWrapper* ToManagedObjectWrapper(ComInterfaceDispatch* dispatchPtr)
@@ -127,7 +127,7 @@ namespace System.Runtime.InteropServices
 
         internal unsafe struct ManagedObjectWrapper
         {
-            public IntPtr Target; // This is GC Handle
+            public volatile IntPtr HolderHandle; // This is GC Handle
             public ulong RefCount;
 
             public int UserDefinedCount;
@@ -135,6 +135,34 @@ namespace System.Runtime.InteropServices
             internal InternalComInterfaceDispatch* Dispatches;
 
             internal CreateComInterfaceFlagsEx Flags;
+
+            public bool IsRooted
+            {
+                get
+                {
+                    ulong refCount = Interlocked.Read(ref RefCount);
+                    bool rooted = GetComCount(refCount) > 0;
+                    if (!rooted)
+                    {
+                        // TODO: global pegging state
+                        // https://github.com/dotnet/runtime/issues/85137
+                        rooted = GetTrackerCount(refCount) > 0 && (Flags & CreateComInterfaceFlagsEx.IsPegged) != 0;
+                    }
+                    return rooted;
+                }
+            }
+
+            public ManagedObjectWrapperHolder? Holder
+            {
+                get
+                {
+                    IntPtr handle = HolderHandle;
+                    if (handle == IntPtr.Zero)
+                        return null;
+                    else
+                        return Unsafe.As<ManagedObjectWrapperHolder>(GCHandle.FromIntPtr(handle).Target);
+                }
+            }
 
             public uint AddRef()
             {
@@ -174,10 +202,10 @@ namespace System.Runtime.InteropServices
 
                 // If we observe the destroy sentinel, then this release
                 // must destroy the wrapper.
-                if (RefCount == DestroySentinel)
+                if (curr == DestroySentinel)
                     Destroy();
 
-                return GetTrackerCount(RefCount);
+                return GetTrackerCount(curr);
             }
 
             public uint Peg()
@@ -192,20 +220,26 @@ namespace System.Runtime.InteropServices
                 return HResults.S_OK;
             }
 
-            public unsafe int QueryInterface(in Guid riid, out IntPtr ppvObject)
+
+            public unsafe int QueryInterfaceForTracker(in Guid riid, out IntPtr ppvObject)
             {
-                if (GetComCount(RefCount) == 0)
+                if (IsMarkedToDestroy(RefCount) || Holder is null)
                 {
                     ppvObject = IntPtr.Zero;
                     return COR_E_ACCESSING_CCW;
                 }
 
+                return QueryInterface(in riid, out ppvObject);
+            }
+
+            public unsafe int QueryInterface(in Guid riid, out IntPtr ppvObject)
+            {
                 ppvObject = AsRuntimeDefined(in riid);
                 if (ppvObject == IntPtr.Zero)
                 {
                     if ((Flags & CreateComInterfaceFlagsEx.LacksICustomQueryInterface) == 0)
                     {
-                        var customQueryInterface = GCHandle.FromIntPtr(Target).Target as ICustomQueryInterface;
+                        var customQueryInterface = Holder.WrappedObject as ICustomQueryInterface;
                         if (customQueryInterface is null)
                         {
                             SetFlag(CreateComInterfaceFlagsEx.LacksICustomQueryInterface);
@@ -244,15 +278,38 @@ namespace System.Runtime.InteropServices
                 return typeMaybe;
             }
 
-            public unsafe void Destroy()
+            /// <returns>true if actually destroyed</returns>
+            public unsafe bool Destroy()
             {
-                if (Target == IntPtr.Zero)
+                Debug.Assert(GetComCount(RefCount) == 0 || HolderHandle == IntPtr.Zero);
+
+                if (HolderHandle == IntPtr.Zero)
                 {
-                    return;
+                    // We either were previously destroyed or multiple ManagedObjectWrapperHolder
+                    // were created by the ConditionalWeakTable for the same object and we lost the race.
+                    return true;
                 }
 
-                RuntimeImports.RhHandleFree(Target);
-                Target = IntPtr.Zero;
+                ulong prev, refCount;
+                do
+                {
+                    prev = RefCount;
+                    refCount = prev | DestroySentinel;
+                } while (Interlocked.CompareExchange(ref RefCount, refCount, prev) != prev);
+
+                if (refCount == DestroySentinel)
+                {
+                    IntPtr handle = Interlocked.Exchange(ref HolderHandle, IntPtr.Zero);
+                    if (handle != IntPtr.Zero)
+                    {
+                        RuntimeImports.RhHandleFree(handle);
+                    }
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
 
             private unsafe IntPtr AsRuntimeDefined(in Guid riid)
@@ -333,22 +390,67 @@ namespace System.Runtime.InteropServices
 
         internal unsafe class ManagedObjectWrapperHolder
         {
-            private ManagedObjectWrapper* _wrapper;
+            static ManagedObjectWrapperHolder()
+            {
+                delegate* unmanaged<IntPtr, bool> callback = &IsRootedCallback;
+                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, typeof(ManagedObjectWrapperHolder).GetEEType()))
+                {
+                    throw new OutOfMemoryException();
+                }
+            }
 
-            public ManagedObjectWrapperHolder(ManagedObjectWrapper* wrapper)
+            [UnmanagedCallersOnly]
+            static bool IsRootedCallback(IntPtr pObj)
+            {
+                // We are paused in the GC, so this is safe.
+#pragma warning disable CS8500 // Takes a pointer to a managed type
+                ManagedObjectWrapperHolder* holder = (ManagedObjectWrapperHolder*)&pObj;
+                return holder->_wrapper->IsRooted;
+#pragma warning restore CS8500
+            }
+
+            private ManagedObjectWrapper* _wrapper;
+            private object _wrappedObject;
+
+            public ManagedObjectWrapperHolder(ManagedObjectWrapper* wrapper, object wrappedObject)
             {
                 _wrapper = wrapper;
+                _wrappedObject = wrappedObject;
+            }
+
+            public void InitializeHandle()
+            {
+                IntPtr handle = RuntimeImports.RhHandleAllocRefCounted(this);
+                IntPtr prev = Interlocked.CompareExchange(ref _wrapper->HolderHandle, handle, IntPtr.Zero);
+                if (prev != IntPtr.Zero)
+                {
+                    RuntimeImports.RhHandleFree(handle);
+                }
             }
 
             public unsafe IntPtr ComIp => _wrapper->As(in ComWrappers.IID_IUnknown);
+
+            public object WrappedObject => _wrappedObject;
 
             public uint AddRef() => _wrapper->AddRef();
 
             ~ManagedObjectWrapperHolder()
             {
                 // Release GC handle created when MOW was built.
-                _wrapper->Destroy();
-                NativeMemory.Free(_wrapper);
+                if (_wrapper->Destroy())
+                {
+                    NativeMemory.Free(_wrapper);
+                }
+                else
+                {
+                    // There are still outstanding references on the COM side.
+                    // This case should only be hit when an outstanding
+                    // tracker refcount exists from AddRefFromReferenceTracker.
+                    // When implementing IReferenceTrackerHost, this should be
+                    // reconsidered.
+                    // https://github.com/dotnet/runtime/issues/85137
+                    GC.ReRegisterForFinalize(this);
+                }
             }
         }
 
@@ -427,8 +529,9 @@ namespace System.Runtime.InteropServices
             ccwValue = _ccwTable.GetValue(instance, (c) =>
             {
                 ManagedObjectWrapper* value = CreateCCW(c, flags);
-                return new ManagedObjectWrapperHolder(value);
+                return new ManagedObjectWrapperHolder(value, c);
             });
+            ccwValue.InitializeHandle();
             return ccwValue.ComIp;
         }
 
@@ -477,7 +580,7 @@ namespace System.Runtime.InteropServices
                 pDispatches[i]._thisPtr = mow;
             }
 
-            mow->Target = RuntimeImports.RhHandleAlloc(instance, GCHandleType.Normal);
+            mow->HolderHandle = IntPtr.Zero;
             mow->RefCount = 1;
             mow->UserDefinedCount = userDefinedCount;
             mow->UserDefined = userDefined;
@@ -806,11 +909,6 @@ namespace System.Runtime.InteropServices
         {
             ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
             uint refcount = wrapper->Release();
-            if (wrapper->RefCount == 0)
-            {
-                wrapper->Destroy();
-            }
-
             return refcount;
         }
 
@@ -818,7 +916,7 @@ namespace System.Runtime.InteropServices
         internal static unsafe int IReferenceTrackerTarget_QueryInterface(IntPtr pThis, Guid* guid, IntPtr* ppObject)
         {
             ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
-            return wrapper->QueryInterface(in *guid, out *ppObject);
+            return wrapper->QueryInterfaceForTracker(in *guid, out *ppObject);
         }
 
         [UnmanagedCallersOnly]

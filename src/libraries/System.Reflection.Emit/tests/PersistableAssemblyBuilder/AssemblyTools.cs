@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit.Tests
 {
@@ -88,6 +87,7 @@ namespace System.Reflection.Emit.Tests
     internal sealed class CoreMetadataAssemblyResolver : MetadataAssemblyResolver
     {
         public static Assembly s_coreAssembly = typeof(object).Assembly;
+        public static Assembly s_emitAssembly = typeof(AssemblyTools).Assembly;
         public CoreMetadataAssemblyResolver() { }
 
         public override Assembly Resolve(MetadataLoadContext context, AssemblyName assemblyName)
@@ -109,12 +109,26 @@ namespace System.Reflection.Emit.Tests
                 return _coreAssembly;
             }
 
+            if (name.Equals("System.Reflection.Emit.Tests", StringComparison.OrdinalIgnoreCase))
+            {
+                if (_emitAssembly == null)
+                {
+                    _emitAssembly = context.LoadFromStream(CreateStreamForEmitAssembly());
+                }
+
+                return _emitAssembly;
+            }
+
             return null;
         }
 
+        private Assembly _emitAssembly;
         private Assembly _coreAssembly;
 
-        public static Stream CreateStreamForCoreAssembly()
+        private Stream CreateStreamForEmitAssembly() =>
+            File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(s_emitAssembly));
+
+        private static Stream CreateStreamForCoreAssembly()
         {
             // We need a core assembly in IL form. Since this version of this code is for Jitted platforms, the System.Private.Corelib
             // of the underlying runtime will do just fine.

@@ -927,6 +927,42 @@ mono_arm_emit_ldrx (guint8 *code, int rt, int rn, int imm)
 }
 
 static guint8*
+emit_xextract_i8 (guint8* code, int dreg, int sreg1, int sreg2)
+{
+	guint8* ret = code;
+	/* code: */
+	arm_cbnzw (ret, sreg2, code + 12 /*upper*/);
+	arm_neon_umov (ret, TYPE_I64, dreg, sreg1, 0);
+	arm_b (ret, code + 16 /*done*/);
+	/* upper: */
+	arm_neon_umov (ret, TYPE_I64, dreg, sreg1, 1);
+	/* done: */
+	return ret;
+}
+
+static guint8*
+emit_xextract_r8 (guint8* code, int dreg, int sreg1, int sreg2)
+{
+	guint8* ret = code;
+	
+	if (dreg == sreg1) {
+		/* code: */
+		arm_cbzw (ret, sreg2, code + 8 /*done*/);
+		arm_neon_fdup_e (ret, VREG_FULL, TYPE_F64, dreg, sreg1, 1);
+		/* done: */
+	} else {
+		/* code: */
+		arm_cbnzw (ret, sreg2, code + 12 /*upper*/);
+		arm_neon_fdup_e (ret, VREG_FULL, TYPE_F64, dreg, sreg1, 0);
+		arm_b (ret, code + 16 /*done*/);
+		/* upper: */
+		arm_neon_fdup_e (ret, VREG_FULL, TYPE_F64, dreg, sreg1, 1);
+		/* done: */
+	}
+	return ret;
+}
+
+static guint8*
 emit_call (MonoCompile *cfg, guint8* code, MonoJumpInfoType patch_type, gconstpointer data)
 {
 	/*
@@ -3829,6 +3865,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				arm_neon_fdup_e (code, VREG_FULL, t, dreg, sreg1, ins->inst_c0);
 			}
 			break;
+		
+		case OP_XEXTRACT_I8:
+			code = emit_xextract_i8 (code, dreg, sreg1, sreg2);
+			break;
+		
+		case OP_XEXTRACT_R8:
+			code = emit_xextract_r8 (code, dreg, sreg1, sreg2);
+			break;
+
+		case OP_XEXTRACT_I1:
+		case OP_XEXTRACT_I2:
+		case OP_XEXTRACT_I4: 
+		case OP_XEXTRACT_R4: 
+			g_assert_not_reached ();
+			break;
+
 		case OP_INSERT_I1:
 		case OP_INSERT_I2:
 		case OP_INSERT_I4:
