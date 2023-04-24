@@ -18,7 +18,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":{"d":4,"e":5,"f":6}}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyDictionaryOfStringToInt>(json, options);
         CheckGenericDictionaryContent(obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyDictionaryOfStringToInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyDictionaryOfStringToInt));
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":{"d":"4","e":"5","f":"6"}}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyDictionaryOfStringToIntWithNumberHandling>(json, options);
         CheckGenericDictionaryContent(obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyDictionaryOfStringToIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyDictionaryOfStringToIntWithNumberHandling));
     }
 
     [Fact]
@@ -193,7 +193,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":{"d":4,"e":5,"f":6}}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIDictionaryOfStringToInt_BackedBy_DictionaryOfStringToInt>(json, options);
         CheckGenericDictionaryContent(obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyIDictionaryOfStringToInt_BackedBy_DictionaryOfStringToInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyIDictionaryOfStringToInt_BackedBy_DictionaryOfStringToInt));
     }
 
     [Fact]
@@ -291,7 +291,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":{"d":"4","e":"5","f":"6"}}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIDictionaryOfStringToInt_BackedBy_DictionaryOfStringToIntWithNumberHandling>(json, options);
         CheckGenericDictionaryContent(obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyIDictionaryOfStringToInt_BackedBy_DictionaryOfStringToIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyIDictionaryOfStringToInt_BackedBy_DictionaryOfStringToIntWithNumberHandling));
     }
 
     [Fact]
@@ -369,7 +369,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIDictionaryOfStringToInt_BackedBy_StructDictionaryOfStringToInt>(json, options);
         CheckGenericDictionaryContent(obj.Property);
         ((StructDictionary<string, int>)obj.Property).Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyIDictionaryOfStringToInt_BackedBy_StructDictionaryOfStringToInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyIDictionaryOfStringToInt_BackedBy_StructDictionaryOfStringToInt));
     }
 
     [Fact]
@@ -458,7 +458,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIDictionaryOfStringToInt_BackedBy_StructDictionaryOfStringToIntWithNumberHandling>(json, options);
         CheckGenericDictionaryContent(obj.Property);
         ((StructDictionary<string, int>)obj.Property).Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyIDictionaryOfStringToInt_BackedBy_StructDictionaryOfStringToIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyIDictionaryOfStringToInt_BackedBy_StructDictionaryOfStringToIntWithNumberHandling));
     }
 
     [Fact]
@@ -545,7 +545,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":{"d":4,"e":5,"f":6}}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIDictionary_BackedBy_DictionaryOfStringToJsonElement>(json, options);
         CheckDictionaryContent(obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyIDictionary_BackedBy_DictionaryOfStringToJsonElement));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyIDictionary_BackedBy_DictionaryOfStringToJsonElement));
     }
 
     [Fact]
@@ -644,7 +644,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIDictionary_BackedBy_StructDictionaryOfStringToJsonElement>(json, options);
         CheckDictionaryContent(obj.Property);
         ((StructDictionary<string, JsonElement>)obj.Property).Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyIDictionary_BackedBy_StructDictionaryOfStringToJsonElement));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyIDictionary_BackedBy_StructDictionaryOfStringToJsonElement));
     }
 
     [Fact]
@@ -733,7 +733,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructDictionaryOfStringToInt>(json, options);
         CheckGenericDictionaryContent(obj.Property);
         obj.Property.Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(StructWithWritablePropertyStructDictionaryOfStringToInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritablePropertyStructDictionaryOfStringToInt));
     }
 
     [Fact]
@@ -822,7 +822,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructDictionaryOfStringToIntWithNumberHandling>(json, options);
         CheckGenericDictionaryContent(obj.Property);
         obj.Property.Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(StructWithWritablePropertyStructDictionaryOfStringToIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritablePropertyStructDictionaryOfStringToIntWithNumberHandling));
     }
 
     [Fact]
@@ -910,7 +910,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructDictionaryOfStringToInt>(json, options);
         CheckGenericDictionaryContent(obj.Field.Value);
         obj.Field.Value.Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(StructWithWritableFieldNullableStructDictionaryOfStringToInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritableFieldNullableStructDictionaryOfStringToInt));
     }
 
     [Fact]
@@ -1023,7 +1023,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":{"d":4,"e":5,"f":6}}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentDictionaryOfStringToInt>(json, options);
         CheckGenericDictionaryContent(obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyConcurrentDictionaryOfStringToInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyConcurrentDictionaryOfStringToInt));
     }
 
     [Fact]
@@ -1115,7 +1115,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":{"d":"4","e":"5","f":"6"}}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentDictionaryOfStringToIntWithNumberHandling>(json, options);
         CheckGenericDictionaryContent(obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyConcurrentDictionaryOfStringToIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyConcurrentDictionaryOfStringToIntWithNumberHandling));
     }
 
     [Fact]
@@ -1192,7 +1192,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":{"d":4,"e":5,"f":6}}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertySortedDictionaryOfStringToInt>(json, options);
         CheckGenericDictionaryContent(obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertySortedDictionaryOfStringToInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertySortedDictionaryOfStringToInt));
     }
 
     [Fact]
@@ -1290,7 +1290,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":{"d":"4","e":"5","f":"6"}}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertySortedDictionaryOfStringToIntWithNumberHandling>(json, options);
         CheckGenericDictionaryContent(obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertySortedDictionaryOfStringToIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertySortedDictionaryOfStringToIntWithNumberHandling));
     }
 
     [Fact]

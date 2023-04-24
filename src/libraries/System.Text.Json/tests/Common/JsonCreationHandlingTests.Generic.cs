@@ -569,7 +569,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
             };
 
-        private static void CheckFirstPropertyIsPopulated(JsonSerializerOptions options, Type type)
+        private static void CheckTypeHasSinglePropertyWithPopulateHandling(JsonSerializerOptions options, Type type)
         {
             JsonTypeInfo typeInfo = options.GetTypeInfo(type);
             Assert.Equal(1, typeInfo.Properties.Count);

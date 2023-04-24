@@ -80,7 +80,7 @@ namespace System.Text.Json.Serialization.Tests
 
             if (customConverters != null)
             {
-                foreach (var converter in customConverters)
+                foreach (JsonConverter converter in customConverters)
                 {
                     options.Converters.Add(converter);
                 }

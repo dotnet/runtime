@@ -20,7 +20,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyListOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyListOfInt));
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyListOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyListOfIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyListOfIntWithNumberHandling));
     }
 
     [Fact]
@@ -195,7 +195,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfInt));
     }
 
     [Fact]
@@ -293,7 +293,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfIntWithNumberHandling));
     }
 
     [Fact]
@@ -371,7 +371,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
         ((StructList<int>)obj.Property).Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfInt));
     }
 
     [Fact]
@@ -460,7 +460,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
         ((StructList<int>)obj.Property).Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfIntWithNumberHandling));
     }
 
     [Fact]
@@ -547,7 +547,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIList_BackedBy_ListOfJsonElement>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyIList_BackedBy_ListOfJsonElement));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyIList_BackedBy_ListOfJsonElement));
     }
 
     [Fact]
@@ -646,7 +646,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIList_BackedBy_StructListOfJsonElement>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
         ((StructList<JsonElement>)obj.Property).Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyIList_BackedBy_StructListOfJsonElement));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyIList_BackedBy_StructListOfJsonElement));
     }
 
     [Fact]
@@ -735,7 +735,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
         obj.Property.Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(StructWithWritablePropertyStructListOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritablePropertyStructListOfInt));
     }
 
     [Fact]
@@ -824,7 +824,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructListOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
         obj.Property.Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(StructWithWritablePropertyStructListOfIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritablePropertyStructListOfIntWithNumberHandling));
     }
 
     [Fact]
@@ -912,7 +912,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field.Value);
         obj.Field.Value.Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(StructWithWritableFieldNullableStructListOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritableFieldNullableStructListOfInt));
     }
 
     [Fact]
@@ -1025,7 +1025,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyQueueOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyQueueOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyQueueOfInt));
     }
 
     [Fact]
@@ -1117,7 +1117,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyQueueOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyQueueOfIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyQueueOfIntWithNumberHandling));
     }
 
     [Fact]
@@ -1194,7 +1194,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyQueue>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyQueue));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyQueue));
     }
 
     [Fact]
@@ -1292,7 +1292,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentQueueOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyConcurrentQueueOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyConcurrentQueueOfInt));
     }
 
     [Fact]
@@ -1390,7 +1390,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentQueueOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyConcurrentQueueOfIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyConcurrentQueueOfIntWithNumberHandling));
     }
 
     [Fact]
@@ -1467,7 +1467,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyStackOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyStackOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyStackOfInt));
     }
 
     [Fact]
@@ -1559,7 +1559,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyStackOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyStackOfIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyStackOfIntWithNumberHandling));
     }
 
     [Fact]
@@ -1642,7 +1642,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyStack>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyStack));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyStack));
     }
 
     [Fact]
@@ -1740,7 +1740,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentStackOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyConcurrentStackOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyConcurrentStackOfInt));
     }
 
     [Fact]
@@ -1832,7 +1832,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentStackOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyConcurrentStackOfIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyConcurrentStackOfIntWithNumberHandling));
     }
 
     [Fact]
@@ -1909,7 +1909,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfInt));
     }
 
     [Fact]
@@ -2007,7 +2007,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfIntWithNumberHandling));
     }
 
     [Fact]
@@ -2091,7 +2091,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
         ((StructCollection<int>)obj.Property).Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfInt));
     }
 
     [Fact]
@@ -2180,7 +2180,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
         ((StructCollection<int>)obj.Property).Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfIntWithNumberHandling));
     }
 
     [Fact]
@@ -2262,7 +2262,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructCollectionOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
         obj.Property.Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(StructWithWritablePropertyStructCollectionOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritablePropertyStructCollectionOfInt));
     }
 
     [Fact]
@@ -2357,7 +2357,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldStructCollectionOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field);
         obj.Field.Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(StructWithWritableFieldStructCollectionOfIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritableFieldStructCollectionOfIntWithNumberHandling));
     }
 
     [Fact]
@@ -2445,7 +2445,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructCollectionOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field.Value);
         obj.Field.Value.Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(StructWithWritableFieldNullableStructCollectionOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritableFieldNullableStructCollectionOfInt));
     }
 
     [Fact]
@@ -2552,7 +2552,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfInt));
     }
 
     [Fact]
@@ -2644,7 +2644,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfIntWithNumberHandling));
     }
 
     [Fact]
@@ -2728,7 +2728,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
         ((StructSet<int>)obj.Property).Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfInt));
     }
 
     [Fact]
@@ -2823,7 +2823,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
         ((StructSet<int>)obj.Property).Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithNumberHandling));
     }
 
     [Fact]
@@ -2905,7 +2905,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructSetOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
         obj.Property.Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(StructWithWritablePropertyStructSetOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritablePropertyStructSetOfInt));
     }
 
     [Fact]
@@ -2994,7 +2994,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructSetOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
         obj.Property.Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(StructWithWritablePropertyStructSetOfIntWithNumberHandling));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritablePropertyStructSetOfIntWithNumberHandling));
     }
 
     [Fact]
@@ -3082,7 +3082,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructSetOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field.Value);
         obj.Field.Value.Validate();
-        CheckFirstPropertyIsPopulated(options, typeof(StructWithWritableFieldNullableStructSetOfInt));
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritableFieldNullableStructSetOfInt));
     }
 
     [Fact]
