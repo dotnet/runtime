@@ -955,8 +955,8 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Avx512CD_VL: return InstructionSet_AVX512CD_VL;
         case READYTORUN_INSTRUCTION_Avx512DQ: return InstructionSet_AVX512DQ;
         case READYTORUN_INSTRUCTION_Avx512DQ_VL: return InstructionSet_AVX512DQ_VL;
-        case READYTORUN_INSTRUCTION_Avx512VBMI: return InstructionSet_AVX512VBMI;
-        case READYTORUN_INSTRUCTION_Avx512VBMI_VL: return InstructionSet_AVX512VBMI_VL;
+        case READYTORUN_INSTRUCTION_Avx512Vbmi: return InstructionSet_AVX512VBMI;
+        case READYTORUN_INSTRUCTION_Avx512Vbmi_VL: return InstructionSet_AVX512VBMI_VL;
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
         case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;
@@ -986,8 +986,8 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Avx512CD_VL: return InstructionSet_AVX512CD_VL;
         case READYTORUN_INSTRUCTION_Avx512DQ: return InstructionSet_AVX512DQ;
         case READYTORUN_INSTRUCTION_Avx512DQ_VL: return InstructionSet_AVX512DQ_VL;
-        case READYTORUN_INSTRUCTION_Avx512VBMI: return InstructionSet_AVX512VBMI;
-        case READYTORUN_INSTRUCTION_Avx512VBMI_VL: return InstructionSet_AVX512VBMI_VL;
+        case READYTORUN_INSTRUCTION_Avx512Vbmi: return InstructionSet_AVX512VBMI;
+        case READYTORUN_INSTRUCTION_Avx512Vbmi_VL: return InstructionSet_AVX512VBMI_VL;
 #endif // TARGET_X86
 
         default:

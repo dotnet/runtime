@@ -55,8 +55,8 @@ instructionset     ,X86   ,Avx512CD             ,        ,33 ,AVX512CD          
 instructionset     ,X86   ,Avx512CD_VL          ,        ,34 ,AVX512CD_VL           ,avx512cd_vl
 instructionset     ,X86   ,Avx512DQ             ,        ,35 ,AVX512DQ              ,avx512dq
 instructionset     ,X86   ,Avx512DQ_VL          ,        ,36 ,AVX512DQ_VL           ,avx512dq_vl
-instructionset     ,X86   ,Avx512VBMI           ,        ,37 ,AVX512VBMI            ,avx512vbmi
-instructionset     ,X86   ,Avx512VBMI_VL        ,        ,38 ,AVX512VBMI_VL         ,avx512vbmi_vl
+instructionset     ,X86   ,Avx512Vbmi           ,        ,37 ,AVX512VBMI            ,avx512vbmi
+instructionset     ,X86   ,Avx512Vbmi_VL        ,        ,38 ,AVX512VBMI_VL         ,avx512vbmi_vl
 
 
 instructionset64bit,X86   ,X86Base

@@ -1121,8 +1121,8 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("avx512cd_vl", "Avx512CD_VL", InstructionSet.X64_AVX512CD_VL, true);
                     yield return new InstructionSetInfo("avx512dq", "Avx512DQ", InstructionSet.X64_AVX512DQ, true);
                     yield return new InstructionSetInfo("avx512dq_vl", "Avx512DQ_VL", InstructionSet.X64_AVX512DQ_VL, true);
-                    yield return new InstructionSetInfo("avx512vbmi", "Avx512VBMI", InstructionSet.X64_AVX512VBMI, true);
-                    yield return new InstructionSetInfo("avx512vbmi_vl", "Avx512VBMI_VL", InstructionSet.X64_AVX512VBMI_VL, true);
+                    yield return new InstructionSetInfo("avx512vbmi", "Avx512Vbmi", InstructionSet.X64_AVX512VBMI, true);
+                    yield return new InstructionSetInfo("avx512vbmi_vl", "Avx512Vbmi_VL", InstructionSet.X64_AVX512VBMI_VL, true);
                     break;
 
                 case TargetArchitecture.X86:
@@ -1156,8 +1156,8 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("avx512cd_vl", "Avx512CD_VL", InstructionSet.X86_AVX512CD_VL, true);
                     yield return new InstructionSetInfo("avx512dq", "Avx512DQ", InstructionSet.X86_AVX512DQ, true);
                     yield return new InstructionSetInfo("avx512dq_vl", "Avx512DQ_VL", InstructionSet.X86_AVX512DQ_VL, true);
-                    yield return new InstructionSetInfo("avx512vbmi", "Avx512VBMI", InstructionSet.X86_AVX512VBMI, true);
-                    yield return new InstructionSetInfo("avx512vbmi_vl", "Avx512VBMI_VL", InstructionSet.X86_AVX512VBMI_VL, true);
+                    yield return new InstructionSetInfo("avx512vbmi", "Avx512Vbmi", InstructionSet.X86_AVX512VBMI, true);
+                    yield return new InstructionSetInfo("avx512vbmi_vl", "Avx512Vbmi_VL", InstructionSet.X86_AVX512VBMI_VL, true);
                     break;
             }
         }
