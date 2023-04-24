@@ -92,9 +92,9 @@
       <RuntimeFiles Remove="$(CoreCLRArtifactsPath)\sharedFramework\*mscordbi*" />
       <RuntimeFiles Remove="$(CoreCLRArtifactsPath)\sharedFramework\PDB\*mscordaccore*" />
       <RuntimeFiles Remove="$(CoreCLRArtifactsPath)\sharedFramework\PDB\*mscordbi*" />
-      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\$(TargetArchitecture)\unsanitized\sharedFramework\*" IsNative="true" />
-      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\$(TargetArchitecture)\unsanitized\PDB\*mscordaccore*" IsNative="true" />
-      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\$(TargetArchitecture)\unsanitized\PDB\*mscordbi*" IsNative="true" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\unsanitized\sharedFramework\*" IsNative="true" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\unsanitized\PDB\*mscordaccore*" IsNative="true" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\unsanitized\PDB\*mscordbi*" IsNative="true" />
     </ItemGroup>
     <ItemGroup>
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />

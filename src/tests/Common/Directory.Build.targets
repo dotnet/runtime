@@ -63,7 +63,7 @@
       <SanitizedDiagnosticTools Include="$(LibPrefix)mscordbi$(LibSuffix)" />
       <SanitizedDiagnosticTools Include="$(LibPrefix)dbgshim$(LibSuffix)" />
       <RunTimeArtifactsExcludeFiles Include="@(SanitizedDiagnosticTools->'%(FileName)%(Extension)')" />
-      <RunTimeArtifactsIncludeFolders Include="$(TargetArchitecture)/unsanitized/" TargetDir="/" />
+      <RunTimeArtifactsIncludeFolders Include="unsanitized/" TargetDir="/" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(MinimalCoreRoot)' == 'true'">
