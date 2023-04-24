@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
                 }
 
-                if (state.Current.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+                if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
                 {
                     obj = state.Current.ReturnValue!;
                 }
@@ -108,7 +108,7 @@ namespace System.Text.Json.Serialization.Converters
                         return true;
                     }
 
-                    if (state.Current.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+                    if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
                     {
                         obj = state.Current.ReturnValue!;
                     }

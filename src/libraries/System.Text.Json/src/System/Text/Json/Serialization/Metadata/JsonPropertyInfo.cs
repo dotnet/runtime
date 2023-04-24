@@ -808,9 +808,9 @@ namespace System.Text.Json.Serialization.Metadata
                 return false;
 
             Debug.Assert(EffectiveConverter.CanPopulate, "Property is marked with Populate but converter cannot populate. This should have been validated in Configure");
-            Debug.Assert(state.Current.ParentObject != null, "Parent object is null");
+            Debug.Assert(state.Parent.ReturnValue != null, "Parent object is null");
             Debug.Assert(!state.Current.IsPopulating, "We've called TryGetPrePopulatedValue more than once");
-            object? value = Get!(state.Current.ParentObject);
+            object? value = Get!(state.Parent.ReturnValue);
             state.Current.ReturnValue = value;
             state.Current.IsPopulating = value != null;
             return value != null;

@@ -40,7 +40,7 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected virtual void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
-            if (state.Current.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+            if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
             {
                 return;
             }

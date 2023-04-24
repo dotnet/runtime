@@ -281,8 +281,7 @@ namespace System.Text.Json.Serialization
 
             if (parentObj != null && propertyInfo != null && !propertyInfo.IsForTypeInfo)
             {
-                state.Current.ParentObject = parentObj;
-                state.Current.ParentProperty = propertyInfo;
+                state.Current.HasParentObject = true;
             }
 
             success = OnTryRead(ref reader, typeToConvert, options, ref state, out value);

@@ -74,9 +74,8 @@ namespace System.Text.Json
         // Every required JsonPropertyInfo has RequiredPropertyIndex property which maps to an index in this BitArray.
         public BitArray? RequiredPropertiesSet;
 
-        // Needed for populating properties
-        public object? ParentObject;
-        public JsonPropertyInfo? ParentProperty;
+        // Tracks state related to property population.
+        public bool HasParentObject;
         public bool IsPopulating;
 
         public void EndConstructorParameter()

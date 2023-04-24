@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Converters
 
         protected sealed override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
-            if (state.Current.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+            if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
             {
                 return;
             }

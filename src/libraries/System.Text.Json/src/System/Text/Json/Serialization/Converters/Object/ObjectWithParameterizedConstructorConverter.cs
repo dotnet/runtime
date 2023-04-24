@@ -45,7 +45,7 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
                 }
 
-                if (state.Current.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+                if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
                 {
                     object populatedObject = state.Current.ReturnValue!;
                     PopulatePropertiesFastPath(populatedObject, jsonTypeInfo, options, ref reader, ref state);
@@ -157,7 +157,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Metadata is disallowed with Populate option and therefore ordering here is irrelevant.
                 // Since state.Current.IsPopulating is being checked early on in this method the continuation
                 // will be handled there.
-                if (state.Current.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+                if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
                 {
                     object populatedObject = state.Current.ReturnValue!;
 
