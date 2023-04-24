@@ -5924,7 +5924,6 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                         }
                     }
 
-
                     if (genTypeSize(node) == memSize)
                     {
                         isContainable = true;
