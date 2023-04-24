@@ -31,18 +31,18 @@ public class XUnitLogChecker
     }
 
     private enum TagCategory { OPENING, CLOSING }
-    private const int MISSING_ARGS = -1;
 
-    private static int TestExitCode;
+    private const int SUCCESS = 0;
+    private const int MISSING_ARGS = -1;
+    private const int FAILURE = -2;
 
     static int Main(string[] args)
     {
-        if (args.Length < 3)
+        if (args.Length < 2)
         {
-            Console.WriteLine("[XUnitLogChecker]: The path to the log file,"
-                              + " the name of the wrapper, and the test's"
-                              + " exit code are required for an accurate check"
-                              + " and fixing.");
+            Console.WriteLine("[XUnitLogChecker]: The path to the log file and"
+                              + " the name of the wrapper are required for an"
+                              + " accurate check and fixing.");
             return MISSING_ARGS;
         }
 
@@ -50,13 +50,6 @@ public class XUnitLogChecker
 
         string resultsDir = args[0];
         string wrapperName = args[1];
-
-        // Bug Fix: GH Issue #85056 - Helix takes the exit code of the last ran
-        // executable. Since that spot has now been taken by the log fixer, it's
-        // its exit code that gets reported to Helix, and thus eclipsing the test's
-        // one. This might lead to test failures being identified as passed. So,
-        // we will have the log checker also return the test's code instead.
-        TestExitCode = Int32.Parse(args[2]);
 
         string tempLogName = $"{wrapperName}.tempLog.xml";
         string finalLogName = $"{wrapperName}.testResults.xml";
@@ -73,7 +66,7 @@ public class XUnitLogChecker
         {
             Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did"
                               + " complete successfully!");
-            return TestExitCode;
+            return SUCCESS;
         }
 
         // If there are no logs, then this work item was probably entirely skipped.
@@ -92,7 +85,7 @@ public class XUnitLogChecker
             Console.WriteLine($"[XUnitLogChecker]: If this is a mistake, then"
                               + " something went very wrong. The expected temp"
                               + $" log name would be: '{tempLogName}'");
-            return TestExitCode;
+            return SUCCESS;
         }
 
         // If we're here, then that means we've got something to fix.
@@ -104,7 +97,7 @@ public class XUnitLogChecker
         {
             Console.WriteLine("[XUnitLogChecker]: An error occurred. No stats csv"
                             + $" was found. The expected name would be '{statsCsvPath}'.");
-            return TestExitCode;
+            return FAILURE;
         }
 
         // Read the tests run stats csv.
@@ -114,7 +107,7 @@ public class XUnitLogChecker
         {
             Console.WriteLine("[XUnitLogChecker]: Timed out trying to read the"
                             + $" stats file '{statsCsvPath}'.");
-            return TestExitCode;
+            return FAILURE;
         }
 
         // The first value at the top of the csv represents the amount of tests
@@ -142,7 +135,7 @@ public class XUnitLogChecker
         if (!success)
         {
             Console.WriteLine("[XUnitLogChecker]: Fixing the log failed.");
-            return TestExitCode;
+            return FAILURE;
         }
 
         PrintWorkItemSummary(numExpectedTests, workItemEndStatus);
@@ -151,9 +144,9 @@ public class XUnitLogChecker
         // be located. If passed, then search that path accordingly. Otherwise,
         // just skip and finish running.
 
-        if (args.Length > 3)
+        if (args.Length > 2)
         {
-            string dumpsPath = args[3];
+            string dumpsPath = args[2];
 
             if (Directory.Exists(dumpsPath))
             {
@@ -171,7 +164,7 @@ public class XUnitLogChecker
         // knowing what transpired here.
         File.Move(tempLogPath, finalLogPath);
         Console.WriteLine("[XUnitLogChecker]: Finished!");
-        return TestExitCode;
+        return SUCCESS;
     }
 
     static IEnumerable<string> TryReadFile(string filePath)
