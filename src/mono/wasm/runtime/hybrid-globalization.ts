@@ -224,12 +224,12 @@ export function compare_strings(string1: string, string2: string, locale: string
             // 0: None - default algorithm for the platform OR
             //    StringSort - since .Net 5 StringSort gives the same result as None, even for hyphen etc.
             //    does not work for "ja"
-            if (locale && locale.split("-")[0] === "ja")
+            if (locale && locale.startsWith("ja"))
                 return -2;
             return string1.localeCompare(string2, locale); // a ≠ b, a ≠ á, a ≠ A
         case 8:
             // 8: IgnoreKanaType works only for "ja"
-            if (locale && locale.split("-")[0] !== "ja")
+            if (locale && locale.startsWith("ja"))
                 return -2;
             return string1.localeCompare(string2, locale); // a ≠ b, a ≠ á, a ≠ A
         case 1:
