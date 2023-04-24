@@ -478,7 +478,7 @@ void CodeGen::genHWIntrinsic_R_RM(
             {
                 if (varTypeIsIntegral(rmOp))
                 {
-                    bool needsBroadcastFixup = false;
+                    bool needsBroadcastFixup   = false;
                     bool needsInstructionFixup = false;
 
                     switch (node->GetHWIntrinsicId())

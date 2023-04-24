@@ -9810,6 +9810,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
             {
                 return emitXMMregName(reg);
             }
+            break;
         }
 
         case EA_8BYTE:

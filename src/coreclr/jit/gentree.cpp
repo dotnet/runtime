@@ -25757,7 +25757,7 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, Ge
                (gtHWIntrinsicId <= NI_AVX512F_FusedMultiplySubtractNegated));
         assert((NI_AVX512F_FusedMultiplySubtractNegated - NI_AVX512F_FusedMultiplyAdd) == 6);
     }
-#endif //DEBUG
+#endif // DEBUG
 
     if (use != nullptr && use->OperIs(GT_STORE_LCL_VAR))
     {

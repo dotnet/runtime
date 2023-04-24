@@ -3706,8 +3706,7 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
                 extractIntrinsicId = NI_AVX512DQ_ExtractVector128;
             }
 
-            tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, idx, extractIntrinsicId, simdBaseJitType,
-                                                  simdSize);
+            tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, idx, extractIntrinsicId, simdBaseJitType, simdSize);
             BlockRange().InsertAfter(idx, tmp1);
             LowerNode(tmp1);
         }
@@ -7878,8 +7877,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 case HW_Category_SIMDScalar:
                 case HW_Category_Scalar:
                 {
-                    bool isFmaIntrinsic = (intrinsicId >= NI_FMA_MultiplyAdd) &&
-                                          (intrinsicId <= NI_FMA_MultiplySubtractNegatedScalar);
+                    bool isFmaIntrinsic =
+                        (intrinsicId >= NI_FMA_MultiplyAdd) && (intrinsicId <= NI_FMA_MultiplySubtractNegatedScalar);
 
                     if (!isFmaIntrinsic)
                     {

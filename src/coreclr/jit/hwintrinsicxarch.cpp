@@ -2908,7 +2908,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             // swap the two operands
-            GenTree* idxVector  = impSIMDPopStack();
+            GenTree* idxVector = impSIMDPopStack();
             GenTree* srcVector = impSIMDPopStack();
 
             retNode = gtNewSimdHWIntrinsicNode(retType, idxVector, srcVector, intrinsic, simdBaseJitType, simdSize);

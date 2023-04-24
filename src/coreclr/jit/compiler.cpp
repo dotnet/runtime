@@ -2333,7 +2333,6 @@ void Compiler::compSetProcessor()
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512_VBMI);
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512_VBMI_VL);
 
-
 #ifdef TARGET_AMD64
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_X64);
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL_X64);
