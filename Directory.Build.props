@@ -197,6 +197,10 @@
     <!-- Detect linux flavors using __PortableTargetOS from the native script. -->
     <_portableOS Condition="'$(_portableOS)' == 'linux' and '$(__PortableTargetOS)' == 'linux-musl'">linux-musl</_portableOS>
     <_portableOS Condition="'$(_portableOS)' == 'linux' and '$(__PortableTargetOS)' == 'linux-bionic'">linux-bionic</_portableOS>
+
+    <!-- On Windows, we can build for Windows and Mobile.
+         For other TargetOSes, create a "win" build, built from TargetOS sources and "win" pre-built packages. -->
+    <_portableOS Condition="'$(HostOS)' == 'win' and '$(TargetsMobile)' != 'true'">win</_portableOS>
   </PropertyGroup>
 
   <!-- PackageRID is used for packages needed for the target. -->
@@ -236,7 +240,6 @@
        For non-portable builds, it uses __DistroRid (from the native build script), or falls back to RuntimeInformation.RuntimeIdentifier.
        Source-build sets OutputRID directly. -->
   <PropertyGroup Label="CalculateOutputRID">
-
     <_hostRid Condition="'$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</_hostRid>
     <_hostRid Condition="'$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</_hostRid>
 
