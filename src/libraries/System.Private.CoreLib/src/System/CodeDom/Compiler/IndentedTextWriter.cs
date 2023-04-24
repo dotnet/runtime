@@ -57,7 +57,7 @@ namespace System.CodeDom.Compiler
         public override Task FlushAsync() => _writer.FlushAsync();
 
         /// <summary>
-        /// Clears all buffers for this IndentedTextWriter asynchronously and causes any buffered data to be
+        /// Clears all buffers for this <see cref="IndentedTextWriter"/> asynchronously and causes any buffered data to be
         /// written to the underlying device.
         /// </summary>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
