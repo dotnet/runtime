@@ -347,6 +347,7 @@
          will emit corresponding .o files for anything we don't already have on disk. -->
     <PropertyGroup>
       <_WasmAssembliesBundleObjectFile>$(_WasmIntermediateOutputPath)wasi_bundled_assemblies.o</_WasmAssembliesBundleObjectFile>
+      <_WasmAssembliesBundlePreallocatedObjectFile>$(_WasmIntermediateOutputPath)wasi_bundled_preallocated_assemblies.o</_WasmAssembliesBundlePreallocatedObjectFile>
     </PropertyGroup>
     <GetFileHash Files="@(_WasmAssembliesInternal)">
       <Output TaskParameter="Items" ItemName="WasmBundleAssembliesWithHashes" />
@@ -360,19 +361,24 @@
     <EmitBundleObjectFiles
       FilesToBundle="@(WasmBundleAssembliesWithHashes)"
       ClangExecutable="$(WasiClang)"
-      BundleName="assemblies"
-      BundleFile="$(_WasmAssembliesBundleObjectFile)"
+      BundleName="mono_register_assemblies_bundle"
+      BundleFile="wasi_bundled_assemblies.o"
+      BundlePreallocationFile="wasi_bundled_preallocated_assemblies.o"
+      OutputDirectory="$(_WasmIntermediateOutputPath)"
       />
 
     <ItemGroup>
       <_WasiObjectFilesForBundle Include="$(_WasmAssembliesBundleObjectFile)" />
+      <_WasiObjectFilesForBundle Include="$(_WasmAssembliesBundlePreallocatedObjectFile)" />
       <_WasiObjectFilesForBundle Include="%(WasmBundleAssembliesWithHashes.DestinationFile)" />
     </ItemGroup>
 
     <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
     <ItemGroup>
       <WasmBundleFileToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
+      <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)mono-bundled-source.h" />
       <WasmBundleFileToDelete Remove="$(_WasmAssembliesBundleObjectFile)" />
+      <WasmBundleFileToDelete Remove="$(_WasmAssembliesBundlePreallocatedObjectFile)" />
       <WasmBundleFileToDelete Remove="%(WasmBundleAssembliesWithHashes.DestinationFile)" />
     </ItemGroup>
     <Delete Files="@(WasmBundleFileToDelete)" />

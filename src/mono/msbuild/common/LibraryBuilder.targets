@@ -54,6 +54,7 @@
       <BundledSources Include="$(BundleOutputDirectory)$(BundledSourceFile)" />
       <BundledSources Include="$(BundleOutputDirectory)mono-bundled-source.h" />
       <BundledSources Include="$(BundleOutputDirectory)mono-bundled-preallocated-source.c" />
+      <BundledSources Include="$(BundleOutputDirectory)mono-bundled-resource-registration.c" />
     </ItemGroup>
 
     <ItemGroup>
@@ -77,9 +78,8 @@
     <EmitBundleSourceFiles
       FilesToBundle="@(_ResourcesToBundleWithHashes)"
       CombinedResourceSource="$(BundledSourceFile)"
-      OutputDirectory="$(BundleOutputDirectory)">
-      <Output TaskParameter="PreallocatedSymbols" ItemName="BundledPreallocatedSymbols" />
-    </EmitBundleSourceFiles>
+      OutputDirectory="$(BundleOutputDirectory)"
+      />
   </Target>
 
 </Project>
