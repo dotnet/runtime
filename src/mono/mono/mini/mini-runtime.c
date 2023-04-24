@@ -2160,7 +2160,7 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
                 MonoDebugSourceLocation *loc;
                 int i;
 
-		memset (&rec, 0, sizeof(rec));
+		memset (&rec, 0, sizeof (rec));
 		
 		//populating info relating debug methods
 		minfo = mono_debug_lookup_method (jinfo->d.method);
